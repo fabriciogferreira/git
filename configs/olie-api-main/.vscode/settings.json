@@ -1,5 +1,5 @@
 {
 	"editor.tabSize": 4,
 	"editor.insertSpaces": true,
-	"artisan.docker.command": "docker-compose exec olie-api-main"
+	"artisan.docker.command": "docker container exec -u 1000:1000 olie-api-main"
 }
