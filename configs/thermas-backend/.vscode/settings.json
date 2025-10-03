@@ -1,0 +1,4 @@
+{
+	"editor.tabSize": 2,
+	"artisan.docker.command": "docker-compose exec thermas-backend"
+}

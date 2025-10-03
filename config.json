@@ -6,5 +6,20 @@
 			"work/olie/docker-workspace",
 			"work/olie/websocket"
 		]
+	},
+	"locav-backend": {
+		"pathsOndeDeveSerAplicado": [
+			"work/olie/api-main"
+		]
+	},
+	"oli-api-main": {
+		"pathsOndeDeveSerAplicado": [
+			"work/olie/api-main"
+		]
+	},
+	"thermas-backend": {
+		"pathsOndeDeveSerAplicado": [
+			"work/olie/api-main"
+		]
 	}
 }
