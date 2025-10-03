@@ -9,17 +9,17 @@
 	},
 	"locav-backend": {
 		"pathsOndeDeveSerAplicado": [
-			"work/olie/api-main"
+			"work/enterscience/locav/locav-api"
 		]
 	},
-	"oli-api-main": {
+	"olie-api-main": {
 		"pathsOndeDeveSerAplicado": [
 			"work/olie/api-main"
 		]
 	},
 	"thermas-backend": {
 		"pathsOndeDeveSerAplicado": [
-			"work/olie/api-main"
+			"work/enterscience/thermas/thermas-api"
 		]
 	}
 }
