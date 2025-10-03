@@ -1,0 +1,10 @@
+{
+	"4spaces": {
+		"pathsOndeDeveSerAplicado": [
+			"work/olie/olie-fronts",
+			"work/olie/api-main",
+			"work/olie/docker-workspace",
+			"work/olie/websocket"
+		]
+	}
+}
