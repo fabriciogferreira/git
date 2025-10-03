@@ -1,0 +1,11 @@
+# Ignora tudo por padrão
+*
+
+# Não ignora estas pastas/arquivos
+!configs/
+!apply.sh
+!README.md
+!.gitignore
+
+# Mas como ignoramos tudo acima, precisamos reativar o conteúdo dentro de configs
+!configs/**
