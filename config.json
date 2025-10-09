@@ -17,6 +17,11 @@
 			"work/olie/api-main"
 		]
 	},
+	"opbed-frontend": {
+		"pathsOndeDeveSerAplicado": [
+			"enterprise/opbed/opbed-frontend"
+		]
+	},
 	"thermas-backend": {
 		"pathsOndeDeveSerAplicado": [
 			"work/enterscience/thermas/thermas-api"
