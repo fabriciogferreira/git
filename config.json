@@ -17,6 +17,11 @@
 			"work/olie/api-main"
 		]
 	},
+	"opbed-backend": {
+		"pathsOndeDeveSerAplicado": [
+			"enterprise/opbed/opbed-backend"
+		]
+	},
 	"opbed-frontend": {
 		"pathsOndeDeveSerAplicado": [
 			"enterprise/opbed/opbed-frontend"
