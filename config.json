@@ -31,5 +31,10 @@
 		"pathsOndeDeveSerAplicado": [
 			"work/enterscience/thermas/thermas-api"
 		]
+	},
+	"press-play-backend": {
+		"pathsOndeDeveSerAplicado": [
+			"press-play/press-play-backend"
+		]
 	}
 }
