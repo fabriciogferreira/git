@@ -36,5 +36,10 @@
 		"pathsOndeDeveSerAplicado": [
 			"press-play/press-play-backend"
 		]
+	},
+	"igoob-api": {
+		"pathsOndeDeveSerAplicado": [
+			"work/enterscience/igoob/igoob-api"
+		]
 	}
 }
