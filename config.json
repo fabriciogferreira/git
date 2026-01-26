@@ -6,7 +6,7 @@
     "olie/websocket"
   ],
   "locav-backend": [
-    "locav/LocavApi"
+    "locav/locav-api"
   ],
   "olie-api-main": [
     "olie/api-main"
