@@ -1,45 +1,26 @@
 {
-	"4spaces": {
-		"pathsOndeDeveSerAplicado": [
-			"work/olie/olie-fronts",
-			"work/olie/api-main",
-			"work/olie/docker-workspace",
-			"work/olie/websocket"
-		]
-	},
-	"locav-backend": {
-		"pathsOndeDeveSerAplicado": [
-			"work/enterscience/locav/locav-api"
-		]
-	},
-	"olie-api-main": {
-		"pathsOndeDeveSerAplicado": [
-			"work/olie/api-main"
-		]
-	},
-	"opbed-backend": {
-		"pathsOndeDeveSerAplicado": [
-			"enterprise/opbed/opbed-backend"
-		]
-	},
-	"opbed-frontend": {
-		"pathsOndeDeveSerAplicado": [
-			"enterprise/opbed/opbed-frontend"
-		]
-	},
-	"thermas-backend": {
-		"pathsOndeDeveSerAplicado": [
-			"work/enterscience/thermas/thermas-api"
-		]
-	},
-	"press-play-backend": {
-		"pathsOndeDeveSerAplicado": [
-			"press-play/press-play-backend"
-		]
-	},
-	"igoob-api": {
-		"pathsOndeDeveSerAplicado": [
-			"work/enterscience/igoob/igoob-api"
-		]
-	}
+  "4spaces": [
+    "olie/olie-fronts",
+    "olie/api-main",
+    "olie/docker-workspace",
+    "olie/websocket"
+  ],
+  "locav-backend": [
+    "locav/LocavApi"
+  ],
+  "olie-api-main": [
+    "olie/api-main"
+  ],
+  "opbed-backend": [
+    "opbed/opbed-backend"
+  ],
+  "opbed-frontend": [
+    "opbed/opbed-frontend"
+  ],
+  "thermas-backend": [
+    "thermas/thermas-api"
+  ],
+  "igoob-api": [
+    "igoob/igoob-api"
+  ]
 }

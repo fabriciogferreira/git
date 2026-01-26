@@ -15,12 +15,13 @@ apply_config() {
 
   if [ ! -d "$source_dir" ]; then
     echo "Configuração '$config_name' não encontrada em $source_dir"
-    return
+    return 1
   fi
 
   echo "Aplicando configuração: $config_name"
 
-  jq -r ".\"$config_name\".pathsOndeDeveSerAplicado[]" "$CONFIG_FILE" | while read -r target; do
+  # Lê os caminhos do array dessa config
+  jq -r ".\"$config_name\"[]" "$CONFIG_FILE" | while read -r target; do
     echo " → Copiando para $target"
     mkdir -p "$target"
     rsync -a "$source_dir"/ "$target"/
@@ -28,10 +29,12 @@ apply_config() {
 }
 
 if [ $# -gt 0 ]; then
+  # Aplica só as configs passadas como argumento
   for config in "$@"; do
     apply_config "$config"
   done
 else
+  # Aplica todas as configs do JSON
   configs=$(jq -r 'keys[]' "$CONFIG_FILE")
   for config in $configs; do
     apply_config "$config"

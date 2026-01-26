@@ -1,4 +1,0 @@
-{
-	"editor.tabSize": 2,
-	"artisan.docker.command": "docker container exec -u 1000:1000 press-play-backend"
-}
