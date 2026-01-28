@@ -8,6 +8,9 @@
   "locav-backend": [
     "locav/locav-api"
   ],
+	"locav-front": [
+    "locav/locav-front"
+  ],
   "olie-api-main": [
     "olie/api-main"
   ],
