@@ -7,6 +7,12 @@
 !apply.sh
 !config.json
 !README.md
+# Reativa pastas pais (com * no topo o Git não desce em dirs ignorados)
+!olie/
+!olie/olie-e2e/
+!olie/olie-e2e/**
+!.cursor/
+!.cursor/**
 
 # Mas como ignoramos tudo acima, precisamos reativar o conteúdo dentro de configs
 !configs/**

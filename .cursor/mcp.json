@@ -1,0 +1,9 @@
+{
+    "OlieFlowAI": {
+      "type": "http",
+      "url": "https://api.olie.ai/mcp/management",
+      "headers": {
+        "Authorization": "Bearer 21627|NRHMnhar6Yw7CJUYvmItpNkvI285ZqWkKHpwy27n20bc1e3a"
+      }
+    }
+}

@@ -1,0 +1,13 @@
+---
+description: Convenções de commit, PR e atribuição de AI
+alwaysApply: true
+---
+
+# Commits e PRs
+
+- Mensagens focadas no **porquê** da mudança; seguir estilo do histórico recente (`git log`)
+- Preferir Conventional Commits se o repo/commitlint exigir (`feat:`, `fix:`, `chore:`, etc.)
+- **Nunca** adicionar trailers `Co-Authored-By` (Claude, Cursor, Copilot, AI ou variantes) em commits ou descrição de PR
+- Não atribuir a mudança a ferramenta/agente no título ou body
+- Não commitar secrets (`.env`, tokens, credenciais)
+- Só criar commit/PR quando o usuário pedir explicitamente

@@ -1,0 +1,31 @@
+# Sibling of docker-workspace. Joins the same Docker network so Chromium
+# reaches Traefik as olie-traefik / *.olie.localhost (see playwright.config.ts).
+#
+# Prerequisites: stack up (`cd ../docker-workspace && docker compose up -d`).
+# Credentials default to api-main seed (tester@olie.ai / password).
+
+services:
+  e2e:
+    build: .
+    container_name: olie-e2e
+    ipc: host
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      E2E_BASE_URL: ${E2E_BASE_URL:-http://devframe.olie.localhost}
+      E2E_API_URL: ${E2E_API_URL:-http://api.olie.localhost}
+      E2E_USER: ${E2E_USER:-tester@olie.ai}
+      E2E_PASSWORD: ${E2E_PASSWORD:-password}
+    volumes:
+      - ./tests:/app/tests
+      - ./playwright.config.ts:/app/playwright.config.ts
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    networks:
+      - olie-network
+
+networks:
+  olie-network:
+    external: true
+    name: ${OLIE_DOCKER_NETWORK:-docker-workspace_olie-network}
