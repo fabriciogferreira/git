@@ -11,11 +11,32 @@ if [[ -f .env ]]; then
     set +a
 fi
 
-if ! docker network inspect "${OLIE_DOCKER_NETWORK:-docker-workspace_olie-network}" >/dev/null 2>&1; then
+# Playwright image runs as pwuser (uid 1000). Bind-mounted report dirs must be writable.
+mkdir -p test-results playwright-report
+chmod -R a+rwX test-results playwright-report 2>/dev/null || true
+
+WORKSPACE_DIR="${OLIE_WORKSPACE_DIR:-$(cd ../docker-workspace && pwd)}"
+WORKSPACE_COMPOSE="$WORKSPACE_DIR/docker-compose.yml"
+NETWORK="${OLIE_DOCKER_NETWORK:-docker-workspace_olie-network}"
+
+if [[ -f "$WORKSPACE_COMPOSE" ]]; then
+    if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
+        echo "Starting docker-workspace stack (includes olie-e2e)..."
+        docker compose -f "$WORKSPACE_COMPOSE" up -d
+    else
+        docker compose -f "$WORKSPACE_COMPOSE" up -d e2e --build
+    fi
+    docker compose -f "$WORKSPACE_COMPOSE" exec -T -u pwuser e2e npx playwright test --project=chromium "$@"
+    exit 0
+fi
+
+# Fallback: standalone compose in this repo (network must already exist).
+if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
     echo "Docker network not found. Start the stack first:"
     echo "  cd ../docker-workspace && docker compose up -d"
     echo "If your network name differs: OLIE_DOCKER_NETWORK=<name> $0"
     exit 1
 fi
 
-docker compose run --rm --build e2e npx playwright test --project=chromium "$@"
+docker compose up -d --build
+docker compose exec -T -u pwuser e2e npx playwright test --project=chromium "$@"

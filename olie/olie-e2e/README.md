@@ -2,11 +2,28 @@
 
 Playwright E2E against management. Outside `olie-fronts` on purpose.
 
-## Run (no Node on host)
+## Run (preferred — one stack)
 
 ```bash
 cd ../docker-workspace && docker compose up -d
-cd ../olie-e2e
+# olie-e2e stays up with the rest of the stack
+
+# run tests:
+docker compose exec e2e npx playwright test --project=chromium
+# or from this repo:
+./run.sh
+./run.sh tests/auth.smoke.spec.ts
+```
+
+Dockerfile for the workspace build lives at `../docker-workspace/e2e/Dockerfile`
+(keep in sync with this repo’s `Dockerfile`). Service definition:
+`../docker-workspace/docker-compose.yml` (+ mirror `../docker-workspace/e2e/docker-compose.yml`).
+
+## Standalone (optional)
+
+```bash
+# stack already up on docker-workspace_olie-network
+docker compose up -d
 ./run.sh
 ```
 

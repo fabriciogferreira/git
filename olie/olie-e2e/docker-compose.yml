@@ -1,14 +1,21 @@
-# Sibling of docker-workspace. Joins the same Docker network so Chromium
-# reaches Traefik as olie-traefik / *.olie.localhost (see playwright.config.ts).
+# Sibling compose kept for standalone use. Prefer the stack service in
+# ../docker-workspace (one `docker compose up -d` starts olie-e2e too).
+# Dockerfile used by the workspace build: ../docker-workspace/e2e/Dockerfile
+# (keep this file’s CMD/base image in sync with that copy).
 #
-# Prerequisites: stack up (`cd ../docker-workspace && docker compose up -d`).
-# Credentials default to api-main seed (tester@olie.ai / password).
+# Run tests: ./run.sh  or  docker compose -f ../docker-workspace/docker-compose.yml exec e2e …
 
 services:
   e2e:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: olie/e2e
     container_name: olie-e2e
     ipc: host
+    # Start as root so entrypoint can fix bind-mount perms, then drop to pwuser.
+    user: "0:0"
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
