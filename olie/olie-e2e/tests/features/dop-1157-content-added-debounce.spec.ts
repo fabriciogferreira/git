@@ -134,4 +134,45 @@ test.describe('DOP-1157 content added debounce settings', () => {
         await expect(contentAddedDebounceCard(page)).toBeVisible()
         await expect(businessRulesCard(page)).toBeVisible()
     })
+
+    /**
+     * Regression: clearing the number input used to emit "" into a Number prop
+     * (Vue Invalid prop warning) and leave the field stuck uneditable.
+     */
+    test('stays editable after clear without contentAddedDebounceSeconds prop warning', async ({
+        page,
+    }) => {
+        const propWarnings: string[] = []
+        page.on('console', msg => {
+            const text = msg.text()
+            if (
+                /contentAddedDebounceSeconds/i.test(text) &&
+                /Invalid prop|Expected Number|type check failed/i.test(text)
+            ) {
+                propWarnings.push(text)
+            }
+        })
+
+        const input = contentAddedDebounceInput(page)
+        await expect(input).toBeEnabled()
+
+        await input.click()
+        await input.fill('')
+        await expect(input).toHaveValue('')
+
+        await input.pressSequentially('15', { delay: 20 })
+        await expect(input).toHaveValue('15')
+
+        // Second clear+type: the bug left the field stuck after the first warning.
+        await input.fill('')
+        await expect(input).toHaveValue('')
+        await input.pressSequentially('20', { delay: 20 })
+        await expect(input).toHaveValue('20')
+        await expect(input).toBeEnabled()
+
+        expect(
+            propWarnings,
+            'Vue must not warn Invalid prop for contentAddedDebounceSeconds'
+        ).toEqual([])
+    })
 })

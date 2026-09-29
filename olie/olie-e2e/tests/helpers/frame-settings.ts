@@ -88,8 +88,8 @@ export function contentAddedDebounceInput(page: Page): Locator {
 }
 
 /**
- * Set the debounce input so Vue `v-model.number` stays in sync.
- * Plain `fill()` can update the DOM without updating the model before Save.
+ * Set the debounce input via clear + type so the Vue draft/@input path runs.
+ * Plain `fill(value)` alone can skip the input handler before Save.
  */
 export async function setContentAddedDebounceSeconds(page: Page, value: string) {
     const input = contentAddedDebounceInput(page)
