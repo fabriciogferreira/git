@@ -3,138 +3,127 @@ import { loginAsE2EUser } from './helpers/auth'
 import { createE2EProject, openProjectDetailsTab } from './helpers/project'
 
 /**
- * OS-549 — toast `network_error` em blips de rede (`net::ERR_NETWORK_CHANGED`).
+ * OS-549 — notebook must NOT toast `network_error` on `save-thread-data`
+ * CORS/network-looking blips (Chrome empty response / `ERR_FAILED` /
+ * `ERR_NETWORK`; Axios: no `response`).
  *
- * Chrome aborta o request no meio; Axios vira `ERR_NETWORK` sem `response`.
- * Playwright não sintetiza o código do console, mas `route.abort('internetdisconnected')`
- * cai no mesmo caminho Axios → `normalizeAxiosCatchError` → toast.
+ * Call decision (2026-09-29): do NOT touch global axios interceptors/retry.
+ * Fix is local to notebook save: retry once, never FireErrorMessage for
+ * network/CORS failures (draft stays "Não salvo").
  *
- * Gatilho: GET `get-notifications` (1 clique no sino). Representa qualquer GET do app.
- *
- * Aceite do fix (retry 1× em GET ~400ms no interceptor axios):
- *  - falha permanente → toast
- *  - 1 falha + 1 retry ok no mesmo clique → sem toast, `attempts === 2`
- *
- * Residual (Vinicius / CR): ao trocar de aba do projeto, GETs automáticos ainda
- * disparam Swal — não devem (tratar via UI / sem FireErrorMessage em background).
- *
- * `NavbarButtons` busca notificações no `onMounted`. O abort só é armado depois
- * do login; senão o GET inicial + o clique dão `attempts >= 2` sem retry (falso verde).
+ * Playwright cannot synthesize a true CORS console code, but
+ * `route.abort('failed')` hits the same Axios path as a blocked cross-origin
+ * response (no body, `ERR_NETWORK` / Network Error).
  */
 
 const NETWORK_TOAST =
     /Houve uma falha na conexão, verifique sua rede\.|There was a connection failure, please check your network\./i
 
-async function notificationBell(page: Page) {
-    return page.locator('button').filter({ has: page.locator('i.fas.fa-bell') })
+async function openOrCreateNotebook(page: Page, projectId: string) {
+    await openProjectDetailsTab(page, projectId, 'forum')
+
+    const createBtn = page.getByRole('button', { name: /Criar caderno|Create notebook/i })
+    if (await createBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await createBtn.click()
+    }
+
+    await expect(page.locator('.ProseMirror').last()).toBeVisible({ timeout: 30_000 })
 }
 
-async function openNotificationBell(page: Page) {
-    const bell = await notificationBell(page)
-    await expect(bell).toBeVisible({ timeout: 20_000 })
-    await bell.click()
+async function typeNotebookDraft(page: Page, text: string) {
+    const prose = page.locator('.ProseMirror').last()
+    await prose.click()
+    await page.keyboard.type(text, { delay: 10 })
+    await expect(prose).toContainText(text)
 }
 
-test.describe('OS-549 network_error toast', () => {
-    test.describe.configure({ timeout: 90_000 })
-
-    test('shows toast when get-notifications keeps failing', async ({ page }) => {
-        let armed = false
-
-        await page.route('**/get-notifications**', async route => {
-            if (!armed) {
-                await route.continue()
-                return
-            }
-            await route.abort('internetdisconnected')
-        })
-
-        await loginAsE2EUser(page)
-        await expect(await notificationBell(page)).toBeVisible({ timeout: 20_000 })
-
-        armed = true
-        await openNotificationBell(page)
-
-        await expect(page.getByText(NETWORK_TOAST)).toBeVisible({ timeout: 15_000 })
+async function clickNotebookSave(page: Page) {
+    const save = page.getByRole('button', { name: /Salvar|Save/i }).filter({
+        hasNot: page.locator('.fa-paper-plane'),
     })
+    await expect(save.first()).toBeEnabled({ timeout: 10_000 })
+    await save.first().click()
+}
 
-    test('does not show toast when the first get-notifications fails and the retry succeeds', async ({
+test.describe('OS-549 notebook save-thread-data', () => {
+    test.describe.configure({ timeout: 120_000 })
+
+    test('retries once when save-thread-data fails with a CORS-like network abort', async ({
         page,
     }) => {
         let armed = false
         let attempts = 0
 
-        await page.route('**/get-notifications**', async route => {
-            if (!armed) {
+        await page.route('**/save-thread-data/**', async route => {
+            if (!armed || route.request().method() !== 'POST') {
                 await route.continue()
                 return
             }
 
             attempts += 1
             if (attempts === 1) {
-                await route.abort('internetdisconnected')
+                // Same class of failure as intermittent CORS / CF block: no response body.
+                await route.abort('failed')
                 return
             }
             await route.continue()
         })
 
         await loginAsE2EUser(page)
-        await expect(await notificationBell(page)).toBeVisible({ timeout: 20_000 })
+        const projectId = await createE2EProject(page, {
+            name: `e2e-os549-save-${Date.now()}`,
+        })
+        await openOrCreateNotebook(page, projectId)
 
         armed = true
         attempts = 0
 
-        await openNotificationBell(page)
+        await typeNotebookDraft(page, `os549-retry-${Date.now()}`)
+        await clickNotebookSave(page)
 
-        // Exactly one user click: fail + axios retry = 2. Without interceptor, stays 1.
         await expect
             .poll(() => attempts, {
-                timeout: 8_000,
+                timeout: 15_000,
                 message:
-                    'OS-549: one bell click must produce 2 GETs (fail + retry). Without axios network retry this stays 1.',
+                    'OS-549: one Save click must POST save-thread-data twice (fail + retry). Without notebook-local retry this stays 1.',
             })
             .toBe(2)
 
         await expect(page.getByText(NETWORK_TOAST)).toHaveCount(0)
+        await expect(page.getByText(/Salvo|Saved/i).first()).toBeVisible({ timeout: 10_000 })
     })
 
-    /**
-     * Residual after GET retry (#657): Vinicius — Swal still appears when switching
-     * project tabs. Vínculos uses TanStack + `ProjectService(true)` (auto FireErrorMessage);
-     * network blips on those automatic GETs must not toast.
-     *
-     * Expect RED until tab-entry / background GETs stop auto-toasting on network errors.
-     */
-    test('does not show network toast when opening Vínculos tab while GETs fail', async ({
+    test('does not toast when save-thread-data keeps failing — stays unsaved', async ({
         page,
     }) => {
-        await loginAsE2EUser(page)
+        let armed = false
 
-        const projectId = await createE2EProject(page, {
-            name: `e2e-os549-tabs-${Date.now()}`,
-        })
-        await openProjectDetailsTab(page, projectId, 'overview')
-
-        await page.route('**/api/management/**', async route => {
-            if (route.request().method() === 'GET') {
-                await route.abort('internetdisconnected')
+        await page.route('**/save-thread-data/**', async route => {
+            if (!armed || route.request().method() !== 'POST') {
+                await route.continue()
                 return
             }
-            await route.continue()
+            await route.abort('failed')
         })
 
-        await page.locator('a.nav-link', { hasText: /Vínculos|Hierarchy|Links/i }).click()
+        await loginAsE2EUser(page)
+        const projectId = await createE2EProject(page, {
+            name: `e2e-os549-fail-${Date.now()}`,
+        })
+        await openOrCreateNotebook(page, projectId)
 
-        // Must fail fast: default toHaveCount(0) waits until the toast timer hides it → false green.
+        armed = true
+        await typeNotebookDraft(page, `os549-fail-${Date.now()}`)
+        await clickNotebookSave(page)
+
+        // Must fail fast: default toHaveCount(0) can wait until a toast timer hides it.
         const toastAppeared = await page
             .getByText(NETWORK_TOAST)
             .waitFor({ state: 'visible', timeout: 3_000 })
             .then(() => true)
             .catch(() => false)
 
-        expect(
-            toastAppeared,
-            'OS-549: entering a project tab must not toast network_error on automatic GETs'
-        ).toBe(false)
+        expect(toastAppeared, 'OS-549: notebook save must not toast network_error').toBe(false)
+        await expect(page.getByText(/Não salvo|Unsaved/i).first()).toBeVisible({ timeout: 5_000 })
     })
 })
