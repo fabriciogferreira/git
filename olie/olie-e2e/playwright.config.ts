@@ -38,11 +38,21 @@ const traefikResolver = traefikHostResolverArg()
  */
 export default defineConfig({
     testDir: './tests',
-    /* Shared E2E_USER / E2E_PROJECT_ID — parallel logins thrash auth + server localStorage. */
-    fullyParallel: false,
+    /**
+     * Specs that call `loginAsIsolatedE2EUser` get a fresh user + work frame per
+     * worker and are safe to run in parallel. Shared-seed specs (`loginAsE2EUser`
+     * on devframe) should run with E2E_WORKERS=1 to avoid auth/data races.
+     *
+     *   # isolated / parallel-friendly file
+     *   docker compose exec e2e npx playwright test --workers=3 tests/features/step-forms-before-create.spec.ts
+     *
+     *   # full suite on shared seed
+     *   E2E_WORKERS=1 docker compose exec e2e npx playwright test --project=chromium
+     */
+    fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    workers: 1,
+    workers: process.env.E2E_WORKERS ? Number(process.env.E2E_WORKERS) : 3,
     timeout: 90_000,
     reporter: 'html',
     use: {

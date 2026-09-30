@@ -2,6 +2,8 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsE2EUser } from '../helpers/auth'
 import {
     createE2EProject,
+    createE2ETemplate,
+    cloneE2EProjectFromTemplate,
     getFirstFunnelStepId,
     openProjectDetailsTab,
     openProjectFunnelTab,
@@ -10,11 +12,13 @@ import {
 } from '../helpers/project'
 
 /**
- * DOP-1145 — funis vazios nos detalhes após "Criar e ver".
+ * DOP-1145 — funis vazios nos detalhes após "Criar e ver" a partir de modelo.
  *
- * #652 (KeepAlive exclude + loadRequestId) mitigou; residual vinha do
- * ProjectFormModal emitindo `updateProjectHandler` após force_redirect,
- * correndo com o load do ProjectDetails (HeaderButtons ainda montado).
+ * Causa raiz: clone não anexava a etapa; o link ia num POST separado que
+ * corria com o GET dos detalhes. Fix (option A): clone aceita `funnel_step_id`
+ * e linka na mesma request; front envia o step do kanban e só então redireciona.
+ *
+ * #652/#658 mitigaram corridas de SPA (KeepAlive, loadRequestId, skip emit).
  *
  * Não usar `/overview` como base — a overview faz `replace` de query e aborta pushes.
  */
@@ -28,6 +32,13 @@ async function assertProjectShowsFunnel(page: Page, funnelName: string) {
     await expect(page.getByText(funnelName, { exact: false }).first()).toBeVisible({
         timeout: 20_000,
     })
+}
+
+async function assertProjectShowsStep(page: Page, stepName: string) {
+    await expect(
+        page.getByText(stepName, { exact: false }).first(),
+        'DOP-1145: funnel step from clone must show on project details'
+    ).toBeVisible({ timeout: 20_000 })
 }
 
 /** Hold the first GET of a project find so a later navigation races it. */
@@ -54,6 +65,56 @@ test.describe('DOP-1145 project details funnels after SPA navigation', () => {
         await loginAsE2EUser(page)
         // Do not purge here — search+delete of dozens of projects trips API 429.
         // createE2EProject purges only when hitting project_max_limit (402).
+    })
+
+    /**
+     * Option A contract: clone with funnel_step_id returns pivots; ProjectDetails
+     * GET after redirect must show the funnel and the linked step.
+     */
+    test('clone from template with funnel_step_id shows funnel and step on details', async ({
+        page,
+    }) => {
+        const { stepId, funnelName, stepName } = await getFirstFunnelStepId(page)
+
+        const templateId = await createE2ETemplate(page, {
+            name: `e2e-1145-tpl-${Date.now()}`,
+            description: 'e2e DOP-1145 template',
+        })
+
+        const clonedId = await cloneE2EProjectFromTemplate(page, templateId, {
+            name: `e2e-1145-cloned-${Date.now()}`,
+            description: 'e2e DOP-1145 cloned project',
+            funnel_step_id: stepId,
+        })
+
+        // Same path as "Criar e ver": land on details and load the project.
+        const findResponse = page.waitForResponse(
+            response => {
+                if (response.request().method() !== 'GET') return false
+                try {
+                    return new URL(response.url()).pathname.endsWith(`/projects/${clonedId}`)
+                } catch {
+                    return false
+                }
+            },
+            { timeout: 30_000 }
+        )
+
+        await page.goto(`/projects/${clonedId}/details/funnel`)
+        const response = await findResponse
+        expect(response.ok(), `project find after clone (status=${response.status()})`).toBeTruthy()
+
+        const body = (await response.json()) as {
+            project?: { funnels?: unknown[]; funnel_steps?: Array<{ id?: number }> }
+        }
+        expect(body.project?.funnels?.length ?? 0, 'GET funnels after clone').toBeGreaterThan(0)
+        expect(
+            body.project?.funnel_steps?.some(s => s.id === stepId),
+            'GET funnel_steps must include the cloned step'
+        ).toBeTruthy()
+
+        await assertProjectShowsFunnel(page, funnelName)
+        await assertProjectShowsStep(page, stepName)
     })
 
     /**

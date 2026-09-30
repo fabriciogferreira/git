@@ -14,9 +14,10 @@ export function e2eCredentials() {
  * Invisible reCAPTCHA often never loads inside the e2e container (no Google / timeout),
  * leaving Login with token=null → request_errors.required_token.
  * Stub grecaptcha before /auth so getToken() always resolves.
- * Pair with api-main skipping RecaptchaValidate in local|testing.
+ * Pair with api-main skipping RecaptchaValidate in local|testing
+ * (local uses Google's test secret which accepts any token).
  */
-async function stubRecaptcha(page: Page) {
+export async function stubRecaptchaForPage(page: Page) {
     await page.route('https://www.google.com/recaptcha/**', route => route.abort())
     await page.route('https://www.gstatic.com/recaptcha/**', route => route.abort())
 
@@ -48,14 +49,19 @@ async function dismissErrorModal(page: Page) {
     }
 }
 
-/** Login via /auth. Defaults to seeded tester@olie.ai / password. Retries once on captcha/toast flake. */
-export async function loginAsE2EUser(page: Page) {
-    const { user, password } = e2eCredentials()
+/** Login via /auth with explicit credentials. Optional absolute baseURL for isolated frames. */
+export async function loginWithCredentials(
+    page: Page,
+    user: string,
+    password: string,
+    baseURL?: string
+) {
+    await stubRecaptchaForPage(page)
 
-    await stubRecaptcha(page)
+    const authPath = baseURL ? `${baseURL.replace(/\/$/, '')}/auth` : '/auth'
 
     for (let attempt = 1; attempt <= 2; attempt++) {
-        await page.goto('/auth')
+        await page.goto(authPath)
         await expect(page.getByRole('heading', { name: /Logar no gerencial|Log in/i })).toBeVisible()
 
         await page.locator('input[name="email"]').fill(user)
@@ -80,4 +86,10 @@ export async function loginAsE2EUser(page: Page) {
             await dismissErrorModal(page)
         }
     }
+}
+
+/** Login via /auth. Defaults to seeded tester@olie.ai / password. Retries once on captcha/toast flake. */
+export async function loginAsE2EUser(page: Page) {
+    const { user, password } = e2eCredentials()
+    await loginWithCredentials(page, user, password)
 }

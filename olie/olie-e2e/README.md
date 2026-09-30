@@ -29,10 +29,26 @@ docker compose up -d
 
 Defaults: `tester@olie.ai` / `password` (api-main seed). Specs create their own project via `quick-store`.
 
+## Parallel / isolated users
+
+Default config uses **3 workers**. Specs that call `loginAsIsolatedE2EUser`
+(register → MailHog verify → work frame → management login) are safe in parallel:
+
+```bash
+docker compose exec e2e npx playwright test --project=chromium --workers=3 \
+  tests/features/step-forms-before-create.spec.ts
+```
+
+Full suite still sharing `tester@olie.ai` / `devframe`:
+
+```bash
+E2E_WORKERS=1 docker compose exec e2e npx playwright test --project=chromium
+```
+
 ## reCAPTCHA (local)
 
-E2E stubs `grecaptcha` in the browser. `api-main` must skip validation in `local` / `testing`
-(`AuthController::Login`) so login does not depend on Google from inside Docker.
+E2E stubs `grecaptcha` in the browser. Local `api-main` uses Google's test
+reCAPTCHA secret so verification accepts the stub token.
 
 ## Feature gates (auto-skip)
 
