@@ -91,7 +91,7 @@ ln -sfn "$PROJECT_LINK" "$CURRENT_LINK"
 ln -sfn "$UNIT_SRC" "$UNIT_DST"
 
 if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
-    echo "==> Clonando repositórios do projeto ($PROJECT)"
+    echo "==> Clonando/atualizando repositórios do projeto ($PROJECT)"
     workvm_clone_project_repos "${CLONE_REPOS[@]}"
 else
     echo "==> Nenhum CLONE_REPOS definido em project.conf"

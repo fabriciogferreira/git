@@ -1,6 +1,34 @@
 #!/usr/bin/env bash
 # Shared helpers for workvm project startups.
 
+# Fast-forward only when HEAD already matches the CLONE_REPOS branch (no checkout).
+workvm_pull_repo() {
+    local destination="$1"
+    local branch="${2:-}"
+    local current origin_ref
+
+    current="$(git -C "$destination" branch --show-current 2>/dev/null || true)"
+
+    if [ -n "$branch" ] && [ "$current" != "$branch" ]; then
+        echo "→ Pull pulado: $destination (branch atual: ${current:-detached}; esperado: $branch)"
+        return 0
+    fi
+
+    echo "→ Pull: $destination${branch:+ ($branch)}"
+    git -C "$destination" fetch --prune origin
+
+    if [ -n "$branch" ]; then
+        origin_ref="origin/${branch}"
+        if ! git -C "$destination" rev-parse --verify "$origin_ref" >/dev/null 2>&1; then
+            echo "error: $destination não tem $origin_ref após fetch" >&2
+            return 1
+        fi
+        git -C "$destination" merge --ff-only "$origin_ref"
+    else
+        git -C "$destination" pull --ff-only
+    fi
+}
+
 workvm_clone_repo() {
     local repo="$1"
     local destination="$2"
@@ -8,27 +36,19 @@ workvm_clone_repo() {
 
     mkdir -p "$(dirname "$destination")"
 
-    if [ -d "$destination/.git" ]; then
-        echo "✓ Já existe: $destination"
+    if [ ! -d "$destination/.git" ]; then
         if [ -n "$branch" ]; then
-            local current
-            current="$(git -C "$destination" branch --show-current 2>/dev/null || true)"
-            if [ "$current" != "$branch" ]; then
-                echo "→ Checkout: $destination → $branch"
-                git -C "$destination" fetch --prune origin "$branch"
-                git -C "$destination" checkout "$branch"
-            fi
+            echo "→ Clonando: $repo ($branch) → $destination"
+            git clone --branch "$branch" --single-branch "$repo" "$destination"
+        else
+            echo "→ Clonando: $repo → $destination"
+            git clone "$repo" "$destination"
         fi
-        return 0
+    else
+        echo "✓ Já existe: $destination"
     fi
 
-    if [ -n "$branch" ]; then
-        echo "→ Clonando: $repo ($branch) → $destination"
-        git clone --branch "$branch" --single-branch "$repo" "$destination"
-    else
-        echo "→ Clonando: $repo → $destination"
-        git clone "$repo" "$destination"
-    fi
+    workvm_pull_repo "$destination" "$branch"
 }
 
 # Entries: "<git-url> <path> [branch]". Relative paths are under GIT_ROOT (default $HOME/git).
