@@ -5,6 +5,15 @@ set -euo pipefail
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
 OLIE="${GIT_ROOT}/olie"
 COMPOSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$COMPOSE_DIR/../../.." && pwd)"
+
+# shellcheck source=/dev/null
+source "$REPO_ROOT/workvm/lib/common.sh"
+
+echo "→ api-main: merge .vscode/settings.json"
+workvm_merge_json_file \
+    "$OLIE/api-main/.vscode/settings.json" \
+    "$COMPOSE_DIR/api-main.vscode.settings.json"
 
 echo "→ workvm compose .env"
 cp -n "$COMPOSE_DIR/.env.example" "$COMPOSE_DIR/.env"

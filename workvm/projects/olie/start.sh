@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Startup for the Televisão development project (run by workvm.service).
+# Startup for the Olie development project (run by workvm.service).
 set -euo pipefail
 
 REAL_PROJECT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REAL_REPO_ROOT="$(cd "$REAL_PROJECT_DIR/../../.." && pwd)"
 
 # shellcheck source=/dev/null
-source "$REAL_REPO_ROOT/vm/lib/common.sh"
+source "$REAL_REPO_ROOT/workvm/lib/common.sh"
 # shellcheck source=/dev/null
 source "$REAL_PROJECT_DIR/project.conf"
 
@@ -25,7 +25,7 @@ main() {
         log "docker compose failed; continuing with editor/browser"
     elif [ -n "${WAIT_URL:-}" ]; then
         log "waiting for $WAIT_URL"
-        workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-180}" || log "continuing without $WAIT_URL"
+        workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-60}" || log "continuing without $WAIT_URL"
     fi
 
     log "opening Cursor workspace"

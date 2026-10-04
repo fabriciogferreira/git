@@ -216,3 +216,49 @@ workvm_docker_compose_up() {
 
     (cd "$compose_dir" && docker compose up -d)
 }
+
+# Merge top-level keys from $2 (source) into $1 (dest). Creates dest if missing.
+# Existing keys are overwritten, missing keys are added; other dest keys stay.
+# Tolerates JSONC (trailing commas / // /* */ comments) common in VS Code settings.
+workvm_merge_json_file() {
+    local dest="$1"
+    local source="$2"
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "error: python3 não encontrado (necessário para merge de JSON)" >&2
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    python3 - "$dest" "$source" <<'PY'
+import json, re, sys
+from pathlib import Path
+
+dest_path = Path(sys.argv[1])
+source_path = Path(sys.argv[2])
+
+def load_jsonc(path: Path):
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    text = re.sub(r"//.*?$", "", text, flags=re.M)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return json.loads(text)
+
+source = load_jsonc(source_path)
+if not isinstance(source, dict):
+    raise SystemExit(f"error: JSON de origem não é um objeto: {source_path}")
+
+if dest_path.is_file():
+    dest = load_jsonc(dest_path)
+    if not isinstance(dest, dict):
+        raise SystemExit(f"error: JSON de destino não é um objeto: {dest_path}")
+else:
+    dest = {}
+
+merged = {**dest, **source}
+dest_path.write_text(
+    json.dumps(merged, indent="\t", ensure_ascii=False) + "\n",
+    encoding="utf-8",
+)
+PY
+}

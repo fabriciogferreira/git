@@ -301,9 +301,9 @@ setup_appearance() {
 setup_meta_repo_pull() {
     step "Auto git pull do meta-repo (~/git) no login gráfico"
 
-    local unit_src="$GIT_ROOT/vm/systemd/workvm-git-pull.service"
+    local unit_src="$GIT_ROOT/workvm/systemd/workvm-git-pull.service"
     local unit_dst="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/workvm-git-pull.service"
-    local pull_script="$GIT_ROOT/vm/bin/pull-meta.sh"
+    local pull_script="$GIT_ROOT/workvm/bin/pull-meta.sh"
 
     if [ ! -f "$unit_src" ]; then
         log "error: unit ausente: $unit_src" >&2

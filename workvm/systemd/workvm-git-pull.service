@@ -8,7 +8,7 @@ PartOf=graphical-session.target
 Type=oneshot
 RemainAfterExit=yes
 TimeoutStartSec=90
-ExecStart=%h/git/vm/bin/pull-meta.sh
+ExecStart=%h/git/workvm/bin/pull-meta.sh
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 
 [Install]

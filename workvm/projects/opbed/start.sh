@@ -6,7 +6,7 @@ REAL_PROJECT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
 REAL_REPO_ROOT="$(cd "$REAL_PROJECT_DIR/../../.." && pwd)"
 
 # shellcheck source=/dev/null
-source "$REAL_REPO_ROOT/vm/lib/common.sh"
+source "$REAL_REPO_ROOT/workvm/lib/common.sh"
 # shellcheck source=/dev/null
 source "$REAL_PROJECT_DIR/project.conf"
 

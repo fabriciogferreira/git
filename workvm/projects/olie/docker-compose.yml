@@ -26,7 +26,7 @@ services:
     build:
       context: ${GIT_ROOT}/olie/api-main
       # Meta-repo Dockerfile: avoids CaptainHook failing without .git in context
-      dockerfile: ${GIT_ROOT}/vm/projects/olie/docker/Dockerfile.api-main
+      dockerfile: ${GIT_ROOT}/workvm/projects/olie/docker/Dockerfile.api-main
       args:
         USER_ID: "1000"
         GROUP_ID: "1000"

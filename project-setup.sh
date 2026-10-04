@@ -1,23 +1,16 @@
 #!/usr/bin/env bash
 # Bind this machine to a workvm project and enable startup on graphical login.
-# Also applies versioned configs (configs/ + config.json) listed in project.conf.
-#
-# Usage:
-#   ./project-setup.sh <project>
-#   ./project-setup.sh --apply [config-name ...]
-#   ./project-setup.sh -h|--help
+# Usage: ./project-setup.sh <project>
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECTS_SRC="$REPO_ROOT/vm/projects"
-UNIT_SRC="$REPO_ROOT/vm/systemd/workvm.service"
+PROJECTS_SRC="$REPO_ROOT/workvm/projects"
+UNIT_SRC="$REPO_ROOT/workvm/systemd/workvm.service"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 # shellcheck source=/dev/null
-source "$REPO_ROOT/vm/lib/common.sh"
-# shellcheck source=/dev/null
-source "$REPO_ROOT/vm/lib/apply-configs.sh"
+source "$REPO_ROOT/workvm/lib/common.sh"
 
 list_projects() {
     local dir
@@ -64,104 +57,65 @@ resolve_project() {
     done
 }
 
-show_help() {
-    echo "Usage:"
-    echo "  $0 <project>                      Bind VM to project and start it"
-    echo "  $0 --apply [config-name ...]      Apply configs/ into paths from config.json"
-    echo "  $0 -h|--help"
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    echo "Usage: $0 [project]"
     echo
     show_valid_projects
-    echo
-    echo "Configs (config.json):"
-    jq -r 'keys[] | "  \(.)"' "$REPO_ROOT/config.json" 2>/dev/null || true
-}
+    exit 0
+fi
 
-# Former apply.sh entrypoint — keep behavior here while apply.sh is retired.
-run_apply() {
-    echo "==> Aplicando configs (merge JSON chave a chave; demais arquivos: copy)"
-    workvm_apply_configs_cli "$@"
-}
+resolve_project "${1:-}"
+PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
 
-bind_and_start_project() {
-    resolve_project "${1:-}"
-    PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
+if [ ! -x "$PROJECT_SRC/start.sh" ]; then
+    chmod +x "$PROJECT_SRC/start.sh"
+fi
 
-    if [ ! -x "$PROJECT_SRC/start.sh" ]; then
-        chmod +x "$PROJECT_SRC/start.sh"
-    fi
+CLONE_REPOS=()
+POST_CLONE=()
+# shellcheck source=/dev/null
+source "$PROJECT_SRC/project.conf"
 
-    APPLY_CONFIGS=()
-    CLONE_REPOS=()
-    POST_CLONE=()
-    # shellcheck source=/dev/null
-    source "$PROJECT_SRC/project.conf"
+mkdir -p "$CONFIG_ROOT/projects" "$SYSTEMD_USER_DIR"
 
-    mkdir -p "$CONFIG_ROOT/projects" "$SYSTEMD_USER_DIR"
+PROJECT_LINK="$CONFIG_ROOT/projects/$PROJECT"
+CURRENT_LINK="$CONFIG_ROOT/current"
+UNIT_DST="$SYSTEMD_USER_DIR/workvm.service"
 
-    PROJECT_LINK="$CONFIG_ROOT/projects/$PROJECT"
-    CURRENT_LINK="$CONFIG_ROOT/current"
-    UNIT_DST="$SYSTEMD_USER_DIR/workvm.service"
+ln -sfn "$PROJECT_SRC" "$PROJECT_LINK"
+ln -sfn "$PROJECT_LINK" "$CURRENT_LINK"
+ln -sfn "$UNIT_SRC" "$UNIT_DST"
 
-    ln -sfn "$PROJECT_SRC" "$PROJECT_LINK"
-    ln -sfn "$PROJECT_LINK" "$CURRENT_LINK"
-    ln -sfn "$UNIT_SRC" "$UNIT_DST"
+if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
+    echo "==> Clonando/atualizando repositórios do projeto ($PROJECT)"
+    workvm_clone_project_repos "${CLONE_REPOS[@]}"
+else
+    echo "==> Nenhum CLONE_REPOS definido em project.conf"
+fi
 
-    if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
-        echo "==> Clonando/atualizando repositórios do projeto ($PROJECT)"
-        workvm_clone_project_repos "${CLONE_REPOS[@]}"
-    else
-        echo "==> Nenhum CLONE_REPOS definido em project.conf"
-    fi
+if [ -f "$PROJECT_SRC/post-clone.sh" ]; then
+    echo "==> Pós-clone do projeto ($PROJECT)"
+    bash "$PROJECT_SRC/post-clone.sh"
+elif [ "${#POST_CLONE[@]}" -gt 0 ]; then
+    echo "==> Pós-clone do projeto ($PROJECT)"
+    workvm_run_post_clone "${POST_CLONE[@]}"
+else
+    echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
+fi
 
-    if [ -f "$PROJECT_SRC/post-clone.sh" ]; then
-        echo "==> Pós-clone do projeto ($PROJECT)"
-        bash "$PROJECT_SRC/post-clone.sh"
-    elif [ "${#POST_CLONE[@]}" -gt 0 ]; then
-        echo "==> Pós-clone do projeto ($PROJECT)"
-        workvm_run_post_clone "${POST_CLONE[@]}"
-    else
-        echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
-    fi
+systemctl --user daemon-reload
+systemctl --user enable workvm.service
 
-    if [ "${#APPLY_CONFIGS[@]}" -gt 0 ]; then
-        echo "==> Aplicando configs do projeto ($PROJECT)"
-        workvm_apply_configs "${APPLY_CONFIGS[@]}"
-    else
-        echo "==> Nenhuma APPLY_CONFIGS definida em project.conf"
-    fi
+# Run in this session (inherits Wayland/DISPLAY/PATH). systemd alone often
+# lacks compositor env and would fail or hang on workvm_wait_for_wayland.
+echo "==> Iniciando projeto ($PROJECT)"
+"$PROJECT_SRC/start.sh"
 
-    systemctl --user daemon-reload
-    systemctl --user enable workvm.service
-
-    # Run in this session (inherits Wayland/DISPLAY/PATH). systemd alone often
-    # lacks compositor env and would fail or hang on workvm_wait_for_wayland.
-    echo "==> Iniciando projeto ($PROJECT)"
-    "$PROJECT_SRC/start.sh"
-
-    echo
-    echo "✓ Projeto selecionado: $PROJECT"
-    echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
-    echo "  unit    -> $UNIT_DST"
-    echo "  start   -> Cursor + Chromium (agora) e workvm.service nos próximos logins"
-    echo
-    echo "Nos próximos logins gráficos, workvm.service executará de novo:"
-    echo "  $CURRENT_LINK/start.sh"
-}
-
-main() {
-    case "${1:-}" in
-        -h|--help)
-            show_help
-            ;;
-        --apply)
-            shift
-            run_apply "$@"
-            ;;
-        *)
-            bind_and_start_project "$@"
-            ;;
-    esac
-}
-
-main "$@"
-
+echo
+echo "✓ Projeto selecionado: $PROJECT"
+echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
+echo "  unit    -> $UNIT_DST"
+echo "  start   -> Cursor + Chromium (agora) e workvm.service nos próximos logins"
+echo
+echo "Nos próximos logins gráficos, workvm.service executará de novo:"
+echo "  $CURRENT_LINK/start.sh"

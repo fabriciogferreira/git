@@ -2,18 +2,15 @@
 *
 
 # Não ignora estas pastas/arquivos
-!configs/
 !.gitignore
-!apply.sh
-!config.json
 !README.md
 !tasks.md
 !project-setup.sh
 !vm-setup.sh
-!vm/
-!vm/**
+!workvm/
+!workvm/**
 # Local compose secrets / machine-specific overrides
-vm/projects/**/.env
+workvm/projects/**/.env
 
 # Reativa pastas pais (com * no topo o Git não desce em dirs ignorados)
 !olie/
@@ -21,6 +18,3 @@ vm/projects/**/.env
 !olie/olie-e2e/**
 !.cursor/
 !.cursor/**
-
-# Mas como ignoramos tudo acima, precisamos reativar o conteúdo dentro de configs
-!configs/**

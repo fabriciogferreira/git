@@ -7,6 +7,6 @@
 - [x] Ao iniciar a vm de trabalho, ela já deve abrir os repositórios que foi configurado no cursor e deve abrir o Chromium, via project-setup.sh + workvm.service
 
 ## Setup project
-- [x] Olie (vm/projects/olie)
-- [x] Televisão (vm/projects/televisao)
-- [x] Opbed (vm/projects/opbed)
+- [x] Olie (workvm/projects/olie)
+- [x] Televisão (workvm/projects/televisao)
+- [x] Opbed (workvm/projects/opbed)
