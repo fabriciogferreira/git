@@ -66,9 +66,10 @@ setup_clipboard() {
 setup_passwordless() {
     step "Usuário e sudo sem senha"
 
-    sudo passwd -d "$USER_NAME" >/dev/null
+    # NOPASSWD first so the remaining setup (and passwd -d) do not re-prompt.
     echo "${USER_NAME} ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/"$USER_NAME" >/dev/null
     sudo chmod 440 /etc/sudoers.d/"$USER_NAME"
+    sudo passwd -d "$USER_NAME" >/dev/null
     ok "passwd vazio + sudo NOPASSWD"
 }
 
@@ -155,8 +156,8 @@ clone_all_repos() {
 
 main() {
     log "setup-vm.sh — VM base Omarchy"
-    setup_clipboard
     setup_passwordless
+    setup_clipboard
     setup_luks_autologin
     clone_all_repos
     log ""
