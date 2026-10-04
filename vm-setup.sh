@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Prepare an Omarchy/Arch development VM base:
-# clipboard Host↔VM, passwordless user/sudo, LUKS auto-unlock, SDDM autologin.
+# clipboard Host↔VM, passwordless user/sudo, LUKS auto-unlock, SDDM autologin,
+# Hyprland scrolling layout.
 set -euo pipefail
 
 USER_NAME="${USER_NAME:-fabricio}"
@@ -60,6 +61,42 @@ setup_passwordless() {
     ok "passwd vazio + sudo NOPASSWD"
 }
 
+setup_hypr_scrolling() {
+    step "Hyprland layout: scrolling"
+
+    local looknfeel="$HOME/.config/hypr/looknfeel.lua"
+    mkdir -p "$HOME/.config/hypr"
+
+    if [ -f "$looknfeel" ] && grep -qE '^[[:space:]]*layout[[:space:]]*=[[:space:]]*"scrolling"' "$looknfeel"; then
+        ok "layout scrolling já configurado"
+        return 0
+    fi
+
+    if [ ! -f "$looknfeel" ]; then
+        cat >"$looknfeel" <<'EOF'
+-- Change the default Omarchy look'n'feel.
+
+hl.config({
+  general = {
+    layout = "scrolling",
+  },
+})
+EOF
+    else
+        cat >>"$looknfeel" <<'EOF'
+
+-- Set by vm-setup.sh: default workspace layout
+hl.config({
+  general = {
+    layout = "scrolling",
+  },
+})
+EOF
+    fi
+
+    ok "layout scrolling em $looknfeel"
+}
+
 setup_luks_autologin() {
     step "LUKS auto-unlock + SDDM autologin"
 
@@ -104,6 +141,7 @@ main() {
     log "vm-setup.sh — VM base Omarchy"
     setup_passwordless
     setup_clipboard
+    setup_hypr_scrolling
     setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
