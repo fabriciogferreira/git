@@ -1,8 +1,10 @@
 [Unit]
 Description=WorkVM project startup
 Documentation=file://%h/git/vm/projects
-After=graphical-session.target
+After=graphical-session.target workvm-git-pull.service
+Wants=workvm-git-pull.service
 PartOf=graphical-session.target
+
 
 [Service]
 Type=oneshot

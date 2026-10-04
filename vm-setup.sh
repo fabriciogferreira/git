@@ -298,6 +298,31 @@ setup_appearance() {
     fi
 }
 
+setup_meta_repo_pull() {
+    step "Auto git pull do meta-repo (~/git) no login gráfico"
+
+    local unit_src="$GIT_ROOT/vm/systemd/workvm-git-pull.service"
+    local unit_dst="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/workvm-git-pull.service"
+    local pull_script="$GIT_ROOT/vm/bin/pull-meta.sh"
+
+    if [ ! -f "$unit_src" ]; then
+        log "error: unit ausente: $unit_src" >&2
+        exit 1
+    fi
+    if [ ! -f "$pull_script" ]; then
+        log "error: script ausente: $pull_script" >&2
+        exit 1
+    fi
+
+    chmod +x "$pull_script"
+    mkdir -p "$(dirname "$unit_dst")"
+    ln -sfn "$unit_src" "$unit_dst"
+
+    systemctl --user daemon-reload
+    systemctl --user enable workvm-git-pull.service
+    ok "workvm-git-pull.service habilitado (ff-only origin/main em $GIT_ROOT)"
+}
+
 setup_luks_autologin() {
     step "LUKS auto-unlock + SDDM autologin"
 
@@ -351,11 +376,13 @@ main() {
     setup_clipboard
     setup_hypr_scrolling
     setup_appearance
+    setup_meta_repo_pull
     setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
+    log "Nos próximos logins: workvm-git-pull.service faz git pull --ff-only origin/main em $GIT_ROOT"
 }
 
 main "$@"
