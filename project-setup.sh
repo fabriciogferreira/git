@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bind this VM to a workvm project and enable startup on graphical login.
+# Bind this machine to a workvm project and enable startup on graphical login.
 # Also applies versioned configs (configs/ + config.json) listed in project.conf.
 # Usage: ./project-setup.sh <project>
 set -euo pipefail
