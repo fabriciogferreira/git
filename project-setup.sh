@@ -97,11 +97,14 @@ else
     echo "==> Nenhum CLONE_REPOS definido em project.conf"
 fi
 
-if [ "${#POST_CLONE[@]}" -gt 0 ]; then
+if [ -f "$PROJECT_SRC/post-clone.sh" ]; then
+    echo "==> Pós-clone do projeto ($PROJECT)"
+    bash "$PROJECT_SRC/post-clone.sh"
+elif [ "${#POST_CLONE[@]}" -gt 0 ]; then
     echo "==> Pós-clone do projeto ($PROJECT)"
     workvm_run_post_clone "${POST_CLONE[@]}"
 else
-    echo "==> Nenhum POST_CLONE definido em project.conf"
+    echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
 fi
 
 if [ "${#APPLY_CONFIGS[@]}" -gt 0 ]; then
