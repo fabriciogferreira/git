@@ -15,7 +15,10 @@ log() { printf '%s %s\n' "$LOG_TAG" "$*"; }
 
 main() {
     log "waiting for Wayland/Hyprland"
-    workvm_wait_for_wayland 90
+    if ! workvm_wait_for_wayland 90; then
+        log "Wayland indisponível; tentando abrir apps mesmo assim"
+        workvm_ensure_session_env
+    fi
 
     log "docker compose up -d ($COMPOSE_DIR)"
     if ! workvm_docker_compose_up "$COMPOSE_DIR"; then
@@ -26,11 +29,13 @@ main() {
     fi
 
     log "opening Cursor workspace"
-    workvm_open_cursor "${WORKSPACE_FILE:-$REAL_PROJECT_DIR/workspace.code-workspace}"
+    workvm_open_cursor "${WORKSPACE_FILE:-$REAL_PROJECT_DIR/workspace.code-workspace}" \
+        || log "falha ao abrir Cursor; continuando"
 
     if [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
         log "opening Chromium (${#CHROMIUM_URLS[@]} urls)"
-        workvm_open_chromium "${CHROMIUM_URLS[@]}"
+        workvm_open_chromium "${CHROMIUM_URLS[@]}" \
+            || log "falha ao abrir Chromium; continuando"
     fi
 
     log "done"

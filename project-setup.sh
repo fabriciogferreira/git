@@ -106,14 +106,16 @@ fi
 systemctl --user daemon-reload
 systemctl --user enable workvm.service
 
+# Run in this session (inherits Wayland/DISPLAY/PATH). systemd alone often
+# lacks compositor env and would fail or hang on workvm_wait_for_wayland.
 echo "==> Iniciando projeto ($PROJECT)"
-systemctl --user restart workvm.service
+"$PROJECT_SRC/start.sh"
 
 echo
 echo "✓ Projeto selecionado: $PROJECT"
 echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
 echo "  unit    -> $UNIT_DST"
-echo "  start   -> workvm.service (Cursor + Chromium)"
+echo "  start   -> Cursor + Chromium (agora) e workvm.service nos próximos logins"
 echo
 echo "Nos próximos logins gráficos, workvm.service executará de novo:"
 echo "  $CURRENT_LINK/start.sh"

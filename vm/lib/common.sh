@@ -56,7 +56,8 @@ workvm_ensure_session_env() {
     fi
 }
 
-# Wait until Wayland/Hyprland is usable. Timeout in seconds (default 90).
+# Wait until a Wayland socket is available. Timeout in seconds (default 90).
+# hyprctl is optional confirmation — socket presence is enough to proceed.
 workvm_wait_for_wayland() {
     local timeout="${1:-90}"
     local elapsed=0
@@ -68,19 +69,16 @@ workvm_wait_for_wayland() {
 
         if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
             if command -v hyprctl >/dev/null 2>&1; then
-                if hyprctl monitors -j >/dev/null 2>&1; then
-                    return 0
-                fi
-            else
-                return 0
+                hyprctl monitors -j >/dev/null 2>&1 || true
             fi
+            return 0
         fi
 
         sleep 1
         elapsed=$((elapsed + 1))
     done
 
-    echo "workvm: timed out waiting for Wayland/Hyprland (${timeout}s)" >&2
+    echo "workvm: timed out waiting for Wayland (${timeout}s)" >&2
     return 1
 }
 
