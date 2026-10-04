@@ -76,6 +76,7 @@ fi
 
 APPLY_CONFIGS=()
 CLONE_REPOS=()
+POST_CLONE=()
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
 
@@ -94,6 +95,13 @@ if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
     workvm_clone_project_repos "${CLONE_REPOS[@]}"
 else
     echo "==> Nenhum CLONE_REPOS definido em project.conf"
+fi
+
+if [ "${#POST_CLONE[@]}" -gt 0 ]; then
+    echo "==> Pós-clone do projeto ($PROJECT)"
+    workvm_run_post_clone "${POST_CLONE[@]}"
+else
+    echo "==> Nenhum POST_CLONE definido em project.conf"
 fi
 
 if [ "${#APPLY_CONFIGS[@]}" -gt 0 ]; then

@@ -4,37 +4,84 @@
 workvm_clone_repo() {
     local repo="$1"
     local destination="$2"
+    local branch="${3:-}"
 
     mkdir -p "$(dirname "$destination")"
 
     if [ -d "$destination/.git" ]; then
         echo "✓ Já existe: $destination"
+        if [ -n "$branch" ]; then
+            local current
+            current="$(git -C "$destination" branch --show-current 2>/dev/null || true)"
+            if [ "$current" != "$branch" ]; then
+                echo "→ Checkout: $destination → $branch"
+                git -C "$destination" fetch --prune origin "$branch"
+                git -C "$destination" checkout "$branch"
+            fi
+        fi
         return 0
     fi
 
-    echo "→ Clonando: $repo → $destination"
-    git clone "$repo" "$destination"
+    if [ -n "$branch" ]; then
+        echo "→ Clonando: $repo ($branch) → $destination"
+        git clone --branch "$branch" --single-branch "$repo" "$destination"
+    else
+        echo "→ Clonando: $repo → $destination"
+        git clone "$repo" "$destination"
+    fi
 }
 
-# Entries: "<git-url> <path>". Relative paths are under GIT_ROOT (default $HOME/git).
+# Entries: "<git-url> <path> [branch]". Relative paths are under GIT_ROOT (default $HOME/git).
 workvm_clone_project_repos() {
     local git_root="${GIT_ROOT:-$HOME/git}"
-    local entry repo dest
+    local entry repo dest branch rest
 
     mkdir -p "$git_root"
 
     for entry in "$@"; do
         repo="${entry%% *}"
-        dest="${entry#* }"
-        if [ -z "$dest" ] || [ "$repo" = "$dest" ]; then
+        rest="${entry#* }"
+        if [ -z "$rest" ] || [ "$repo" = "$rest" ]; then
             echo "error: CLONE_REPOS entry inválida: $entry" >&2
+            return 1
+        fi
+        dest="${rest%% *}"
+        if [ "$dest" = "$rest" ]; then
+            branch=""
+        else
+            branch="${rest#* }"
+            branch="${branch%% *}"
+        fi
+        case "$dest" in
+            /*) ;;
+            *) dest="${git_root}/${dest}" ;;
+        esac
+        workvm_clone_repo "$repo" "$dest" "$branch"
+    done
+}
+
+# Entries: "<path> <command...>". Relative paths are under GIT_ROOT (default $HOME/git).
+workvm_run_post_clone() {
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local entry dest cmd
+
+    for entry in "$@"; do
+        dest="${entry%% *}"
+        cmd="${entry#* }"
+        if [ -z "$dest" ] || [ -z "$cmd" ] || [ "$dest" = "$cmd" ]; then
+            echo "error: POST_CLONE entry inválida: $entry" >&2
             return 1
         fi
         case "$dest" in
             /*) ;;
             *) dest="${git_root}/${dest}" ;;
         esac
-        workvm_clone_repo "$repo" "$dest"
+        if [ ! -d "$dest" ]; then
+            echo "aviso: POST_CLONE pulado (dir ausente): $dest" >&2
+            continue
+        fi
+        echo "→ Pós-clone ($dest): $cmd"
+        (cd "$dest" && eval "$cmd")
     done
 }
 
