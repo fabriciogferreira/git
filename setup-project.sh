@@ -11,6 +11,8 @@ CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 # shellcheck source=/dev/null
+source "$REPO_ROOT/vm/lib/common.sh"
+# shellcheck source=/dev/null
 source "$REPO_ROOT/vm/lib/apply-configs.sh"
 
 usage() {
@@ -51,6 +53,7 @@ if [ ! -f "$PROJECT_SRC/project.conf" ]; then
 fi
 
 APPLY_CONFIGS=()
+CLONE_REPOS=()
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
 
@@ -63,6 +66,13 @@ UNIT_DST="$SYSTEMD_USER_DIR/workvm.service"
 ln -sfn "$PROJECT_SRC" "$PROJECT_LINK"
 ln -sfn "$PROJECT_LINK" "$CURRENT_LINK"
 ln -sfn "$UNIT_SRC" "$UNIT_DST"
+
+if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
+    echo "==> Clonando repositórios do projeto ($PROJECT)"
+    workvm_clone_project_repos "${CLONE_REPOS[@]}"
+else
+    echo "==> Nenhum CLONE_REPOS definido em project.conf"
+fi
 
 if [ "${#APPLY_CONFIGS[@]}" -gt 0 ]; then
     echo "==> Aplicando configs do projeto ($PROJECT)"

@@ -1,6 +1,43 @@
 #!/usr/bin/env bash
 # Shared helpers for workvm project startups.
 
+workvm_clone_repo() {
+    local repo="$1"
+    local destination="$2"
+
+    mkdir -p "$(dirname "$destination")"
+
+    if [ -d "$destination/.git" ]; then
+        echo "✓ Já existe: $destination"
+        return 0
+    fi
+
+    echo "→ Clonando: $repo → $destination"
+    git clone "$repo" "$destination"
+}
+
+# Entries: "<git-url> <path>". Relative paths are under GIT_ROOT (default $HOME/git).
+workvm_clone_project_repos() {
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local entry repo dest
+
+    mkdir -p "$git_root"
+
+    for entry in "$@"; do
+        repo="${entry%% *}"
+        dest="${entry#* }"
+        if [ -z "$dest" ] || [ "$repo" = "$dest" ]; then
+            echo "error: CLONE_REPOS entry inválida: $entry" >&2
+            return 1
+        fi
+        case "$dest" in
+            /*) ;;
+            *) dest="${git_root}/${dest}" ;;
+        esac
+        workvm_clone_repo "$repo" "$dest"
+    done
+}
+
 workvm_ensure_session_env() {
     if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
         export XDG_RUNTIME_DIR="/run/user/$(id -u)"
