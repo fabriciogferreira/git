@@ -1,23 +1,5 @@
 {
-  "4spaces": [
-    "olie/olie-fronts",
-    "olie/api-main",
-    "olie/docker-workspace",
-    "olie/websocket"
-  ],
-  "locav-backend": [
-    "locav/locav-api"
-  ],
-	"locav-front": [
-    "locav/locav-front"
-  ],
   "olie-api-main": [
     "olie/api-main"
-  ],
-  "thermas-backend": [
-    "thermas/thermas-api"
-  ],
-  "igoob-api": [
-    "igoob/igoob-api"
   ]
 }
