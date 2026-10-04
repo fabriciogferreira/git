@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "televisao-api",
+      "path": "/home/fabricio/git/televisao/televisao-api"
+    },
+    {
+      "name": "televisao-front",
+      "path": "/home/fabricio/git/televisao/televisao-front"
+    },
+    {
+      "name": "televisao-meet-front",
+      "path": "/home/fabricio/git/televisao/televisao-meet-front"
+    },
+    {
+      "name": "televisao-meet-core",
+      "path": "/home/fabricio/git/televisao/televisao-meet-core"
+    }
+  ],
+  "settings": {}
+}

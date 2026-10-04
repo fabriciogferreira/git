@@ -206,7 +206,10 @@ workvm_docker_compose_up() {
         return 1
     fi
 
-    if [ ! -f "$compose_dir/docker-compose.yml" ] && [ ! -f "$compose_dir/compose.yml" ]; then
+    if [ ! -f "$compose_dir/docker-compose.yml" ] \
+        && [ ! -f "$compose_dir/docker-compose.yaml" ] \
+        && [ ! -f "$compose_dir/compose.yml" ] \
+        && [ ! -f "$compose_dir/compose.yaml" ]; then
         echo "workvm: no compose file in $compose_dir" >&2
         return 1
     fi

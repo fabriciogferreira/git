@@ -61,19 +61,45 @@ cp -n "$OLIE/backoffice/.env.example" "$OLIE/backoffice/.env"
 echo "→ landing: .env"
 cp -n "$OLIE/landing/.env.example" "$OLIE/landing/.env"
 
+wait_for() {
+    local label="$1"
+    local attempts="$2"
+    shift 2
+    echo "  waiting for ${label}..."
+    local i
+    for i in $(seq 1 "$attempts"); do
+        if "$@"; then
+            return 0
+        fi
+        sleep 2
+    done
+    echo "error: ${label} não ficou pronto" >&2
+    return 1
+}
+
+api_php_ready() {
+    docker container inspect olie-api-main --format '{{.State.Status}}' 2>/dev/null | grep -qx running \
+        && docker container exec olie-api-main php -r 'echo "ok";' >/dev/null 2>&1
+}
+
+mysql_ready() {
+    local user password
+    user="$(grep -E '^DB_USERNAME=' "$COMPOSE_DIR/.env" | cut -d= -f2-)"
+    password="$(grep -E '^DB_PASSWORD=' "$COMPOSE_DIR/.env" | cut -d= -f2-)"
+    docker container exec olie-mysql mysqladmin ping -h 127.0.0.1 -u"$user" "-p${password}" --silent >/dev/null 2>&1 \
+        && docker container exec \
+            -e DB_USERNAME="$user" \
+            -e DB_PASSWORD="$password" \
+            olie-api-main php -r 'new PDO("mysql:host=mysql;port=3306", getenv("DB_USERNAME"), getenv("DB_PASSWORD"));' >/dev/null 2>&1
+}
+
 echo "→ workvm stack: compose up, key, migrate --seed, restart"
 (
     cd "$COMPOSE_DIR"
     docker compose up -d
 
-    echo "  waiting for olie-api-main..."
-    for i in $(seq 1 60); do
-        if docker container inspect olie-api-main --format '{{.State.Status}}' 2>/dev/null | grep -qx running \
-            && docker container exec olie-api-main php -r 'echo "ok";' >/dev/null 2>&1; then
-            break
-        fi
-        sleep 2
-    done
+    wait_for "olie-api-main" 90 api_php_ready
+    wait_for "olie-mysql" 90 mysql_ready
 
     # key:generate first (login fails hard with empty APP_KEY). Then migrate/seed.
     docker container exec olie-api-main php artisan key:generate --force
