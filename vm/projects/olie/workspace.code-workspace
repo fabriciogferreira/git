@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "api-main",
+      "path": "/home/fabricio/git/olie/api-main"
+    },
+    {
+      "name": "olie-fronts",
+      "path": "/home/fabricio/git/olie/olie-fronts"
+    },
+    {
+      "name": "backoffice",
+      "path": "/home/fabricio/git/olie/backoffice"
+    }
+  ],
+  "settings": {}
+}

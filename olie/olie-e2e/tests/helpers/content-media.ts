@@ -1,4 +1,5 @@
 import { type Page, expect } from '@playwright/test'
+import { resolvePageOrigin } from './navigation'
 
 export type ContentFilter = 'default' | 'content' | 'logs'
 
@@ -28,7 +29,7 @@ export async function setContentFilter(page: Page, filter: ContentFilter) {
 }
 
 async function openWithFeed(page: Page, path: string, feedSelector: string) {
-    await page.goto(path)
+    await page.goto(`${resolvePageOrigin(page)}${path}`)
     const feed = page.locator(feedSelector)
     try {
         await expect(feed).toBeVisible({ timeout: 35_000 })

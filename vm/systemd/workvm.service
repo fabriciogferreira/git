@@ -1,0 +1,16 @@
+[Unit]
+Description=WorkVM project startup
+Documentation=file://%h/git/vm/projects
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+KillMode=process
+ExecStart=%h/.config/workvm/current/start.sh
+# Session env is also repaired inside start.sh / common.sh
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+
+[Install]
+WantedBy=graphical-session.target

@@ -15,6 +15,13 @@ docker compose exec e2e npx playwright test --project=chromium
 ./run.sh tests/auth.smoke.spec.ts
 ```
 
+Auth coverage in `tests/auth.smoke.spec.ts`:
+
+- Management login success toast, empty-field validation, invalid credentials toast,
+  create-account / forgot-password links, and logout back to `/auth`
+- Landing get-started invalid login toast, register validation, successful signup →
+  confirm-email, and duplicate-email API feedback
+
 Dockerfile for the workspace build lives at `../docker-workspace/e2e/Dockerfile`
 (keep in sync with this repo’s `Dockerfile`). Service definition:
 `../docker-workspace/docker-compose.yml` (+ mirror `../docker-workspace/e2e/docker-compose.yml`).

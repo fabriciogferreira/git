@@ -135,6 +135,47 @@ async function waitForVerificationLink(
 }
 
 /**
+ * Landing login sits behind `throttle:login` (8/min per IP) and the suite provisions many isolated
+ * users, so wait out a 429 (`wait_seconds`) instead of failing the spec. Bounded so a saturated
+ * bucket still surfaces as a failure rather than hanging.
+ */
+async function landingLoginWithRetry(
+    request: APIRequestContext,
+    email: string,
+    password: string,
+    maxAttempts = 6
+): Promise<string> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const login = await landingApi(request, '/api/landing-page/login', {
+            method: 'POST',
+            body: {
+                username: email,
+                password,
+                token: E2E_RECAPTCHA_TOKEN,
+            },
+        })
+
+        const token = login.json?.token as string | undefined
+        if (login.status === 200 && token) {
+            return token
+        }
+
+        if (login.status === 429 && attempt < maxAttempts) {
+            const wait = Number(login.json?.wait_seconds ?? 20)
+            const seconds = Number.isFinite(wait) && wait > 0 ? Math.min(60, wait) : 20
+            await new Promise(r => setTimeout(r, seconds * 1000))
+            continue
+        }
+
+        throw new Error(
+            `landing login failed (status=${login.status}): ${login.text.slice(0, 300)}`
+        )
+    }
+
+    throw new Error('landing login failed: exhausted retries')
+}
+
+/**
  * Register a fresh user, verify email via MailHog, create a work frame, and
  * return credentials + subdomain. Isolated per worker — safe for parallel E2E.
  */
@@ -183,19 +224,9 @@ export async function provisionIsolatedE2EUser(
         )
     }
 
-    const login = await landingApi(request, '/api/landing-page/login', {
-        method: 'POST',
-        body: {
-            username: email,
-            password,
-            token: E2E_RECAPTCHA_TOKEN,
-        },
-    })
-    const landingToken = login.json?.token as string | undefined
-    if (login.status !== 200 || !landingToken) {
-        throw new Error(
-            `landing login failed (status=${login.status}): ${login.text.slice(0, 300)}`
-        )
+    const landingToken = await landingLoginWithRetry(request, email, password)
+    if (!landingToken) {
+        throw new Error('landing login failed: exhausted retries')
     }
 
     const frame = await landingApi(request, '/api/landing-page/frames', {

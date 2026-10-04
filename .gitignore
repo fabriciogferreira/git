@@ -7,6 +7,12 @@
 !apply.sh
 !config.json
 !README.md
+!tasks.md
+!setup-project.sh
+!setup-vm.sh
+!vm/
+!vm/**
+
 # Reativa pastas pais (com * no topo o Git não desce em dirs ignorados)
 !olie/
 !olie/olie-e2e/
