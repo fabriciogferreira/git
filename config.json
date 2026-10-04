@@ -14,12 +14,6 @@
   "olie-api-main": [
     "olie/api-main"
   ],
-  "opbed-backend": [
-    "opbed/opbed-backend"
-  ],
-  "opbed-frontend": [
-    "opbed/opbed-frontend"
-  ],
   "thermas-backend": [
     "thermas/thermas-api"
   ],
