@@ -9,4 +9,4 @@
 ## Setup project
 - [x] Olie (vm/projects/olie)
 - [x] Televisão (vm/projects/televisao)
-- [ ] Opbed
+- [x] Opbed (vm/projects/opbed)
