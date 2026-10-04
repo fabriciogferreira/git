@@ -61,6 +61,28 @@ setup_passwordless() {
     ok "passwd vazio + sudo NOPASSWD"
 }
 
+setup_docker() {
+    step "Docker sem sudo (grupo docker)"
+
+    sudo pacman -S --needed --noconfirm docker docker-compose
+
+    if ! getent group docker >/dev/null; then
+        sudo groupadd --system docker
+    fi
+
+    sudo usermod -aG docker "$USER_NAME"
+    sudo systemctl enable --now docker.service
+
+    # Socket must be group-writable by docker.
+    if [ -S /var/run/docker.sock ]; then
+        sudo chgrp docker /var/run/docker.sock
+        sudo chmod 660 /var/run/docker.sock
+    fi
+
+    ok "$USER_NAME ∈ grupo docker; docker.service ativo"
+    log "  (nova sessão necessária para o grupo valer: logout/login ou: newgrp docker)"
+}
+
 setup_hypr_scrolling() {
     step "Hyprland layout: scrolling"
 
@@ -140,12 +162,14 @@ setup_luks_autologin() {
 main() {
     log "vm-setup.sh — VM base Omarchy"
     setup_passwordless
+    setup_docker
     setup_clipboard
     setup_hypr_scrolling
     setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/project-setup.sh <projeto>"
+    log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
 }
 
 main "$@"

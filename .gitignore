@@ -12,6 +12,8 @@
 !vm-setup.sh
 !vm/
 !vm/**
+# Local compose secrets / machine-specific overrides
+vm/projects/**/.env
 
 # Reativa pastas pais (com * no topo o Git não desce em dirs ignorados)
 !olie/

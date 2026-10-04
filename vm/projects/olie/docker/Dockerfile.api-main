@@ -1,0 +1,40 @@
+# Workvm build of api-main (meta `git` repo). Same as olie Dockerfile, but
+# composer --no-plugins so CaptainHook does not fail without .git in the
+# build context (.dockerignore excludes .git).
+FROM serversideup/php:8.5-fpm-nginx
+
+USER root
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN docker-php-serversideup-set-id www-data $USER_ID:$GROUP_ID && \
+    docker-php-serversideup-set-file-permissions --owner $USER_ID:$GROUP_ID
+
+RUN install-php-extensions intl bcmath mongodb gd imagick sockets && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends default-mysql-client ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /etc/mysql/conf.d && printf "[client]\nssl=0\n" > /etc/mysql/conf.d/00-disable-ssl.cnf
+
+COPY docker/nginx/conf.d/00-olie-logformat.conf /etc/nginx/conf.d/00-olie-logformat.conf
+COPY docker/nginx/server-opts.d/10-olie-access-log.conf /etc/nginx/server-opts.d/10-olie-access-log.conf
+
+USER www-data
+
+WORKDIR /var/www/html
+
+COPY --chown=www-data:www-data composer.json composer.lock ./
+
+# --no-plugins: skip captainhook/hook-installer (needs .git, excluded by dockerignore)
+RUN composer install --prefer-dist --no-interaction --no-scripts --no-plugins
+
+COPY --chown=www-data:www-data . /var/www/html
+
+RUN composer dump-autoload --optimize --no-plugins \
+    && mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+EXPOSE 8080

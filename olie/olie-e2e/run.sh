@@ -15,13 +15,14 @@ fi
 mkdir -p test-results playwright-report
 chmod -R a+rwX test-results playwright-report 2>/dev/null || true
 
-WORKSPACE_DIR="${OLIE_WORKSPACE_DIR:-$(cd ../docker-workspace && pwd)}"
+# Workvm compose lives in the meta `git` repo (not olie-ai/docker-workspace).
+WORKSPACE_DIR="${OLIE_WORKSPACE_DIR:-$(cd ../../vm/projects/olie && pwd)}"
 WORKSPACE_COMPOSE="$WORKSPACE_DIR/docker-compose.yml"
 NETWORK="${OLIE_DOCKER_NETWORK:-docker-workspace_olie-network}"
 
 if [[ -f "$WORKSPACE_COMPOSE" ]]; then
     if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
-        echo "Starting docker-workspace stack (includes olie-e2e)..."
+        echo "Starting workvm Olie stack (includes olie-e2e)..."
         docker compose -f "$WORKSPACE_COMPOSE" up -d
     else
         docker compose -f "$WORKSPACE_COMPOSE" up -d e2e --build
@@ -33,7 +34,7 @@ fi
 # Fallback: standalone compose in this repo (network must already exist).
 if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
     echo "Docker network not found. Start the stack first:"
-    echo "  cd ../docker-workspace && docker compose up -d"
+    echo "  cd ../../vm/projects/olie && docker compose up -d"
     echo "If your network name differs: OLIE_DOCKER_NETWORK=<name> $0"
     exit 1
 fi

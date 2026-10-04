@@ -1,0 +1,392 @@
+# Workvm Olie stack — owned by the meta `git` repo (not olie-ai/*).
+# Bind-mounts / build contexts point at clones under ${GIT_ROOT}/olie/*.
+name: docker-workspace
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: olie-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
+    ports:
+      - "${APP_PORT:-80}:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - olie-network
+
+  web:
+    build:
+      context: ${GIT_ROOT}/olie/api-main
+      # Meta-repo Dockerfile: avoids CaptainHook failing without .git in context
+      dockerfile: ${GIT_ROOT}/vm/projects/olie/docker/Dockerfile.api-main
+      args:
+        USER_ID: "1000"
+        GROUP_ID: "1000"
+    image: olie/api-main
+    container_name: olie-api-main
+    volumes:
+      - ${GIT_ROOT}/olie/api-main:/var/www/html
+    networks:
+      - olie-network
+    environment:
+      - AUTORUN_DEBUG=true
+      - PHP_OPCACHE_ENABLE=1
+      - HEALTHCHECK_PATH=/health
+      - AUTORUN_ENABLED=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-main.rule=Host(`api.olie.localhost`)"
+      - "traefik.http.routers.api-main.entrypoints=web"
+      - "traefik.http.routers.api-main.service=api-main"
+      - "traefik.http.services.api-main.loadbalancer.server.port=8080"
+      - "traefik.http.routers.api-main-default.rule=Host(`localhost`)"
+      - "traefik.http.routers.api-main-default.entrypoints=web"
+      - "traefik.http.routers.api-main-default.service=api-main"
+      - "traefik.http.routers.api-main-default.priority=1"
+
+  scheduler:
+    image: olie/api-main
+    container_name: olie-scheduler
+    volumes:
+      - ${GIT_ROOT}/olie/api-main:/var/www/html
+    networks:
+      - olie-network
+    cpu_count: 256
+    mem_limit: 256m
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
+    environment:
+      - AUTORUN_DEBUG=true
+      - PHP_OPCACHE_ENABLE=1
+      - AUTORUN_ENABLED=false
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+      - traefik
+    labels:
+      - "traefik.enable=false"
+
+  horizon:
+    image: olie/api-main
+    container_name: olie-horizon
+    volumes:
+      - ${GIT_ROOT}/olie/api-main:/var/www/html
+    networks:
+      - olie-network
+    cpu_count: 256
+    mem_limit: 256m
+    command: ["php", "/var/www/html/artisan", "horizon"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-horizon"]
+      start_period: 10s
+    environment:
+      - AUTORUN_DEBUG=true
+      - PHP_OPCACHE_ENABLE=1
+      - AUTORUN_ENABLED=false
+    depends_on:
+      - mysql
+      - redis
+    labels:
+      - "traefik.enable=false"
+
+  reverb:
+    image: olie/api-main
+    container_name: olie-reverb
+    command: ["php", "/var/www/html/artisan", "reverb:start", "--debug", "--port=8000"]
+    stop_signal: SIGTERM
+    volumes:
+      - ${GIT_ROOT}/olie/api-main:/var/www/html
+    networks:
+      - olie-network
+    environment:
+      - AUTORUN_DEBUG=true
+      - PHP_OPCACHE_ENABLE=1
+      - AUTORUN_ENABLED=false
+    healthcheck:
+      test: ["CMD", "healthcheck-reverb"]
+      start_period: 10s
+    depends_on:
+      - mysql
+      - redis
+      - web
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reverb.rule=Host(`reverb.olie.localhost`)"
+      - "traefik.http.routers.reverb.entrypoints=web"
+      - "traefik.http.routers.reverb.service=reverb"
+      - "traefik.http.services.reverb.loadbalancer.server.port=8000"
+      - "traefik.http.services.reverb.loadbalancer.server.scheme=http"
+
+  mysql:
+    image: "mysql:8.4"
+    container_name: olie-mysql
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    command: --log_bin_trust_function_creators=1
+    volumes:
+      - "olie-volume-mysql:/var/lib/mysql"
+      - "${GIT_ROOT}/olie/docker-workspace/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh"
+    networks:
+      - olie-network
+    cpu_count: 2
+    mem_limit: 2g
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - "-p${DB_PASSWORD}"
+      retries: 3
+      timeout: 5s
+
+  mongo:
+    image: mongo:5
+    restart: unless-stopped
+    container_name: olie-mongodb
+    ports:
+      - "27017:${MONGODB_PORT:-27017}"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MONGODB_USERNAME}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGODB_PASSWORD}"
+      MONGO_INITDB_DATABASE: "${MONGODB_DATABASE}"
+    volumes:
+      - olie-volume-mongodb:/data/db
+    networks:
+      - olie-network
+
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: olie-redis
+    command: redis-server --protected-mode no
+    volumes:
+      - ${GIT_ROOT}/olie/docker-workspace/redis/redis-stack.conf:/etc/redis-stack.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - olie-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: olie-rabbitmq
+    hostname: rabbitmq
+    networks:
+      - olie-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.olie.localhost`)"
+      - "traefik.http.routers.rabbitmq.entrypoints=web"
+      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: olie-mailhog
+    cpu_count: 256
+    mem_limit: 256m
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - olie-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailhog.rule=Host(`mail.olie.localhost`)"
+      - "traefik.http.routers.mailhog.entrypoints=web"
+      - "traefik.http.services.mailhog.loadbalancer.server.port=8025"
+
+  websocket:
+    image: node:20
+    container_name: olie-websocket
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    volumes:
+      - ${GIT_ROOT}/olie/websocket:/app
+      - /app/node_modules
+    env_file:
+      - path: ${GIT_ROOT}/olie/websocket/.env
+        required: false
+    environment:
+      - API_MAIN_URL=http://web:8080
+      - WS_REDIS_HOST=redis
+      - AMQP_HOST=rabbitmq
+      - HTTP_PORT=3030
+    networks:
+      - olie-network
+    depends_on:
+      - redis
+      - rabbitmq
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.websocket.rule=Host(`websocket.olie.localhost`)"
+      - "traefik.http.routers.websocket.entrypoints=web"
+      - "traefik.http.routers.websocket.priority=100"
+      - "traefik.http.services.websocket.loadbalancer.server.port=3030"
+
+  # Nuxt landing (replaces olie-fronts/packages/landing)
+  front-landing:
+    image: node:22-alpine
+    container_name: olie-front-landing
+    working_dir: /app
+    command: sh -c "corepack enable && corepack prepare pnpm@10.32.1 --activate && pnpm install && pnpm dev --host 0.0.0.0 --port 3000"
+    volumes:
+      - ${GIT_ROOT}/olie/landing:/app
+      - /app/node_modules
+    env_file:
+      - path: ${GIT_ROOT}/olie/landing/.env
+        required: false
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+      - PORT=3000
+      - NUXT_HOST=0.0.0.0
+      - NUXT_PORT=3000
+    networks:
+      - olie-network
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.landing.rule=Host(`landing-page.olie.localhost`)"
+      - "traefik.http.routers.landing.entrypoints=web"
+      - "traefik.http.routers.landing.priority=100"
+      - "traefik.http.services.landing.loadbalancer.server.port=3000"
+
+  backoffice:
+    image: node:22-alpine
+    container_name: olie-backoffice
+    working_dir: /app
+    command: sh -c "corepack enable && corepack prepare pnpm@10.10.0 --activate && pnpm install && pnpm dev --host 0.0.0.0 --port 3000"
+    volumes:
+      - ${GIT_ROOT}/olie/backoffice:/app
+      - /app/node_modules
+    env_file:
+      - path: ${GIT_ROOT}/olie/backoffice/.env
+        required: false
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+      - PORT=3000
+      - NUXT_HOST=0.0.0.0
+      - NUXT_PORT=3000
+    networks:
+      - olie-network
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backoffice.rule=Host(`backoffice.olie.localhost`)"
+      - "traefik.http.routers.backoffice.entrypoints=web"
+      - "traefik.http.routers.backoffice.priority=100"
+      - "traefik.http.services.backoffice.loadbalancer.server.port=3000"
+
+  front-management:
+    image: node:22
+    container_name: olie-front-management
+    working_dir: /app
+    # Host node_modules from post-clone; install again if missing
+    command: sh -c "yarn install --frozen-lockfile && yarn workspace @olie/management dev"
+    volumes:
+      - ${GIT_ROOT}/olie/olie-fronts:/app
+    environment:
+      - NODE_ENV=development
+    networks:
+      - olie-network
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.management.rule=HostRegexp(`^[a-z0-9-]+\\.olie\\.localhost$$`)"
+      - "traefik.http.routers.management.entrypoints=web"
+      - "traefik.http.routers.management.priority=10"
+      - "traefik.http.services.management.loadbalancer.server.port=5172"
+
+  front-cockpit:
+    image: node:22
+    container_name: olie-front-cockpit
+    working_dir: /app
+    command: sh -c "yarn install --frozen-lockfile && yarn workspace @olie/cockpit dev"
+    volumes:
+      - ${GIT_ROOT}/olie/olie-fronts:/app
+    environment:
+      - NODE_ENV=development
+    networks:
+      - olie-network
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cockpit.rule=Host(`cockpit.olie.localhost`)"
+      - "traefik.http.routers.cockpit.entrypoints=web"
+      - "traefik.http.routers.cockpit.priority=100"
+      - "traefik.http.services.cockpit.loadbalancer.server.port=5171"
+
+  e2e:
+    build:
+      context: ${GIT_ROOT}/olie/olie-e2e
+      dockerfile: Dockerfile
+    image: olie/e2e
+    container_name: olie-e2e
+    ipc: host
+    user: "0:0"
+    restart: unless-stopped
+    env_file:
+      - path: ${GIT_ROOT}/olie/olie-e2e/.env
+        required: false
+    environment:
+      E2E_BASE_URL: ${E2E_BASE_URL:-http://devframe.olie.localhost}
+      E2E_API_URL: ${E2E_API_URL:-http://api.olie.localhost}
+      E2E_USER: ${E2E_USER:-tester@olie.ai}
+      E2E_PASSWORD: ${E2E_PASSWORD:-password}
+    volumes:
+      - ${GIT_ROOT}/olie/olie-e2e/tests:/app/tests
+      - ${GIT_ROOT}/olie/olie-e2e/playwright.config.ts:/app/playwright.config.ts
+      - ${GIT_ROOT}/olie/olie-e2e/test-results:/app/test-results
+      - ${GIT_ROOT}/olie/olie-e2e/playwright-report:/app/playwright-report
+    networks:
+      - olie-network
+    depends_on:
+      - traefik
+      - web
+      - front-management
+
+networks:
+  olie-network:
+    driver: bridge
+
+volumes:
+  olie-volume-mysql:
+    driver: local
+  olie-volume-mongodb:
+    driver: local
