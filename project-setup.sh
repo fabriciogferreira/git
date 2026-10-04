@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bind this VM to a workvm project and enable startup on graphical login.
 # Also applies versioned configs (configs/ + config.json) listed in project.conf.
-# Usage: ./setup-project.sh <project>
+# Usage: ./project-setup.sh <project>
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,41 +15,63 @@ source "$REPO_ROOT/vm/lib/common.sh"
 # shellcheck source=/dev/null
 source "$REPO_ROOT/vm/lib/apply-configs.sh"
 
-usage() {
-    echo "Usage: $0 <project>" >&2
-    echo >&2
-    echo "Available projects:" >&2
+list_projects() {
+    local dir
     for dir in "$PROJECTS_SRC"/*/; do
         [ -d "$dir" ] || continue
-        echo "  $(basename "$dir")" >&2
+        echo "  $(basename "$dir")"
     done
-    exit 1
 }
 
-if [ "${1:-}" = "" ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-    usage
+show_valid_projects() {
+    echo "Projetos válidos:"
+    list_projects
+}
+
+# Returns 0 if $1 is a usable project name.
+project_is_valid() {
+    local name="$1"
+    [ -n "$name" ] || return 1
+    [ -d "$PROJECTS_SRC/$name" ] || return 1
+    [ -f "$PROJECTS_SRC/$name/start.sh" ] || return 1
+    [ -f "$PROJECTS_SRC/$name/project.conf" ] || return 1
+    return 0
+}
+
+resolve_project() {
+    local answer="${1:-}"
+
+    while true; do
+        if project_is_valid "$answer"; then
+            PROJECT="$answer"
+            return 0
+        fi
+
+        if [ -z "$answer" ]; then
+            echo "Informe um projeto." >&2
+        else
+            echo "Projeto inválido: '$answer'" >&2
+        fi
+        show_valid_projects
+        echo
+        printf 'Projeto: '
+        read -r answer || true
+        answer="${answer//[[:space:]]/}"
+    done
+}
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    echo "Usage: $0 [project]"
+    echo
+    show_valid_projects
+    exit 0
 fi
 
-PROJECT="$1"
+resolve_project "${1:-}"
 PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
 
-if [ ! -d "$PROJECT_SRC" ]; then
-    echo "error: unknown project '$PROJECT'" >&2
-    usage
-fi
-
-if [ ! -x "$PROJECT_SRC/start.sh" ] && [ -f "$PROJECT_SRC/start.sh" ]; then
+if [ ! -x "$PROJECT_SRC/start.sh" ]; then
     chmod +x "$PROJECT_SRC/start.sh"
-fi
-
-if [ ! -f "$PROJECT_SRC/start.sh" ]; then
-    echo "error: missing start.sh in $PROJECT_SRC" >&2
-    exit 1
-fi
-
-if [ ! -f "$PROJECT_SRC/project.conf" ]; then
-    echo "error: missing project.conf in $PROJECT_SRC" >&2
-    exit 1
 fi
 
 APPLY_CONFIGS=()
@@ -84,14 +106,14 @@ fi
 systemctl --user daemon-reload
 systemctl --user enable workvm.service
 
+echo "==> Iniciando projeto ($PROJECT)"
+systemctl --user restart workvm.service
+
 echo
 echo "✓ Projeto selecionado: $PROJECT"
 echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
 echo "  unit    -> $UNIT_DST"
+echo "  start   -> workvm.service (Cursor + Chromium)"
 echo
-echo "No próximo login gráfico (ou reboot), workvm.service executará:"
+echo "Nos próximos logins gráficos, workvm.service executará de novo:"
 echo "  $CURRENT_LINK/start.sh"
-echo
-echo "Para testar agora (sessão gráfica já ativa):"
-echo "  systemctl --user start workvm.service"
-echo "  # ou: $CURRENT_LINK/start.sh"

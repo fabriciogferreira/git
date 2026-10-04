@@ -8,8 +8,8 @@
 !config.json
 !README.md
 !tasks.md
-!setup-project.sh
-!setup-vm.sh
+!project-setup.sh
+!vm-setup.sh
 !vm/
 !vm/**
 

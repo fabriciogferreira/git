@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Manual apply of configs/<name>/ into paths from config.json.
-# Prefer setup-project.sh for project VMs (uses APPLY_CONFIGS from project.conf).
+# Prefer project-setup.sh for project VMs (uses APPLY_CONFIGS from project.conf).
 # Usage: ./apply.sh [config-name ...]
 set -euo pipefail
 

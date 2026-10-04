@@ -101,13 +101,13 @@ setup_luks_autologin() {
 }
 
 main() {
-    log "setup-vm.sh — VM base Omarchy"
+    log "vm-setup.sh — VM base Omarchy"
     setup_passwordless
     setup_clipboard
     setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
-    log "  $GIT_ROOT/setup-project.sh <projeto>"
+    log "  $GIT_ROOT/project-setup.sh <projeto>"
 }
 
 main "$@"
