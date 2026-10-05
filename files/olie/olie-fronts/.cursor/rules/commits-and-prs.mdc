@@ -1,0 +1,13 @@
+---
+description: Commit, PR, and AI attribution conventions
+alwaysApply: true
+---
+
+# Commits and PRs
+
+- Messages focus on **why** the change happened; follow recent history style (`git log`)
+- Prefer Conventional Commits if the repo/commitlint requires it (`feat:`, `fix:`, `chore:`, etc.)
+- **Never** add `Co-Authored-By` trailers (Claude, Cursor, Copilot, AI, or variants) in commits or PR descriptions
+- Do not attribute the change to a tool/agent in the title or body
+- Do not commit secrets (`.env`, tokens, credentials)
+- Only create a commit/PR when the user explicitly asks

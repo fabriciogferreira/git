@@ -1,0 +1,33 @@
+---
+description: Patterns and pitfalls for the @olie/ui library
+globs: packages/ui/**
+alwaysApply: false
+---
+
+# @olie/ui
+
+Shared library (Vue 3 JS, Vite 4) consumed by `management` and `cockpit`. Changes here break consumers silently. Details: `packages/ui/CLAUDE.md`.
+
+## Quick architecture
+
+- Plugin `app.use(ui)` auto-registers **all** `.vue` files via `import.meta.glob` — global name = file name
+- Consumers import raw source: `@olie/ui/src/...` (`yarn build` / `dist/` is decorative)
+- Services = functions (not classes); they use `api from '@utils/api'` from the **consumer** (runtime alias)
+- Vuex `system` store and directives (`PermissionDirective`, `CockpitAccessDirective`) do **not** come from the plugin — manual registration in the consumer
+- Helpers depend on `window.store` and `window.axios` set by the consumer
+- `CheckRequestResponse` returns `false` on error — **does not throw**
+
+## Conventions
+
+- SFC Options API + `defineComponent()` (this package; do not mass-migrate to `<script setup>` unless asked)
+- Props via JSDoc; services as exported functions; mutations UPPERCASE; utils PascalCase (`GetTagStyle`)
+- Constants SCREAMING_SNAKE with labels as i18n keys
+- Types in `src/types/*.ts` are IDE/reference only — **not** compiled or type-checked in the build
+
+## Pitfalls
+
+- Renaming `Foo.vue` renames the global component in every app
+- Pin `"@olie/ui": "1.0.0"` in consumers; bump in the same PR
+- Bootstrap 5 is a dep of the lib and the apps — versions must match; CSS is not auto-imported
+- Coordinate `api.call()` signature changes between management and cockpit
+- No exported global SCSS — each app brings its own theme

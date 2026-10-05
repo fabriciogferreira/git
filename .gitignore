@@ -11,6 +11,8 @@
 !workvm/**
 !code-profiles/
 !code-profiles/**
+!files/
+!files/**
 # Local compose secrets / machine-specific overrides
 workvm/projects/**/.env
 

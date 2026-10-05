@@ -19,6 +19,9 @@ main() {
         workvm_fetch_project_repos "${CLONE_REPOS[@]}"
     fi
 
+    log "aplicando files/${PROJECT_NAME}/ nos clones"
+    workvm_apply_files "$REAL_REPO_ROOT/files" "$PROJECT_NAME"
+
     log "waiting for Wayland/Hyprland"
     if ! workvm_wait_for_wayland 90; then
         log "Wayland indisponível; tentando abrir apps mesmo assim"

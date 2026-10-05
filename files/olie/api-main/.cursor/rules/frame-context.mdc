@@ -1,0 +1,14 @@
+---
+description: Enforce frame_id tenant scoping on controllers, policies, services, requests
+globs: app/Http/Controllers/**,app/Policies/**,app/Services/**,app/Http/Requests/**,app/Validators/**
+alwaysApply: false
+---
+
+# Frame scoping
+
+Read `.ai/rules/frame-scoping.md` and activate skill `olie-frame-context` when changing tenant boundaries.
+
+- Query/validate/authorize with `frame_id`
+- Policies: `ensureModelFrameId` → cross-tenant = 404
+- Controllers: `checkFrameId($model)` when fetching manually
+- Outside HTTP: `FrameContext::forceFrameById` / `withFrame`

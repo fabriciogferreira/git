@@ -1,0 +1,52 @@
+---
+description: E2E Playwright (sibling olie-e2e) — when and how to run/create tests
+alwaysApply: true
+---
+
+# E2E tests (olie-e2e)
+
+Management UI regressions that need a real browser belong in the sibling repo
+**`../olie-e2e`** (Playwright), not inside this monorepo. Agents working on
+`@olie/management` (and related UI) **can and should** add or update E2E specs
+there when the change is user-visible.
+
+## Stack
+
+One compose brings API, fronts, and the e2e runner:
+
+```bash
+cd ../docker-workspace && docker compose up -d
+```
+
+`olie-e2e` stays up (`sleep infinity`). Dockerfile mirror:
+`../docker-workspace/e2e/Dockerfile` (sync with `../olie-e2e/Dockerfile`).
+
+## Run tests
+
+```bash
+cd ../docker-workspace
+docker compose exec e2e npx playwright test --project=chromium
+docker compose exec e2e npx playwright test --project=chromium tests/auth.smoke.spec.ts
+
+# or:
+cd ../olie-e2e && ./run.sh
+```
+
+Defaults: `tester@olie.ai` / `password` (api-main seed). Reports land in
+`../olie-e2e/test-results` and `../olie-e2e/playwright-report`.
+
+## Create / update specs
+
+- Put files under `../olie-e2e/tests/` (feature gates: `tests/features/`).
+- Reuse helpers: `tests/helpers/auth.ts`, `project.ts`, `content-media.ts`,
+  `feature.ts` (`requireFeature` / `requireVisible` / `requireLogsFilterHidesMessage`).
+- Prefer new projects via `createE2EProject` over hard-coded IDs.
+- If the UI is missing on the branch under test, **skip** with `requireFeature`
+  instead of failing.
+- Do not commit secrets; optional overrides in `../olie-e2e/.env` (see `.env.example`).
+
+## When to add an E2E
+
+Add or extend a spec when changing user-visible flows in management (auth,
+project details, Content widget / media filters, feature-flagged actions, etc.).
+Unit/component tests stay in this repo; cross-app browser flows go to `olie-e2e`.

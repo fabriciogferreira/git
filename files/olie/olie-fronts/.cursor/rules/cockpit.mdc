@@ -1,0 +1,19 @@
+---
+description: Guidance for @olie/cockpit (no dedicated CLAUDE.md)
+globs: packages/cockpit/**
+alwaysApply: false
+---
+
+# @olie/cockpit
+
+Internal admin panel. Vue 3 + TS, Vite 7. Consumes `@olie/ui` like management. **Still has no `CLAUDE.md`** — treat it as a smaller sibling of `@olie/management`.
+
+## How to work
+
+- Reuse patterns from `packages/management` and `management.mdc` rules when they fit (Composition + `<script setup>`, services, aliases)
+- Shared components/directives/services → `@olie/ui`, do not copy from management
+- Lint: `yarn lint-cockpit` (`vue-tsc` + eslint). The `vue-tsc` binary is hoisted from management — bumps there affect cockpit
+- Dev hostname: `cockpit.olie.localhost` (internal port 5171)
+- `front-cockpit` container may use an anonymous `node_modules` volume in compose → rebuild if deps do not show up
+
+When unsure, mirror the equivalent management file or ask before inventing a cockpit-only pattern.

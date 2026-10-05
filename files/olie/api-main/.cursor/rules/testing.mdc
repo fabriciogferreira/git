@@ -1,0 +1,13 @@
+---
+description: Olie Pest test helpers and Docker test runner
+globs: tests/**
+alwaysApply: false
+---
+
+# Testing
+
+Read `.ai/rules/testing.md`. Prefer Pest. Use `actAsTester` / `actAsApplication` / `actAsAdmin` / `getTestFrame()` (forces FrameContext). Run via:
+
+`docker exec olie-api-main php artisan test --compact --filter=X`
+
+If tests cannot run, stop and report.

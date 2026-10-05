@@ -1,0 +1,38 @@
+---
+description: Patterns and pitfalls for @olie/management
+globs: packages/management/**
+alwaysApply: false
+---
+
+# @olie/management
+
+Vue 3 + TS SPA, Vite 6, PrimeVue, Vuex, TanStack Query. Consumes `@olie/ui`. Details: `packages/management/CLAUDE.md`.
+
+## Quick architecture
+
+- Modules under `src/modules/{module}/` (routes, views, services)
+- Bootstrap: i18n → axios → router → Vuex → PrimeVue → Sentry → Echo → TanStack Query
+- Layout: `meta.layout: 'Internal'|'External'`; auth via `middlewareAuth` + `permission`
+- Two HTTP clients: `utils/api.js` (legacy) vs `services/ApiService.ts` (new) — **do not mix** in the same flow; follow the module
+- Keep aliases in `vite.config.ts` **and** `tsconfig.json` in sync
+
+## New code (required)
+
+- **Only** Composition API + `<script setup>` (+ `lang="ts"` when it fits). Options API forbidden for new code
+- When editing legacy Options: migrate if it fits the PR; new parts already in Composition (`<script>` + `<script setup>` is ok)
+- Store/router/i18n: `useStore` / `useRoute` / `useI18n` — not `map*` / `this.$`
+- Shared API/WS state: **singleton** composable (see `useProjectExecutions.ts`)
+- HTTP read/write: service class + `useQuery`/`useMutation` (do not reinvent `loading` with `ref` + try/finally)
+- Errors: prefer auto-fire (`new XxxService(true)` / `.onAutoErroMessage()`); new keys under `request_errors.*` + `expectedWarning` for warnings
+
+## UI
+
+- Bootstrap **CSS only** (utilities). Bootstrap JS and inline `style` are forbidden
+- Interactive: PrimeVue (`Dialog`, `Dropdown`, `DataTable`…). PT locale in `main.js`
+- Directives `v-permission` / `v-cockpit-access` come from `@olie/ui` and are registered manually in `main.js`
+
+## Pitfalls
+
+- Multi-tenant: subdomain from `hostname`; on `localhost` use `VITE_APP_DEVELOPMENT_SUBDOMAIN`
+- `KeepAlive` exclude includes `ProjectDetails` (clean remount when switching projects)
+- Run `yarn lint-management` (includes `vue-tsc`) before a PR

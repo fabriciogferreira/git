@@ -1,0 +1,36 @@
+---
+description: Olie api-main map — Boost, .ai rules/skills, Docker, frame_id
+alwaysApply: true
+---
+
+# Olie api-main (Cursor)
+
+## Sources of truth
+
+- `AGENTS.md` — Laravel Boost baseline (always follow)
+- `.ai/guidelines/*` — project conventions (composed into AGENTS.md / CLAUDE.md)
+- `.ai/rules/index.md` — **read before planning/editing**; load matching rule files
+- `.ai/skills/*` and `.cursor/skills/*` — activate on-demand for the domain
+- `docs/concepts/*` — RoleType, soft-delete/cascade, feature flags
+
+`CLAUDE.md` is the Claude Code entrypoint; Cursor should prefer `AGENTS.md` + `.ai/`. Where they disagree on **this** codebase, `.ai/` and `CLAUDE.md` project sections win over generic Boost text.
+
+## Runtime
+
+All PHP/Artisan/Composer/Pint/tests:
+
+`docker exec olie-api-main <command>`
+
+Do not run bare `php artisan` on the host.
+
+## Non-negotiables
+
+1. Scope by `frame_id` / `FrameContext` — never leak across tenants
+2. Throw `BaseException` subclasses — never hand-build error JSON
+3. Permissions only via `PermissionsSeeder` + seeder-running migration
+4. Tests required; cancel if they cannot run
+5. No AI co-author trailers on commits/PRs; PR body in pt-BR
+
+## Boost MCP
+
+Prefer Laravel Boost MCP tools (`search-docs`, `database-schema`, `database-query`, `record-rule`, …) over ad-hoc shell. Record durable conventions with `record-rule`, not personal memory.

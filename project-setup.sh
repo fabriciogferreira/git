@@ -103,6 +103,9 @@ else
     echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
 fi
 
+echo "==> Aplicando files/$PROJECT → clones"
+workvm_apply_files "$REPO_ROOT/files" "$PROJECT"
+
 systemctl --user daemon-reload
 systemctl --user enable workvm.service
 

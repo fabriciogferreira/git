@@ -137,6 +137,55 @@ workvm_clone_project_repos() {
     done
 }
 
+# Mirror versioned overlays from files/<project>/ into GIT_ROOT/<project>/.
+# Convention: files/olie/olie-fronts/.cursor → $GIT_ROOT/olie/olie-fronts/.cursor
+# Skips first-level entries whose clone destination does not exist yet.
+# Safe to run on every boot (rsync -a updates without --delete).
+workvm_apply_files() {
+    local files_root="$1"
+    local project="$2"
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local src child base dest
+
+    if [ -z "$files_root" ] || [ -z "$project" ]; then
+        echo "error: workvm_apply_files <files_root> <project>" >&2
+        return 1
+    fi
+
+    src="${files_root}/${project}"
+    if [ ! -d "$src" ]; then
+        echo "→ files: nada em files/${project}/"
+        return 0
+    fi
+
+    echo "→ Aplicando files/${project}/ → ${git_root}/${project}/"
+    shopt -s nullglob dotglob
+    for child in "$src"/*; do
+        base="$(basename "$child")"
+        # Skip scaffolding noise if present
+        if [ "$base" = ".gitkeep" ]; then
+            continue
+        fi
+        dest="${git_root}/${project}/${base}"
+        if [ ! -e "$dest" ]; then
+            echo "  pulado (destino ausente): ${project}/${base}"
+            continue
+        fi
+        if [ -d "$child" ]; then
+            echo "  sync dir: ${project}/${base}/"
+            if command -v rsync >/dev/null 2>&1; then
+                rsync -a "$child/" "$dest/"
+            else
+                cp -a "$child"/. "$dest"/
+            fi
+        elif [ -f "$child" ]; then
+            echo "  sync file: ${project}/${base}"
+            cp -a "$child" "$dest"
+        fi
+    done
+    shopt -u nullglob dotglob
+}
+
 # Entries: "<path> <command...>". Relative paths are under GIT_ROOT (default $HOME/git).
 workvm_run_post_clone() {
     local git_root="${GIT_ROOT:-$HOME/git}"

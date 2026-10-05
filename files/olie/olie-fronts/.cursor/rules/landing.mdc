@@ -1,0 +1,33 @@
+---
+description: Patterns and pitfalls for @olie/landing
+globs: packages/landing/**
+alwaysApply: false
+---
+
+# @olie/landing
+
+Public SPA (home, auth, marketplace, partner, docs). Vue 3, Vite 7, Pinia, Tailwind + Flowbite. **Does not** use `@olie/ui` components — only `LogoutService` and `normalizeAxiosCatchError`. Details: `packages/landing/CLAUDE.md`.
+
+## Quick architecture
+
+- Modules: `index`, `marketplace`, `document`, `frame`, `public_pages` under `src/modules/`
+- Aggregated routes without lazy loading (monolithic bundle)
+- Live store: `@stores/auth.store` (Pinia). `src/store/` (Vuex) is **dead code** — do not import
+- Middlewares: `meta.middlewareAuth`, `meta.middlewarePartner`; layout `EmptyLayout` (default) vs `MainLayout`
+- Auth in the router reads the token from **localStorage**, not from the store
+- API: `src/utils/api.js` → base `/api/landing-page/`; 401/418 → logout
+
+## Conventions
+
+- Pinia actions in PascalCase (`GetUser`, `Login`, `Logout`, `AuthHubRedirect`)
+- Per-module services under `@modules/{module}/services`
+- Options / `<script setup>` mix exists; when editing, follow the file’s existing pattern
+- Tailwind: `preflight: false` (intentional). No custom colors — preset + Flowbite
+- `vue/no-v-html: off` (TipTap)
+
+## Pitfalls
+
+- Wrong import `store/` vs `stores/` does not break the build — it just fails at runtime
+- `AuthHubRedirect` replaces `{subdomain}` in `VITE_MANAGEMENT_URL`; check `frame.subdomain`
+- Clarity only in prod; GA4 GTag is hardcoded and also active in dev
+- Vuelidate is listed in `package.json` but unused
