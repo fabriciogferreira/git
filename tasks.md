@@ -10,3 +10,4 @@
 - [x] Olie (workvm/projects/olie)
 - [x] Televisão (workvm/projects/televisao)
 - [x] Opbed (workvm/projects/opbed)
+- [x] vid2agent-code (workvm/projects/vid2agent-code)
