@@ -257,10 +257,20 @@ workvm_open_chromium() {
 
 workvm_docker_compose_up() {
     local compose_dir="$1"
+    local compose_file="${2:-${COMPOSE_FILE:-}}"
 
     if [ ! -d "$compose_dir" ]; then
         echo "workvm: compose dir not found: $compose_dir" >&2
         return 1
+    fi
+
+    if [ -n "$compose_file" ]; then
+        if [ ! -f "$compose_dir/$compose_file" ]; then
+            echo "workvm: compose file not found: $compose_dir/$compose_file" >&2
+            return 1
+        fi
+        (cd "$compose_dir" && docker compose -f "$compose_file" up -d)
+        return
     fi
 
     if [ ! -f "$compose_dir/docker-compose.yml" ] \

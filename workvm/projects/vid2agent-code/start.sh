@@ -26,7 +26,7 @@ main() {
     fi
 
     if [ -n "${COMPOSE_DIR:-}" ]; then
-        log "docker compose up -d ($COMPOSE_DIR)"
+        log "docker compose up -d ($COMPOSE_DIR${COMPOSE_FILE:+ -f $COMPOSE_FILE})"
         if ! workvm_docker_compose_up "$COMPOSE_DIR"; then
             log "docker compose failed; continuing with editor/browser"
         elif [ -n "${WAIT_URL:-}" ]; then
