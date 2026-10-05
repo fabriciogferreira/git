@@ -466,6 +466,8 @@ type CreateFunnelWithFormFlagsOptions = {
     show_contact_form?: boolean
     hide_customer_form_when_linked?: boolean
     hide_contact_form_when_linked?: boolean
+    /** Template project ids to sync onto the funnel (kanban Opções → templates). */
+    template_project_ids?: string[]
 }
 
 /**
@@ -496,6 +498,7 @@ export async function createE2EFunnelWithStepFormFlags(
                 show_contact_form,
                 hide_customer_form_when_linked,
                 hide_contact_form_when_linked,
+                template_projects,
             }) => {
                 const token = localStorage.getItem('token')
                 if (!token) {
@@ -523,6 +526,9 @@ export async function createE2EFunnelWithStepFormFlags(
                         ],
                         attachments: [],
                         tags: [],
+                        ...(template_projects.length
+                            ? { template_projects }
+                            : {}),
                     }),
                 })
 
@@ -586,6 +592,9 @@ export async function createE2EFunnelWithStepFormFlags(
                     options.hide_customer_form_when_linked ?? false,
                 hide_contact_form_when_linked:
                     options.hide_contact_form_when_linked ?? false,
+                template_projects: (options.template_project_ids ?? []).map(id => ({
+                    id,
+                })),
             }
         )
 
