@@ -1,6 +1,63 @@
 #!/usr/bin/env bash
 # Shared helpers for workvm project startups.
 
+# git fetch --prune when HEAD already matches the expected branch (no checkout/merge).
+# Never fails the caller: missing repo / wrong branch / network only warn.
+workvm_fetch_repo() {
+    local destination="$1"
+    local branch="${2:-}"
+    local current
+
+    if [ ! -d "$destination/.git" ]; then
+        echo "→ Fetch pulado: $destination (não é um repositório git)"
+        return 0
+    fi
+
+    current="$(git -C "$destination" branch --show-current 2>/dev/null || true)"
+
+    if [ -n "$branch" ] && [ "$current" != "$branch" ]; then
+        echo "→ Fetch pulado: $destination (branch atual: ${current:-detached}; esperado: $branch)"
+        return 0
+    fi
+
+    echo "→ Fetch: $destination${branch:+ ($branch)}"
+    if ! git -C "$destination" fetch --prune origin; then
+        echo "aviso: fetch falhou: $destination (rede?)" >&2
+        return 0
+    fi
+}
+
+# Entries: "<git-url> <path> [branch]" (same format as CLONE_REPOS).
+workvm_fetch_project_repos() {
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local entry dest branch rest
+
+    for entry in "$@"; do
+        rest="${entry#* }"
+        if [ -z "$rest" ] || [ "$entry" = "$rest" ]; then
+            echo "aviso: CLONE_REPOS entry inválida no fetch: $entry" >&2
+            continue
+        fi
+        dest="${rest%% *}"
+        if [ "$dest" = "$rest" ]; then
+            branch=""
+        else
+            branch="${rest#* }"
+            branch="${branch%% *}"
+        fi
+        case "$dest" in
+            /*) ;;
+            *) dest="${git_root}/${dest}" ;;
+        esac
+        # Sem branch de origem no clone: não há como validar; pula.
+        if [ -z "$branch" ]; then
+            echo "→ Fetch pulado: $dest (sem branch de origem no CLONE_REPOS)"
+            continue
+        fi
+        workvm_fetch_repo "$dest" "$branch"
+    done
+}
+
 # Fast-forward only when HEAD already matches the CLONE_REPOS branch (no checkout).
 workvm_pull_repo() {
     local destination="$1"

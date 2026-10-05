@@ -299,7 +299,7 @@ setup_appearance() {
 }
 
 setup_meta_repo_pull() {
-    step "Auto git pull do meta-repo (~/git) no login gráfico"
+    step "Auto git fetch do meta-repo (~/git) no login gráfico"
 
     local unit_src="$GIT_ROOT/workvm/systemd/workvm-git-pull.service"
     local unit_dst="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/workvm-git-pull.service"
@@ -320,7 +320,7 @@ setup_meta_repo_pull() {
 
     systemctl --user daemon-reload
     systemctl --user enable workvm-git-pull.service
-    ok "workvm-git-pull.service habilitado (ff-only origin/main em $GIT_ROOT)"
+    ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
 }
 
 setup_luks_autologin() {
@@ -382,7 +382,8 @@ main() {
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
-    log "Nos próximos logins: workvm-git-pull.service faz git pull --ff-only origin/main em $GIT_ROOT"
+    log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
+    log "Com projeto: start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }
 
 main "$@"

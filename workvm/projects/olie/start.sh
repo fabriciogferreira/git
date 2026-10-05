@@ -14,6 +14,11 @@ LOG_TAG="workvm[${PROJECT_NAME}]"
 log() { printf '%s %s\n' "$LOG_TAG" "$*"; }
 
 main() {
+    if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
+        log "git fetch nos CLONE_REPOS (somente na branch de origem)"
+        workvm_fetch_project_repos "${CLONE_REPOS[@]}"
+    fi
+
     log "waiting for Wayland/Hyprland"
     if ! workvm_wait_for_wayland 90; then
         log "Wayland indisponível; tentando abrir apps mesmo assim"
