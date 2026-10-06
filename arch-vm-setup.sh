@@ -160,12 +160,12 @@ setup_passwordless() {
 setup_apps() {
     step "Hyprland, apps e ferramentas"
 
-    log "oficial: hyprland kitty hyprlauncher hyprpaper dbeaver"
+    log "oficial: hyprland kitty hyprlauncher swaybg dbeaver"
     sudo pacman -S --needed --noconfirm \
         hyprland \
         kitty \
         hyprlauncher \
-        hyprpaper \
+        swaybg \
         dbeaver
 
     log "AUR: cursor-bin google-chrome postman-bin"

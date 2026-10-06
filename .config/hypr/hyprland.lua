@@ -54,7 +54,8 @@ hl.on("hyprland.start", function ()
 --   hl.exec_cmd(terminal)
 --   hl.exec_cmd("nm-applet")
 --   hl.exec_cmd("waybar & hyprpaper & firefox")
-    hl.exec_cmd("hyprpaper")
+    -- hyprpaper 0.8 (hyprtoolkit) segfaults on QEMU/GBM; swaybg is reliable in VMs.
+    hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.jpg -m fill")
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
 end)
 
