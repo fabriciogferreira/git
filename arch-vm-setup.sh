@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Prepare an Arch Linux + Hyprland development VM base:
+# bootstrap (base-devel, yay), Hyprland stack, apps, Docker,
 # clipboard Host↔VM, passwordless user/sudo, GRUB timeout=0,
-# optional LUKS auto-unlock, SDDM autologin (if SDDM is installed),
-# apply $GIT_ROOT/.config → ~/.config,
-# Cursor, DBeaver, Postman.
+# SDDM autologin (no login prompt), optional LUKS auto-unlock,
+# apply $GIT_ROOT/.config → ~/.config.
 set -euo pipefail
 
 USER_NAME="${USER_NAME:-fabricio}"
@@ -14,6 +14,7 @@ LUKS_DEVICE="${LUKS_DEVICE:-/dev/vda2}"
 LUKS_PARTUUID="${LUKS_PARTUUID:-}"
 KEYFILE="${KEYFILE:-/crypto_keyfile.bin}"
 WAYLAND_VDAGENT_URL="${WAYLAND_VDAGENT_URL:-https://github.com/v-dermichev/wayland-vdagent/releases/download/v0.3.3/wayland-vdagent-x86_64-linux}"
+YAY_TMP="${YAY_TMP:-/tmp/yay-bootstrap}"
 
 log() { printf '%s\n' "$*"; }
 ok() { log "✓ $*"; }
@@ -35,6 +36,39 @@ require_aur_helper() {
 aur_install() {
     require_aur_helper
     "$AUR_HELPER" -S --needed --noconfirm "$@"
+}
+
+setup_base() {
+    step "Pacotes base (git, base-devel, openssh)"
+
+    sudo pacman -S --needed --noconfirm git base-devel openssh
+    ok "git + base-devel + openssh"
+}
+
+setup_yay() {
+    step "yay (AUR helper)"
+
+    if command -v yay >/dev/null 2>&1; then
+        ok "yay já instalado"
+        return 0
+    fi
+
+    # makepkg refuses to run as root.
+    if [ "$(id -u)" -eq 0 ]; then
+        log "error: rode o script como $USER_NAME (não como root) para instalar o yay" >&2
+        exit 1
+    fi
+
+    rm -rf "$YAY_TMP"
+    git clone --depth 1 https://aur.archlinux.org/yay.git "$YAY_TMP"
+    (cd "$YAY_TMP" && makepkg -si --noconfirm)
+    rm -rf "$YAY_TMP"
+
+    if ! command -v yay >/dev/null 2>&1; then
+        log "error: yay não ficou no PATH após makepkg -si" >&2
+        exit 1
+    fi
+    ok "yay instalado"
 }
 
 # Mirror versioned overlays from $GIT_ROOT/.config/ into ~/.config/
@@ -111,15 +145,20 @@ setup_passwordless() {
     ok "passwd vazio + sudo NOPASSWD"
 }
 
-# Official repos: DBeaver. AUR: Cursor, Postman.
+# Official repos via pacman; AUR via yay.
 setup_apps() {
-    step "Cursor, DBeaver, Postman"
+    step "Hyprland, apps e ferramentas"
 
-    log "DBeaver (pacman)"
-    sudo pacman -S --needed --noconfirm dbeaver
+    log "oficial: hyprland kitty hyprlauncher hyprpaper dbeaver"
+    sudo pacman -S --needed --noconfirm \
+        hyprland \
+        kitty \
+        hyprlauncher \
+        hyprpaper \
+        dbeaver
 
-    log "Cursor + Postman (AUR)"
-    aur_install cursor-bin postman-bin
+    log "AUR: cursor-bin google-chrome postman-bin"
+    aur_install cursor-bin google-chrome postman-bin
     ok "apps instalados (ou já presentes)"
 }
 
@@ -198,8 +237,8 @@ setup_grub_timeout() {
     ok "grub.cfg regenerado"
 }
 
-setup_luks_autologin() {
-    step "LUKS auto-unlock (se aplicável) + SDDM autologin (se SDDM existir)"
+setup_luks() {
+    step "LUKS auto-unlock (se aplicável)"
 
     if [ -b "$LUKS_DEVICE" ] && sudo cryptsetup isLuks "$LUKS_DEVICE" 2>/dev/null; then
         if [ ! -f "$KEYFILE" ]; then
@@ -253,39 +292,51 @@ setup_luks_autologin() {
     else
         ok "sem LUKS em $LUKS_DEVICE — pulando auto-unlock"
     fi
+}
 
-    if pacman -Q sddm >/dev/null 2>&1; then
-        sudo mkdir -p /etc/sddm.conf.d
-        if [ ! -f /etc/sddm.conf.d/autologin.conf ]; then
-            printf '%s\n' \
-                '[Autologin]' \
-                "User=${USER_NAME}" \
-                'Session=hyprland.desktop' \
-                'Relogin=true' \
-                | sudo tee /etc/sddm.conf.d/autologin.conf >/dev/null
-            ok "SDDM autologin criado (hyprland.desktop)"
-        else
-            ok "SDDM autologin já existe"
-        fi
-    else
-        ok "SDDM não instalado — pulando autologin gráfico"
+# Boot → SDDM → Hyprland as $USER_NAME, no greeter / password prompt.
+# Relies on setup_passwordless (empty passwd + sudo NOPASSWD) as fallback.
+setup_autologin() {
+    step "SDDM autologin → Hyprland (sem tela de login)"
+
+    sudo pacman -S --needed --noconfirm sddm
+
+    if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland)" >&2
+        exit 1
     fi
+
+    sudo mkdir -p /etc/sddm.conf.d
+    printf '%s\n' \
+        '[Autologin]' \
+        "User=${USER_NAME}" \
+        'Session=hyprland' \
+        'Relogin=true' \
+        | sudo tee /etc/sddm.conf.d/autologin.conf >/dev/null
+
+    # Become the graphical display manager on next boot.
+    sudo systemctl enable sddm.service
+    ok "SDDM autologin: User=${USER_NAME} Session=hyprland (enable sddm)"
 }
 
 main() {
     log "arch-vm-setup.sh — VM base Arch Linux + Hyprland"
     setup_passwordless
+    setup_base
+    setup_yay
     setup_apps
     setup_docker
     setup_clipboard
     setup_apply_dotconfig
     setup_meta_repo_pull
     setup_grub_timeout
-    setup_luks_autologin
+    setup_luks
+    setup_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/arch-project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
+    log "No boot: GRUB sem menu → SDDM autologin → Hyprland (sem senha)"
     log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
     log "Com projeto: start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }
