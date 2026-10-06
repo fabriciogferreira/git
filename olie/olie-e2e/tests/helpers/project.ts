@@ -377,17 +377,14 @@ export async function cloneE2EProjectFromTemplate(
     throw new Error('clone from template failed: exhausted retries')
 }
 
-/**
- * First funnel step from `/get-available-steps` (includes nested `steps`).
- * GET `/get-project-funnels` does NOT load steps — only listing metadata.
- * Retries on API rate limit so suite noise does not mask DOP-1145.
- */
-export async function getFirstFunnelStepId(page: Page): Promise<{
+type AvailableFunnelStep = {
     funnelId: number
     funnelName: string
     stepId: number
     stepName: string
-}> {
+}
+
+async function listAvailableFunnelSteps(page: Page): Promise<AvailableFunnelStep[]> {
     const apiUrl = `${apiBaseUrl()}/api/management/get-available-steps`
     const maxAttempts = 8
 
@@ -395,7 +392,7 @@ export async function getFirstFunnelStepId(page: Page): Promise<{
         const result = await page.evaluate(async apiUrl => {
             const token = localStorage.getItem('token')
             if (!token) {
-                return { ok: false as const, error: 'missing token' }
+                return { ok: false as const, error: 'missing token', items: [] as AvailableFunnelStep[] }
             }
 
             const res = await fetch(apiUrl, {
@@ -414,34 +411,31 @@ export async function getFirstFunnelStepId(page: Page): Promise<{
                 message?: string
             } | null
 
-            const funnel = data?.funnels?.find(f => (f.steps?.length ?? 0) > 0)
-            const step = funnel?.steps?.[0]
-
-            if (!res.ok || !funnel || !step) {
+            if (!res.ok) {
                 return {
                     ok: false as const,
-                    error:
-                        data?.message ??
-                        `no funnel with steps (status=${res.status}, funnels=${data?.funnels?.length ?? 0})`,
+                    error: data?.message ?? `get-available-steps failed (status=${res.status})`,
+                    items: [],
                 }
             }
 
-            return {
-                ok: true as const,
-                funnelId: funnel.id,
-                funnelName: funnel.name,
-                stepId: step.id,
-                stepName: step.name ?? String(step.id),
+            const items: AvailableFunnelStep[] = []
+            for (const funnel of data?.funnels ?? []) {
+                const step = funnel.steps?.[0]
+                if (!step) continue
+                items.push({
+                    funnelId: funnel.id,
+                    funnelName: funnel.name,
+                    stepId: step.id,
+                    stepName: step.name ?? String(step.id),
+                })
             }
+
+            return { ok: true as const, items, error: null as string | null }
         }, apiUrl)
 
         if (result.ok) {
-            return {
-                funnelId: result.funnelId,
-                funnelName: result.funnelName,
-                stepId: result.stepId,
-                stepName: result.stepName,
-            }
+            return result.items
         }
 
         if (isRateLimited(result.error) && attempt < maxAttempts) {
@@ -453,6 +447,36 @@ export async function getFirstFunnelStepId(page: Page): Promise<{
     }
 
     throw new Error('get-available-steps failed: exhausted retries')
+}
+
+/**
+ * First funnel step from `/get-available-steps` (includes nested `steps`).
+ * GET `/get-project-funnels` does NOT load steps — only listing metadata.
+ * Retries on API rate limit so suite noise does not mask DOP-1145.
+ */
+export async function getFirstFunnelStepId(page: Page): Promise<AvailableFunnelStep> {
+    const items = await listAvailableFunnelSteps(page)
+    if (!items.length) {
+        throw new Error('get-available-steps failed: no funnel with steps')
+    }
+    return items[0]
+}
+
+/**
+ * Two distinct active funnels (first step each). Prefer over creating funnels on
+ * shared seed frames that already hit `FrameMaxLimitException` (inactive funnels).
+ */
+export async function getTwoFunnelSteps(page: Page): Promise<{
+    source: AvailableFunnelStep
+    target: AvailableFunnelStep
+}> {
+    const items = await listAvailableFunnelSteps(page)
+    if (items.length < 2) {
+        throw new Error(
+            `need at least 2 active funnels with steps (found=${items.length})`
+        )
+    }
+    return { source: items[0], target: items[1] }
 }
 
 /** Empty-state copy on ProjectFunnelTab when `project.funnels.length === 0`. */
@@ -762,6 +786,68 @@ export async function enableE2EStepFormFlags(
     }
 
     throw new Error('enableE2EStepFormFlags failed: exhausted retries')
+}
+
+/**
+ * Fetch project funnel membership via GET /projects/:id (management).
+ * Used to assert multi-funnel link / unlink outcomes (OS-561).
+ */
+export async function getE2EProjectFunnels(
+    page: Page,
+    projectId: string
+): Promise<Array<{ id: number; name: string }>> {
+    const apiUrl = `${apiBaseUrl()}/api/management/projects/${projectId}`
+    const maxAttempts = 8
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const result = await page.evaluate(async apiUrl => {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                return { ok: false as const, error: 'missing token', funnels: [] as Array<{ id: number; name: string }> }
+            }
+
+            const res = await fetch(apiUrl, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+            })
+            const data = (await res.json().catch(() => null)) as {
+                response?: boolean
+                project?: {
+                    funnels?: Array<{ id?: number; name?: string }>
+                }
+                message?: string
+            } | null
+
+            if (!res.ok || !data?.project) {
+                return {
+                    ok: false as const,
+                    error: data?.message ?? `project find failed (status=${res.status})`,
+                    funnels: [],
+                }
+            }
+
+            const funnels = (data.project.funnels ?? [])
+                .filter((f): f is { id: number; name: string } => typeof f.id === 'number')
+                .map(f => ({ id: f.id, name: f.name ?? String(f.id) }))
+
+            return { ok: true as const, funnels, error: null as string | null }
+        }, apiUrl)
+
+        if (result.ok) {
+            return result.funnels
+        }
+
+        if (isRateLimited(result.error) && attempt < maxAttempts) {
+            await sleep(Math.min(15_000, 3_000 * 2 ** (attempt - 1)))
+            continue
+        }
+
+        throw new Error(`getE2EProjectFunnels failed: ${result.error}`)
+    }
+
+    throw new Error('getE2EProjectFunnels failed: exhausted retries')
 }
 
 /** Open the project funnel kanban and select a funnel by id/name. */
