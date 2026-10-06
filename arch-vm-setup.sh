@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Prepare an Arch Linux + Hyprland development VM base:
-# clipboard Host↔VM, passwordless user/sudo, optional LUKS auto-unlock,
-# SDDM autologin (if SDDM is installed), apply $GIT_ROOT/.config → ~/.config,
+# clipboard Host↔VM, passwordless user/sudo, GRUB timeout=0,
+# optional LUKS auto-unlock, SDDM autologin (if SDDM is installed),
+# apply $GIT_ROOT/.config → ~/.config,
 # Cursor, DBeaver, Postman.
 set -euo pipefail
 
@@ -169,6 +170,34 @@ setup_meta_repo_pull() {
     ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
 }
 
+setup_grub_timeout() {
+    step "GRUB timeout=0 (boot direto)"
+
+    if [ ! -f /etc/default/grub ]; then
+        ok "GRUB ausente — pulando"
+        return 0
+    fi
+
+    if grep -qE '^GRUB_TIMEOUT=0$' /etc/default/grub; then
+        ok "GRUB_TIMEOUT já é 0"
+    else
+        sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+        if ! grep -qE '^GRUB_TIMEOUT=' /etc/default/grub; then
+            printf '%s\n' 'GRUB_TIMEOUT=0' | sudo tee -a /etc/default/grub >/dev/null
+        fi
+        ok "GRUB_TIMEOUT=0"
+    fi
+
+    if grep -qE '^GRUB_TIMEOUT_STYLE=' /etc/default/grub; then
+        sudo sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' /etc/default/grub
+    else
+        printf '%s\n' 'GRUB_TIMEOUT_STYLE=hidden' | sudo tee -a /etc/default/grub >/dev/null
+    fi
+
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    ok "grub.cfg regenerado"
+}
+
 setup_luks_autologin() {
     step "LUKS auto-unlock (se aplicável) + SDDM autologin (se SDDM existir)"
 
@@ -251,6 +280,7 @@ main() {
     setup_clipboard
     setup_apply_dotconfig
     setup_meta_repo_pull
+    setup_grub_timeout
     setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
