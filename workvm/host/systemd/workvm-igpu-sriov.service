@@ -1,0 +1,20 @@
+[Unit]
+Description=Create Intel iGPU SR-IOV VFs and bind to vfio-pci
+Documentation=https://github.com/strongtz/i915-sriov-dkms
+After=systemd-modules-load.service local-fs.target
+Before=libvirtd.service virtqemud.service
+ConditionPathExists=/sys/bus/pci/devices/0000:00:02.0/sriov_numvfs
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=SRIOV_NUMVFS=4
+Environment=SRIOV_PF=0000:00:02.0
+# Override path if the meta-repo is not at /home/fabricio/git
+Environment=WORKVM_BIN=/home/fabricio/git/workvm/bin
+ExecStart=/bin/sh -c 'echo "$SRIOV_NUMVFS" > "/sys/bus/pci/devices/${SRIOV_PF}/sriov_numvfs"'
+ExecStart=/bin/sh -c '"$WORKVM_BIN/host-igpu-vfio-bind.sh" "$SRIOV_NUMVFS"'
+ExecStop=/bin/sh -c 'echo 0 > "/sys/bus/pci/devices/${SRIOV_PF}/sriov_numvfs"'
+
+[Install]
+WantedBy=multi-user.target

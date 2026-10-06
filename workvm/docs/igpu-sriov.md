@@ -4,9 +4,11 @@ Guia do que é necessário no **host** para passar fatias da iGPU (VFs) às work
 
 ## Contexto
 
-- **CPU / iGPU:** Intel Core i7-13700K — UHD Graphics 770 (32 EUs)
-- **Host:** 32 GB RAM, 2 GPUs discretas + 1 iGPU
+- **CPU / iGPU:** Intel Core i7-13700K — UHD Graphics 770 (32 EUs), PF `0000:00:02.0` `[8086:a780]`
+- **Host:** Omarchy/Arch, Limine, 32 GB RAM, GPUs discretas + 1 iGPU
+- **Hypervisor:** QEMU/KVM via libvirt (`virsh` / Virt-Manager)
 - **Guest típico:** Arch + Hyprland, Laravel em Docker (~3 repos, ~4 containers), Cursor/Chrome sob demanda
+- **VM de teste:** `teste-sr-iov`
 - **Uso de GUI:** no máximo 2 Cursors abertos ao mesmo tempo; Chrome/DBeaver/Postman só quando necessário
 
 A lentidão gráfica atual das VMs (VirtIO/SPICE/software) é esperada. SR-IOV melhora compositor, Cursor e Chrome; **não** acelera Laravel/Docker.
@@ -34,55 +36,120 @@ Reserva ~6–8 GB para o host. Cada VM ativa com Cursor+Chrome pode ir a ~6–10
 1. **BIOS/UEFI**
    - Intel VT-x e **VT-d** (IOMMU) habilitados
    - Above 4G Decoding / Resizable BAR conforme a placa (às vezes necessário)
-2. **Hypervisor** com PCI passthrough (Proxmox, libvirt/QEMU/KVM, etc.)
+2. **Hypervisor:** QEMU/KVM + libvirt (PCI `hostdev` / Virt-Manager → PCI Host Device)
 3. **Kernel + driver i915 com SR-IOV**
    - No desktop Raptor Lake o suporte SR-IOV da iGPU **não** vem completo no i915 vanilla na maioria dos kernels
    - Caminho usual: módulo DKMS da comunidade, p.ex. [strongtz/i915-sriov-dkms](https://github.com/strongtz/i915-sriov-dkms) ou forks atualizados ([Valantin/i915-sriov-dkms](https://github.com/Valantin/i915-sriov-dkms))
-4. **IOMMU ativo** na cmdline do host, por exemplo:
+4. **IOMMU + params i915** na cmdline do host
+
+   Neste host Omarchy o IOMMU já está em `/etc/limine-entry-tool.d/vfio-osx.conf`:
+
    ```text
-   intel_iommu=on iommu=pt i915.enable_guc=3 i915.max_vfs=7
+   iommu=pt intel_iommu=on …
    ```
-5. **Criar as VFs** após o boot (até 7), exemplo (ajuste o BDF se não for `00:02.0`):
+
+   Params i915 SR-IOV (versionados neste repo):
+
+   - Fonte: [`workvm/host/limine-entry-tool.d/i915-sriov.conf`](../host/limine-entry-tool.d/i915-sriov.conf)
+   - Instalar:
+
+     ```bash
+     sudo cp workvm/host/limine-entry-tool.d/i915-sriov.conf /etc/limine-entry-tool.d/
+     sudo limine-update
+     ```
+
+   - Resultado esperado na cmdline (junto com o IOMMU):
+
+     ```text
+     intel_iommu=on iommu=pt i915.enable_guc=3 i915.max_vfs=7 module_blacklist=xe
+     ```
+
+   Importante: rode `limine-update` **depois** do DKMS (o script já faz isso), para o UKI/initramfs embutir o i915 patched. Sem isso o boot carrega o i915 vanilla (`max_vfs` ignorado).
+
+5. **Criar as VFs** após o boot (até 7), exemplo (PF `00:02.0`):
+
    ```bash
    echo 4 | sudo tee /sys/bus/pci/devices/0000:00:02.0/sriov_numvfs
    ```
-   Persistência comum: `sysfsutils` + `/etc/sysfs.conf`, ou udev/systemd.
+
+   Persistência: unit systemd versionada em
+   [`workvm/host/systemd/workvm-igpu-sriov.service`](../host/systemd/workvm-igpu-sriov.service).
+
+   Setup automatizado do host (drop-in Limine + DKMS + unit):
+
+   ```bash
+   sudo ./workvm/bin/host-igpu-sriov-setup.sh
+   # depois: reboot, e se necessário:
+   sudo systemctl start workvm-igpu-sriov.service
+   ```
+
 6. Confirmar no host:
+
    ```bash
    dmesg | grep -i 'i915\|sriov'
-   lspci -nn | grep -i vga
+   lspci -nn | grep -iE 'vga|display'
+   cat /sys/bus/pci/devices/0000:00:02.0/sriov_numvfs
    ```
-   Esperado: PF em modo SR-IOV e VFs (`00:02.1`, `00:02.2`, …).
 
-## Guest (cada work VM)
+   Esperado: PF em modo SR-IOV e VFs (`00:02.1`, `00:02.2`, …); `sriov_numvfs` = 4 (ou o valor escolhido).
 
-1. QEMU/Proxmox: CPU type **host** (recomendado)
-2. Passar **uma VF** da iGPU para a VM (PCI passthrough), não o PF (`00:02.0`)
-3. Guest Linux com driver i915 compatível com VF (mesmo ecossistema DKMS/GuC costuma ser necessário no guest)
+## Guest (QEMU/KVM — ex.: `teste-sr-iov`)
+
+1. CPU type **host** (recomendado)
+2. Passar **uma VF** da iGPU (`hostdev` PCI), nunca o PF (`00:02.0`)
+3. Guest Linux com driver i915 compatível com VF — no guest:
+
+   ```bash
+   sudo ./workvm/bin/guest-igpu-sriov-setup.sh
+   # reboot da VM
+   lspci -nnk -s 07:00.0   # Kernel driver in use: i915
+   ```
+
+   Drop-in Limine: [`workvm/guest/limine-entry-tool.d/i915-sriov-guest.conf`](../guest/limine-entry-tool.d/i915-sriov-guest.conf)
+   (`i915.enable_guc=3 module_blacklist=xe` — sem `max_vfs`).
 4. Display: preferir a saída da VF (evita depender só de SPICE/VirtIO-GPU para o compositor)
-5. Stack da work VM: `arch-vm-setup.sh` + `arch-project-setup.sh` (já existentes neste meta-repo)
+5. Stack da work VM: scripts em `workvm/` (`*-setup.sh` do meta-repo)
+
+Exemplo libvirt **session** (`qemu:///session`, como `teste-sr-iov`):
+
+1. CPU já em `host-passthrough` (ok).
+2. No host, bindar VFs em `vfio-pci` (session não consegue `managed=yes`):
+
+   ```bash
+   sudo ./workvm/bin/host-igpu-vfio-bind.sh
+   ```
+
+3. Anexar **1 VF** com `managed='no'`:
+
+   ```bash
+   virt-xml teste-sr-iov --add-device --host-device pci_0000_00_02_1
+   # depois editar managed='no' se o virt-xml gravar yes
+   virsh -c qemu:///session start teste-sr-iov
+   ```
+
+Nunca passe o PF (`00:02.0`).
 
 ## Checklist resumido
 
-- [ ] VT-d / IOMMU no BIOS
-- [ ] Host com cmdline `intel_iommu=on` + params i915 SR-IOV
-- [ ] DKMS i915-sriov instalado e carregando sem erro
-- [ ] `sriov_numvfs` = número desejado (ex.: 4), ≤ 7
-- [ ] `lspci` mostra as VFs
-- [ ] Cada VM de projeto recebe **1 VF**
+- [x] VT-d / IOMMU no BIOS (cmdline já tem `intel_iommu=on iommu=pt`)
+- [x] Drop-in Limine `i915-sriov.conf` instalado + `limine-update` **após** DKMS + reboot
+- [x] DKMS i915-sriov instalado e carregando (módulo `2026.09.16-sriov` em memória)
+- [x] `sriov_numvfs` = 4 (unit `workvm-igpu-sriov.service`)
+- [x] `lspci` mostra as VFs (`00:02.1`–`00:02.4`)
+- [x] VM `teste-sr-iov` recebe **1 VF** (`00:02.1`, hostdev managed=no; VFs em vfio-pci)
 - [ ] No máximo 2 VMs com Cursor/Chrome abertos (32 GB)
 - [ ] GPUs discretas não conflitam com o PF da iGPU no host
+- [ ] Guest: DKMS i915-sriov + `lspci` mostra a Intel VF; Hyprland usa a GPU
 
 ## Referências
 
 - Intel: [Graphics Virtualization Technologies Support](https://www.intel.com/content/www/us/en/support/articles/000093216/graphics/processor-graphics.html) (13th gen = SR-IOV)
 - DKMS: [strongtz/i915-sriov-dkms](https://github.com/strongtz/i915-sriov-dkms)
-- Relatos em desktop 13th gen / Proxmox: threads Level1Techs e issues dos repositórios DKMS
+- Relatos em desktop 13th gen / Proxmox/libvirt: threads Level1Techs e issues dos repositórios DKMS
 
 ## Fora de escopo deste doc
 
-- Configuração exata por versão de Proxmox/libvirt (UI e XML mudam)
 - ROM/GOP da VF em guests Windows
 - Tuning fino de hugepages / CPU pinning
 
-Quando o host estiver com as VFs estáveis, o próximo passo é amarrar 1 VF na definição da work VM e validar Hyprland + Chrome + Cursor sem o caminho só-software.
+Quando o host estiver com as VFs estáveis, o próximo passo é amarrar 1 VF em `teste-sr-iov` e validar Hyprland + Chrome + Cursor sem o caminho só-software.
