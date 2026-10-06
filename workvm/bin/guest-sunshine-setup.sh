@@ -55,13 +55,17 @@ if [ ! -f "$CONF_FILE" ]; then
 # workvm — Sunshine on Intel iGPU VF (VAAPI)
 # Docs: https://docs.lizardbyte.dev/projects/sunshine/
 
-# Prefer Intel hardware encode
+# Prefer Intel hardware encode (set render node after: ls -l /dev/dri/by-path)
 encoder = vaapi
+# Uncomment and point at the Intel render node (not virtio):
+# adapter_name = /dev/dri/renderD129
 
-# Capture Wayland / Hyprland via portal when possible
+# Capture Wayland / Hyprland
 capture = wlr
 
-# Lower latency defaults for LAN / localhost port-forward
+# Session VM often has no tray/dbus — keep process alive
+system_tray = disabled
+
 min_log_level = info
 EOF
     ok "criado $CONF_FILE"
