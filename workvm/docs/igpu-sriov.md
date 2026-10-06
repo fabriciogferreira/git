@@ -107,23 +107,23 @@ Reserva ~6–8 GB para o host. Cada VM ativa com Cursor+Chrome pode ir a ~6–10
 
    Drop-in Limine: [`workvm/guest/limine-entry-tool.d/i915-sriov-guest.conf`](../guest/limine-entry-tool.d/i915-sriov-guest.conf)
    (`i915.enable_guc=3 module_blacklist=xe` — sem `max_vfs`).
-4. Display / fluidez: SPICE+Virtio não fica fluido como o host. Para ver o framebuffer da VF:
+4. Display / fluidez: SPICE+Virtio não fica fluido como o host.
 
-   - Looking Glass (Linux guest = **experimental** nos docs oficiais):
-     ```bash
-     # host
-     yay -S --noconfirm looking-glass
-     sudo cp workvm/host/tmpfiles.d/10-looking-glass.conf /etc/tmpfiles.d/
-     sudo systemd-tmpfiles --create /etc/tmpfiles.d/10-looking-glass.conf
-     ./workvm/bin/vm-looking-glass-attach.sh teste-sr-iov
-     virsh -c qemu:///session start teste-sr-iov
-     looking-glass-client -f /dev/shm/looking-glass
+   **Recomendado — Sunshine + Moonlight (VAAPI na VF):**
 
-     # guest
-     sudo ./workvm/bin/guest-looking-glass-setup.sh
-     looking-glass-host
-     ```
-   - Se LG host no Linux não estabilizar: Sunshine/Moonlight com VAAPI na VF.
+   ```bash
+   # host (Moonlight já vem no Omarchy; port-forward da VM session)
+   ./workvm/bin/vm-sunshine-ports.sh teste-sr-iov
+   moonlight   # Add PC → 127.0.0.1
+
+   # guest
+   git pull
+   ./workvm/bin/guest-sunshine-setup.sh
+   # UI: https://localhost:47990  → PIN no Moonlight
+   ```
+
+   Looking Glass + `ivshmem-plain` em `/dev/shm` **quebra** esta VM
+   (`vfio: DMA mapping failed`). Só revisitar com **kvmfr**.
 5. Stack da work VM: scripts em `workvm/` (`*-setup.sh` do meta-repo)
 
 Exemplo libvirt **session** (`qemu:///session`, como `teste-sr-iov`):
