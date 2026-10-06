@@ -1,6 +1,7 @@
 import { type Page, type Response, expect } from '@playwright/test'
 
-const E2E_RECAPTCHA_TOKEN = 'e2e-playwright-token'
+// API validates min length 20; keep in sync with isolated-user stub.
+const E2E_RECAPTCHA_TOKEN = 'e2e-playwright-token-xxxxxxxxxxxx'
 
 /** Matches api-main UserSeeder / User factory local defaults. Overridable via env. */
 export function e2eCredentials() {
@@ -138,8 +139,49 @@ export async function loginWithCredentials(
     }
 }
 
-/** Login via /auth. Defaults to seeded tester@olie.ai / password. Retries once on captcha/toast flake. */
+/**
+ * Bootstrap a session by injecting a framed Sanctum token (skips /auth + reCAPTCHA).
+ * Requires `E2E_AUTH_TOKEN` + `E2E_USER_ID` (optional `E2E_FRAME_TYPE`, default `work`).
+ *
+ * Mint a framed token (api-main):
+ * `php artisan tinker` → `$user->createToken('e2e', abilities: ['management:access'], frame_id: $frame->id)`
+ */
+export async function loginWithInjectedToken(page: Page, baseURL?: string) {
+    const token = process.env.E2E_AUTH_TOKEN
+    const userId = process.env.E2E_USER_ID
+    if (!token || !userId) {
+        throw new Error('loginWithInjectedToken requires E2E_AUTH_TOKEN and E2E_USER_ID')
+    }
+
+    const frameType = process.env.E2E_FRAME_TYPE || 'work'
+    const origin = (baseURL || process.env.E2E_BASE_URL || 'http://devframe.olie.localhost').replace(
+        /\/$/,
+        ''
+    )
+
+    await page.addInitScript(
+        ({ token, userId, frameType }) => {
+            localStorage.setItem('token', token)
+            localStorage.setItem('user_id', userId)
+            localStorage.setItem('frame_type', frameType)
+        },
+        { token, userId, frameType }
+    )
+
+    await page.goto(`${origin}/`)
+    await expect(page).not.toHaveURL(/\/auth/, { timeout: 30_000 })
+}
+
+/**
+ * Login via /auth. Defaults to seeded tester@olie.ai / password.
+ * When `E2E_AUTH_TOKEN` + `E2E_USER_ID` are set, injects a framed token instead
+ * (local stacks often reject the Playwright reCAPTCHA stub → "Token inválido").
+ */
 export async function loginAsE2EUser(page: Page) {
+    if (process.env.E2E_AUTH_TOKEN && process.env.E2E_USER_ID) {
+        await loginWithInjectedToken(page)
+        return
+    }
     const { user, password } = e2eCredentials()
     await loginWithCredentials(page, user, password)
 }
