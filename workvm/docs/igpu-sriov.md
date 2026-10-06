@@ -107,7 +107,23 @@ Reserva ~6–8 GB para o host. Cada VM ativa com Cursor+Chrome pode ir a ~6–10
 
    Drop-in Limine: [`workvm/guest/limine-entry-tool.d/i915-sriov-guest.conf`](../guest/limine-entry-tool.d/i915-sriov-guest.conf)
    (`i915.enable_guc=3 module_blacklist=xe` — sem `max_vfs`).
-4. Display: preferir a saída da VF (evita depender só de SPICE/VirtIO-GPU para o compositor)
+4. Display / fluidez: SPICE+Virtio não fica fluido como o host. Para ver o framebuffer da VF:
+
+   - Looking Glass (Linux guest = **experimental** nos docs oficiais):
+     ```bash
+     # host
+     yay -S --noconfirm looking-glass
+     sudo cp workvm/host/tmpfiles.d/10-looking-glass.conf /etc/tmpfiles.d/
+     sudo systemd-tmpfiles --create /etc/tmpfiles.d/10-looking-glass.conf
+     ./workvm/bin/vm-looking-glass-attach.sh teste-sr-iov
+     virsh -c qemu:///session start teste-sr-iov
+     looking-glass-client -f /dev/shm/looking-glass
+
+     # guest
+     sudo ./workvm/bin/guest-looking-glass-setup.sh
+     looking-glass-host
+     ```
+   - Se LG host no Linux não estabilizar: Sunshine/Moonlight com VAAPI na VF.
 5. Stack da work VM: scripts em `workvm/` (`*-setup.sh` do meta-repo)
 
 Exemplo libvirt **session** (`qemu:///session`, como `teste-sr-iov`):
@@ -139,7 +155,7 @@ Nunca passe o PF (`00:02.0`).
 - [x] VM `teste-sr-iov` recebe **1 VF** (`00:02.1`, hostdev managed=no; VFs em vfio-pci)
 - [ ] No máximo 2 VMs com Cursor/Chrome abertos (32 GB)
 - [ ] GPUs discretas não conflitam com o PF da iGPU no host
-- [ ] Guest: DKMS i915-sriov + `lspci` mostra a Intel VF; Hyprland usa a GPU
+- [x] Guest: DKMS i915-sriov + `lspci` mostra a Intel VF com `Kernel driver in use: i915`
 
 ## Referências
 
