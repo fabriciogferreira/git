@@ -21,10 +21,22 @@ CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sunshine"
 CONF_FILE="$CONF_DIR/sunshine.conf"
 
 step "Pacotes"
-run_root pacman -S --needed --noconfirm sunshine libva-utils intel-media-driver \
-    pipewire wireplumber xdg-desktop-portal-hyprland \
-    || run_root pacman -S --needed --noconfirm sunshine libva-utils intel-media-driver pipewire wireplumber
+if ! run_root pacman -S --needed --noconfirm sunshine libva-utils intel-media-driver \
+    pipewire wireplumber xdg-desktop-portal-hyprland 2>/dev/null \
+    && ! run_root pacman -S --needed --noconfirm sunshine libva-utils intel-media-driver \
+        pipewire wireplumber 2>/dev/null; then
+    log "pacman não achou sunshine — tentando AUR (yay/paru)"
+    if command -v yay >/dev/null 2>&1; then
+        yay -S --needed --noconfirm sunshine-bin || yay -S --needed --noconfirm sunshine
+    elif command -v paru >/dev/null 2>&1; then
+        paru -S --needed --noconfirm sunshine-bin || paru -S --needed --noconfirm sunshine
+    else
+        die "pacote 'sunshine' não encontrado. Confira o digitado (sunshine, não shunsine) ou: yay -S sunshine-bin"
+    fi
+    run_root pacman -S --needed --noconfirm libva-utils intel-media-driver pipewire wireplumber || true
+fi
 
+command -v sunshine >/dev/null || die "sunshine não está no PATH após a instalação"
 ok "sunshine: $(command -v sunshine)"
 
 step "VAAPI (Intel VF)"
