@@ -20,6 +20,17 @@ log() { printf '%s\n' "$*"; }
 ok() { log "✓ $*"; }
 step() { log ""; log "==> $*"; }
 
+require_user() {
+    if [ "$(id -u)" -eq 0 ]; then
+        log "error: rode como $USER_NAME (não como root). HOME/systemd --user iriam para /root." >&2
+        exit 1
+    fi
+    if [ "$(id -un)" != "$USER_NAME" ]; then
+        log "error: usuário atual é '$(id -un)'; esperado '$USER_NAME'" >&2
+        exit 1
+    fi
+}
+
 require_aur_helper() {
     if command -v yay >/dev/null 2>&1; then
         AUR_HELPER=yay
@@ -204,9 +215,13 @@ setup_meta_repo_pull() {
     mkdir -p "$(dirname "$unit_dst")"
     ln -sfn "$unit_src" "$unit_dst"
 
-    systemctl --user daemon-reload
-    systemctl --user enable workvm-git-pull.service
-    ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
+    # Don't abort the whole bootstrap if the user bus isn't up yet.
+    if systemctl --user daemon-reload 2>/dev/null \
+        && systemctl --user enable workvm-git-pull.service 2>/dev/null; then
+        ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
+    else
+        log "aviso: systemctl --user falhou; unit linkada em $unit_dst — enable após o 1º login gráfico"
+    fi
 }
 
 setup_grub_timeout() {
@@ -321,6 +336,7 @@ setup_autologin() {
 
 main() {
     log "arch-vm-setup.sh — VM base Arch Linux + Hyprland"
+    require_user
     setup_passwordless
     setup_base
     setup_yay
@@ -328,15 +344,16 @@ main() {
     setup_docker
     setup_clipboard
     setup_apply_dotconfig
-    setup_meta_repo_pull
+    # Boot path first so a later optional step can't block autologin.
     setup_grub_timeout
     setup_luks
     setup_autologin
+    setup_meta_repo_pull
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/arch-project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
-    log "No boot: GRUB sem menu → SDDM autologin → Hyprland (sem senha)"
+    log "Reinicie para testar: GRUB sem menu → SDDM autologin → Hyprland"
     log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
     log "Com projeto: start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }
