@@ -7,12 +7,16 @@
 !tasks.md
 !project-setup.sh
 !vm-setup.sh
+!arch-project-setup.sh
+!arch-vm-setup.sh
 !workvm/
 !workvm/**
 !code-profiles/
 !code-profiles/**
 !files/
 !files/**
+!.config/
+!.config/**
 # Local compose secrets / machine-specific overrides
 workvm/projects/**/.env
 
