@@ -70,19 +70,44 @@ else
 fi
 
 step "Serviço de usuário"
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+UNIT_FILE="$UNIT_DIR/sunshine.service"
+mkdir -p "$UNIT_DIR"
+if [ ! -f "$UNIT_FILE" ] && [ ! -f /usr/lib/systemd/user/sunshine.service ]; then
+    cat >"$UNIT_FILE" <<EOF
+[Unit]
+Description=Sunshine GameStream host
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/sunshine
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+    ok "unit criada: $UNIT_FILE"
+fi
+
 systemctl --user daemon-reload
 systemctl --user enable --now sunshine.service 2>/dev/null \
     || systemctl --user enable --now sunshine 2>/dev/null \
-    || {
-        log "aviso: unit sunshine não encontrada — inicie manualmente: sunshine &"
-        true
-    }
+    || true
 
-if systemctl --user is-active sunshine.service >/dev/null 2>&1 \
-    || systemctl --user is-active sunshine >/dev/null 2>&1; then
+if systemctl --user is-active sunshine.service >/dev/null 2>&1; then
     ok "sunshine ativo (user systemd)"
 else
-    log "aviso: serviço não ativo; rode: sunshine"
+    log "iniciando sunshine em background..."
+    nohup sunshine >/tmp/sunshine.log 2>&1 &
+    sleep 1
+    if pgrep -x sunshine >/dev/null; then
+        ok "sunshine rodando (pid $(pgrep -x sunshine))"
+    else
+        log "aviso: falhou ao iniciar — veja /tmp/sunshine.log"
+        log "        rode na sessão gráfica: sunshine"
+    fi
 fi
 
 log ""
