@@ -109,21 +109,22 @@ Reserva ~6–8 GB para o host. Cada VM ativa com Cursor+Chrome pode ir a ~6–10
    (`i915.enable_guc=3 module_blacklist=xe` — sem `max_vfs`).
 4. Display / fluidez: SPICE+Virtio não fica fluido como o host.
 
-   **Recomendado — Sunshine + Moonlight (VAAPI na VF):**
+   **Looking Glass + kvmfr** (preferível a `/dev/shm`; evita DMA map failure com a VF):
 
    ```bash
-   # host (Moonlight já vem no Omarchy; port-forward da VM session)
-   ./workvm/bin/vm-sunshine-ports.sh teste-sr-iov
-   moonlight   # Add PC → 127.0.0.1
+   # host
+   sudo ./workvm/bin/host-looking-glass-kvmfr-setup.sh
+   ./workvm/bin/vm-looking-glass-kvmfr-attach.sh teste-sr-iov
+   virsh -c qemu:///session start teste-sr-iov
+   looking-glass-client -f /dev/kvmfr0
 
-   # guest
-   git pull
-   ./workvm/bin/guest-sunshine-setup.sh
-   # UI: https://localhost:47990  → PIN no Moonlight
+   # VM (sessão gráfica) — host LG no Linux ainda é experimental
+   ./workvm/bin/guest-looking-glass-setup.sh
+   looking-glass-host
    ```
 
-   Looking Glass + `ivshmem-plain` em `/dev/shm` **quebra** esta VM
-   (`vfio: DMA mapping failed`). Só revisitar com **kvmfr**.
+   Não use `vm-looking-glass-attach.sh` (IVSHMEM em `/dev/shm`) — derruba a VM com a VF.
+   Sunshine/Moonlight ficou como alternativa opcional (mais passos de UI).
 5. Stack da work VM: scripts em `workvm/` (`*-setup.sh` do meta-repo)
 
 Exemplo libvirt **session** (`qemu:///session`, como `teste-sr-iov`):
