@@ -1,6 +1,84 @@
 #!/usr/bin/env bash
 # Shared helpers for workvm project startups.
 
+# Walk up from a path until ~/git-style meta root (directory that contains workvm/lib/common.sh).
+workvm_discover_repo_root() {
+    local dir="${1:-}"
+    if [ -z "$dir" ]; then
+        echo "error: workvm_discover_repo_root <start-dir>" >&2
+        return 1
+    fi
+    dir="$(cd "$dir" && pwd)"
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/workvm/lib/common.sh" ]; then
+            printf '%s\n' "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+    echo "error: meta-repo root não encontrado a partir de: $1" >&2
+    return 1
+}
+
+# Print project ids relative to workvm/projects (e.g. opbed, olie-ai/televisao).
+# A project is a directory with both project.conf and start.sh.
+workvm_list_project_ids() {
+    local projects_dir="${1:-}"
+    local conf rel dir
+    if [ -z "$projects_dir" ] || [ ! -d "$projects_dir" ]; then
+        echo "error: workvm_list_project_ids <projects-dir>" >&2
+        return 1
+    fi
+    while IFS= read -r -d '' conf; do
+        dir="$(dirname "$conf")"
+        [ -f "$dir/start.sh" ] || continue
+        rel="${dir#"${projects_dir}/"}"
+        [ "$rel" != "$dir" ] || continue
+        printf '%s\n' "$rel"
+    done < <(find "$projects_dir" -type f -name project.conf -print0 | sort -z)
+}
+
+# Resolve a user project argument to a relative id under workvm/projects.
+# Accepts full id (olie-ai/televisao) or unique basename (televisao).
+# Prints the id on stdout; returns 1 if missing/ambiguous.
+workvm_resolve_project_id() {
+    local projects_dir="${1:-}"
+    local answer="${2:-}"
+    local id base
+    local -a matches=()
+
+    if [ -z "$projects_dir" ] || [ -z "$answer" ]; then
+        return 1
+    fi
+
+    if [ -f "$projects_dir/$answer/project.conf" ] && [ -f "$projects_dir/$answer/start.sh" ]; then
+        printf '%s\n' "$answer"
+        return 0
+    fi
+
+    while IFS= read -r id; do
+        [ -n "$id" ] || continue
+        base="$(basename "$id")"
+        if [ "$id" = "$answer" ] || [ "$base" = "$answer" ]; then
+            matches+=("$id")
+        fi
+    done < <(workvm_list_project_ids "$projects_dir")
+
+    if [ "${#matches[@]}" -eq 1 ]; then
+        printf '%s\n' "${matches[0]}"
+        return 0
+    fi
+    if [ "${#matches[@]}" -gt 1 ]; then
+        echo "error: projeto ambíguo '$answer' — use o id completo:" >&2
+        local m
+        for m in "${matches[@]}"; do
+            echo "  $m" >&2
+        done
+        return 1
+    fi
+    return 1
+}
+
 # git fetch --prune when HEAD already matches the expected branch (no checkout/merge).
 # Never fails the caller: missing repo / wrong branch / network only warn.
 workvm_fetch_repo() {
@@ -423,35 +501,34 @@ workvm_patch_project_clone_cursor() {
     done
 }
 
-# Patch clones for every workvm/projects/*/project.conf (or a single project name).
+# Patch clones for every workvm/projects/**/project.conf (or a single project id).
 workvm_patch_all_projects_clone_cursor() {
     local only="${1:-}"
     local git_root="${GIT_ROOT:-$HOME/git}"
     local projects_dir="$git_root/workvm/projects"
-    local conf proj
+    local proj resolved
 
     if [ -n "$only" ]; then
-        if [ ! -f "$projects_dir/$only/project.conf" ]; then
+        if ! resolved="$(workvm_resolve_project_id "$projects_dir" "$only")"; then
             echo "error: projeto desconhecido: $only" >&2
             return 1
         fi
         unset CLONE_REPOS 2>/dev/null || true
         CLONE_REPOS=()
         # shellcheck disable=SC1090
-        source "$projects_dir/$only/project.conf"
-        workvm_patch_project_clone_cursor "$only"
+        source "$projects_dir/$resolved/project.conf"
+        workvm_patch_project_clone_cursor "$resolved"
         return 0
     fi
 
-    for conf in "$projects_dir"/*/project.conf; do
-        [ -f "$conf" ] || continue
-        proj="$(basename "$(dirname "$conf")")"
+    while IFS= read -r proj; do
+        [ -n "$proj" ] || continue
         unset CLONE_REPOS 2>/dev/null || true
         CLONE_REPOS=()
         # shellcheck disable=SC1090
-        source "$conf"
+        source "$projects_dir/$proj/project.conf"
         workvm_patch_project_clone_cursor "$proj"
-    done
+    done < <(workvm_list_project_ids "$projects_dir")
 }
 
 # Mirror versioned overlays from files/<project>/ into GIT_ROOT/<project>/.
@@ -595,6 +672,35 @@ workvm_wait_for_http() {
     return 1
 }
 
+# Load ~/.config/environment.d/*.conf into the current shell.
+# Hyprland/Electron do not inherit systemd user manager env from environment.d;
+# Cursor needs those vars for ${env:NAME} interpolation in mcp.json headers.
+workvm_load_environment_d() {
+    local dir="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+    local f line key val
+
+    [ -d "$dir" ] || return 0
+
+    for f in "$dir"/*.conf; do
+        [ -f "$f" ] || continue
+        while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+                ''|\#*) continue ;;
+            esac
+            [[ "$line" == *=* ]] || continue
+            key="${line%%=*}"
+            val="${line#*=}"
+            [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+            if [[ "$val" == \"*\" ]]; then
+                val="${val:1:-1}"
+            elif [[ "$val" == \'*\' ]]; then
+                val="${val:1:-1}"
+            fi
+            export "${key}=${val}"
+        done < "$f"
+    done
+}
+
 workvm_open_cursor() {
     local workspace="$1"
 
@@ -607,6 +713,8 @@ workvm_open_cursor() {
         echo "workvm: cursor not found in PATH" >&2
         return 1
     fi
+
+    workvm_load_environment_d
 
     setsid cursor "$workspace" </dev/null >/tmp/workvm-cursor.log 2>&1 &
 }

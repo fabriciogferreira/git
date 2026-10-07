@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "olie-ai",
+      "path": "/home/fabricio/git/workvm/projects/olie-ai"
+    },
+    {
       "name": "workvm",
       "path": "/home/fabricio/git/workvm"
     },

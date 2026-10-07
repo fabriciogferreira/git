@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bind this machine to a workvm project and enable startup on graphical login.
 # Usage: ./project-setup.sh <project>
+# Project id may be nested (olie-ai/televisao) or a unique basename (televisao).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,11 +14,11 @@ SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 source "$REPO_ROOT/workvm/lib/common.sh"
 
 list_projects() {
-    local dir
-    for dir in "$PROJECTS_SRC"/*/; do
-        [ -d "$dir" ] || continue
-        echo "  $(basename "$dir")"
-    done
+    local id
+    while IFS= read -r id; do
+        [ -n "$id" ] || continue
+        echo "  $id"
+    done < <(workvm_list_project_ids "$PROJECTS_SRC")
 }
 
 show_valid_projects() {
@@ -25,13 +26,15 @@ show_valid_projects() {
     list_projects
 }
 
-# Returns 0 if $1 is a usable project name.
+# Returns 0 if $1 resolves to a usable project id (sets RESOLVED_PROJECT).
 project_is_valid() {
     local name="$1"
+    local resolved
     [ -n "$name" ] || return 1
-    [ -d "$PROJECTS_SRC/$name" ] || return 1
-    [ -f "$PROJECTS_SRC/$name/start.sh" ] || return 1
-    [ -f "$PROJECTS_SRC/$name/project.conf" ] || return 1
+    if ! resolved="$(workvm_resolve_project_id "$PROJECTS_SRC" "$name")"; then
+        return 1
+    fi
+    RESOLVED_PROJECT="$resolved"
     return 0
 }
 
@@ -40,7 +43,7 @@ resolve_project() {
 
     while true; do
         if project_is_valid "$answer"; then
-            PROJECT="$answer"
+            PROJECT="$RESOLVED_PROJECT"
             return 0
         fi
 
@@ -76,7 +79,10 @@ POST_CLONE=()
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
 
+FILES_PROJECT="${PROJECT_NAME:-$(basename "$PROJECT")}"
+
 mkdir -p "$CONFIG_ROOT/projects" "$SYSTEMD_USER_DIR"
+mkdir -p "$(dirname "$CONFIG_ROOT/projects/$PROJECT")"
 
 PROJECT_LINK="$CONFIG_ROOT/projects/$PROJECT"
 CURRENT_LINK="$CONFIG_ROOT/current"
@@ -103,8 +109,8 @@ else
     echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
 fi
 
-echo "==> Aplicando files/$PROJECT → clones"
-workvm_apply_files "$REPO_ROOT/files" "$PROJECT"
+echo "==> Aplicando files/$FILES_PROJECT → clones"
+workvm_apply_files "$REPO_ROOT/files" "$FILES_PROJECT"
 
 echo "==> Gravando workvm/.cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
 workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"

@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Startup for the Olie development project (run by workvm.service).
+# Startup for the Televisão development project (run by workvm.service).
 set -euo pipefail
 
 REAL_PROJECT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-REAL_REPO_ROOT="$(cd "$REAL_PROJECT_DIR/../../.." && pwd)"
+_d="$REAL_PROJECT_DIR"
+while [ "$_d" != "/" ] && [ ! -f "$_d/workvm/lib/common.sh" ]; do
+    _d="$(dirname "$_d")"
+done
+if [ ! -f "$_d/workvm/lib/common.sh" ]; then
+    echo "error: meta-repo root não encontrado a partir de $REAL_PROJECT_DIR" >&2
+    exit 1
+fi
+REAL_REPO_ROOT="$_d"
 
 # shellcheck source=/dev/null
 source "$REAL_REPO_ROOT/workvm/lib/common.sh"
@@ -33,7 +41,7 @@ main() {
         log "docker compose failed; continuing with editor/browser"
     elif [ -n "${WAIT_URL:-}" ]; then
         log "waiting for $WAIT_URL"
-        workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-60}" || log "continuing without $WAIT_URL"
+        workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-180}" || log "continuing without $WAIT_URL"
     fi
 
     log "opening Cursor workspace"

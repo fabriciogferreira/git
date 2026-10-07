@@ -1,22 +1,16 @@
 {
     "mcpServers": {
-        "olie-flow-ai": {
-            "type": "http",
-            "url": "https://api.olie.ai/mcp/management",
-            "headers": {
-                "Authorization": "Bearer 21669|KnnsV8cFUzV0srxYSKKPHTx7vRJo0hwkmFiJOdMp29d1f0bd"
-            }
-        },
         "playwright": {
-			"command": "docker",
-			"args": [
-				"container",
-				"exec",
-				"-i",
-				"olie-e2e",
-				"npx",
-				"-y",
-				"@playwright/mcp@latest"]
-		}
+            "command": "docker",
+            "args": [
+                "container",
+                "exec",
+                "-i",
+                "olie-e2e",
+                "npx",
+                "-y",
+                "@playwright/mcp@latest"
+            ]
+        }
     }
 }

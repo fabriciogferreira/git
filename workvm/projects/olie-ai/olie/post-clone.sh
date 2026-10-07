@@ -5,7 +5,15 @@ set -euo pipefail
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
 OLIE="${GIT_ROOT}/olie"
 COMPOSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$COMPOSE_DIR/../../.." && pwd)"
+_d="$COMPOSE_DIR"
+while [ "$_d" != "/" ] && [ ! -f "$_d/workvm/lib/common.sh" ]; do
+    _d="$(dirname "$_d")"
+done
+if [ ! -f "$_d/workvm/lib/common.sh" ]; then
+    echo "error: meta-repo root não encontrado a partir de $COMPOSE_DIR" >&2
+    exit 1
+fi
+REPO_ROOT="$_d"
 
 # shellcheck source=/dev/null
 source "$REPO_ROOT/workvm/lib/common.sh"

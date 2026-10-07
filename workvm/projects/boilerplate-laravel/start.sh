@@ -3,7 +3,15 @@
 set -euo pipefail
 
 REAL_PROJECT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-REAL_REPO_ROOT="$(cd "$REAL_PROJECT_DIR/../../.." && pwd)"
+_d="$REAL_PROJECT_DIR"
+while [ "$_d" != "/" ] && [ ! -f "$_d/workvm/lib/common.sh" ]; do
+    _d="$(dirname "$_d")"
+done
+if [ ! -f "$_d/workvm/lib/common.sh" ]; then
+    echo "error: meta-repo root não encontrado a partir de $REAL_PROJECT_DIR" >&2
+    exit 1
+fi
+REAL_REPO_ROOT="$_d"
 
 # shellcheck source=/dev/null
 source "$REAL_REPO_ROOT/workvm/lib/common.sh"

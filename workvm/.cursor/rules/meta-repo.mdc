@@ -15,9 +15,11 @@ No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de me
    - Gerado por `arch-project-setup.sh` / `project-setup.sh`
    - Lista projeto, URLs git, caminhos absolutos e branch
    - Arquivo local da VM (gitignored) — não editar à mão
-2. **Runtime/systemd:** `~/.config/workvm/current` → `workvm/projects/<nome>`
-3. **Fonte da verdade:** `workvm/projects/<nome>/project.conf` (`CLONE_REPOS`)
+2. **Runtime/systemd:** `~/.config/workvm/current` → `workvm/projects/<id>`
+3. **Fonte da verdade:** `workvm/projects/<id>/project.conf` (`CLONE_REPOS`)
 4. `workvm.service` roda `current/start.sh` no login gráfico
+
+`<id>` pode ser plano (`opbed`) ou aninhado por empresa (`olie-ai/televisao`). Basename único também funciona no setup (`televisao`).
 
 ## Scripts na raiz de `~/git`
 
@@ -29,16 +31,18 @@ No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de me
 
 ## Pastas
 
-- `workvm/projects/<nome>/` — `project.conf`, `start.sh`, `post-clone.sh`, `workspace.code-workspace`
+- `workvm/projects/<id>/` — `project.conf`, `start.sh`, `post-clone.sh`, `workspace.code-workspace`
+- `workvm/projects/<empresa>/` — pasta-grupo (sem `project.conf`); MCP compartilhado em `.cursor/mcp.json`
 - `workvm/lib/`, `systemd/`, `bin/`, `docs/`, `host/`, `guest/`
-- `files/` — overlays → clones
+- `files/` — overlays → clones (usa `PROJECT_NAME`, não o id aninhado)
 - `.config/` — overlay Hyprland → `~/.config`
 - `code-profiles/` — perfis Cursor
 
 ## Workspace Cursor (opção recomendada)
 
-`workvm/projects/<nome>/workspace.code-workspace`:
+`workvm/projects/<id>/workspace.code-workspace`:
 
+- root **empresa** (ex. `olie-ai`) → MCP compartilhado (`.cursor/mcp.json`)
 - root **workvm** → rules/skills deste meta
 - root **cada clone** → `.cursor` daquele repositório
 

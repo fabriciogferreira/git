@@ -69,6 +69,31 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 
+-- Import ~/.config/environment.d into the graphical session so GUI apps
+-- (Cursor, browsers) see vars used by MCP ${env:NAME} interpolation.
+do
+    local env_dir = (os.getenv("HOME") or "") .. "/.config/environment.d"
+    local listing = io.popen('find "' .. env_dir .. '" -maxdepth 1 -name "*.conf" -type f 2>/dev/null')
+    if listing then
+        for file in listing:lines() do
+            local fh = io.open(file, "r")
+            if fh then
+                for line in fh:lines() do
+                    if not line:match("^%s*#") and line:find("=") then
+                        local key, val = line:match("^%s*([A-Za-z_][A-Za-z0-9_]*)%s*=%s*(.-)%s*$")
+                        if key and val then
+                            val = val:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+                            hl.env(key, val)
+                        end
+                    end
+                end
+                fh:close()
+            end
+        end
+        listing:close()
+    end
+end
+
 
 -----------------------
 ----- PERMISSIONS -----
