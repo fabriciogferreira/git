@@ -67,8 +67,8 @@ fi
 echo "→ boilerplate-laravel: php artisan migrate --force"
 (
     cd "$APP"
-    docker compose -f "$COMPOSE_FILE" up -d postgres redis
-    # Sem --no-deps: precisa da rede para resolver host "postgres"
+    # workspace depends_on postgres (service_healthy) in compose.dev.yaml —
+    # compose waits until pg_isready before running migrate.
     docker compose -f "$COMPOSE_FILE" run --rm \
         -u "${HOST_UID}:${HOST_GID}" \
         workspace \
