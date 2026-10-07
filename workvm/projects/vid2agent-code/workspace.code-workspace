@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "git (meta)",
+      "path": "/home/fabricio/git"
+    },
+    {
       "name": "vid2agent-code",
       "path": "/home/fabricio/git/vid2agent-code/vid2agent-code"
     }

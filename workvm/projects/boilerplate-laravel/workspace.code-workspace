@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "git (meta)",
+      "path": "/home/fabricio/git"
+    },
+    {
       "name": "boilerplate-laravel",
       "path": "/home/fabricio/git/boilerplate-laravel/boilerplate-laravel"
     }

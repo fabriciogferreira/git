@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "git (meta)",
+      "path": "/home/fabricio/git"
+    },
+    {
       "name": "api-main",
       "path": "/home/fabricio/git/olie/api-main"
     },
@@ -11,6 +15,18 @@
     {
       "name": "backoffice",
       "path": "/home/fabricio/git/olie/backoffice"
+    },
+    {
+      "name": "landing",
+      "path": "/home/fabricio/git/olie/landing"
+    },
+    {
+      "name": "docker-workspace",
+      "path": "/home/fabricio/git/olie/docker-workspace"
+    },
+    {
+      "name": "websocket",
+      "path": "/home/fabricio/git/olie/websocket"
     }
   ],
   "settings": {}

@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "git (meta)",
+      "path": "/home/fabricio/git"
+    },
+    {
       "name": "televisao-api",
       "path": "/home/fabricio/git/televisao/televisao-api"
     },

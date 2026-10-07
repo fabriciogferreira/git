@@ -69,3 +69,4 @@ Só o que o `.gitignore` libera (ex.: `olie/olie-e2e/`). Outros clones Olie/opbe
 - Não commitar secrets (`.env`, tokens, `mcp.json` com Bearer, etc.)
 - Preferir `arch-*` scripts em VMs Arch; não misturar comandos Omarchy (`omarchy …`)
 - Descobrir projeto/repos desta VM: ler `.cursor/rules/workvm-project.mdc` (se ausente, `~/.config/workvm/current/project.conf`)
+- Workspace Cursor: `workvm/projects/<nome>/workspace.code-workspace` (multi-root: meta `~/git` + clones). Abrir esse arquivo = 1 janela. Nota: com `~/git` como root, rules nested sob `files/` e clones também aparecem no meta — evoluir depois para root `workvm` + clones.
