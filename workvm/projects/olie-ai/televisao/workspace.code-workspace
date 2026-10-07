@@ -23,6 +23,14 @@
     {
       "name": "televisao-meet-core",
       "path": "/home/fabricio/git/televisao/televisao-meet-core"
+    },
+    {
+      "name": "televisao-front-e2e",
+      "path": "/home/fabricio/git/televisao/televisao-front-e2e"
+    },
+    {
+      "name": "televisao-meet-front-e2e",
+      "path": "/home/fabricio/git/televisao/televisao-meet-front-e2e"
     }
   ],
   "settings": {}

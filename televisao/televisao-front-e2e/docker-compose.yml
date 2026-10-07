@@ -1,0 +1,32 @@
+# Standalone Playwright runner for televisao-front.
+# Uses host networking so Chromium's localhost matches NEXT_PUBLIC_API_URL
+# (http://localhost:8000) and the published front port (:3000).
+#
+# Stack must already be up: cd ../televisao-api && docker compose up -d
+# Run tests: ./run.sh
+
+services:
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: televisao/front-e2e
+    container_name: televisao-front-e2e
+    ipc: host
+    network_mode: host
+    # Start as root so entrypoint can fix bind-mount perms, then drop to pwuser.
+    user: "0:0"
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      E2E_BASE_URL: ${E2E_BASE_URL:-http://localhost:3000}
+      E2E_API_URL: ${E2E_API_URL:-http://localhost:8000}
+      E2E_USER: ${E2E_USER:-super@super.super}
+      E2E_PASSWORD: ${E2E_PASSWORD:-password}
+    volumes:
+      - ./tests:/app/tests
+      - ./playwright.config.ts:/app/playwright.config.ts
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report

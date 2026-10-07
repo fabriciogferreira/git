@@ -1,0 +1,30 @@
+# televisao-front-e2e
+
+Playwright E2E against `televisao-front`. Outside that repo on purpose (local/meta only).
+
+## Run
+
+```bash
+# stack already up (televisao-api compose)
+cd ../televisao-api && docker compose up -d
+
+cd ../televisao-front-e2e
+./run.sh
+./run.sh tests/auth.smoke.spec.ts
+```
+
+Auth coverage in `tests/auth.smoke.spec.ts`:
+
+- Login page heading, empty-field validation, invalid credentials toast
+- Successful login (seed `super@super.super` / `password`) → `/dashboard`
+- Clinic / doctor signup links and forgot-password link
+- Logout back to `/login`
+
+Container uses `network_mode: host` so Chromium `localhost` matches
+`NEXT_PUBLIC_API_URL` (`http://localhost:8000`) and the front on `:3000`.
+
+## Defaults
+
+`super@super.super` / `password` (`UserSeeder` local factory password).
+
+Optional overrides: copy `.env.example` → `.env`.

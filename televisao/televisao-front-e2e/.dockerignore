@@ -1,0 +1,9 @@
+node_modules
+test-results
+playwright-report
+blob-report
+.env
+.git
+playwright/.cache
+playwright/.auth
+*.md
