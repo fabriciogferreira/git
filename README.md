@@ -7,9 +7,9 @@ Documentação para o agente Cursor: [`workvm/.cursor/rules/meta-repo.mdc`](work
 ## Uso rápido (Arch + Hyprland)
 
 ```bash
-~/git/arch-vm-setup.sh
+~/git/vm-setup.sh
 # reboot
-~/git/arch-project-setup.sh <projeto>
+~/git/project-setup.sh <projeto>
 ```
 
 Projetos: ver `workvm/projects/*/`.
@@ -33,8 +33,8 @@ No setup/`start.sh`, `workvm_apply_files` também faz patch local nos clones (`a
 | `files/` | Overlays aplicados nos clones (`files/<projeto>/…`) |
 | `.config/` | Overlay → `~/.config` (Hyprland, etc.) |
 | `code-profiles/` | Perfis Cursor (`.code-profile`) |
-| `arch-vm-setup.sh` / `arch-project-setup.sh` | Bootstrap e bind do projeto (Arch) |
-| `vm-setup.sh` / `project-setup.sh` | Legado Omarchy |
+| `vm-setup.sh` | Bootstrap Arch + Hyprland |
+| `project-setup.sh` | Bind do projeto + `workvm.service` |
 
 Projeto ativo na VM:
 

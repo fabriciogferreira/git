@@ -20,7 +20,7 @@ Quando você mexer em alguma config que está / bate com o que está no `~/git/.
 | --- | --- |
 | `~/.config/<path>` | `~/git/.config/<path>` |
 
-O overlay é aplicado por `arch-vm-setup.sh` (`$GIT_ROOT/.config` → `~/.config`). Editar só o live deixa o repo desatualizado no próximo setup/VM.
+O overlay é aplicado por `vm-setup.sh` (`$GIT_ROOT/.config` → `~/.config`). Editar só o live deixa o repo desatualizado no próximo setup/VM.
 
 ## Workflow
 

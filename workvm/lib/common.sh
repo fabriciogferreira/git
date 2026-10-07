@@ -280,7 +280,7 @@ alwaysApply: true
 
 # WorkVM ativo: \`${project}\`
 
-> Gerado por \`arch-project-setup.sh\` / \`project-setup.sh\` via \`workvm_write_cursor_project_rule\`.
+> Gerado por \`project-setup.sh\` via \`workvm_write_cursor_project_rule\`.
 > Não edite à mão — rode de novo o project-setup para atualizar.
 > Runtime symlink: \`~/.config/workvm/current\` → \`workvm/projects/${project}\`.
 > Cursor workspace root for meta: \`workvm/\` (not all of ~/git).

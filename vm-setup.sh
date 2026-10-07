@@ -1,20 +1,172 @@
 #!/usr/bin/env bash
-# Prepare an Omarchy/Arch development VM base:
-# clipboard Host↔VM, passwordless user/sudo, LUKS auto-unlock, SDDM autologin,
-# Hyprland scrolling layout, Cursor, DBeaver, Postman; strip stock web apps;
-# Matte Black wallpaper and Plymouth unlock.
+# Prepare an Arch Linux + Hyprland development VM base:
+# bootstrap (base-devel, yay), Hyprland stack, apps, Docker,
+# clipboard Host↔VM, passwordless user/sudo, GRUB timeout=0,
+# SDDM autologin (no login prompt), optional LUKS auto-unlock,
+# apply $GIT_ROOT/.config → ~/.config.
 set -euo pipefail
 
 USER_NAME="${USER_NAME:-fabricio}"
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
+GIT_USER_NAME="${GIT_USER_NAME:-Fabrício Gonçalves Ferreira}"
+GIT_USER_EMAIL="${GIT_USER_EMAIL:-fabriciof481@gmail.com}"
+DOTCONFIG_SRC="${DOTCONFIG_SRC:-$GIT_ROOT/.config}"
+DOTCONFIG_DST="${DOTCONFIG_DST:-${XDG_CONFIG_HOME:-$HOME/.config}}"
 LUKS_DEVICE="${LUKS_DEVICE:-/dev/vda2}"
-LUKS_PARTUUID="${LUKS_PARTUUID:-023acdd4-02}"
+LUKS_PARTUUID="${LUKS_PARTUUID:-}"
 KEYFILE="${KEYFILE:-/crypto_keyfile.bin}"
 WAYLAND_VDAGENT_URL="${WAYLAND_VDAGENT_URL:-https://github.com/v-dermichev/wayland-vdagent/releases/download/v0.3.3/wayland-vdagent-x86_64-linux}"
+YAY_TMP="${YAY_TMP:-/tmp/yay-bootstrap}"
 
 log() { printf '%s\n' "$*"; }
 ok() { log "✓ $*"; }
 step() { log ""; log "==> $*"; }
+
+require_user() {
+    if [ "$(id -u)" -eq 0 ]; then
+        log "error: rode como $USER_NAME (não como root). HOME/systemd --user iriam para /root." >&2
+        exit 1
+    fi
+    if [ "$(id -un)" != "$USER_NAME" ]; then
+        log "error: usuário atual é '$(id -un)'; esperado '$USER_NAME'" >&2
+        exit 1
+    fi
+}
+
+require_aur_helper() {
+    if command -v yay >/dev/null 2>&1; then
+        AUR_HELPER=yay
+        return 0
+    fi
+    if command -v paru >/dev/null 2>&1; then
+        AUR_HELPER=paru
+        return 0
+    fi
+    log "error: precisa de yay ou paru para pacotes AUR" >&2
+    exit 1
+}
+
+aur_install() {
+    require_aur_helper
+    "$AUR_HELPER" -S --needed --noconfirm "$@"
+}
+
+setup_base() {
+    step "Pacotes base (git, base-devel, openssh)"
+
+    sudo pacman -S --needed --noconfirm git base-devel openssh
+    ok "git + base-devel + openssh"
+}
+
+setup_git_identity() {
+    step "git user.name / user.email (global)"
+
+    if ! command -v git >/dev/null 2>&1; then
+        log "error: git ausente; rode setup_base antes" >&2
+        exit 1
+    fi
+
+    git config --global user.name "$GIT_USER_NAME"
+    git config --global user.email "$GIT_USER_EMAIL"
+    ok "git identity: $GIT_USER_NAME <$GIT_USER_EMAIL>"
+}
+
+# Cursor Agent may append Co-authored-by / Made-with trailers; strip them in commit-msg.
+# Also disable CLI attribution. IDE: Cursor Settings → Git & Pull Requests → Attribution OFF.
+setup_git_no_cursor_attribution() {
+    step "git: desativar attribution Cursor (CLI + hook)"
+
+    local hooks_dir="$HOME/.git-hooks"
+    mkdir -p "$hooks_dir"
+
+    cat >"$hooks_dir/commit-msg" <<'EOF'
+#!/bin/sh
+# Strip Cursor attribution trailers; keep human Co-authored-by lines.
+tmp="$1.tmp"
+grep -viE '^(Co-authored-by:[[:space:]]*Cursor[[:space:]]*<cursoragent@cursor\.com>|Made-with:[[:space:]]*Cursor)[[:space:]]*$' "$1" > "$tmp" && mv "$tmp" "$1"
+EOF
+    chmod +x "$hooks_dir/commit-msg"
+    git config --global core.hooksPath "$hooks_dir"
+
+    mkdir -p "$HOME/.cursor"
+    cat >"$HOME/.cursor/cli-config.json" <<'EOF'
+{
+  "attribution": {
+    "attributeCommitsToAgent": false,
+    "attributePRsToAgent": false
+  }
+}
+EOF
+    chmod 600 "$HOME/.cursor/cli-config.json"
+
+    ok "core.hooksPath=$hooks_dir + ~/.cursor/cli-config.json (attribution off)"
+    log "  IDE: Cursor Settings → Git & Pull Requests → desligar Commit/PR Attribution"
+}
+
+setup_yay() {
+    step "yay (AUR helper)"
+
+    if command -v yay >/dev/null 2>&1; then
+        ok "yay já instalado"
+        return 0
+    fi
+
+    # makepkg refuses to run as root.
+    if [ "$(id -u)" -eq 0 ]; then
+        log "error: rode o script como $USER_NAME (não como root) para instalar o yay" >&2
+        exit 1
+    fi
+
+    rm -rf "$YAY_TMP"
+    git clone --depth 1 https://aur.archlinux.org/yay.git "$YAY_TMP"
+    (cd "$YAY_TMP" && makepkg -si --noconfirm)
+    rm -rf "$YAY_TMP"
+
+    if ! command -v yay >/dev/null 2>&1; then
+        log "error: yay não ficou no PATH após makepkg -si" >&2
+        exit 1
+    fi
+    ok "yay instalado"
+}
+
+# Mirror versioned overlays from $GIT_ROOT/.config/ into ~/.config/
+# Convention: .config/hypr/hyprland.lua → $HOME/.config/hypr/hyprland.lua
+# Safe to re-run (rsync -a / cp -a replaces without --delete).
+setup_apply_dotconfig() {
+    step "Aplicando .config/ do meta-repo → ~/.config"
+
+    if [ ! -d "$DOTCONFIG_SRC" ]; then
+        log "aviso: $DOTCONFIG_SRC ausente; pulando overlay de config"
+        return 0
+    fi
+
+    mkdir -p "$DOTCONFIG_DST"
+
+    local child base dest
+    shopt -s nullglob dotglob
+    for child in "$DOTCONFIG_SRC"/*; do
+        base="$(basename "$child")"
+        if [ "$base" = ".gitkeep" ]; then
+            continue
+        fi
+        dest="$DOTCONFIG_DST/$base"
+        if [ -d "$child" ]; then
+            mkdir -p "$dest"
+            log "  sync dir: .config/$base/"
+            if command -v rsync >/dev/null 2>&1; then
+                rsync -a "$child/" "$dest/"
+            else
+                cp -a "$child"/. "$dest"/
+            fi
+        elif [ -f "$child" ]; then
+            log "  sync file: .config/$base"
+            cp -a "$child" "$dest"
+        fi
+    done
+    shopt -u nullglob dotglob
+
+    ok "overlay aplicado: $DOTCONFIG_SRC → $DOTCONFIG_DST"
+}
 
 setup_clipboard() {
     step "Clipboard Host ↔ VM"
@@ -34,76 +186,11 @@ setup_clipboard() {
     mkdir -p "$HOME/.config/autostart"
     printf '%s\n' '[Desktop Entry]' 'Hidden=true' >"$HOME/.config/autostart/spice-vdagent.desktop"
 
-    local autostart_lua="$HOME/.config/hypr/autostart.lua"
-    local launch_line='o.launch_on_start("/usr/local/bin/wayland-vdagent")'
-    if [ -f "$autostart_lua" ]; then
-        if ! grep -qxF "$launch_line" "$autostart_lua"; then
-            sed -i "1a ${launch_line}" "$autostart_lua"
-        else
-            ok "wayland-vdagent já no autostart.lua"
-        fi
-    else
-        log "aviso: $autostart_lua não encontrado; pulando autostart Hyprland"
-    fi
-
+    # Autostart no Hyprland vem do overlay versionado (.config/hypr/hyprland.lua).
     pkill -x spice-vdagent 2>/dev/null || true
     pkill -x wayland-vdagent 2>/dev/null || true
     /usr/local/bin/wayland-vdagent >/tmp/wayland-vdagent.log 2>&1 &
     ok "Clipboard configurado"
-}
-
-# Names must match ~/.local/share/applications/<Name>.desktop (Omarchy stock).
-REMOVE_WEBAPPS=(
-    Discord
-    WhatsApp
-    Zoom
-    YouTube
-    X
-    Twitter
-    'Google Maps'
-    'Google Contacts'
-    'Google Messages'
-    'Google Photos'
-)
-
-remove_webapp() {
-    local name="$1"
-    local desktop="$HOME/.local/share/applications/${name}.desktop"
-
-    if [ ! -f "$desktop" ]; then
-        ok "webapp já ausente: $name"
-        return 0
-    fi
-
-    OMARCHY_REMOVE_NOTIFY=false omarchy webapp remove "$name"
-    ok "webapp removido: $name"
-}
-
-setup_remove_webapps() {
-    step "Removendo web apps (Discord, WhatsApp, Zoom, X, YouTube, Google *)"
-
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para remover web apps" >&2
-        exit 1
-    fi
-
-    local name
-    for name in "${REMOVE_WEBAPPS[@]}"; do
-        remove_webapp "$name"
-    done
-}
-
-# Stock extras not needed on work VMs (omarchy pkg drop skips missing packages).
-setup_remove_packages() {
-    step "Removendo aether, cliamp, moonlight, obsidian, localsend, OBS, kdenlive, pinta"
-
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para remover pacotes" >&2
-        exit 1
-    fi
-
-    omarchy pkg drop aether cliamp moonlight-qt obsidian localsend obs-studio kdenlive pinta
-    ok "pacotes removidos (ou já ausentes)"
 }
 
 setup_passwordless() {
@@ -116,82 +203,21 @@ setup_passwordless() {
     ok "passwd vazio + sudo NOPASSWD"
 }
 
-# Official repos: Cursor (omarchy/cursor-bin) and DBeaver (extra/dbeaver).
-# AUR: Postman (postman-bin). omarchy pkg skips packages that are already installed.
+# Official repos via pacman; AUR via yay.
 setup_apps() {
-    step "Cursor, DBeaver, Postman"
+    step "Hyprland, apps e ferramentas"
 
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para instalar os apps" >&2
-        exit 1
-    fi
+    log "oficial: hyprland kitty hyprlauncher swaybg dbeaver"
+    sudo pacman -S --needed --noconfirm \
+        hyprland \
+        kitty \
+        hyprlauncher \
+        swaybg \
+        dbeaver
 
-    log "Cursor e DBeaver (omarchy pkg add cursor-bin dbeaver)"
-    omarchy pkg add cursor-bin dbeaver
-
-    log "Postman (omarchy pkg aur add postman-bin)"
-    omarchy pkg aur add postman-bin
+    log "AUR: cursor-bin google-chrome postman-bin"
+    aur_install cursor-bin google-chrome postman-bin
     ok "apps instalados (ou já presentes)"
-}
-
-CHROMIUM_FLAGS="${XDG_CONFIG_HOME:-$HOME/.config}/chromium-flags.conf"
-CHROMIUM_OAUTH_FLAG='--oauth2-client-id=77185425430.apps.googleusercontent.com'
-
-setup_chromium_google_account() {
-    step "Chromium Google Account"
-
-    if [ -f "$CHROMIUM_FLAGS" ] && grep -qxF -- "$CHROMIUM_OAUTH_FLAG" "$CHROMIUM_FLAGS"; then
-        ok "Chromium Google Account já instalado"
-        return 0
-    fi
-
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para instalar Chromium Google Account" >&2
-        exit 1
-    fi
-
-    # Official installer only appends if chromium-flags.conf already exists.
-    mkdir -p "$(dirname "$CHROMIUM_FLAGS")"
-    touch "$CHROMIUM_FLAGS"
-
-    omarchy install chromium google account
-    ok "Chromium Google Account instalado"
-}
-
-# Fabio Akita's ai-usagebar: AUR binary + Omarchy Quattro plugin.
-USAGEBAR_PLUGIN_ID="${USAGEBAR_PLUGIN_ID:-akitaonrails.ai-usagebar}"
-USAGEBAR_PLUGIN_URL="${USAGEBAR_PLUGIN_URL:-https://github.com/akitaonrails/ai-usagebar.git}"
-
-setup_usagebar() {
-    step "ai-usagebar (Fabio Akita)"
-
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para instalar ai-usagebar" >&2
-        exit 1
-    fi
-
-    log "binário (omarchy pkg aur add ai-usagebar-bin)"
-    omarchy pkg aur add ai-usagebar-bin
-
-    if omarchy plugin list --json 2>/dev/null | jq -e --arg id "$USAGEBAR_PLUGIN_ID" \
-        'map(select(.id == $id)) | length > 0' >/dev/null; then
-        ok "plugin já instalado: $USAGEBAR_PLUGIN_ID"
-    else
-        log "plugin (omarchy plugin add --enable --yes)"
-        omarchy plugin add "$USAGEBAR_PLUGIN_URL" --enable --yes
-        ok "plugin habilitado: $USAGEBAR_PLUGIN_ID"
-    fi
-
-    if ! command -v ai-usagebar >/dev/null 2>&1; then
-        log "error: ai-usagebar não está no PATH após a instalação" >&2
-        exit 1
-    fi
-
-    # Enable Cursor and make it the default provider in config.toml + bar widget.
-    ai-usagebar settings enable cursor >/dev/null
-    printf '%s\n' '{"schema_version":1,"primary":"cursor"}' | ai-usagebar settings apply >/dev/null
-    omarchy bar set "$USAGEBAR_PLUGIN_ID" provider cursor >/dev/null
-    ok "provider configurado: cursor"
 }
 
 setup_docker() {
@@ -216,88 +242,6 @@ setup_docker() {
     log "  (nova sessão necessária para o grupo valer: logout/login ou: newgrp docker)"
 }
 
-setup_hypr_scrolling() {
-    step "Hyprland layout: scrolling"
-
-    local looknfeel="$HOME/.config/hypr/looknfeel.lua"
-    mkdir -p "$HOME/.config/hypr"
-
-    if [ -f "$looknfeel" ] && grep -qE '^[[:space:]]*layout[[:space:]]*=[[:space:]]*"scrolling"' "$looknfeel"; then
-        ok "layout scrolling já configurado"
-        return 0
-    fi
-
-    if [ ! -f "$looknfeel" ]; then
-        cat >"$looknfeel" <<'EOF'
--- Change the default Omarchy look'n'feel.
-
-hl.config({
-  general = {
-    layout = "scrolling",
-  },
-})
-EOF
-    else
-        cat >>"$looknfeel" <<'EOF'
-
--- Set by vm-setup.sh: default workspace layout
-hl.config({
-  general = {
-    layout = "scrolling",
-  },
-})
-EOF
-    fi
-
-    ok "layout scrolling em $looknfeel"
-}
-
-THEME_NAME="${THEME_NAME:-matte-black}"
-
-setup_appearance() {
-    step "Fundo e unlock: Matte Black"
-
-    if ! command -v omarchy >/dev/null 2>&1; then
-        log "error: omarchy não está no PATH; não dá para aplicar tema" >&2
-        exit 1
-    fi
-
-    local theme_dir bg current_bg current_plymouth shell_json
-    theme_dir="$(omarchy theme dir "$THEME_NAME")"
-    bg="$(find "$theme_dir/backgrounds" -maxdepth 1 -type f \
-        \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
-        ! -name 'omarchy.png' | sort | head -n 1)"
-
-    if [ -z "$bg" ]; then
-        log "error: nenhum wallpaper em $theme_dir/backgrounds" >&2
-        exit 1
-    fi
-
-    current_bg="$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null || true)"
-    if [ "$current_bg" = "$(readlink -f "$bg")" ]; then
-        ok "background já é Matte Black ($(basename "$bg"))"
-    else
-        omarchy theme bg set "$bg"
-        ok "background: $(basename "$bg")"
-    fi
-
-    current_plymouth="$(omarchy plymouth current)"
-    if [ "$current_plymouth" = "$THEME_NAME" ]; then
-        ok "unlock já é Matte Black"
-    else
-        omarchy plymouth set by theme "$THEME_NAME"
-        ok "unlock: Matte Black"
-    fi
-
-    shell_json="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
-    if [ -f "$shell_json" ] && jq -e '.bar.transparent == true' "$shell_json" >/dev/null 2>&1; then
-        ok "barra já transparente"
-    else
-        omarchy bar transparent true
-        ok "barra transparente"
-    fi
-}
-
 setup_meta_repo_pull() {
     step "Auto git fetch do meta-repo (~/git) no login gráfico"
 
@@ -318,70 +262,147 @@ setup_meta_repo_pull() {
     mkdir -p "$(dirname "$unit_dst")"
     ln -sfn "$unit_src" "$unit_dst"
 
-    systemctl --user daemon-reload
-    systemctl --user enable workvm-git-pull.service
-    ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
+    # Don't abort the whole bootstrap if the user bus isn't up yet.
+    if systemctl --user daemon-reload 2>/dev/null \
+        && systemctl --user enable workvm-git-pull.service 2>/dev/null; then
+        ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
+    else
+        log "aviso: systemctl --user falhou; unit linkada em $unit_dst — enable após o 1º login gráfico"
+    fi
 }
 
-setup_luks_autologin() {
-    step "LUKS auto-unlock + SDDM autologin"
+setup_grub_timeout() {
+    step "GRUB timeout=0 (boot direto)"
 
-    if [ ! -f "$KEYFILE" ]; then
-        sudo dd if=/dev/urandom of="$KEYFILE" bs=1024 count=4 status=none
-        sudo chmod 000 "$KEYFILE"
-        sudo cryptsetup luksAddKey "$LUKS_DEVICE" "$KEYFILE"
-        ok "keyfile criado e adicionado ao LUKS"
-    else
-        ok "keyfile já existe: $KEYFILE"
+    if [ ! -f /etc/default/grub ]; then
+        ok "GRUB ausente — pulando"
+        return 0
     fi
 
-    if ! grep -q '/crypto_keyfile.bin' /etc/mkinitcpio.conf; then
-        sudo sed -i 's|^FILES=.*|FILES=(/crypto_keyfile.bin)|' /etc/mkinitcpio.conf
+    if grep -qE '^GRUB_TIMEOUT=0$' /etc/default/grub; then
+        ok "GRUB_TIMEOUT já é 0"
+    else
+        sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+        if ! grep -qE '^GRUB_TIMEOUT=' /etc/default/grub; then
+            printf '%s\n' 'GRUB_TIMEOUT=0' | sudo tee -a /etc/default/grub >/dev/null
+        fi
+        ok "GRUB_TIMEOUT=0"
     fi
 
-    if ! grep -q "cryptkey=/crypto_keyfile.bin" /boot/limine.conf 2>/dev/null; then
-        # Omarchy wraps /usr/local/bin/mkinitcpio and prompts to run limine-mkinitcpio.
-        sudo limine-mkinitcpio
-        sudo sed -i \
-            "s|cryptdevice=PARTUUID=${LUKS_PARTUUID}:root|cryptdevice=PARTUUID=${LUKS_PARTUUID}:root cryptkey=/crypto_keyfile.bin|g" \
-            /boot/limine.conf
-        ok "initramfs + limine atualizados"
+    if grep -qE '^GRUB_TIMEOUT_STYLE=' /etc/default/grub; then
+        sudo sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' /etc/default/grub
     else
-        ok "limine já possui cryptkey="
+        printf '%s\n' 'GRUB_TIMEOUT_STYLE=hidden' | sudo tee -a /etc/default/grub >/dev/null
+    fi
+
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    ok "grub.cfg regenerado"
+}
+
+setup_luks() {
+    step "LUKS auto-unlock (se aplicável)"
+
+    if [ -b "$LUKS_DEVICE" ] && sudo cryptsetup isLuks "$LUKS_DEVICE" 2>/dev/null; then
+        if [ ! -f "$KEYFILE" ]; then
+            sudo dd if=/dev/urandom of="$KEYFILE" bs=1024 count=4 status=none
+            sudo chmod 000 "$KEYFILE"
+            sudo cryptsetup luksAddKey "$LUKS_DEVICE" "$KEYFILE"
+            ok "keyfile criado e adicionado ao LUKS"
+        else
+            ok "keyfile já existe: $KEYFILE"
+        fi
+
+        if ! grep -q '/crypto_keyfile.bin' /etc/mkinitcpio.conf; then
+            sudo sed -i 's|^FILES=.*|FILES=(/crypto_keyfile.bin)|' /etc/mkinitcpio.conf
+        fi
+
+        if [ -z "$LUKS_PARTUUID" ]; then
+            LUKS_PARTUUID="$(sudo blkid -s PARTUUID -o value "$LUKS_DEVICE" 2>/dev/null || true)"
+        fi
+
+        if [ -f /etc/default/grub ]; then
+            if ! grep -q 'cryptkey=/crypto_keyfile.bin' /etc/default/grub; then
+                sudo sed -i \
+                    's|GRUB_CMDLINE_LINUX="\([^"]*\)"|GRUB_CMDLINE_LINUX="\1 cryptkey=/crypto_keyfile.bin"|' \
+                    /etc/default/grub
+                sudo mkinitcpio -P
+                sudo grub-mkconfig -o /boot/grub/grub.cfg
+                ok "initramfs + GRUB atualizados com cryptkey="
+            else
+                ok "GRUB já possui cryptkey="
+            fi
+        elif [ -f /boot/limine.conf ]; then
+            if ! grep -q "cryptkey=/crypto_keyfile.bin" /boot/limine.conf; then
+                if command -v limine-mkinitcpio >/dev/null 2>&1; then
+                    sudo limine-mkinitcpio
+                else
+                    sudo mkinitcpio -P
+                fi
+                if [ -n "$LUKS_PARTUUID" ]; then
+                    sudo sed -i \
+                        "s|cryptdevice=PARTUUID=${LUKS_PARTUUID}:root|cryptdevice=PARTUUID=${LUKS_PARTUUID}:root cryptkey=/crypto_keyfile.bin|g" \
+                        /boot/limine.conf
+                fi
+                ok "initramfs + limine atualizados"
+            else
+                ok "limine já possui cryptkey="
+            fi
+        else
+            log "aviso: LUKS presente, mas nem GRUB nem Limine encontrados para cryptkey="
+            sudo mkinitcpio -P
+        fi
+    else
+        ok "sem LUKS em $LUKS_DEVICE — pulando auto-unlock"
+    fi
+}
+
+# Boot → SDDM → Hyprland as $USER_NAME, no greeter / password prompt.
+# Relies on setup_passwordless (empty passwd + sudo NOPASSWD) as fallback.
+setup_autologin() {
+    step "SDDM autologin → Hyprland (sem tela de login)"
+
+    sudo pacman -S --needed --noconfirm sddm
+
+    if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland)" >&2
+        exit 1
     fi
 
     sudo mkdir -p /etc/sddm.conf.d
-    if [ ! -f /etc/sddm.conf.d/autologin.conf ]; then
-        printf '%s\n' \
-            '[Autologin]' \
-            "User=${USER_NAME}" \
-            'Session=omarchy.desktop' \
-            'Relogin=true' \
-            | sudo tee /etc/sddm.conf.d/autologin.conf >/dev/null
-        ok "SDDM autologin criado"
-    else
-        ok "SDDM autologin já existe"
-    fi
+    printf '%s\n' \
+        '[Autologin]' \
+        "User=${USER_NAME}" \
+        'Session=hyprland' \
+        'Relogin=true' \
+        | sudo tee /etc/sddm.conf.d/autologin.conf >/dev/null
+
+    # Become the graphical display manager on next boot.
+    sudo systemctl enable sddm.service
+    ok "SDDM autologin: User=${USER_NAME} Session=hyprland (enable sddm)"
 }
 
 main() {
-    log "vm-setup.sh — VM base Omarchy"
+    log "vm-setup.sh — VM base Arch Linux + Hyprland"
+    require_user
     setup_passwordless
-    setup_remove_webapps
-    setup_remove_packages
+    setup_base
+    setup_git_identity
+    setup_git_no_cursor_attribution
+    setup_yay
     setup_apps
-    setup_chromium_google_account
-    setup_usagebar
     setup_docker
     setup_clipboard
-    setup_hypr_scrolling
-    setup_appearance
+    setup_apply_dotconfig
+    # Boot path first so a later optional step can't block autologin.
+    setup_grub_timeout
+    setup_luks
+    setup_autologin
     setup_meta_repo_pull
-    setup_luks_autologin
     log ""
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
+    log "Reinicie para testar: GRUB sem menu → SDDM autologin → Hyprland"
     log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
     log "Com projeto: start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }

@@ -12,7 +12,7 @@ No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de me
 ## Como a VM sabe o projeto ativo
 
 1. **Para o agente Cursor (preferido):** `workvm/.cursor/rules/workvm-project.mdc` (`alwaysApply`)
-   - Gerado por `arch-project-setup.sh` / `project-setup.sh`
+   - Gerado por `project-setup.sh`
    - Lista projeto, URLs git, caminhos absolutos e branch
    - Arquivo local da VM (gitignored) — não editar à mão
 2. **Runtime/systemd:** `~/.config/workvm/current` → `workvm/projects/<id>`
@@ -25,9 +25,8 @@ No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de me
 
 | Script | Função |
 | --- | --- |
-| `arch-vm-setup.sh` | Bootstrap Arch + Hyprland |
-| `arch-project-setup.sh` | Bind do projeto + gera `workvm-project.mdc` |
-| `vm-setup.sh` / `project-setup.sh` | Legado Omarchy |
+| `vm-setup.sh` | Bootstrap Arch + Hyprland |
+| `project-setup.sh` | Bind do projeto + gera `workvm-project.mdc` |
 
 ## Pastas
 
@@ -64,4 +63,4 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
 - Não commitar secrets
-- Preferir scripts `arch-*` em VMs Arch
+- Scripts de bootstrap: `vm-setup.sh` / `project-setup.sh`

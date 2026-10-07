@@ -7,8 +7,6 @@
 !tasks.md
 !project-setup.sh
 !vm-setup.sh
-!arch-project-setup.sh
-!arch-vm-setup.sh
 !workvm/
 !workvm/**
 !code-profiles/

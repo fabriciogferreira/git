@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Bind this machine to a workvm project and enable startup on graphical login.
+# Bind this Arch + Hyprland machine to a workvm project and enable startup on
+# graphical login.
 # Usage: ./project-setup.sh <project>
 # Project id may be nested (olie-ai/televisao) or a unique basename (televisao).
 set -euo pipefail
