@@ -26,3 +26,5 @@ workvm/projects/**/.env
 !olie/olie-e2e/**
 !.cursor/
 !.cursor/**
+# Gerado por project-setup (projeto desta VM); não versionar
+.cursor/rules/workvm-project.mdc

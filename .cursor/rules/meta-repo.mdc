@@ -1,0 +1,71 @@
+---
+description: O que é este meta-repo, pastas e scripts de work VM
+alwaysApply: true
+---
+
+# Meta-repo `~/git` (work VMs)
+
+Este repositório **não** é um app de produto. É o meta-repo que provisiona e amarra **VMs de desenvolvimento** (Omarchy legado ou Arch + Hyprland) a um projeto de trabalho: clona repos, sobe Docker, abre Cursor/browser no login gráfico.
+
+## Como a VM sabe o projeto ativo
+
+1. **Para o agente Cursor (preferido):** `.cursor/rules/workvm-project.mdc` (`alwaysApply`)
+   - Gerado por `arch-project-setup.sh` / `project-setup.sh`
+   - Lista projeto, URLs git, caminhos absolutos e branch
+   - Arquivo local da VM (gitignored) — não editar à mão
+2. **Runtime/systemd:** `~/.config/workvm/current` → `workvm/projects/<nome>`
+3. **Fonte da verdade:** `workvm/projects/<nome>/project.conf` (`CLONE_REPOS`)
+4. `workvm.service` roda `current/start.sh` no login gráfico
+
+## Scripts na raiz
+
+| Script | Função |
+| --- | --- |
+| `arch-vm-setup.sh` | Bootstrap Arch + Hyprland (apps, Docker, SDDM autologin, overlay `.config/`, GRUB timeout, clipboard) |
+| `arch-project-setup.sh` | Escolhe projeto, clona repos, pós-clone, enable `workvm.service`, roda `start.sh` |
+| `vm-setup.sh` | Legado Omarchy (manter até migrar tudo) |
+| `project-setup.sh` | Legado Omarchy (mesmo papel do arch-project-setup) |
+
+Fluxo típico Arch: `arch-vm-setup.sh` → reboot → `arch-project-setup.sh <projeto>`.
+
+## Pastas versionadas
+
+### `workvm/`
+
+Coração do runtime da work VM.
+
+- `projects/<nome>/` — um projeto por pasta: `project.conf`, `start.sh`, `post-clone.sh`, `workspace.code-workspace`
+- `lib/common.sh` — helpers (clone/fetch, compose, Wayland, abrir Cursor/browser)
+- `systemd/` — units user (`workvm.service`, `workvm-git-pull.service`)
+- `bin/` — scripts host/guest (pull do meta-repo, iGPU SR-IOV, Looking Glass, Sunshine, …)
+- `docs/` — documentação operacional (ex.: SR-IOV da iGPU)
+- `host/`, `guest/` — snippets de config para o host e o guest (systemd, tmpfiles, limine, …)
+
+Projetos atuais: `olie`, `opbed`, `televisao`, `vid2agent-code`, `boilerplate-laravel`.
+
+### `files/`
+
+Overlays versionados aplicados nos clones: `files/<projeto>/<repo-rel>/…` → `$GIT_ROOT/<projeto>/<repo-rel>/…`  
+Ex.: `files/olie/api-main/.cursor` → `~/git/olie/api-main/.cursor`.  
+Usado no setup e de novo no `start.sh` (sem `--delete`).
+
+### `.config/`
+
+Overlay de config do usuário Arch/Hyprland: `git/.config/…` → `~/.config/…`  
+Aplicado por `arch-vm-setup.sh` (`setup_apply_dotconfig`). Hoje: Hyprland Lua, hyprpaper.conf, wallpaper.
+
+### `code-profiles/`
+
+Perfis exportados do Cursor (`.code-profile`) para reutilizar em VMs/máquinas.
+
+### `olie/` (parcialmente versionado)
+
+Só o que o `.gitignore` libera (ex.: `olie/olie-e2e/`). Outros clones Olie/opbed/etc. sob `$GIT_ROOT` são **runtime** do project-setup, não o núcleo deste meta-repo.
+
+## Convenções para o agente
+
+- Commits/PRs só quando o usuário pedir; mensagens focadas no *porquê*; Conventional Commits se couber
+- **Nunca** trailers `Co-Authored-By` (Cursor/Claude/Copilot/AI)
+- Não commitar secrets (`.env`, tokens, `mcp.json` com Bearer, etc.)
+- Preferir `arch-*` scripts em VMs Arch; não misturar comandos Omarchy (`omarchy …`)
+- Descobrir projeto/repos desta VM: ler `.cursor/rules/workvm-project.mdc` (se ausente, `~/.config/workvm/current/project.conf`)

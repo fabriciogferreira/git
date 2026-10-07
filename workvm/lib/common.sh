@@ -137,6 +137,105 @@ workvm_clone_project_repos() {
     done
 }
 
+# Write .cursor/rules/workvm-project.mdc (alwaysApply) so Cursor agents know
+# which workvm project this machine is bound to and where the clones live.
+# Expects CLONE_REPOS (and optionally COMPOSE_DIR, WAIT_URL, CHROMIUM_URLS)
+# already sourced from project.conf. Safe to re-run.
+workvm_write_cursor_project_rule() {
+    local repo_root="$1"
+    local project="$2"
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local out="$repo_root/.cursor/rules/workvm-project.mdc"
+    local entry repo dest branch rest abs compose_disp
+    local -a rows=()
+
+    if [ -z "$repo_root" ] || [ -z "$project" ]; then
+        echo "error: workvm_write_cursor_project_rule <repo_root> <project>" >&2
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$out")"
+
+    for entry in "${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}"; do
+        [ -n "$entry" ] || continue
+        repo="${entry%% *}"
+        rest="${entry#* }"
+        if [ -z "$rest" ] || [ "$repo" = "$rest" ]; then
+            echo "aviso: CLONE_REPOS entry inválida na rule Cursor: $entry" >&2
+            continue
+        fi
+        dest="${rest%% *}"
+        if [ "$dest" = "$rest" ]; then
+            branch="—"
+        else
+            branch="${rest#* }"
+            branch="${branch%% *}"
+        fi
+        case "$dest" in
+            /*) abs="$dest" ;;
+            *) abs="${git_root}/${dest}" ;;
+        esac
+        rows+=("| \`${repo}\` | \`${abs}\` | \`${branch}\` |")
+    done
+
+    compose_disp="${COMPOSE_DIR:-—}"
+    case "$compose_disp" in
+        /*) ;;
+        —) ;;
+        *) compose_disp="${git_root}/${compose_disp}" ;;
+    esac
+
+    local compose_file_disp="${COMPOSE_FILE:-docker-compose.yml}"
+    local wait_disp="${WAIT_URL:-—}"
+    local browser_disp="—"
+    if [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
+        browser_disp="${CHROMIUM_URLS[*]}"
+    fi
+
+    cat >"$out" <<EOF
+---
+description: Projeto workvm ativo nesta VM (${project}) — repos e caminhos
+alwaysApply: true
+---
+
+# WorkVM ativo: \`${project}\`
+
+> Gerado por \`arch-project-setup.sh\` / \`project-setup.sh\` via \`workvm_write_cursor_project_rule\`.
+> Não edite à mão — rode de novo o project-setup para atualizar.
+> Runtime symlink: \`~/.config/workvm/current\` → \`workvm/projects/${project}\`.
+
+## Repositórios
+
+| Git URL | Caminho local | Branch |
+| --- | --- | --- |
+EOF
+
+    if [ "${#rows[@]}" -gt 0 ]; then
+        local row
+        for row in "${rows[@]}"; do
+            printf '%s\n' "$row" >>"$out"
+        done
+    else
+        printf '%s\n' '| _(nenhum CLONE_REPOS)_ | — | — |' >>"$out"
+    fi
+
+    cat >>"$out" <<EOF
+
+## Runtime
+
+- **Compose dir:** \`${compose_disp}\`
+- **Compose file:** \`${compose_file_disp}\`
+- **Wait URL:** \`${wait_disp}\`
+- **Browser URLs:** \`${browser_disp}\`
+- **Workspace:** \`workvm/projects/${project}/workspace.code-workspace\`
+- **Start:** \`workvm/projects/${project}/start.sh\` (também via \`workvm.service\`)
+
+Ao trabalhar nesta VM, trate os caminhos da tabela como o escopo do projeto ativo.
+EOF
+
+    echo "→ Cursor rule: $out"
+}
+
 # Mirror versioned overlays from files/<project>/ into GIT_ROOT/<project>/.
 # Convention: files/olie/olie-fronts/.cursor → $GIT_ROOT/olie/olie-fronts/.cursor
 # Skips first-level entries whose clone destination does not exist yet.
