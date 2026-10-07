@@ -44,6 +44,18 @@ No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de me
 
 Uma janela; sem poluição de nested rules sob `~/git`.
 
+## Patch local nos clones (multi-root)
+
+`workvm_apply_files` (setup + `start.sh` de **todo** projeto) aplica um patch **só na VM**, sem push:
+
+- `.cursor/rules/*.mdc` com `alwaysApply: true` → `false` + `globs: "**/*"`
+- `AGENTS.md` → stub + conteúdo em `.cursor/rules/workvm-local-agents.mdc` (globs)
+- `git update-index --skip-worktree` nos arquivos tocados; `workvm-local-agents.mdc` no exclude local
+
+Manual (todos os projetos ou um): `workvm/bin/patch-clone-cursor.sh [projeto]`
+
+Assim rules de um clone não entram em todo chat multi-root. **Não commitar** essas mudanças nos repos da empresa.
+
 ## Convenções
 
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI

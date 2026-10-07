@@ -239,6 +239,221 @@ EOF
     echo "→ Cursor rule: $out"
 }
 
+# --- Local Cursor patches on clones (never commit; skip-worktree) -----------------
+# Multi-root loads alwaysApply from every root. Downgrade clone alwaysApply rules
+# to globs, and relocate AGENTS.md into a globs-scoped .mdc, so backend-only chats
+# do not pull frontend alwaysApply noise. Remote repos stay unchanged if not committed.
+
+workvm_git_relpath() {
+    local repo="$1"
+    local file="$2"
+    local rel
+    rel="${file#"${repo}/"}"
+    if [ "$rel" = "$file" ]; then
+        rel="$(basename "$file")"
+    fi
+    printf '%s\n' "$rel"
+}
+
+workvm_git_skip_worktree() {
+    local repo="$1"
+    local file="$2"
+    local rel
+    rel="$(workvm_git_relpath "$repo" "$file")"
+    git -C "$repo" update-index --skip-worktree -- "$rel" 2>/dev/null || true
+}
+
+workvm_git_unskip_worktree() {
+    local repo="$1"
+    local file="$2"
+    local rel
+    rel="$(workvm_git_relpath "$repo" "$file")"
+    git -C "$repo" update-index --no-skip-worktree -- "$rel" 2>/dev/null || true
+}
+
+workvm_git_exclude_add() {
+    local repo="$1"
+    local pattern="$2"
+    local exclude="$repo/.git/info/exclude"
+    [ -d "$repo/.git" ] || return 0
+    mkdir -p "$(dirname "$exclude")"
+    touch "$exclude"
+    if ! grep -qxF "$pattern" "$exclude" 2>/dev/null; then
+        printf '%s\n' "$pattern" >>"$exclude"
+    fi
+}
+
+# Rewrite .mdc frontmatter: alwaysApply true → false; ensure globs present.
+workvm_patch_mdc_always_apply() {
+    local file="$1"
+    python3 - "$file" <<'PY'
+import re, sys
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+if not text.startswith("---"):
+    sys.exit(0)
+parts = text.split("---", 2)
+if len(parts) < 3:
+    sys.exit(0)
+fm, body = parts[1], parts[2]
+if not re.search(r"(?m)^alwaysApply:\s*true\s*$", fm):
+    sys.exit(0)
+fm = re.sub(r"(?m)^alwaysApply:\s*true\s*$", "alwaysApply: false", fm)
+if not re.search(r"(?m)^globs:\s*", fm):
+    fm = fm.rstrip() + '\nglobs: "**/*"\n'
+else:
+    fm = fm if fm.endswith("\n") else fm + "\n"
+open(path, "w", encoding="utf-8").write(f"---{fm}---{body}")
+print(path)
+PY
+}
+
+# One clone: patch alwaysApply .mdc + relocate AGENTS.md → globs-scoped rule.
+workvm_patch_clone_cursor() {
+    local clone="$1"
+    local rules_dir agents dest_mdc f patched
+
+    if [ ! -d "$clone/.git" ]; then
+        return 0
+    fi
+
+    rules_dir="$clone/.cursor/rules"
+    if [ -d "$rules_dir" ]; then
+        shopt -s nullglob
+        for f in "$rules_dir"/*.mdc; do
+            # Skip our generated relocation target
+            if [ "$(basename "$f")" = "workvm-local-agents.mdc" ]; then
+                continue
+            fi
+            if ! grep -qE '^alwaysApply:[[:space:]]*true[[:space:]]*$' "$f"; then
+                continue
+            fi
+            workvm_git_unskip_worktree "$clone" "$f"
+            patched="$(workvm_patch_mdc_always_apply "$f" || true)"
+            if [ -n "$patched" ]; then
+                workvm_git_skip_worktree "$clone" "$f"
+                echo "  cursor patch: ${f#"${clone}/"} (alwaysApply→false + globs)"
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    agents="$clone/AGENTS.md"
+    dest_mdc="$clone/.cursor/rules/workvm-local-agents.mdc"
+    if [ -f "$agents" ]; then
+        mkdir -p "$clone/.cursor/rules"
+        workvm_git_exclude_add "$clone" ".cursor/rules/workvm-local-agents.mdc"
+        if grep -q 'workvm-local-agents.mdc' "$agents" 2>/dev/null && [ -f "$dest_mdc" ]; then
+            workvm_git_skip_worktree "$clone" "$agents"
+        else
+            workvm_git_unskip_worktree "$clone" "$agents"
+            cat >"$dest_mdc" <<EOF
+---
+description: AGENTS.md relocated by workvm (local only — do not commit)
+globs: "**/*"
+alwaysApply: false
+---
+
+EOF
+            cat "$agents" >>"$dest_mdc"
+            cat >"$agents" <<'EOF'
+<!-- workvm-local: full AGENTS.md moved to .cursor/rules/workvm-local-agents.mdc -->
+<!-- Local patch for multi-root Cursor (skip-worktree). Do not commit. -->
+
+# Agent guidelines
+
+Guidelines for this repository live in `.cursor/rules/workvm-local-agents.mdc`
+(scoped with globs so they apply when files here are in focus, not in every
+multi-root chat).
+EOF
+            workvm_git_skip_worktree "$clone" "$agents"
+            echo "  cursor patch: AGENTS.md → .cursor/rules/workvm-local-agents.mdc"
+        fi
+    fi
+}
+
+# Patch all CLONE_REPOS for a project (uses sourced CLONE_REPOS or project.conf).
+workvm_patch_project_clone_cursor() {
+    local project="${1:-}"
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local entry repo dest rest abs
+    local -a entries=()
+
+    if [ -n "${CLONE_REPOS+x}" ] && [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
+        entries=("${CLONE_REPOS[@]}")
+    elif [ -n "$project" ] && [ -f "$git_root/workvm/projects/$project/project.conf" ]; then
+        # shellcheck disable=SC1090
+        source "$git_root/workvm/projects/$project/project.conf"
+        git_root="${GIT_ROOT:-$git_root}"
+        entries=("${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}")
+    else
+        return 0
+    fi
+
+    if [ "${#entries[@]}" -eq 0 ]; then
+        return 0
+    fi
+
+    local -a found=()
+    for entry in "${entries[@]}"; do
+        [ -n "$entry" ] || continue
+        repo="${entry%% *}"
+        rest="${entry#* }"
+        if [ -z "$rest" ] || [ "$repo" = "$rest" ]; then
+            continue
+        fi
+        dest="${rest%% *}"
+        case "$dest" in
+            /*) abs="$dest" ;;
+            *) abs="${git_root}/${dest}" ;;
+        esac
+        if [ -d "$abs/.git" ]; then
+            found+=("$abs")
+        fi
+    done
+
+    if [ "${#found[@]}" -eq 0 ]; then
+        return 0
+    fi
+
+    echo "→ Patch local Cursor rules nos clones (alwaysApply→globs; não commitar)"
+    for abs in "${found[@]}"; do
+        echo "  clone: $abs"
+        workvm_patch_clone_cursor "$abs"
+    done
+}
+
+# Patch clones for every workvm/projects/*/project.conf (or a single project name).
+workvm_patch_all_projects_clone_cursor() {
+    local only="${1:-}"
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local projects_dir="$git_root/workvm/projects"
+    local conf proj
+
+    if [ -n "$only" ]; then
+        if [ ! -f "$projects_dir/$only/project.conf" ]; then
+            echo "error: projeto desconhecido: $only" >&2
+            return 1
+        fi
+        unset CLONE_REPOS 2>/dev/null || true
+        CLONE_REPOS=()
+        # shellcheck disable=SC1090
+        source "$projects_dir/$only/project.conf"
+        workvm_patch_project_clone_cursor "$only"
+        return 0
+    fi
+
+    for conf in "$projects_dir"/*/project.conf; do
+        [ -f "$conf" ] || continue
+        proj="$(basename "$(dirname "$conf")")"
+        unset CLONE_REPOS 2>/dev/null || true
+        CLONE_REPOS=()
+        # shellcheck disable=SC1090
+        source "$conf"
+        workvm_patch_project_clone_cursor "$proj"
+    done
+}
+
 # Mirror versioned overlays from files/<project>/ into GIT_ROOT/<project>/.
 # Convention: files/olie/olie-fronts/.cursor → $GIT_ROOT/olie/olie-fronts/.cursor
 # Skips first-level entries whose clone destination does not exist yet.
@@ -257,6 +472,7 @@ workvm_apply_files() {
     src="${files_root}/${project}"
     if [ ! -d "$src" ]; then
         echo "→ files: nada em files/${project}/"
+        workvm_patch_project_clone_cursor "$project"
         return 0
     fi
 
@@ -286,6 +502,8 @@ workvm_apply_files() {
         fi
     done
     shopt -u nullglob dotglob
+
+    workvm_patch_project_clone_cursor "$project"
 }
 
 # Entries: "<path> <command...>". Relative paths are under GIT_ROOT (default $HOME/git).

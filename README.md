@@ -23,6 +23,8 @@ Abrir `workvm/projects/<projeto>/workspace.code-workspace`:
 
 Não abrir `~/git` inteiro como root (puxa rules nested de `files/` etc.).
 
+No setup/`start.sh`, `workvm_apply_files` também faz patch local nos clones (`alwaysApply`→globs, `AGENTS.md` relocado) com `skip-worktree` — não commitar isso nos repos da empresa.
+
 ## Layout
 
 | Path | Papel |
