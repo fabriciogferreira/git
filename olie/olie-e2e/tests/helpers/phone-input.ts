@@ -115,3 +115,54 @@ export async function setPhoneInputWidth(root: Locator, px: number | null) {
         el.style.maxWidth = `${width}px`
     }, px)
 }
+
+/** Toggle the app theme via the user menu (idempotent toward dark). */
+export async function ensureDarkMode(page: Page) {
+    const alreadyDark = await page.locator('html.dark-mode').count()
+    if (alreadyDark > 0) {
+        return
+    }
+
+    const userMenu = page.getByRole('button', { name: /Test User|tester/i }).first()
+    await requireVisible(page, 'OS-557 user menu', userMenu, 15_000)
+    await userMenu.click()
+
+    const themeBtn = page.getByRole('button', { name: /Mudar tema|Change theme|Toggle theme/i })
+    await requireVisible(page, 'OS-557 theme toggle', themeBtn, 10_000)
+    await themeBtn.click()
+    await expect(page.locator('html.dark-mode')).toHaveCount(1, { timeout: 10_000 })
+}
+
+/**
+ * Solid country DDI must follow Olie theme tokens (`--system-input-solid-color`),
+ * same as `.form-control-solid` — dark text in light theme, light text in dark theme.
+ * QA: hardcoded/PrimeVue color left DDI nearly invisible on dark solid backgrounds.
+ */
+export async function expectSolidCallingCodeFollowsTheme(scope: Page | Locator) {
+    const country = phoneCountrySelect(scope)
+    const code = phoneCallingCode(scope)
+    await expect(code).toBeVisible()
+
+    const { textColor, themeColor } = await country.evaluate(el => {
+        const codeEl = el.querySelector('.phone-input__calling-code') as HTMLElement | null
+        const cs = getComputedStyle(el)
+        return {
+            textColor: codeEl ? getComputedStyle(codeEl).color : '',
+            themeColor: cs.getPropertyValue('--system-input-solid-color').trim(),
+        }
+    })
+
+    const themeRgb = await country.evaluate((_, token) => {
+        const probe = document.createElement('span')
+        probe.style.color = token
+        document.body.appendChild(probe)
+        const rgb = getComputedStyle(probe).color
+        probe.remove()
+        return rgb
+    }, themeColor || 'inherit')
+
+    expect(
+        textColor,
+        `DDI must use --system-input-solid-color (${themeColor}), not a fixed light-theme color`
+    ).toBe(themeRgb)
+}

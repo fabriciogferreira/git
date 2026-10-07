@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { loginAsE2EUser } from '../helpers/auth'
 import {
+    ensureDarkMode,
     expectCallingCodeShown,
     expectPhoneCountryBorder,
+    expectSolidCallingCodeFollowsTheme,
     openBillingDataPhoneInput,
     openContactCreatePhoneInput,
     openCustomerCreatePhoneInput,
@@ -91,6 +93,17 @@ test.describe('OS-557 phone input', () => {
         await expectCallingCodeShown(modal, true)
         await expectPhoneCountryBorder(country)
         await expect(phoneNationalInput(modal)).toBeVisible()
+    })
+
+    test('customer create: solid DDI follows theme text color in dark mode', async ({
+        page,
+    }) => {
+        await ensureDarkMode(page)
+        const modal = await openCustomerCreatePhoneInput(page)
+        const country = phoneCountrySelect(modal)
+
+        await expect(country).toHaveClass(/phone-input__country--solid/)
+        await expectSolidCallingCodeFollowsTheme(modal)
     })
 
     test('billing data: PhoneInput is present with a country border', async ({
