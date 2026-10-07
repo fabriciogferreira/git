@@ -71,6 +71,38 @@ setup_git_identity() {
     ok "git identity: $GIT_USER_NAME <$GIT_USER_EMAIL>"
 }
 
+# Cursor Agent may append Co-authored-by / Made-with trailers; strip them in commit-msg.
+# Also disable CLI attribution. IDE: Cursor Settings → Git & Pull Requests → Attribution OFF.
+setup_git_no_cursor_attribution() {
+    step "git: desativar attribution Cursor (CLI + hook)"
+
+    local hooks_dir="$HOME/.git-hooks"
+    mkdir -p "$hooks_dir"
+
+    cat >"$hooks_dir/commit-msg" <<'EOF'
+#!/bin/sh
+# Strip Cursor attribution trailers; keep human Co-authored-by lines.
+tmp="$1.tmp"
+grep -viE '^(Co-authored-by:[[:space:]]*Cursor[[:space:]]*<cursoragent@cursor\.com>|Made-with:[[:space:]]*Cursor)[[:space:]]*$' "$1" > "$tmp" && mv "$tmp" "$1"
+EOF
+    chmod +x "$hooks_dir/commit-msg"
+    git config --global core.hooksPath "$hooks_dir"
+
+    mkdir -p "$HOME/.cursor"
+    cat >"$HOME/.cursor/cli-config.json" <<'EOF'
+{
+  "attribution": {
+    "attributeCommitsToAgent": false,
+    "attributePRsToAgent": false
+  }
+}
+EOF
+    chmod 600 "$HOME/.cursor/cli-config.json"
+
+    ok "core.hooksPath=$hooks_dir + ~/.cursor/cli-config.json (attribution off)"
+    log "  IDE: Cursor Settings → Git & Pull Requests → desligar Commit/PR Attribution"
+}
+
 setup_yay() {
     step "yay (AUR helper)"
 
@@ -355,6 +387,7 @@ main() {
     setup_passwordless
     setup_base
     setup_git_identity
+    setup_git_no_cursor_attribution
     setup_yay
     setup_apps
     setup_docker
