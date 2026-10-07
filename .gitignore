@@ -24,8 +24,6 @@ workvm/projects/**/.env
 !olie/
 !olie/olie-e2e/
 !olie/olie-e2e/**
-!.cursor/
-!.cursor/**
+# Rules da VM ficam em workvm/.cursor (não em ~/git/.cursor)
 # Gerado por project-setup (projeto desta VM); não versionar
-.cursor/rules/workvm-project.mdc
 workvm/.cursor/rules/workvm-project.mdc
