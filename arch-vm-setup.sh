@@ -8,6 +8,8 @@ set -euo pipefail
 
 USER_NAME="${USER_NAME:-fabricio}"
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
+GIT_USER_NAME="${GIT_USER_NAME:-Fabrício Gonçalves Ferreira}"
+GIT_USER_EMAIL="${GIT_USER_EMAIL:-fabriciof481@gmail.com}"
 DOTCONFIG_SRC="${DOTCONFIG_SRC:-$GIT_ROOT/.config}"
 DOTCONFIG_DST="${DOTCONFIG_DST:-${XDG_CONFIG_HOME:-$HOME/.config}}"
 LUKS_DEVICE="${LUKS_DEVICE:-/dev/vda2}"
@@ -54,6 +56,19 @@ setup_base() {
 
     sudo pacman -S --needed --noconfirm git base-devel openssh
     ok "git + base-devel + openssh"
+}
+
+setup_git_identity() {
+    step "git user.name / user.email (global)"
+
+    if ! command -v git >/dev/null 2>&1; then
+        log "error: git ausente; rode setup_base antes" >&2
+        exit 1
+    fi
+
+    git config --global user.name "$GIT_USER_NAME"
+    git config --global user.email "$GIT_USER_EMAIL"
+    ok "git identity: $GIT_USER_NAME <$GIT_USER_EMAIL>"
 }
 
 setup_yay() {
@@ -339,6 +354,7 @@ main() {
     require_user
     setup_passwordless
     setup_base
+    setup_git_identity
     setup_yay
     setup_apps
     setup_docker
