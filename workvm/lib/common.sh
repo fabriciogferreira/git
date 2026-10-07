@@ -137,15 +137,17 @@ workvm_clone_project_repos() {
     done
 }
 
-# Write .cursor/rules/workvm-project.mdc (alwaysApply) so Cursor agents know
-# which workvm project this machine is bound to and where the clones live.
+# Write workvm/.cursor/rules/workvm-project.mdc (alwaysApply) so Cursor agents
+# know which workvm project this machine is bound to and where the clones live.
+# Lives under workvm/ so multi-root workspaces can use root "workvm" without
+# opening all of ~/git (avoids nested files/*/ .cursor noise).
 # Expects CLONE_REPOS (and optionally COMPOSE_DIR, WAIT_URL, CHROMIUM_URLS)
 # already sourced from project.conf. Safe to re-run.
 workvm_write_cursor_project_rule() {
     local repo_root="$1"
     local project="$2"
     local git_root="${GIT_ROOT:-$HOME/git}"
-    local out="$repo_root/.cursor/rules/workvm-project.mdc"
+    local out="$repo_root/workvm/.cursor/rules/workvm-project.mdc"
     local entry repo dest branch rest abs compose_disp
     local -a rows=()
 
@@ -203,6 +205,7 @@ alwaysApply: true
 > Gerado por \`arch-project-setup.sh\` / \`project-setup.sh\` via \`workvm_write_cursor_project_rule\`.
 > Não edite à mão — rode de novo o project-setup para atualizar.
 > Runtime symlink: \`~/.config/workvm/current\` → \`workvm/projects/${project}\`.
+> Cursor workspace root for meta: \`workvm/\` (not all of ~/git).
 
 ## Repositórios
 

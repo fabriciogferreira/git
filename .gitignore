@@ -28,3 +28,4 @@ workvm/projects/**/.env
 !.cursor/**
 # Gerado por project-setup (projeto desta VM); não versionar
 .cursor/rules/workvm-project.mdc
+workvm/.cursor/rules/workvm-project.mdc

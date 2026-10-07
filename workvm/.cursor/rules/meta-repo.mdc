@@ -1,0 +1,51 @@
+---
+description: O que é este meta-repo / workvm, pastas e scripts de work VM
+alwaysApply: true
+---
+
+# Meta-repo `~/git` via root `workvm/`
+
+Este repositório **não** é um app de produto. É o meta-repo que provisiona e amarra **VMs de desenvolvimento** a um projeto: clona repos, sobe Docker, abre Cursor/browser no login gráfico.
+
+No Cursor, o workspace multi-root usa **`workvm/`** (esta pasta) como root de meta — **não** `~/git` inteiro — para não puxar `.cursor` nested de `files/` e dos clones.
+
+## Como a VM sabe o projeto ativo
+
+1. **Para o agente Cursor (preferido):** `workvm/.cursor/rules/workvm-project.mdc` (`alwaysApply`)
+   - Gerado por `arch-project-setup.sh` / `project-setup.sh`
+   - Lista projeto, URLs git, caminhos absolutos e branch
+   - Arquivo local da VM (gitignored) — não editar à mão
+2. **Runtime/systemd:** `~/.config/workvm/current` → `workvm/projects/<nome>`
+3. **Fonte da verdade:** `workvm/projects/<nome>/project.conf` (`CLONE_REPOS`)
+4. `workvm.service` roda `current/start.sh` no login gráfico
+
+## Scripts na raiz de `~/git`
+
+| Script | Função |
+| --- | --- |
+| `arch-vm-setup.sh` | Bootstrap Arch + Hyprland |
+| `arch-project-setup.sh` | Bind do projeto + gera `workvm-project.mdc` |
+| `vm-setup.sh` / `project-setup.sh` | Legado Omarchy |
+
+## Pastas
+
+- `workvm/projects/<nome>/` — `project.conf`, `start.sh`, `post-clone.sh`, `workspace.code-workspace`
+- `workvm/lib/`, `systemd/`, `bin/`, `docs/`, `host/`, `guest/`
+- `files/` — overlays → clones
+- `.config/` — overlay Hyprland → `~/.config`
+- `code-profiles/` — perfis Cursor
+
+## Workspace Cursor (opção recomendada)
+
+`workvm/projects/<nome>/workspace.code-workspace`:
+
+- root **workvm** → rules/skills deste meta
+- root **cada clone** → `.cursor` daquele repositório
+
+Uma janela; sem poluição de nested rules sob `~/git`.
+
+## Convenções
+
+- Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
+- Não commitar secrets
+- Preferir scripts `arch-*` em VMs Arch

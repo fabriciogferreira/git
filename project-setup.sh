@@ -106,7 +106,7 @@ fi
 echo "==> Aplicando files/$PROJECT → clones"
 workvm_apply_files "$REPO_ROOT/files" "$PROJECT"
 
-echo "==> Gravando .cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
+echo "==> Gravando workvm/.cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
 workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"
 
 systemctl --user daemon-reload
@@ -121,7 +121,7 @@ echo
 echo "✓ Projeto selecionado: $PROJECT"
 echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
 echo "  unit    -> $UNIT_DST"
-echo "  cursor  -> $REPO_ROOT/.cursor/rules/workvm-project.mdc"
+echo "  cursor  -> $REPO_ROOT/workvm/.cursor/rules/workvm-project.mdc"
 echo "  start   -> Cursor + browser (agora) e workvm.service nos próximos logins"
 echo
 echo "Nos próximos logins gráficos, workvm.service executará de novo:"
