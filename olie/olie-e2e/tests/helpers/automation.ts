@@ -4,8 +4,25 @@ import { requireVisible } from './feature'
 /** Opens Frame → Automations and starts a new automation modal. */
 export async function openNewAutomationModal(page: Page) {
     await page.goto('/frame/automations?create=true')
-    // PrimeVue Dialog + component picker
-    await expect(page.locator('.new-component-selector')).toBeVisible({ timeout: 30_000 })
+
+    const picker = page.locator('.new-component-selector')
+    const opened = await picker
+        .waitFor({ state: 'visible', timeout: 15_000 })
+        .then(() => true)
+        .catch(() => false)
+
+    // `?create=true` is occasionally ignored while the list is still booting — fall back to CTA.
+    if (!opened) {
+        await expect(
+            page.getByRole('button', { name: /Nova automação|New automation/i }).first()
+        ).toBeVisible({ timeout: 45_000 })
+        await page
+            .getByRole('button', { name: /Nova automação|New automation/i })
+            .first()
+            .click()
+    }
+
+    await expect(picker).toBeVisible({ timeout: 30_000 })
 }
 
 /** Pick a flow component card by its visible label (trigger/action/condition). */
@@ -136,4 +153,189 @@ export function fieldsMultiSelect(page: Page): Locator {
         .filter({ has: page.getByText(/Campos a atualizar|Fields to update/i) })
         .locator('.p-multiselect')
         .first()
+}
+
+// ---------------------------------------------------------------------------
+// DOP-1154 — channel management via automation (trigger / condition / action)
+// ---------------------------------------------------------------------------
+
+/** Picker title for the channel-state trigger (vue-i18n resolves project_term → projeto). */
+export const DOP_1154_CHANNEL_STATE_TRIGGER =
+    /Estado da conversa do projeto alterado|Project conversation state changed/i
+
+/** Picker title for the channel-state condition. */
+export const DOP_1154_CHANNEL_STATE_CONDITION =
+    /Estado da conversa do projeto(?! alterado)|Project conversation state(?! changed)/i
+
+/** Picker title for the channel-manage action. */
+export const DOP_1154_CHANNEL_MANAGE_ACTION =
+    /Gerenciar canal do projeto|Manage project channel/i
+
+async function searchComponentPicker(page: Page, term: string) {
+    const search = page.locator('.new-component-selector input.form-control')
+    await expect(search).toBeVisible()
+    await search.fill(term)
+}
+
+/** Skip unless the channel-state trigger is listed in the (trigger) palette. */
+export async function requireChannelStateTrigger(page: Page) {
+    await searchComponentPicker(page, 'Estado da conversa')
+    await requireVisible(
+        page,
+        'DOP-1154',
+        page
+            .locator('.new-component-selector .component-layout')
+            .filter({ hasText: DOP_1154_CHANNEL_STATE_TRIGGER }),
+        5_000
+    )
+}
+
+/** Skip unless the channel-state condition is listed after a trigger exists. */
+export async function requireChannelStateCondition(page: Page) {
+    await searchComponentPicker(page, 'Estado da conversa')
+    await requireVisible(
+        page,
+        'DOP-1154',
+        page
+            .locator('.new-component-selector .component-layout')
+            .filter({ hasText: DOP_1154_CHANNEL_STATE_CONDITION }),
+        5_000
+    )
+}
+
+/** Skip unless the channel-manage action is listed after a trigger exists. */
+export async function requireChannelManageAction(page: Page) {
+    await searchComponentPicker(page, 'Gerenciar canal')
+    await requireVisible(
+        page,
+        'DOP-1154',
+        page
+            .locator('.new-component-selector .component-layout')
+            .filter({ hasText: DOP_1154_CHANNEL_MANAGE_ACTION }),
+        5_000
+    )
+}
+
+/** New automation → open "Estado da conversa do projeto alterado" trigger. */
+export async function openChannelStateTrigger(page: Page) {
+    await openNewAutomationModal(page)
+    await requireChannelStateTrigger(page)
+    await pickFlowComponent(page, DOP_1154_CHANNEL_STATE_TRIGGER)
+
+    await expect(
+        page.getByText(/Quando disparar|When to fire|When to trigger/i).first()
+    ).toBeVisible({ timeout: 15_000 })
+}
+
+/**
+ * New automation → any trigger → condition palette →
+ * open "Estado da conversa do projeto".
+ */
+export async function openChannelStateCondition(page: Page) {
+    await openNewAutomationModal(page)
+    await pickFlowComponent(page, /Projeto movido de etapa|Project moved/i)
+    await openActionOrConditionPicker(page)
+    await requireChannelStateCondition(page)
+    await pickFlowComponent(page, DOP_1154_CHANNEL_STATE_CONDITION)
+
+    await expect(
+        page.getByText(/O que verificar|What to check/i).first()
+    ).toBeVisible({ timeout: 15_000 })
+}
+
+/**
+ * New automation → any trigger → action palette →
+ * open "Gerenciar canal do projeto".
+ */
+export async function openChannelManageAction(page: Page) {
+    await openNewAutomationModal(page)
+    await pickFlowComponent(page, /Projeto movido de etapa|Project moved/i)
+    await openActionOrConditionPicker(page)
+    await requireChannelManageAction(page)
+    await pickFlowComponent(page, DOP_1154_CHANNEL_MANAGE_ACTION)
+
+    await expect(
+        page.getByText(/Tipo de ação|Action type/i).first()
+    ).toBeVisible({ timeout: 15_000 })
+}
+
+/** Label + Select block for a form-label field inside the editing panel. */
+function labeledSelectBlock(page: Page, label: RegExp): Locator {
+    return page
+        .locator('.col-12')
+        .filter({ has: page.getByText(label) })
+        .first()
+}
+
+export function channelManageOperationSelect(page: Page): Locator {
+    return labeledSelectBlock(page, /Tipo de ação|Action type/i).locator('.p-select').first()
+}
+
+export function channelManageAudienceSelect(page: Page): Locator {
+    return labeledSelectBlock(page, /Tipo de canal|Channel type/i).locator('.p-select').first()
+}
+
+export function channelStateEventSelect(page: Page): Locator {
+    return labeledSelectBlock(page, /Quando disparar|When to fire|When to trigger/i)
+        .locator('.p-select')
+        .first()
+}
+
+export function channelStateCheckSelect(page: Page): Locator {
+    return labeledSelectBlock(page, /O que verificar|What to check/i).locator('.p-select').first()
+}
+
+/**
+ * Resolve the open listbox for a PrimeVue Select (including append-to="self").
+ * Prefer aria-controls so page chrome options are ignored.
+ */
+async function openSelectListbox(page: Page, select: Locator): Promise<Locator> {
+    await expect(select).toBeVisible()
+    const combobox = select.locator('[role="combobox"]').first()
+
+    const alreadyOpen = (await combobox.getAttribute('aria-expanded')) === 'true'
+    if (!alreadyOpen) {
+        await combobox.click({ force: true })
+    }
+
+    await expect(combobox).toHaveAttribute('aria-expanded', 'true', { timeout: 10_000 })
+    const listId = await combobox.getAttribute('aria-controls')
+    if (listId) {
+        return page.locator(`#${listId}`)
+    }
+
+    // append-to="self" sometimes keeps the list inside the select without aria-controls.
+    return select.locator('[role="listbox"]').first()
+}
+
+/**
+ * Open a PrimeVue Select (including append-to="self") and assert option texts.
+ * Matches by visible text — option accessible names are often the raw object.
+ */
+export async function expectSelectOptions(
+    page: Page,
+    select: Locator,
+    optionTexts: Array<string | RegExp>
+) {
+    const listbox = await openSelectListbox(page, select)
+
+    for (const text of optionTexts) {
+        await expect(
+            listbox.locator('[role="option"]').filter({ hasText: text }).first()
+        ).toBeVisible({ timeout: 10_000 })
+    }
+
+    await page.keyboard.press('Escape')
+}
+
+/** Pick a PrimeVue Select option by visible text (works with append-to="self"). */
+export async function pickSelectOptionByText(
+    page: Page,
+    select: Locator,
+    optionText: string | RegExp
+) {
+    const listbox = await openSelectListbox(page, select)
+    const option = listbox.locator('[role="option"]').filter({ hasText: optionText }).first()
+    await expect(option).toBeVisible({ timeout: 10_000 })
+    await option.click({ force: true })
 }
