@@ -296,12 +296,19 @@ workvm_open_chromium() {
         return 0
     fi
 
-    if ! command -v chromium >/dev/null 2>&1; then
-        echo "workvm: chromium not found in PATH" >&2
+    local browser=""
+    if command -v google-chrome-stable >/dev/null 2>&1; then
+        browser=google-chrome-stable
+    elif command -v google-chrome >/dev/null 2>&1; then
+        browser=google-chrome
+    elif command -v chromium >/dev/null 2>&1; then
+        browser=chromium
+    else
+        echo "workvm: google-chrome/chromium not found in PATH" >&2
         return 1
     fi
 
-    setsid chromium --new-window "$@" </dev/null >/tmp/workvm-chromium.log 2>&1 &
+    setsid "$browser" --new-window "$@" </dev/null >/tmp/workvm-browser.log 2>&1 &
 }
 
 workvm_docker_compose_up() {
