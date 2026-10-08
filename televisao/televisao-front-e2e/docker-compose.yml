@@ -25,6 +25,9 @@ services:
       E2E_API_URL: ${E2E_API_URL:-http://localhost:8000}
       E2E_USER: ${E2E_USER:-super@super.super}
       E2E_PASSWORD: ${E2E_PASSWORD:-password}
+      E2E_DOCTOR_USER: ${E2E_DOCTOR_USER:-doctor1@doctor.test}
+      E2E_DOCTOR_PASSWORD: ${E2E_DOCTOR_PASSWORD:-password}
+      E2E_CHECKOUT_CONSULTATION_ID: ${E2E_CHECKOUT_CONSULTATION_ID:-}
     volumes:
       - ./tests:/app/tests
       - ./playwright.config.ts:/app/playwright.config.ts
