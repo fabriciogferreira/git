@@ -672,6 +672,42 @@ workvm_wait_for_http() {
     return 1
 }
 
+# Ensure ~/.config/environment.d is a directory of *.conf files.
+# A common footgun is writing KEY=VAL directly to that path as a file; migrate
+# those contents to local.conf so Hyprland/Cursor loaders keep working.
+workvm_ensure_environment_d() {
+    local dir="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+    local parent tmp dest
+
+    parent="$(dirname "$dir")"
+    mkdir -p "$parent"
+
+    if [ -L "$dir" ]; then
+        if [ -d "$dir" ]; then
+            return 0
+        fi
+        echo "workvm: $dir is a symlink to a non-directory; fix manually" >&2
+        return 1
+    fi
+
+    if [ -f "$dir" ]; then
+        tmp="$(mktemp "${TMPDIR:-/tmp}/workvm-environment.d.XXXXXX")"
+        cp -a "$dir" "$tmp"
+        rm -f "$dir"
+        mkdir -p "$dir"
+        dest="$dir/local.conf"
+        if [ -e "$dest" ]; then
+            dest="$dir/migrated-$(date +%Y%m%d%H%M%S).conf"
+        fi
+        mv "$tmp" "$dest"
+        chmod 600 "$dest" 2>/dev/null || true
+        echo "workvm: migrated file $dir → $dest" >&2
+        return 0
+    fi
+
+    mkdir -p "$dir"
+}
+
 # Load ~/.config/environment.d/*.conf into the current shell.
 # Hyprland/Electron do not inherit systemd user manager env from environment.d;
 # Cursor needs those vars for ${env:NAME} interpolation in mcp.json headers.
@@ -679,6 +715,7 @@ workvm_load_environment_d() {
     local dir="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
     local f line key val
 
+    workvm_ensure_environment_d || return 0
     [ -d "$dir" ] || return 0
 
     for f in "$dir"/*.conf; do

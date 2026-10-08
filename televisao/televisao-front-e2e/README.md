@@ -23,6 +23,10 @@ Auth coverage in `tests/auth.smoke.spec.ts`:
 Container uses `network_mode: host` so Chromium `localhost` matches
 `NEXT_PUBLIC_API_URL` (`http://localhost:8000`) and the front on `:3000`.
 
+Cursor Playwright MCP (`docker exec televisao-front-e2e …`) needs this
+compose up (`restart: unless-stopped`). The Televisão `start.sh` brings it up
+with the main stack; otherwise: `docker compose up -d`.
+
 ## Defaults
 
 `super@super.super` / `password` (`UserSeeder` local factory password).

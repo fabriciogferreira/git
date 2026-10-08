@@ -33,4 +33,5 @@ O overlay é aplicado por `vm-setup.sh` (`$GIT_ROOT/.config` → `~/.config`). E
 
 - Editar `~/.config/hypr/hyprland.lua` → atualizar também `~/git/.config/hypr/hyprland.lua`.
 - Novo arquivo de overlay Hyprland → criar em `~/git/.config/hypr/` e espelhar em `~/.config/hypr/`.
-- `~/.config/environment.d/olie-mcp.conf` com token → **não** copiar para o git.
+- `~/.config/environment.d/olie.conf` (ou qualquer `*.conf`) com token → **não**
+  copiar para o git. `environment.d` é um **diretório**; nunca um arquivo.

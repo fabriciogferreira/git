@@ -85,6 +85,11 @@ FILES_PROJECT="${PROJECT_NAME:-$(basename "$PROJECT")}"
 mkdir -p "$CONFIG_ROOT/projects" "$SYSTEMD_USER_DIR"
 mkdir -p "$(dirname "$CONFIG_ROOT/projects/$PROJECT")"
 
+# ~/.config/environment.d must be a directory (*.conf), not a file — needed for
+# Cursor MCP ${env:NAME} headers (e.g. OLIE_FLOW_AI_TOKEN).
+echo "==> Garantindo ~/.config/environment.d/"
+workvm_ensure_environment_d || true
+
 PROJECT_LINK="$CONFIG_ROOT/projects/$PROJECT"
 CURRENT_LINK="$CONFIG_ROOT/current"
 UNIT_DST="$SYSTEMD_USER_DIR/workvm.service"

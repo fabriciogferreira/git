@@ -59,6 +59,17 @@ Manual (todos os projetos ou um): `workvm/bin/patch-clone-cursor.sh [projeto]`
 
 Assim rules de um clone não entram em todo chat multi-root. **Não commitar** essas mudanças nos repos da empresa.
 
+## MCP / env de sessão (Cursor)
+
+- MCP HTTP da empresa (`workvm/projects/<empresa>/.cursor/mcp.json`) usa
+  `Authorization: Bearer ${env:OLIE_FLOW_AI_TOKEN}`.
+- O valor vive em **`~/.config/environment.d/*.conf`** (diretório, não arquivo).
+  Ex.: `~/.config/environment.d/olie.conf` com `OLIE_FLOW_AI_TOKEN=...` (`chmod 600`).
+- `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como
+  arquivo, `workvm_ensure_environment_d` migra para `local.conf`.
+- Não versionar tokens; overlay versionado pode documentar o layout em
+  `.config/environment.d/README.md`.
+
 ## Convenções
 
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI

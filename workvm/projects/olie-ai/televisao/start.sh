@@ -15,6 +15,9 @@ REAL_REPO_ROOT="$_d"
 
 # shellcheck source=/dev/null
 source "$REAL_REPO_ROOT/workvm/lib/common.sh"
+CLONE_REPOS=()
+E2E_COMPOSE_DIRS=()
+CHROMIUM_URLS=()
 # shellcheck source=/dev/null
 source "$REAL_PROJECT_DIR/project.conf"
 
@@ -22,6 +25,8 @@ LOG_TAG="workvm[${PROJECT_NAME}]"
 log() { printf '%s %s\n' "$LOG_TAG" "$*"; }
 
 main() {
+    local e2e_dir
+
     if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
         log "git fetch nos CLONE_REPOS (somente na branch de origem)"
         workvm_fetch_project_repos "${CLONE_REPOS[@]}"
@@ -43,6 +48,21 @@ main() {
         log "waiting for $WAIT_URL"
         workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-180}" || log "continuing without $WAIT_URL"
     fi
+
+    for e2e_dir in "${E2E_COMPOSE_DIRS[@]}"; do
+        if [ ! -d "$e2e_dir" ]; then
+            log "e2e compose dir ausente: $e2e_dir"
+            continue
+        fi
+        mkdir -p "$e2e_dir/test-results" "$e2e_dir/playwright-report"
+        chmod -R a+rwX "$e2e_dir/test-results" "$e2e_dir/playwright-report" 2>/dev/null || true
+        log "docker compose up -d ($e2e_dir) [Playwright MCP]"
+        workvm_docker_compose_up "$e2e_dir" \
+            || log "e2e compose failed at $e2e_dir; continuing"
+    done
+
+    # Ensure MCP token env layout before Cursor starts (${env:OLIE_FLOW_AI_TOKEN}).
+    workvm_ensure_environment_d || true
 
     log "opening Cursor workspace"
     workvm_open_cursor "${WORKSPACE_FILE:-$REAL_PROJECT_DIR/workspace.code-workspace}" \
