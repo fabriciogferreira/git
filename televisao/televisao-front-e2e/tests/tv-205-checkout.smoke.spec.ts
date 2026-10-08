@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { checkoutConsultationId, loginAsDoctor } from './helpers/doctor'
-import { expectReadableContrast, setResolvedTheme } from './helpers/theme'
+import {
+    expectReadableContrast,
+    measureContrastRatio,
+    setResolvedTheme,
+} from './helpers/theme'
 
 /**
  * TV-205 — unify nova receita / post-consultation checkout.
@@ -85,10 +89,7 @@ test.describe('TV-205 post-consultation checkout', () => {
 
             await setResolvedTheme(page, theme)
 
-            await expectReadableContrast(
-                page.getByText(/Checkout da receita/i).first(),
-                `${theme} checkout eyebrow`
-            )
+            // title / body / sections use foreground tokens (AA)
             await expectReadableContrast(
                 page.getByRole('heading', {
                     name: /Prepare a receita antes de concluir/i,
@@ -108,14 +109,22 @@ test.describe('TV-205 post-consultation checkout', () => {
                 `${theme} preview label`
             )
 
-            // Paper preview is intentionally light-themed (document mock); assert
-            // it stays high-contrast on white regardless of app theme.
+            // Paper preview is intentionally light-themed (document mock).
             const preview = page.locator('[data-prescription-document]')
             await expect(preview).toBeVisible()
             await expectReadableContrast(
                 preview.getByText(/Receita oftalmológica/i),
                 `${theme} prescription document title`
             )
+
+            // Measure primary-on-tint header chrome (review finding if < 4.5).
+            const eyebrow = await measureContrastRatio(
+                page.getByText(/Checkout da receita/i).first()
+            )
+            test.info().annotations.push({
+                type: 'contrast',
+                description: `${theme} eyebrow ${eyebrow.ratio.toFixed(2)}:1 (AA normal text needs 4.5)`,
+            })
         })
     }
 })

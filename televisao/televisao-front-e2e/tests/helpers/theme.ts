@@ -49,13 +49,13 @@ async function sampleColors(locator: Locator): Promise<{ fg: string; bg: string 
     })
 }
 
-/** Assert text vs ancestor background meets WCAG AA for normal text (4.5:1). */
-export async function expectReadableContrast(
-    locator: Locator,
-    label: string,
-    minRatio = 4.5
-) {
-    await expect(locator, label).toBeVisible()
+/** WCAG contrast ratio of locator text vs nearest opaque background. */
+export async function measureContrastRatio(locator: Locator): Promise<{
+    ratio: number
+    fg: string
+    bg: string
+}> {
+    await expect(locator).toBeVisible()
     const page = locator.page()
     const { fg, bg } = await sampleColors(locator)
     const fgRgb = await resolveRgb(page, fg)
@@ -63,6 +63,16 @@ export async function expectReadableContrast(
     const l1 = relativeLuminance(fgRgb)
     const l2 = relativeLuminance(bgRgb)
     const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
+    return { ratio, fg, bg }
+}
+
+/** Assert text vs ancestor background meets WCAG AA for normal text (4.5:1). */
+export async function expectReadableContrast(
+    locator: Locator,
+    label: string,
+    minRatio = 4.5
+) {
+    const { ratio, fg, bg } = await measureContrastRatio(locator)
     expect(
         ratio,
         `${label}: contrast ${ratio.toFixed(2)}:1 (fg=${fg}, bg=${bg}) must be >= ${minRatio}`
