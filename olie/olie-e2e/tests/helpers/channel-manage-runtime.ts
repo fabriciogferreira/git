@@ -31,6 +31,8 @@ export type ChannelManageActionConfig = {
     channel_name?: string
     new_name?: string
     counterpart_expression?: string
+    /** Default on the API is `phone` when omitted. */
+    counterpart_input?: 'phone' | 'identifier'
     force_reopen?: boolean
     close_reason?: string
 }

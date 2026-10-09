@@ -56,7 +56,7 @@ test.describe('DOP-1154 channel state condition', () => {
         await expect(
             page
                 .getByText(
-                    /Foi marcada como resolvida|Was marked as resolved/i
+                    /marcada como resolvida|marked as resolved|Sem conversa|Without a conversation/i
                 )
                 .first()
         ).toBeVisible({ timeout: 10_000 })

@@ -81,7 +81,7 @@ test.describe('DOP-1154 channel manage action', () => {
         ).toHaveCount(0)
     })
 
-    test('create external shows integration, counterpart and force reopen', async ({ page }) => {
+    test('create external shows integration, phone and force reopen', async ({ page }) => {
         await chooseCreateOperation(page)
 
         // Audience defaults to internal; switch via the combobox accessible name.
@@ -100,9 +100,29 @@ test.describe('DOP-1154 channel manage action', () => {
         await expect(
             page.getByText(/^Integração$|^Integration$/i).first()
         ).toBeVisible({ timeout: 10_000 })
+
+        // Default: phone mode (connector builds external_ref). Not the raw "Destinatário".
+        // Scope to :visible — other modals (criar contato) keep a hidden "Telefone" label in the DOM.
         await expect(
-            page.getByText(/Destinatário|Counterpart|Recipient/i).first()
+            page.locator('#project_channel_manage_identifier')
         ).toBeVisible()
+        await expect(
+            page.getByText(/Identificador avançado|Advanced identifier/i)
+        ).toBeVisible()
+        await expect(
+            page.locator('label.form-label:visible', { hasText: /^(Telefone|Phone)$/i })
+        ).toBeVisible()
+
+        // Advanced identifier swaps the field label/hint.
+        await page.locator('#project_channel_manage_identifier').check()
+        await expect(
+            page.locator('label.form-label:visible', { hasText: /^(Identificador|Identifier)$/i })
+        ).toBeVisible({ timeout: 10_000 })
+        await page.locator('#project_channel_manage_identifier').uncheck()
+        await expect(
+            page.locator('label.form-label:visible', { hasText: /^(Telefone|Phone)$/i })
+        ).toBeVisible({ timeout: 10_000 })
+
         await expect(
             page.locator('#project_channel_manage_force_reopen')
         ).toBeVisible()
@@ -114,6 +134,12 @@ test.describe('DOP-1154 channel manage action', () => {
         await expect(
             page.getByText(/Motivo do encerramento|Closing note|Close reason/i).first()
         ).toBeVisible({ timeout: 10_000 })
+
+        // Turning force_reopen off must hide close_reason (front clears config too).
+        await page.locator('#project_channel_manage_force_reopen').uncheck()
+        await expect(
+            page.getByText(/Motivo do encerramento|Closing note|Close reason/i)
+        ).toHaveCount(0)
     })
 
     test('rename asks for current and new channel name', async ({ page }) => {
