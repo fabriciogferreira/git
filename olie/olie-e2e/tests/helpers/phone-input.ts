@@ -8,7 +8,7 @@ const CREATE_CUSTOMER = /Adicionar cliente|Add client|Criar cliente|Create custo
 const CUSTOMER_MODAL_TITLE = /Criar cliente|Create customer|Create client/i
 const BILLING_HEADING = /Dados de cobrança|Billing data/i
 
-/** Compact hides DDI below this (PhoneInput COMPACT_MAX_WIDTH_PX). */
+/** Compact hides DDI below this (@container phone-input max-width: 300px). */
 export const PHONE_INPUT_COMPACT_MAX_PX = 300
 
 /** Shared PhoneInput country Select (PrimeVue). */
@@ -45,7 +45,7 @@ export async function openContactCreatePhoneInput(page: Page) {
 
     const createBtn = page.getByRole('button', { name: CREATE_CONTACT })
     await requireVisible(page, 'OS-557 contact create', createBtn, 20_000)
-    await createBtn.first().click()
+    await createBtn.first().click({ force: true })
 
     const modal = contactFormModal(page)
     await requireVisible(page, 'OS-557 contact form modal', modal, 15_000)
@@ -63,7 +63,7 @@ export async function openCustomerCreatePhoneInput(page: Page) {
 
     const createBtn = page.getByRole('button', { name: CREATE_CUSTOMER })
     await requireVisible(page, 'OS-557 customer create', createBtn, 20_000)
-    await createBtn.first().click()
+    await createBtn.first().click({ force: true })
 
     const modal = customerFormModal(page)
     await requireVisible(page, 'OS-557 customer form modal', modal, 15_000)
@@ -102,17 +102,56 @@ export async function expectCallingCodeShown(scope: Page | Locator, shown: boole
     }
 }
 
-/** Force the shared control width so compact (container query + ResizeObserver) can be asserted. */
+/**
+ * Country Select must expose name + DDI for screen readers and hover when the
+ * visual calling code is hidden in compact mode.
+ * PrimeVue puts `aria-label` on the inner combobox; `title` is on the Select root.
+ */
+export async function expectCountrySelectAccessibleLabel(scope: Page | Locator) {
+    const country = phoneCountrySelect(scope)
+    await expect(country).toBeVisible()
+
+    const combobox = country.locator('[role="combobox"]').first()
+    const ariaLabel = await combobox.getAttribute('aria-label')
+    const title = await country.getAttribute('title')
+
+    expect(ariaLabel, 'country combobox needs aria-label with name + calling code').toBeTruthy()
+    expect(title, 'country Select root needs title with name + calling code').toBeTruthy()
+    expect(ariaLabel).toMatch(/\+\d+/)
+    expect(title).toMatch(/\+\d+/)
+    expect(ariaLabel).toBe(title)
+    expect(ariaLabel!.length).toBeGreaterThan(3)
+}
+
+/**
+ * Force the shared control width so compact (@container) layout can be asserted.
+ * Expands ancestors too — a narrow modal column would otherwise clamp the container
+ * and keep the DDI hidden even when this node asks for a wide width.
+ */
 export async function setPhoneInputWidth(root: Locator, px: number | null) {
     await root.evaluate((el, width) => {
-        if (width == null) {
-            el.style.width = ''
-            el.style.maxWidth = ''
-            return
+        const nodes: HTMLElement[] = []
+        let node: HTMLElement | null = el
+        for (let i = 0; i < 8 && node; i++) {
+            nodes.push(node)
+            if (node.classList.contains('modal-dialog') || node.id === 'contact_form_modal' || node.id === 'customer_form_modal') {
+                break
+            }
+            node = node.parentElement
         }
 
-        el.style.width = `${width}px`
-        el.style.maxWidth = `${width}px`
+        for (const target of nodes) {
+            if (width == null) {
+                target.style.width = ''
+                target.style.minWidth = ''
+                target.style.maxWidth = ''
+                continue
+            }
+
+            target.style.width = `${width}px`
+            target.style.minWidth = `${width}px`
+            target.style.maxWidth = 'none'
+        }
     }, px)
 }
 

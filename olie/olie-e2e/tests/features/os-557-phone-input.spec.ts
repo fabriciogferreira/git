@@ -3,6 +3,7 @@ import { loginAsE2EUser } from '../helpers/auth'
 import {
     ensureDarkMode,
     expectCallingCodeShown,
+    expectCountrySelectAccessibleLabel,
     expectPhoneCountryBorder,
     expectSolidCallingCodeFollowsTheme,
     openBillingDataPhoneInput,
@@ -43,11 +44,13 @@ test.describe('OS-557 phone input', () => {
         const country = phoneCountrySelect(modal)
         const national = phoneNationalInput(modal)
 
+        // Contact modal can be < 300px; force wide so DDI is not container-query compact.
+        await setPhoneInputWidth(root, PHONE_INPUT_COMPACT_MAX_PX + 80)
         await expect(country).toBeVisible()
-        await expect(root).not.toHaveClass(/phone-input--compact/)
         await expectCallingCodeShown(modal, true)
         await expect(country.locator('.fa-chevron-down')).toBeVisible()
         await expectPhoneCountryBorder(country)
+        await expectCountrySelectAccessibleLabel(modal)
         await expect(national).toBeVisible()
 
         await national.click()
@@ -70,28 +73,31 @@ test.describe('OS-557 phone input', () => {
         const flag = root.locator('.phone-input__flag')
 
         await setPhoneInputWidth(root, PHONE_INPUT_COMPACT_MAX_PX - 40)
-        await expect(root).toHaveClass(/phone-input--compact/, { timeout: 5_000 })
         await expectCallingCodeShown(modal, false)
         await expect(country.locator('.fa-chevron-down')).toBeHidden()
         await expect(flag).toBeVisible()
         await expect(national).toBeVisible()
         await expectPhoneCountryBorder(country)
+        await expectCountrySelectAccessibleLabel(modal)
 
         await setPhoneInputWidth(root, PHONE_INPUT_COMPACT_MAX_PX + 80)
-        await expect(root).not.toHaveClass(/phone-input--compact/, { timeout: 5_000 })
         await expectCallingCodeShown(modal, true)
         await expect(country.locator('.fa-chevron-down')).toBeVisible()
+        await expectCountrySelectAccessibleLabel(modal)
     })
 
     test('customer create: solid PhoneInput still has country border and DDI', async ({
         page,
     }) => {
         const modal = await openCustomerCreatePhoneInput(page)
+        const root = phoneInputRoot(modal)
         const country = phoneCountrySelect(modal)
 
+        await setPhoneInputWidth(root, PHONE_INPUT_COMPACT_MAX_PX + 80)
         await expect(country).toHaveClass(/phone-input__country--solid/)
         await expectCallingCodeShown(modal, true)
         await expectPhoneCountryBorder(country)
+        await expectCountrySelectAccessibleLabel(modal)
         await expect(phoneNationalInput(modal)).toBeVisible()
     })
 
@@ -100,8 +106,10 @@ test.describe('OS-557 phone input', () => {
     }) => {
         await ensureDarkMode(page)
         const modal = await openCustomerCreatePhoneInput(page)
+        const root = phoneInputRoot(modal)
         const country = phoneCountrySelect(modal)
 
+        await setPhoneInputWidth(root, PHONE_INPUT_COMPACT_MAX_PX + 80)
         await expect(country).toHaveClass(/phone-input__country--solid/)
         await expectSolidCallingCodeFollowsTheme(modal)
     })
