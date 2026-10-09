@@ -3,7 +3,10 @@ import { loginAsIsolatedE2EUser } from '../helpers/isolated-user'
 import { createE2EProject } from '../helpers/project'
 import { openProjectContentTab } from '../helpers/content-media'
 import {
+    activateInactiveChannelInRail,
+    answerActiveChannelTakeover,
     channelDialog,
+    createChannelViaApi,
     createE2ECommunicationIntegration,
     deleteE2ECommunicationIntegration,
     e2eCounterpart,
@@ -14,6 +17,7 @@ import {
     pickIntegration,
     selectExternalMode,
     submitOpenConversation,
+    updateChannelViaApi,
 } from '../helpers/channel-conversation'
 import { setCompanyMultipleActiveChannelsViaApi } from '../helpers/frame-settings'
 
@@ -144,6 +148,75 @@ test.describe('DOP-1158 multiple active conversations — behaviour', () => {
             expect(await listProjectChannels(page, thirdProject)).toHaveLength(0)
         } finally {
             await setCompanyMultipleActiveChannelsViaApi(page, false).catch(() => undefined)
+            await deleteE2ECommunicationIntegration(page, integration.id)
+        }
+    })
+
+    /**
+     * Validation return (Vinicius, 2026-10-09): with several actives allowed, a card may hold an
+     * inactive history channel and a newer active one for the same counterpart. Reactivating the
+     * old one must offer "Encerrar e ativar aqui" and, after confirm, close the sibling.
+     */
+    test('same-card reactivate offers takeover and swaps the active sibling', async ({ page }) => {
+        const integration = await createE2ECommunicationIntegration(page, {
+            config: { allow_multiple_active_channels: true },
+        })
+        const projectId = await createE2EProject(page, {
+            name: `dop1158-same-card-${Date.now()}`,
+        })
+        const counterpart = e2eCounterpart()
+
+        try {
+            const history = await createChannelViaApi(page, {
+                projectId,
+                name: 'Histórico',
+                integrationId: integration.id,
+                externalRef: counterpart.externalRef,
+                isActive: false,
+            })
+            expect(history.status, JSON.stringify(history)).toBe(201)
+            expect(history.channel?.id).toBeTruthy()
+
+            const current = await createChannelViaApi(page, {
+                projectId,
+                name: 'Atual',
+                integrationId: integration.id,
+                externalRef: counterpart.externalRef,
+                isActive: true,
+            })
+            expect(current.status, JSON.stringify(current)).toBe(201)
+            expect(current.channel?.is_active).toBe(true)
+
+            // Without takeover the API still refuses (same card, same counterpart).
+            const refused = await updateChannelViaApi(page, history.channel!.id, { is_active: true })
+            expect(refused.status).toBe(422)
+
+            await openProjectContentTab(page, projectId)
+            await activateInactiveChannelInRail(page, /Histórico/)
+
+            const putWithoutTakeover = page.waitForResponse(
+                r =>
+                    r.request().method() === 'PUT' &&
+                    r.url().includes(`/channels/${history.channel!.id}`) &&
+                    !r.request().postDataJSON()?.force_takeover,
+                { timeout: 20_000 }
+            )
+            await putWithoutTakeover
+
+            await answerActiveChannelTakeover(page, {
+                confirm: true,
+                reason: 'dop1158 same-card swap',
+            })
+
+            await expect
+                .poll(async () => {
+                    const channels = await listProjectChannels(page, projectId)
+                    const hist = channels.find(c => c.id === history.channel!.id)
+                    const cur = channels.find(c => c.id === current.channel!.id)
+                    return { histActive: hist?.is_active, curActive: cur?.is_active, n: channels.length }
+                }, { timeout: 25_000 })
+                .toEqual({ histActive: true, curActive: false, n: 2 })
+        } finally {
             await deleteE2ECommunicationIntegration(page, integration.id)
         }
     })

@@ -250,6 +250,88 @@ export async function openExternalConversationViaApi(
     )
 }
 
+/**
+ * Create a channel via `POST /channels`. Used to stage same-card history + active siblings
+ * (DOP-1158 validation return) without burning the dialog request budget.
+ */
+export async function createChannelViaApi(
+    page: Page,
+    args: {
+        projectId: string
+        name: string
+        integrationId: string
+        externalRef: string
+        isActive?: boolean
+    }
+): Promise<{ status: number; channel: E2EChannel | null }> {
+    const apiUrl = `${apiBaseUrl()}/api/management/channels`
+
+    return page.evaluate(
+        async ({ apiUrl, args }) => {
+            const token = localStorage.getItem('token')
+            if (!token) return { status: 0, channel: null }
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: args.projectId,
+                    name: args.name,
+                    integration_id: args.integrationId,
+                    external_ref: args.externalRef,
+                    is_active: args.isActive ?? true,
+                }),
+            })
+
+            const data = (await res.json().catch(() => null)) as {
+                channel?: E2EChannel
+            } | null
+
+            return { status: res.status, channel: data?.channel ?? null }
+        },
+        { apiUrl, args }
+    )
+}
+
+/** `PUT /channels/{id}` — deactivate / activate without the dialog. */
+export async function updateChannelViaApi(
+    page: Page,
+    channelId: string,
+    payload: { name?: string; is_active?: boolean; force_takeover?: boolean; close_reason?: string }
+): Promise<{ status: number; channel: E2EChannel | null; body: unknown }> {
+    const apiUrl = `${apiBaseUrl()}/api/management/channels/${channelId}`
+
+    return page.evaluate(
+        async ({ apiUrl, payload }) => {
+            const token = localStorage.getItem('token')
+            if (!token) return { status: 0, channel: null, body: null }
+
+            const res = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+
+            const body = await res.json().catch(() => null)
+            const channel =
+                body && typeof body === 'object' && 'channel' in body
+                    ? ((body as { channel?: E2EChannel }).channel ?? null)
+                    : null
+
+            return { status: res.status, channel, body }
+        },
+        { apiUrl, payload }
+    )
+}
+
 export function channelDialog(page: Page): Locator {
     return page
         .locator('.p-dialog')
@@ -343,8 +425,13 @@ export async function submitOpenConversation(page: Page) {
     return response
 }
 
+/** Open/reopen 409 Swal — unnamed ("em outro") or named ("no projeto \"…\""). */
 export const ACTIVE_CHANNEL_ELSEWHERE_PROMPT =
-    /já tem uma conversa ativa em outro|already has an active conversation in another/i
+    /já tem uma conversa ativa (em outro|no )|already has an active conversation in (another|project)/i
+
+/** Force-takeover confirm when activating/updating a channel that conflicts (PUT path). */
+export const ACTIVE_CHANNEL_TAKEOVER_PROMPT =
+    /já tem uma conversa ativa|already has an active conversation/i
 
 /** The 409 recovery question (Swal) with the optional closing note. */
 export function activeChannelElsewherePrompt(page: Page): Locator {
@@ -374,6 +461,58 @@ export async function answerActiveChannelElsewhere(
         : prompt.getByRole('button', { name: /^(Não|No|Cancelar|Cancel)$/i })
 
     await button.click()
+}
+
+/** Swal offered by `useChannelForceTakeover` ("Encerrar e ativar aqui"). */
+export function activeChannelTakeoverPrompt(page: Page): Locator {
+    return page.locator('.swal2-container').filter({ hasText: ACTIVE_CHANNEL_TAKEOVER_PROMPT })
+}
+
+export async function expectActiveChannelTakeoverPrompt(page: Page) {
+    const prompt = activeChannelTakeoverPrompt(page)
+    await expect(prompt).toBeVisible({ timeout: 20_000 })
+    await expect(
+        prompt.getByRole('button', { name: /Encerrar e ativar aqui|Close and activate here/i })
+    ).toBeVisible()
+    return prompt
+}
+
+export async function answerActiveChannelTakeover(
+    page: Page,
+    options: { confirm: boolean; reason?: string }
+) {
+    const prompt = await expectActiveChannelTakeoverPrompt(page)
+
+    if (options.reason) {
+        await prompt.locator('input[type="text"]').fill(options.reason)
+    }
+
+    const button = options.confirm
+        ? prompt.getByRole('button', {
+              name: /Encerrar e ativar aqui|Close and activate here/i,
+          })
+        : prompt.getByRole('button', { name: /Cancelar|Cancel/i })
+
+    await button.click()
+}
+
+/**
+ * Click the quick-activate control next to an inactive channel in the content rail.
+ * The button only renders for inactive rows (`ChannelSidebar` / `fa-toggle-on`).
+ */
+export async function activateInactiveChannelInRail(page: Page, channelName: string | RegExp) {
+    const rail = page
+        .locator('.card')
+        .filter({ has: page.getByRole('heading', { name: /Canais|Channels/i }) })
+        .locator('.d-none.d-md-flex')
+        .first()
+
+    const row = rail.locator('div.d-flex').filter({ hasText: channelName }).first()
+    await expect(row).toBeVisible({ timeout: 20_000 })
+
+    const activate = row.locator('button.btn-icon:has(i.fa-toggle-on)').first()
+    await expect(activate).toBeVisible({ timeout: 10_000 })
+    await activate.click()
 }
 
 /**
