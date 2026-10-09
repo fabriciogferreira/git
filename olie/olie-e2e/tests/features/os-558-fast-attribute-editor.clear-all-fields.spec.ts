@@ -8,6 +8,7 @@ import {
     createE2ECustomer,
     createE2EProjectGroup,
     ensureEditableHeaderFieldsVisible,
+    expectFastAttributeClearHidden,
     fastAttributeCancelButton,
     fastAttributeClearButton,
     fastAttributeEditor,
@@ -26,12 +27,13 @@ import {
  * Option A: Limpar clears the draft without closing; Cancelar discards; Salvar persists
  * only for attributes the API accepts as empty/null.
  *
+ * Non-clearable (description, status, impact): Limpar must NOT be shown.
  * Watch-mode fields (tags) must NOT show Limpar.
  */
 test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
     test.describe.configure({ timeout: 120_000 })
 
-    test('description: Limpar clears draft; Cancelar restores', async ({ page }) => {
+    test('description: Limpar is not shown (API rejects empty)', async ({ page }) => {
         await loginAsE2EUser(page)
         const projectId = await createE2EProject(page, {
             name: `e2e-os558-all-desc-${Date.now()}`,
@@ -44,23 +46,14 @@ test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
             projectId,
             HEADER_FIELD_LABEL.description
         )
-        await requireFastAttributeClearButton(page, editor)
 
-        const field = editor.locator('textarea').first()
-        await expect(field).toHaveValue(initial)
-
-        await fastAttributeClearButton(editor).click()
-        await expect(field).toHaveValue('')
-        await expect(editor).toBeVisible()
-
-        await fastAttributeCancelButton(editor).click()
-        await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
-        await expect(headerItemByLabel(page, HEADER_FIELD_LABEL.description)).toContainText(
-            initial
-        )
+        await expect(fastAttributeCancelButton(editor)).toBeVisible()
+        await expect(fastAttributeSaveButton(editor)).toBeVisible()
+        await expectFastAttributeClearHidden(editor)
+        await expect(editor.locator('textarea').first()).toHaveValue(initial)
     })
 
-    test('impact: Limpar clears draft; Cancelar restores', async ({ page }) => {
+    test('impact: Limpar is not shown (API rejects null)', async ({ page }) => {
         await loginAsE2EUser(page)
         const projectId = await createE2EProject(page, {
             name: `e2e-os558-all-impact-${Date.now()}`,
@@ -72,18 +65,11 @@ test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
             projectId,
             HEADER_FIELD_LABEL.impact
         )
-        await requireFastAttributeClearButton(page, editor)
 
-        const select = editor.locator('select').first()
-        await expect(select).toHaveValue('5')
-
-        await fastAttributeClearButton(editor).click()
-        await expect(select).not.toHaveValue('5')
-        await expect(editor).toBeVisible()
-
-        await fastAttributeCancelButton(editor).click()
-        await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
-        await expect(headerItemByLabel(page, HEADER_FIELD_LABEL.impact)).toContainText('5')
+        await expect(fastAttributeCancelButton(editor)).toBeVisible()
+        await expect(fastAttributeSaveButton(editor)).toBeVisible()
+        await expectFastAttributeClearHidden(editor)
+        await expect(editor.locator('select').first()).toHaveValue('5')
     })
 
     test('budget: Limpar clears draft; Limpar+Salvar persists 0', async ({ page }) => {
@@ -120,12 +106,11 @@ test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
         await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
     })
 
-    test('status: Limpar clears draft; Cancelar restores', async ({ page }) => {
+    test('status: Limpar is not shown (API rejects null)', async ({ page }) => {
         await loginAsE2EUser(page)
         const projectId = await createE2EProject(page, {
             name: `e2e-os558-all-status-${Date.now()}`,
         })
-        // Seed a known status so Cancelar restore is assertable even if overview is slow.
         await updateProjectViaApi(page, projectId, { status: 1 })
 
         const editor = await openHeaderFastAttributeEditor(
@@ -133,25 +118,14 @@ test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
             projectId,
             HEADER_FIELD_LABEL.status
         )
-        await requireFastAttributeClearButton(page, editor)
+
+        await expect(fastAttributeCancelButton(editor)).toBeVisible()
+        await expect(fastAttributeSaveButton(editor)).toBeVisible()
+        await expectFastAttributeClearHidden(editor)
 
         const selectLabel = editor.locator('.p-select-label, .p-dropdown-label').first()
         await expect(selectLabel).toBeVisible({ timeout: 5_000 })
-        const before = (await selectLabel.innerText()).trim()
-        expect(before.length).toBeGreaterThan(0)
-
-        await fastAttributeClearButton(editor).click()
-        await expect(editor).toBeVisible()
-        await expect(fastAttributeClearButton(editor)).toBeVisible()
-        // Draft cleared: label empty / placeholder, or no longer the previous value.
-        const after = (await selectLabel.innerText()).trim()
-        expect(after === '' || after !== before || /selecion|select|choose/i.test(after)).toBe(
-            true
-        )
-
-        await fastAttributeCancelButton(editor).click()
-        await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
-        await expect(headerItemByLabel(page, HEADER_FIELD_LABEL.status)).toContainText(before)
+        expect((await selectLabel.innerText()).trim().length).toBeGreaterThan(0)
     })
 
     test('customer: Limpar clears draft; Limpar+Salvar unlinks', async ({ page }) => {

@@ -4,6 +4,7 @@ import { createE2EProject } from '../helpers/project'
 import { openProjectOverview } from '../helpers/content-media'
 import {
     descriptionHeaderItem,
+    expectFastAttributeClearHidden,
     fastAttributeCancelButton,
     fastAttributeEditor,
     fastAttributeSaveButton,
@@ -16,7 +17,7 @@ import {
  * OS-558 — baseline of FastAttributeEditor Cancelar/Salvar (shared surface).
  *
  * Uses project details header → Descrição (same `#fast_attribute_editor_container`
- * as kanban form-edge edits). Limpar presence is covered by the feature spec.
+ * as kanban form-edge edits). Description is non-clearable (no Limpar).
  */
 test.describe('OS-558 FastAttributeEditor baseline', () => {
     test.describe.configure({ timeout: 90_000 })
@@ -33,10 +34,12 @@ test.describe('OS-558 FastAttributeEditor baseline', () => {
 
         await expect(fastAttributeCancelButton(editor)).toBeVisible()
         await expect(fastAttributeSaveButton(editor)).toBeVisible()
+        await expectFastAttributeClearHidden(editor)
 
         const field = editor.locator('textarea, input').first()
         await expect(field).toHaveValue(initial)
     })
+
 
     test('Cancelar discards edits and keeps the previous description', async ({
         page,

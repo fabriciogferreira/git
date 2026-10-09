@@ -22,8 +22,11 @@ export function fastAttributeSaveButton(editor: Locator): Locator {
 
 /**
  * Clear / Limpar in the FastAttributeEditor footer.
- * Feature specs assert it appears; use requireFastAttributeClearButton to skip
- * when the front under test lacks OS-558.
+ * Feature specs assert it appears on clearable attributes; use
+ * requireFastAttributeClearButton to skip when the front under test lacks OS-558.
+ *
+ * Non-clearable project attributes (description, status, impact) must NOT show
+ * Limpar — API rejects null/empty (see api-main ProjectValidator / OS-558 review).
  */
 export function fastAttributeClearButton(editor: Locator): Locator {
     return editor.getByRole('button', { name: /^(Limpar|Clear)$/i })
@@ -35,6 +38,11 @@ export async function requireFastAttributeClearButton(
     editor: Locator
 ) {
     await requireVisible(page, 'OS-558', fastAttributeClearButton(editor))
+}
+
+/** Assert Limpar is hidden (non-clearable attributes / watch mode). */
+export async function expectFastAttributeClearHidden(editor: Locator) {
+    await expect(fastAttributeClearButton(editor)).toHaveCount(0)
 }
 
 /** Header field labels (pt-br | en) for ProjectHeaderInfo FastAttributeEditor chips. */

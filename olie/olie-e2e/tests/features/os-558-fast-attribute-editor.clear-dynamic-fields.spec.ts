@@ -5,8 +5,11 @@ import {
     createE2EContact,
     createE2ECustomer,
     createE2EDynamicForm,
+    expectFastAttributeClearHidden,
+    fastAttributeCancelButton,
     fastAttributeClearButton,
     fastAttributeEditor,
+    fastAttributeSaveButton,
     getFirstAssignableUser,
     openDynamicFormFastAttributeEditor,
     requireFastAttributeClearButton,
@@ -174,5 +177,73 @@ test.describe('OS-558 FastAttributeEditor Limpar — dynamic form fields', () =>
         await page.waitForTimeout(800)
         await expect(editor).toBeVisible()
         await expect(input).toHaveValue('')
+    })
+})
+
+/**
+ * OS-558 review follow-up: required dynamic-form edges must not offer Limpar
+ * (same silent-fail risk as non-clearable project attributes on kanban save).
+ */
+test.describe('OS-558 FastAttributeEditor Limpar — required dynamic fields', () => {
+    test.describe.configure({ timeout: 90_000 })
+
+    test('required short_text: Limpar is not shown', async ({ page }) => {
+        await loginAsE2EUser(page)
+        const projectId = await createE2EProject(page, {
+            name: `e2e-os558-dyn-required-${Date.now()}`,
+        })
+        await openProjectDetailsTab(page, projectId, 'overview')
+
+        const { edges } = await createE2EDynamicForm(page, {
+            title: `e2e-os558-dyn-req-${Date.now()}`,
+            edges: [
+                {
+                    label: 'E2E Required Text',
+                    type: 'short_text',
+                    required: true,
+                    index: 0,
+                },
+            ],
+        })
+
+        const edge = edges[0]
+        expect(edge.required).toBeTruthy()
+
+        const seed = `e2e-required-${Date.now()}`
+        const editor = await openDynamicFormFastAttributeEditor(page, edge, seed)
+
+        await expect(fastAttributeCancelButton(editor)).toBeVisible()
+        await expect(fastAttributeSaveButton(editor)).toBeVisible()
+        await expectFastAttributeClearHidden(editor)
+
+        const field = editor.locator('textarea, input').first()
+        await expect(field).toHaveValue(seed)
+    })
+
+    test('optional short_text: Limpar remains available', async ({ page }) => {
+        await loginAsE2EUser(page)
+        const projectId = await createE2EProject(page, {
+            name: `e2e-os558-dyn-optional-${Date.now()}`,
+        })
+        await openProjectDetailsTab(page, projectId, 'overview')
+
+        const { edges } = await createE2EDynamicForm(page, {
+            title: `e2e-os558-dyn-opt-${Date.now()}`,
+            edges: [
+                {
+                    label: 'E2E Optional Text',
+                    type: 'short_text',
+                    required: false,
+                    index: 0,
+                },
+            ],
+        })
+
+        const editor = await openDynamicFormFastAttributeEditor(
+            page,
+            edges[0],
+            `e2e-optional-${Date.now()}`
+        )
+        await requireFastAttributeClearButton(page, editor)
     })
 })
