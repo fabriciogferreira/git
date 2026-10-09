@@ -295,19 +295,64 @@ test.describe('OS-558 FastAttributeEditor Limpar — all fields', () => {
         await expect(editor.getByText(group.name).first()).toBeVisible({ timeout: 10_000 })
 
         await fastAttributeClearButton(editor).click()
-        // Cleared selection: label empty / placeholder; unlink list mentions the group.
         await expect(editor).toBeVisible()
-        const unlinkRow = editor.getByText(/Desvincular|Unlink|to unlink|desvincular/i)
-        // Soft assert: either unlink copy mentions group, or chip/token for group is gone from label.
-        const stillInLabel = await multi.getByText(group.name).count()
-        if (stillInLabel > 0) {
-            await expect(unlinkRow.first()).toBeVisible({ timeout: 5_000 })
-        }
+        // Cleared selection: chip gone from MultiSelect label; unlink preview lists the group.
+        await expect(multi.getByText(group.name)).toHaveCount(0)
+        await expect(
+            editor.getByText(/Desvincular|Unlink|to unlink|desvincular/i).first()
+        ).toBeVisible({ timeout: 5_000 })
+        await expect(editor.getByText(group.name).first()).toBeVisible()
 
         await fastAttributeCancelButton(editor).click()
         await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
         await expect(headerItemByLabel(page, HEADER_FIELD_LABEL.groups)).toContainText(
             group.name
+        )
+    })
+
+    test('groups: Limpar+Salvar persists unlink via groups.to_rem', async ({ page }) => {
+        await loginAsE2EUser(page)
+        const projectId = await createE2EProject(page, {
+            name: `e2e-os558-all-groups-save-${Date.now()}`,
+        })
+        const group = await createE2EProjectGroup(page, `e2e-os558-grp-save-${Date.now()}`)
+        await updateProjectViaApi(page, projectId, {
+            groups: { to_add: [group.id], to_rem: [] },
+        })
+
+        const editor = await openHeaderFastAttributeEditor(
+            page,
+            projectId,
+            HEADER_FIELD_LABEL.groups
+        )
+        await requireFastAttributeClearButton(page, editor)
+
+        await expect(editor.getByText(group.name).first()).toBeVisible({ timeout: 10_000 })
+
+        await fastAttributeClearButton(editor).click()
+        await expect(editor.locator('.p-multiselect').first().getByText(group.name)).toHaveCount(
+            0
+        )
+        await expect(
+            editor.getByText(/Desvincular|Unlink|to unlink|desvincular/i).first()
+        ).toBeVisible({ timeout: 5_000 })
+
+        const response = await waitForProjectPut(page, projectId, async () => {
+            await fastAttributeSaveButton(editor).click()
+        })
+        expect(response.status()).toBe(200)
+
+        const body = response.request().postDataJSON() as {
+            groups?: { to_add?: number[]; to_rem?: number[] }
+        } | null
+        expect(body?.groups).toBeTruthy()
+        expect(body?.groups?.to_rem ?? []).toContain(group.id)
+        expect(body?.groups?.to_add ?? []).not.toContain(group.id)
+
+        await expect(fastAttributeEditor(page)).toHaveCount(0, { timeout: 10_000 })
+        await expect(headerItemByLabel(page, HEADER_FIELD_LABEL.groups)).not.toContainText(
+            group.name,
+            { timeout: 15_000 }
         )
     })
 
