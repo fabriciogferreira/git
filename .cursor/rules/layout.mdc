@@ -16,11 +16,11 @@ alwaysApply: true
 | `systemd/workvm-git-pull.service` | O meta-repo fica atrás do remoto. Fetch no login; rede caída não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
 | `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |
-| `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones e merge de JSON do Cursor. |
+| `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones, merge de JSON do Cursor e MCP → `~/.cursor/mcp.json`. |
 | `lib/session.sh` | Wayland, Docker, browser e abertura do Cursor no login. |
 | `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
 | `lib/project-start.sh` | A subida (fetch, compose, e2e, Cursor, browser) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`. |
-| `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` só diz esse nome, e o setup copia para `~/git/.cursor/mcp.json`. |
+| `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` só diz esse nome. No login o merge vai para `~/.cursor/mcp.json` (user-level). |
 | `projects/<id>/` | Sem definição por projeto não há o que clonar, qual compose e quais URLs. `project.conf` é a fonte; `post-clone.sh` é o bootstrap pesado. |
 | `projects/<id>/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone, para essas rules não valerem na janela `~/git`. Skills do Boost vêm de `boost:update` no clone. |
 | `workspace.code-workspace` | No login o Cursor abre este meta-repo e os clones do projeto setado. Paths relativos ao arquivo, para valer em outro `$HOME`. |

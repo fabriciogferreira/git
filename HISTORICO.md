@@ -16,11 +16,17 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** essa pasta existia para ser a raiz do Cursor. A janela já abre `~/git`, e o nível extra só alongava caminho
 - **resolvido como:** as quatro pastas subiram para a raiz. `~/.config/workvm` e `workvm.service` continuam: são o projeto ativo nesta máquina, não um diretório do repo
 
+## MCP de projeto começa desligado no Cursor
+
+- **problema:** os `.cursor/mcp.json` dos roots (clones, e2e) abriam desligados; era preciso ligar à mão nas settings
+- **por que é um problema:** opt-in de project MCP é por workspace e por hash da config — no multi-root e após mudança no arquivo o toggle some. Uma VM = um projeto, então o custo de tools extras no contexto é baixo
+- **resolvido como:** no login, `workvm_apply_mcp` junta `mcps/<MCP>.json` + `.cursor/mcp.json` dos clones/e2e em `~/.cursor/mcp.json` (user-level, sem esse opt-in). Fontes versionados são relidos a cada subida. Nos de projeto fica stub local (`mcp.workvm-user`, `skip-worktree`) porque, com o mesmo nome, o Cursor prefere o de projeto — se ele estiver desligado, ganha do global
+
 ## MCP em pasta com `mcp.json`
 
 - **problema:** cada MCP era `mcps/<nome>/mcp.json`
 - **por que é um problema:** o arquivo não dizia com o que conecta, e a pasta em volta não acrescentava nada
-- **resolvido como:** o arquivo fica na raiz de `mcps/` e o nome é o destino (`olie.json`). `MCP=olie` copia esse arquivo para `~/git/.cursor/mcp.json`
+- **resolvido como:** o arquivo fica na raiz de `mcps/` e o nome é o destino (`olie.json`). O setup/login promove para `~/.cursor/mcp.json` (antes ia só para `~/git/.cursor/mcp.json`)
 
 ## MCP dentro de `workvm/`
 

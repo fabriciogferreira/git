@@ -27,8 +27,8 @@ O porquê de cada pasta e script está em `~/git/.cursor/rules/layout.mdc`. Não
 
 `projects/<id>/workspace.code-workspace`:
 
-- root **`~/git`** → este meta-repo (prompts, rules, overlay, projeto setado). O MCP copiado fica em `.cursor/mcp.json` desta raiz
-- root **cada clone** → `.cursor` daquele repositório
+- root **`~/git`** → este meta-repo (prompts, rules, overlay, projeto setado)
+- root **cada clone** → `.cursor` daquele repositório (MCP de projeto vira stub; o merge ativo está em `~/.cursor/mcp.json`)
 
 O `project-start.sh` abre esse arquivo. A janela é sempre este repositório mais o projeto que a VM tem setado.
 
@@ -46,8 +46,15 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 ## MCP / env de sessão (Cursor)
 
-- MCP HTTP (`mcps/<nome>.json`, copiado para `~/git/.cursor/mcp.json`) usa
-  `Authorization: Bearer ${env:OLIE_FLOW_AI_TOKEN}`. O `project.conf` só informa `MCP=<nome>`.
+- No login (`project-start.sh`, depois do overlay), `workvm_apply_mcp` junta
+  `mcps/<MCP>.json`, `.cursor/mcp.json` dos clones e dos e2e em
+  **`~/.cursor/mcp.json`** (user-level). MCP só no root do workspace exige
+  opt-in manual; user-level não. Os fontes continuam versionados — a cópia
+  é refeita a cada subida. Nos `.cursor/mcp.json` de projeto fica stub local
+  (`mcp.workvm-user` + `skip-worktree`) para o mesmo nome não sobrescrever o
+  global desligado. Não commitar o stub.
+- MCP HTTP (`mcps/<nome>.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_TOKEN}`.
+  O `project.conf` só informa `MCP=<nome>`.
 - O valor vive em **`~/.config/environment.d/*.conf`** (diretório, não arquivo).
   Ex.: `~/.config/environment.d/olie.conf` com `OLIE_FLOW_AI_TOKEN=...` (`chmod 600`).
 - `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como

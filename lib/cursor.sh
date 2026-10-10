@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Rule do projeto ativo, patch de alwaysApply nos clones e merge de JSON do Cursor.
+# Rule do projeto ativo, patch de alwaysApply nos clones, merge de JSON do Cursor
+# e promoção dos MCP versionados para ~/.cursor/mcp.json.
 # Problema: o patch local (skip-worktree) estava misturado com git, Docker e Wayland.
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
 
@@ -324,34 +325,226 @@ dest_path.write_text(
 PY
 }
 
-# Copia mcps/<nome>.json para ~/git/.cursor/mcp.json.
-# Problema: o MCP compartilhado morava numa pasta-grupo só para o Cursor achar.
-# Nome vazio apaga a cópia, para o projeto anterior não ficar no próximo.
+# Marker ao lado do .cursor/mcp.json de projeto: conteúdo foi para ~/.cursor/mcp.json.
+# JSON puro não tem comentário; o marker diz que o arquivo local é stub.
+WORKVM_MCP_USER_MARKER="mcp.workvm-user"
+
+# Repo git que cobre um arquivo (clone ou meta-repo), ou vazio.
+workvm_mcp_git_repo() {
+    local file="$1"
+    local dir
+    dir="$(dirname "$file")"
+    git -C "$dir" rev-parse --show-toplevel 2>/dev/null || true
+}
+
+# Se o mcp.json local é stub, restaura o versionado (fetch/overlay já rodaram).
+workvm_mcp_restore_project_file() {
+    local file="$1"
+    local marker="$2"
+    local repo rel
+
+    [ -f "$marker" ] || return 0
+    repo="$(workvm_mcp_git_repo "$file")"
+    [ -n "$repo" ] || return 0
+    rel="$(workvm_git_relpath "$repo" "$file")"
+    if ! git -C "$repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
+        return 0
+    fi
+    workvm_git_unskip_worktree "$repo" "$file"
+    git -C "$repo" checkout HEAD -- "$rel" 2>/dev/null || true
+}
+
+# Stub local: Cursor não registra MCP de projeto (exige opt-in e sobrescreve
+# o user-level com o mesmo nome). skip-worktree — não commitar.
+workvm_mcp_stub_project_file() {
+    local file="$1"
+    local marker="$2"
+    local repo rel
+
+    mkdir -p "$(dirname "$file")"
+    cat >"$file" <<'EOF' || return 1
+{
+  "mcpServers": {}
+}
+EOF
+    cat >"$marker" <<'EOF' || return 1
+workvm-local: MCP servers promoted to ~/.cursor/mcp.json
+Do not commit this stub. Source of truth stays versioned; login re-merges.
+EOF
+    repo="$(workvm_mcp_git_repo "$file")"
+    [ -n "$repo" ] || return 0
+    workvm_git_exclude_add "$repo" ".cursor/${WORKVM_MCP_USER_MARKER}"
+    rel="$(workvm_git_relpath "$repo" "$file")"
+    if git -C "$repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
+        workvm_git_skip_worktree "$repo" "$file"
+    fi
+}
+
+# Junta mcps/<MCP>, .cursor/mcp.json dos CLONE_REPOS, E2E_COMPOSE_DIRS e
+# suítes sob projects/<id>/*/ em ~/.cursor/mcp.json (user-level).
+# Problema: MCP só em .cursor/mcp.json do root exige opt-in manual a cada
+# workspace; user-level não. Relê no login porque os fontes são versionados.
+# Stub local nos de projeto para o nome igual não ganhar do global desligado.
+# Espera MCP/CLONE_REPOS/E2E já sourced. Uso: workvm_apply_mcp <repo-root> [nome] [project-dir]
 workvm_apply_mcp() {
     local repo_root="${1:-}"
     local name="${2:-}"
-    local dest src
+    local project_dir="${3:-}"
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local dest="${HOME}/.cursor/mcp.json"
+    local legacy_dest="$repo_root/.cursor/mcp.json"
+    local legacy_marker="$repo_root/.cursor/${WORKVM_MCP_USER_MARKER}"
+    local src entry repo rest abs path marker child
+    local -a sources=()
+    local -a stub_targets=()
 
     if [ -z "$repo_root" ]; then
-        echo "error: workvm_apply_mcp <repo-root> [nome]" >&2
+        echo "error: workvm_apply_mcp <repo-root> [nome] [project-dir]" >&2
         return 1
     fi
 
-    dest="$repo_root/.cursor/mcp.json"
-    if [ -z "$name" ]; then
-        if [ -f "$dest" ]; then
-            rm -f "$dest"
-            echo "→ MCP: removido (projeto sem MCP)"
+    # Compat: project-setup ainda passa o nome; preferir o da linha, senão $MCP.
+    if [ -n "$name" ]; then
+        MCP="$name"
+    fi
+    name="${MCP:-}"
+
+    if [ -n "$name" ]; then
+        src="$repo_root/mcps/$name.json"
+        if [ ! -f "$src" ]; then
+            echo "error: MCP '$name' não está em mcps/$name.json" >&2
+            return 1
         fi
+        sources+=("$src")
+    fi
+
+    for entry in "${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}"; do
+        [ -n "$entry" ] || continue
+        repo="${entry%% *}"
+        rest="${entry#* }"
+        if [ -z "$rest" ] || [ "$repo" = "$rest" ]; then
+            continue
+        fi
+        abs="${rest%% *}"
+        case "$abs" in
+            /*) ;;
+            *) abs="${git_root}/${abs}" ;;
+        esac
+        path="$abs/.cursor/mcp.json"
+        marker="$abs/.cursor/${WORKVM_MCP_USER_MARKER}"
+        workvm_mcp_restore_project_file "$path" "$marker"
+        if [ -f "$path" ]; then
+            sources+=("$path")
+            stub_targets+=("$path")
+        fi
+    done
+
+    for abs in "${E2E_COMPOSE_DIRS[@]+"${E2E_COMPOSE_DIRS[@]}"}"; do
+        [ -n "$abs" ] || continue
+        path="$abs/.cursor/mcp.json"
+        marker="$abs/.cursor/${WORKVM_MCP_USER_MARKER}"
+        workvm_mcp_restore_project_file "$path" "$marker"
+        if [ -f "$path" ]; then
+            sources+=("$path")
+            stub_targets+=("$path")
+        fi
+    done
+
+    # e2e versionado em projects/<id>/<suite>/.cursor/mcp.json (olie-e2e, etc.).
+    if [ -n "$project_dir" ] && [ -d "$project_dir" ]; then
+        shopt -s nullglob
+        for child in "$project_dir"/*/; do
+            path="${child}.cursor/mcp.json"
+            marker="${child}.cursor/${WORKVM_MCP_USER_MARKER}"
+            # Já coberto por E2E_COMPOSE_DIRS.
+            case " ${E2E_COMPOSE_DIRS[*]+"${E2E_COMPOSE_DIRS[*]}"} " in
+                *" ${child%/} "*) continue ;;
+            esac
+            workvm_mcp_restore_project_file "$path" "$marker"
+            if [ -f "$path" ]; then
+                sources+=("$path")
+                stub_targets+=("$path")
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    mkdir -p "$(dirname "$dest")" "$repo_root/.cursor"
+
+    if [ "${#sources[@]}" -eq 0 ]; then
+        cat >"$dest" <<'EOF'
+{
+  "mcpServers": {}
+}
+EOF
+        rm -f "$legacy_dest" "$legacy_marker"
+        echo "→ MCP user: ~/.cursor/mcp.json vazio (projeto sem fontes)"
         return 0
     fi
 
-    src="$repo_root/mcps/$name.json"
-    if [ ! -f "$src" ]; then
-        echo "error: MCP '$name' não está em mcps/$name.json" >&2
+    local used_file path
+    used_file="$(mktemp)"
+    if ! python3 - "$dest" "$used_file" "${sources[@]}" <<'PY'
+import json, re, sys
+from pathlib import Path
+
+def load_jsonc(path: Path):
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    # Só comentário de linha inteira — não cortar https://
+    text = re.sub(r"(?m)^\s*//.*?$", "", text)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return json.loads(text)
+
+dest = Path(sys.argv[1])
+used_file = Path(sys.argv[2])
+merged = {}
+used = []
+for raw in sys.argv[3:]:
+    path = Path(raw)
+    if not path.is_file():
+        continue
+    data = load_jsonc(path)
+    if not isinstance(data, dict):
+        raise SystemExit(f"error: JSON de origem não é um objeto: {path}")
+    servers = data.get("mcpServers")
+    if not isinstance(servers, dict) or not servers:
+        continue
+    merged.update(servers)
+    used.append(str(path))
+
+dest.write_text(
+    json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",
+    encoding="utf-8",
+)
+used_file.write_text("\n".join(used) + ("\n" if used else ""), encoding="utf-8")
+print(f"→ MCP user: {len(merged)} server(s) → {dest}")
+PY
+    then
+        rm -f "$used_file"
+        echo "error: falha ao juntar MCP em ~/.cursor/mcp.json" >&2
         return 1
     fi
-    mkdir -p "$(dirname "$dest")"
-    cp -a "$src" "$dest"
-    echo "→ MCP: $name → .cursor/mcp.json"
+
+    # Stub só nos de projeto que entraram no merge (não em mcps/*.json).
+    while IFS= read -r path; do
+        [ -n "$path" ] || continue
+        case "$path" in
+            "$repo_root"/mcps/*.json) continue ;;
+        esac
+        case " ${stub_targets[*]+"${stub_targets[*]}"} " in
+            *" $path "*) ;;
+            *) continue ;;
+        esac
+        marker="$(dirname "$path")/${WORKVM_MCP_USER_MARKER}"
+        workvm_mcp_stub_project_file "$path" "$marker"
+        echo "  stub: $path"
+    done <"$used_file"
+    rm -f "$used_file"
+
+    # Cópia antiga em ~/git/.cursor/mcp.json não pode competir com o user-level.
+    if [ -f "$legacy_dest" ] || [ -f "$legacy_marker" ]; then
+        workvm_mcp_stub_project_file "$legacy_dest" "$legacy_marker"
+        echo "  stub: $legacy_dest"
+    fi
 }

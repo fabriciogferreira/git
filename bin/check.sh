@@ -119,7 +119,7 @@ trap 'rm -rf "$tmp"' EXIT
 cat >"$tmp/stubs.sh" <<'EOF'
 workvm_fetch_project_repos() { :; }
 workvm_apply_files() { :; }
-# Não copiar MCP para ~/git durante o teste.
+# Não escrever ~/.cursor/mcp.json durante o teste.
 workvm_apply_mcp() { :; }
 workvm_wait_for_wayland() { return 0; }
 workvm_docker_compose_up() {

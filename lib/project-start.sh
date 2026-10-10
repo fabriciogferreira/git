@@ -61,8 +61,6 @@ workvm_project_start() {
     # shellcheck source=/dev/null
     source "$project_dir/project.conf"
     repo_root="$(cd "$lib_dir/.." && pwd)"
-    workvm_apply_mcp "$repo_root" "${MCP:-}" \
-        || workvm_project_log "MCP não aplicado"
 
     if [ -f "$project_dir/start.hook.sh" ]; then
         # shellcheck source=/dev/null
@@ -78,6 +76,11 @@ workvm_project_start() {
 
     workvm_project_log "aplicando overlay/ em ${PROJECT_NAME}/"
     workvm_apply_files "$project_dir" "$PROJECT_NAME"
+
+    # Depois do overlay: fontes versionados (mcps/, clones, e2e) → ~/.cursor/mcp.json.
+    workvm_project_log "MCP do projeto → ~/.cursor/mcp.json"
+    workvm_apply_mcp "$repo_root" "${MCP:-}" "$project_dir" \
+        || workvm_project_log "MCP não aplicado"
 
     workvm_project_log "waiting for Wayland/Hyprland"
     if ! workvm_wait_for_wayland 90; then

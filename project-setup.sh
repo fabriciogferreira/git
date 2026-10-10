@@ -162,12 +162,10 @@ PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
 
 CLONE_REPOS=()
 POST_CLONE=()
-MCP=
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
 
-echo "==> MCP do projeto ($PROJECT)"
-workvm_apply_mcp "$REPO_ROOT" "${MCP:-}"
+# MCP → ~/.cursor/mcp.json roda no project-start (depois de clone/overlay).
 
 FILES_PROJECT="${PROJECT_NAME:-$(basename "$PROJECT")}"
 
