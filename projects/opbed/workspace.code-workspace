@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": "../.."
+    },
+    {
+      "name": "opbed-backend",
+      "path": "../../opbed/opbed-backend"
+    },
+    {
+      "name": "opbed-frontend",
+      "path": "../../opbed/opbed-frontend"
+    }
+  ],
+  "settings": {}
+}

@@ -1,0 +1,31 @@
+---
+description: Registrar o problema que texto ou código novo resolve
+alwaysApply: true
+---
+
+# Por que isto existe
+
+O diff mostra o que mudou. O motivo se perde. Todo arquivo novo, ou bloco cuja intenção não é óbvia, diz qual problema resolve.
+
+Onde escrever:
+
+- Script, unit systemd, `project.conf`: comentário no topo com o problema (padrão de `vm-setup.sh` e `bin/`).
+- Rule `.mdc`: o `description` do frontmatter é o problema que a rule evita.
+- Overlay em `files/` ou `.config/`: um comentário ou README curto quando o arquivo sozinho não revela o motivo.
+
+```bash
+# git fetch do meta-repo no login gráfico.
+# Só na branch de origin (main). Falha de rede não derruba a sessão.
+```
+
+Não comente linha a linha o que o código já diz. Não reescreva comentários antigos só para este formato. Não duplique o mapa de `layout.mdc` dentro do arquivo: o cabeçalho cobre este arquivo; a rule cobre o repo.
+
+Script substituído é apagado. Não fica cópia antiga nem aviso “não use”. Quem chamava passa a apontar para o caminho novo.
+
+Problema resolvido neste repo entra em `HISTORICO.md`:
+
+```
+problema: o que acontecia
+por que é um problema: o custo
+resolvido como: o que foi feito e por que dessa forma
+```

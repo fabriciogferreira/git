@@ -1,0 +1,11 @@
+# Identidade desta VM. Copie para vm.local.conf (ao lado deste arquivo).
+# vm.local.conf não entra no git: nome e e-mail não ficam no histórico.
+#
+#   cp vm.local.conf.example vm.local.conf
+#
+# vm-setup.sh exige as três variáveis. Um valor já exportado no ambiente
+# não é sobrescrito.
+
+USER_NAME=fabricio
+GIT_USER_NAME='Fabrício Gonçalves Ferreira'
+GIT_USER_EMAIL=fabriciof481@gmail.com

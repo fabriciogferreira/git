@@ -4,31 +4,38 @@
 # Não ignora estas pastas/arquivos
 !.gitignore
 !README.md
-!tasks.md
+!HISTORICO.md
 !project-setup.sh
 !vm-setup.sh
-!workvm/
-!workvm/**
+!vm.local.conf.example
+!.shellcheckrc
+# Nome e e-mail desta máquina — não versionar
+vm.local.conf
+!bin/
+!bin/**
+!lib/
+!lib/**
+!projects/
+!projects/**
+!systemd/
+!systemd/**
 !code-profiles/
 !code-profiles/**
-!files/
-!files/**
 !.config/
 !.config/**
+!.cursor/
+!.cursor/**
+!prompts/
+!prompts/**
+!mcps/
+!mcps/**
 # Secrets locais de sessão (OLIE_FLOW_AI_TOKEN etc.) — nunca versionar
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
-workvm/projects/**/.env
+projects/**/.env
 
-# Reativa pastas pais (com * no topo o Git não desce em dirs ignorados)
-!olie/
-!olie/olie-e2e/
-!olie/olie-e2e/**
-!televisao/
-!televisao/televisao-front-e2e/
-!televisao/televisao-front-e2e/**
-!televisao/televisao-meet-front-e2e/
-!televisao/televisao-meet-front-e2e/**
-# Rules da VM ficam em workvm/.cursor (não em ~/git/.cursor)
+# Clones em olie/ e televisao/ ficam de fora. O e2e local mora em projects/.
 # Gerado por project-setup (projeto desta VM); não versionar
-workvm/.cursor/rules/workvm-project.mdc
+.cursor/rules/workvm-project.mdc
+# Cópia do MCP do projeto setado (fonte em mcps/)
+.cursor/mcp.json

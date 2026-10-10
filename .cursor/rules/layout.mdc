@@ -1,0 +1,34 @@
+---
+description: Qual problema cada pasta e script do meta-repo resolve
+alwaysApply: true
+---
+
+# Mapa — problema que cada parte resolve
+
+Única tabela de caminho → problema. O como a VM opera (projeto ativo, patch de clones, MCP) está em `meta-repo.mdc`. Não copie esta tabela para lá.
+
+| Caminho | Problema |
+| --- | --- |
+| `vm-setup.sh` | VM nova ainda pede senha, login e pacotes. Deixa Arch + Hyprland pronto e aplica `.config` → `~/.config`. |
+| `vm.local.conf` | Usuário e e-mail do git desta máquina. Fora do git. O `.example` só mostra as chaves. |
+| `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra em `projects/<id>` e liga `workvm.service`. |
+| `systemd/workvm.service` | No login gráfico nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. |
+| `systemd/workvm-git-pull.service` | O meta-repo fica atrás do remoto. Fetch no login; rede caída não derruba a sessão. |
+| `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
+| `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |
+| `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones e merge de JSON do Cursor. |
+| `lib/session.sh` | Wayland, Docker, browser e abertura do Cursor no login. |
+| `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
+| `lib/project-start.sh` | A subida (fetch, compose, e2e, Cursor, browser) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`. |
+| `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` só diz esse nome, e o setup copia para `~/git/.cursor/mcp.json`. |
+| `projects/<id>/` | Sem definição por projeto não há o que clonar, qual compose e quais URLs. `project.conf` é a fonte; `post-clone.sh` é o bootstrap pesado. |
+| `projects/<id>/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone, para essas rules não valerem na janela `~/git`. Skills do Boost vêm de `boost:update` no clone. |
+| `workspace.code-workspace` | No login o Cursor abre este meta-repo e os clones do projeto setado. Paths relativos ao arquivo, para valer em outro `$HOME`. |
+| `.config/` | Hyprland e sessão iguais em toda VM. Secrets em `environment.d/*.conf` ficam só no live. |
+| `code-profiles/` | Perfil do Cursor reaproveitável numa VM nova. |
+| `bin/check.sh` | Scripts mudam e ninguém roda shellcheck. Pega `set -u` em array vazio e o log de `COMPOSE_FILE`. |
+| `bin/patch-clone-cursor.sh` | `alwaysApply` de um clone vaza em todo chat multi-root. Patch local (`skip-worktree`), sem commit. |
+| `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
+| `olie/`, `televisao/` | Clones da empresa. O e2e que não pode ir no remoto deles fica em `projects/`. |
+| `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
+| `prompts/` | Prompts de agente em inglês e Markdown. Texto entre aspas simples ou `{{ }}` não se traduz. A raiz é global; abaixo, empresa / projeto / repositório. O mais fundo vence. |

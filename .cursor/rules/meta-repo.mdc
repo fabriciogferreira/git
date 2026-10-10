@@ -1,0 +1,62 @@
+---
+description: Como a work VM opera — projeto ativo, workspace, patch de clones, MCP
+alwaysApply: true
+---
+
+# Meta-repo `~/git`
+
+Este repositório **não** é um app de produto. É o meta-repo que provisiona e amarra **VMs de desenvolvimento** a um projeto: clona repos, sobe Docker, abre Cursor/browser no login gráfico.
+
+No login, o Cursor abre o meta-repo **`~/git`** junto com os clones do projeto setado. Os prompts e as rules da raiz valem nessa janela. O projeto ativo está em `workvm-project.mdc`. O overlay guarda `cursor/` sem ponto, para essas rules de produto não carregarem daqui; a cópia para o clone é que vira `.cursor`.
+
+## Como a VM sabe o projeto ativo
+
+1. **Para o agente Cursor (preferido):** `.cursor/rules/workvm-project.mdc` (`alwaysApply`)
+   - Gerado por `project-setup.sh`
+   - Lista projeto, URLs git, caminhos absolutos e branch
+   - Arquivo local da VM (gitignored) — não editar à mão
+2. **Runtime/systemd:** `~/.config/workvm/current` → `projects/<id>`
+3. **Fonte da verdade:** `projects/<id>/project.conf` (`CLONE_REPOS`)
+4. `workvm.service` roda `lib/project-start.sh` com o diretório de `current` no login gráfico
+
+`<id>` é o diretório em `projects` (`olie`, `televisao`, `opbed`). Basename único também funciona no setup.
+
+O porquê de cada pasta e script está em `~/git/.cursor/rules/layout.mdc`. Não copie essa tabela para cá.
+
+## Workspace Cursor (opção recomendada)
+
+`projects/<id>/workspace.code-workspace`:
+
+- root **`~/git`** → este meta-repo (prompts, rules, overlay, projeto setado). O MCP copiado fica em `.cursor/mcp.json` desta raiz
+- root **cada clone** → `.cursor` daquele repositório
+
+O `project-start.sh` abre esse arquivo. A janela é sempre este repositório mais o projeto que a VM tem setado.
+
+## Patch local nos clones (multi-root)
+
+`workvm_apply_files` (setup + `project-start.sh` de **todo** projeto) aplica um patch **só na VM**, sem push:
+
+- `.cursor/rules/*.mdc` com `alwaysApply: true` → `false` + `globs: "**/*"`
+- `AGENTS.md` → stub + conteúdo em `.cursor/rules/workvm-local-agents.mdc` (globs)
+- `git update-index --skip-worktree` nos arquivos tocados; `workvm-local-agents.mdc` no exclude local
+
+Manual (todos os projetos ou um): `bin/patch-clone-cursor.sh [projeto]`
+
+Assim rules de um clone não entram em todo chat multi-root. **Não commitar** essas mudanças nos repos da empresa.
+
+## MCP / env de sessão (Cursor)
+
+- MCP HTTP (`mcps/<nome>.json`, copiado para `~/git/.cursor/mcp.json`) usa
+  `Authorization: Bearer ${env:OLIE_FLOW_AI_TOKEN}`. O `project.conf` só informa `MCP=<nome>`.
+- O valor vive em **`~/.config/environment.d/*.conf`** (diretório, não arquivo).
+  Ex.: `~/.config/environment.d/olie.conf` com `OLIE_FLOW_AI_TOKEN=...` (`chmod 600`).
+- `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como
+  arquivo, `workvm_ensure_environment_d` migra para `local.conf`.
+- Não versionar tokens; overlay versionado pode documentar o layout em
+  `.config/environment.d/README.md`.
+
+## Convenções
+
+- Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
+- Não commitar secrets
+- Scripts de bootstrap: `vm-setup.sh` / `project-setup.sh`

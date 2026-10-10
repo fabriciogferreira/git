@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# Wayland, Docker, browser e abertura do Cursor no login gráfico.
+# Problema: a espera da sessão estava no mesmo arquivo que clone e patch.
+# Carregado por common.sh. Não dê source neste arquivo sozinho.
+
+workvm_ensure_session_env() {
+    if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+        local runtime_uid
+        runtime_uid="$(id -u)"
+        export XDG_RUNTIME_DIR="/run/user/${runtime_uid}"
+    fi
+
+    if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+        if [ -S "${XDG_RUNTIME_DIR}/wayland-1" ]; then
+            export WAYLAND_DISPLAY=wayland-1
+        elif [ -S "${XDG_RUNTIME_DIR}/wayland-0" ]; then
+            export WAYLAND_DISPLAY=wayland-0
+        fi
+    fi
+
+    if [ -z "${DISPLAY:-}" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+        export DISPLAY=:0
+    fi
+}
+
+# Wait until a Wayland socket is available. Timeout in seconds (default 90).
+# hyprctl is optional confirmation — socket presence is enough to proceed.
+workvm_wait_for_wayland() {
+    local timeout="${1:-90}"
+    local elapsed=0
+
+    workvm_ensure_session_env
+
+    while [ "$elapsed" -lt "$timeout" ]; do
+        workvm_ensure_session_env
+
+        if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
+            if command -v hyprctl >/dev/null 2>&1; then
+                hyprctl monitors -j >/dev/null 2>&1 || true
+            fi
+            return 0
+        fi
+
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    echo "workvm: timed out waiting for Wayland (${timeout}s)" >&2
+    return 1
+}
+
+# Wait until an HTTP URL responds (any status < 500, or connection accepted).
+workvm_wait_for_http() {
+    local url="$1"
+    local timeout="${2:-120}"
+    local elapsed=0
+    local code
+
+    while [ "$elapsed" -lt "$timeout" ]; do
+        code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 "$url" 2>/dev/null || true)
+        if [ -n "$code" ] && [ "$code" != "000" ]; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    echo "workvm: timed out waiting for $url (${timeout}s)" >&2
+    return 1
+}
+
+# Ensure ~/.config/environment.d is a directory of *.conf files.
+# A common footgun is writing KEY=VAL directly to that path as a file; migrate
+# those contents to local.conf so Hyprland/Cursor loaders keep working.
+workvm_ensure_environment_d() {
+    local dir="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+    local parent tmp dest
+
+    parent="$(dirname "$dir")"
+    mkdir -p "$parent"
+
+    if [ -L "$dir" ]; then
+        if [ -d "$dir" ]; then
+            return 0
+        fi
+        echo "workvm: $dir is a symlink to a non-directory; fix manually" >&2
+        return 1
+    fi
+
+    if [ -f "$dir" ]; then
+        tmp="$(mktemp "${TMPDIR:-/tmp}/workvm-environment.d.XXXXXX")"
+        cp -a "$dir" "$tmp"
+        rm -f "$dir"
+        mkdir -p "$dir"
+        dest="$dir/local.conf"
+        if [ -e "$dest" ]; then
+            dest="$dir/migrated-$(date +%Y%m%d%H%M%S).conf"
+        fi
+        mv "$tmp" "$dest"
+        chmod 600 "$dest" 2>/dev/null || true
+        echo "workvm: migrated file $dir → $dest" >&2
+        return 0
+    fi
+
+    mkdir -p "$dir"
+}
+
+# Load ~/.config/environment.d/*.conf into the current shell.
+# Hyprland/Electron do not inherit systemd user manager env from environment.d;
+# Cursor needs those vars for ${env:NAME} interpolation in mcp.json headers.
+workvm_load_environment_d() {
+    local dir="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d"
+    local f line key val
+
+    workvm_ensure_environment_d || return 0
+    [ -d "$dir" ] || return 0
+
+    for f in "$dir"/*.conf; do
+        [ -f "$f" ] || continue
+        while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+                ''|\#*) continue ;;
+            esac
+            [[ "$line" == *=* ]] || continue
+            key="${line%%=*}"
+            val="${line#*=}"
+            [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+            if [[ "$val" == \"*\" ]]; then
+                val="${val:1:-1}"
+            elif [[ "$val" == \'*\' ]]; then
+                val="${val:1:-1}"
+            fi
+            export "${key}=${val}"
+        done < "$f"
+    done
+}
+
+workvm_open_cursor() {
+    local workspace="$1"
+
+    if [ ! -f "$workspace" ]; then
+        echo "workvm: workspace not found: $workspace" >&2
+        return 1
+    fi
+
+    if ! command -v cursor >/dev/null 2>&1; then
+        echo "workvm: cursor not found in PATH" >&2
+        return 1
+    fi
+
+    workvm_load_environment_d
+
+    setsid cursor "$workspace" </dev/null >/tmp/workvm-cursor.log 2>&1 &
+}
+
+workvm_open_chromium() {
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+
+    local browser=""
+    if command -v google-chrome-stable >/dev/null 2>&1; then
+        browser=google-chrome-stable
+    elif command -v google-chrome >/dev/null 2>&1; then
+        browser=google-chrome
+    elif command -v chromium >/dev/null 2>&1; then
+        browser=chromium
+    else
+        echo "workvm: google-chrome/chromium not found in PATH" >&2
+        return 1
+    fi
+
+    setsid "$browser" --new-window "$@" </dev/null >/tmp/workvm-browser.log 2>&1 &
+}
+
+workvm_docker_compose_up() {
+    local compose_dir="$1"
+    local compose_file="${2:-${COMPOSE_FILE:-}}"
+
+    if [ ! -d "$compose_dir" ]; then
+        echo "workvm: compose dir not found: $compose_dir" >&2
+        return 1
+    fi
+
+    if [ -n "$compose_file" ]; then
+        if [ ! -f "$compose_dir/$compose_file" ]; then
+            echo "workvm: compose file not found: $compose_dir/$compose_file" >&2
+            return 1
+        fi
+        (cd "$compose_dir" && docker compose -f "$compose_file" up -d)
+        return
+    fi
+
+    if [ ! -f "$compose_dir/docker-compose.yml" ] \
+        && [ ! -f "$compose_dir/docker-compose.yaml" ] \
+        && [ ! -f "$compose_dir/compose.yml" ] \
+        && [ ! -f "$compose_dir/compose.yaml" ]; then
+        echo "workvm: no compose file in $compose_dir" >&2
+        return 1
+    fi
+
+    (cd "$compose_dir" && docker compose up -d)
+}

@@ -1,0 +1,3 @@
+# source= no script é relativo ao arquivo, não ao diretório de onde o check roda.
+source-path=SCRIPTDIR
+external-sources=true

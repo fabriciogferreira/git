@@ -18,6 +18,6 @@ EOF
 chmod 600 ~/.config/environment.d/olie.conf
 ```
 
-Depois feche o Cursor por completo e reabra (via `start.sh` / login gráfico).
+Depois feche o Cursor por completo e reabra (login gráfico).
 
 `*.conf` com secrets ficam só no live (`~/.config`); não copiar para o git.

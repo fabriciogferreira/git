@@ -1,0 +1,20 @@
+---
+description: O que é o meta-repo ~/git e quais rules valem aqui
+alwaysApply: true
+---
+
+# Meta-repo ~/git
+
+Este workspace não é um app. Ele existe para provisionar VMs de desenvolvimento (Arch + Hyprland) e amarrar cada máquina a um projeto: clones, Docker, Cursor e browser no login gráfico.
+
+Como a VM opera (projeto ativo, patch de clones, MCP, env): `meta-repo.mdc`.
+
+O mapa do problema que cada pasta resolve: `layout.mdc`. Ao criar ou mudar texto/código, siga `why-it-exists.mdc`.
+
+## Quais rules usar
+
+Rules em `projects/**/overlay/**/cursor`, `olie/**/.cursor` e `televisao/**/.cursor` são do produto ou do overlay daquele clone. Use-as só ao editar esse clone ou esse overlay.
+
+Ao editar `bin/`, `lib/`, `projects/`, `systemd/`, `vm-setup.sh`, `project-setup.sh`, `.config/` ou esta pasta, ignore regras de Laravel, front e e2e.
+
+`olie/` e `televisao/` são checkouts. O que este repo versiona para eles está em `projects/<id>/overlay/`.

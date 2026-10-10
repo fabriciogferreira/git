@@ -1,0 +1,37 @@
+# Standalone compose. Prefer the parent stack: cd .. && docker compose up -d
+# (one up starts olie-e2e too). Keep this Dockerfile in sync with
+# ~/git/olie/docker-workspace/e2e/Dockerfile.
+#
+# Run tests: ./run.sh  or  docker compose -f ../docker-compose.yml exec e2e …
+
+services:
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: olie/e2e
+    container_name: olie-e2e
+    ipc: host
+    # Start as root so entrypoint can fix bind-mount perms, then drop to pwuser.
+    user: "0:0"
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      E2E_BASE_URL: ${E2E_BASE_URL:-http://devframe.olie.localhost}
+      E2E_API_URL: ${E2E_API_URL:-http://api.olie.localhost}
+      E2E_USER: ${E2E_USER:-tester@olie.ai}
+      E2E_PASSWORD: ${E2E_PASSWORD:-password}
+    volumes:
+      - ./tests:/app/tests
+      - ./playwright.config.ts:/app/playwright.config.ts
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    networks:
+      - olie-network
+
+networks:
+  olie-network:
+    external: true
+    name: ${OLIE_DOCKER_NETWORK:-docker-workspace_olie-network}

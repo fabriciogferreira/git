@@ -2,17 +2,17 @@
 # Bind this Arch + Hyprland machine to a workvm project and enable startup on
 # graphical login.
 # Usage: ./project-setup.sh <project>
-# Project id may be nested (olie-ai/televisao) or a unique basename (televisao).
+# O id é o diretório em projects. Basename único também serve.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECTS_SRC="$REPO_ROOT/workvm/projects"
-UNIT_SRC="$REPO_ROOT/workvm/systemd/workvm.service"
+PROJECTS_SRC="$REPO_ROOT/projects"
+UNIT_SRC="$REPO_ROOT/systemd/workvm.service"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 # shellcheck source=/dev/null
-source "$REPO_ROOT/workvm/lib/common.sh"
+source "$REPO_ROOT/lib/common.sh"
 
 load_project_ids() {
     PROJECT_IDS=()
@@ -46,7 +46,6 @@ project_is_valid() {
 # Arrow-key menu in pure bash (↑/↓, Enter confirma, Esc/q cancela o script).
 pick_project_menu() {
     local idx=0 n i key k1 k2
-    local selected=0
 
     if [ "${#PROJECT_IDS[@]}" -eq 0 ]; then
         echo "error: nenhum projeto em $PROJECTS_SRC" >&2
@@ -112,7 +111,6 @@ pick_project_menu() {
             j | J) idx=$(( (idx + 1) % n )) ;;
             k | K) idx=$(( (idx - 1 + n) % n )) ;;
             '' | $'\n' | $'\r')
-                selected=1
                 break
                 ;;
             q | Q)
@@ -162,14 +160,14 @@ fi
 resolve_project "${1:-}"
 PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
 
-if [ ! -x "$PROJECT_SRC/start.sh" ]; then
-    chmod +x "$PROJECT_SRC/start.sh"
-fi
-
 CLONE_REPOS=()
 POST_CLONE=()
+MCP=
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
+
+echo "==> MCP do projeto ($PROJECT)"
+workvm_apply_mcp "$REPO_ROOT" "${MCP:-}"
 
 FILES_PROJECT="${PROJECT_NAME:-$(basename "$PROJECT")}"
 
@@ -206,10 +204,10 @@ else
     echo "==> Nenhum pós-clone definido (post-clone.sh / POST_CLONE)"
 fi
 
-echo "==> Aplicando files/$FILES_PROJECT → clones"
-workvm_apply_files "$REPO_ROOT/files" "$FILES_PROJECT"
+echo "==> Aplicando overlay/ → $FILES_PROJECT/"
+workvm_apply_files "$PROJECT_SRC" "$FILES_PROJECT"
 
-echo "==> Gravando workvm/.cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
+echo "==> Gravando .cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
 workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"
 
 systemctl --user daemon-reload
@@ -218,14 +216,14 @@ systemctl --user enable workvm.service
 # Run in this session (inherits Wayland/DISPLAY/PATH). systemd alone often
 # lacks compositor env and would fail or hang on workvm_wait_for_wayland.
 echo "==> Iniciando projeto ($PROJECT)"
-"$PROJECT_SRC/start.sh"
+"$REPO_ROOT/lib/project-start.sh" "$PROJECT_SRC"
 
 echo
 echo "✓ Projeto selecionado: $PROJECT"
 echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
 echo "  unit    -> $UNIT_DST"
-echo "  cursor  -> $REPO_ROOT/workvm/.cursor/rules/workvm-project.mdc"
+echo "  cursor  -> $REPO_ROOT/.cursor/rules/workvm-project.mdc"
 echo "  start   -> Cursor + browser (agora) e workvm.service nos próximos logins"
 echo
 echo "Nos próximos logins gráficos, workvm.service executará de novo:"
-echo "  $CURRENT_LINK/start.sh"
+echo "  $REPO_ROOT/lib/project-start.sh $CURRENT_LINK"

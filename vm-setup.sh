@@ -8,12 +8,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR/workvm/lib/common.sh"
+source "$SCRIPT_DIR/lib/common.sh"
 
-USER_NAME="${USER_NAME:-fabricio}"
+# Identidade desta máquina fica em vm.local.conf (não versionado).
+workvm_load_vm_local "$SCRIPT_DIR" || exit 1
+: "${USER_NAME:?USER_NAME vazio em vm.local.conf}"
+: "${GIT_USER_NAME:?GIT_USER_NAME vazio em vm.local.conf}"
+: "${GIT_USER_EMAIL:?GIT_USER_EMAIL vazio em vm.local.conf}"
+
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
-GIT_USER_NAME="${GIT_USER_NAME:-Fabrício Gonçalves Ferreira}"
-GIT_USER_EMAIL="${GIT_USER_EMAIL:-fabriciof481@gmail.com}"
 DOTCONFIG_SRC="${DOTCONFIG_SRC:-$GIT_ROOT/.config}"
 DOTCONFIG_DST="${DOTCONFIG_DST:-${XDG_CONFIG_HOME:-$HOME/.config}}"
 LUKS_DEVICE="${LUKS_DEVICE:-/dev/vda2}"
@@ -56,10 +59,11 @@ aur_install() {
 }
 
 setup_base() {
-    step "Pacotes base (git, base-devel, openssh)"
+    step "Pacotes base (git, base-devel, openssh, shellcheck)"
 
-    sudo pacman -S --needed --noconfirm git base-devel openssh
-    ok "git + base-devel + openssh"
+    # bin/check.sh precisa do binário shellcheck.
+    sudo pacman -S --needed --noconfirm git base-devel openssh shellcheck
+    ok "git + base-devel + openssh + shellcheck"
 }
 
 setup_git_identity() {
@@ -256,9 +260,9 @@ setup_docker() {
 setup_meta_repo_pull() {
     step "Auto git fetch do meta-repo (~/git) no login gráfico"
 
-    local unit_src="$GIT_ROOT/workvm/systemd/workvm-git-pull.service"
+    local unit_src="$GIT_ROOT/systemd/workvm-git-pull.service"
     local unit_dst="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/workvm-git-pull.service"
-    local pull_script="$GIT_ROOT/workvm/bin/pull-meta.sh"
+    local pull_script="$GIT_ROOT/bin/pull-meta.sh"
 
     if [ ! -f "$unit_src" ]; then
         log "error: unit ausente: $unit_src" >&2
@@ -415,7 +419,7 @@ main() {
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
     log "Reinicie para testar: GRUB sem menu → SDDM autologin → Hyprland"
     log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
-    log "Com projeto: start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
+    log "Com projeto: project-start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }
 
 main "$@"
