@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "musicians-app",
+      "path": "/home/fabricio/git/workvm/projects/musicians-app"
+    },
+    {
+      "name": "workvm",
+      "path": "/home/fabricio/git/workvm"
+    },
+    {
+      "name": "da-o-play-api",
+      "path": "/home/fabricio/git/musicians-app/da-o-play-api"
+    }
+  ],
+  "settings": {}
+}
