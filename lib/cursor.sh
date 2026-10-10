@@ -373,7 +373,8 @@ Do not commit this stub. Source of truth stays versioned; login re-merges.
 EOF
     repo="$(workvm_mcp_git_repo "$file")"
     [ -n "$repo" ] || return 0
-    workvm_git_exclude_add "$repo" ".cursor/${WORKVM_MCP_USER_MARKER}"
+    # Path relativo ao repo: e2e em projects/ não é `.cursor/` na raiz.
+    workvm_git_exclude_add "$repo" "$(workvm_git_relpath "$repo" "$marker")"
     rel="$(workvm_git_relpath "$repo" "$file")"
     if git -C "$repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
         workvm_git_skip_worktree "$repo" "$file"

@@ -33,6 +33,8 @@ vm.local.conf
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
 projects/**/.env
+# Marker do stub MCP (servidores em ~/.cursor/mcp.json); local da VM
+projects/**/.cursor/mcp.workvm-user
 
 # Clones em olie/ e televisao/ ficam de fora. O e2e local mora em projects/.
 # Gerado por project-setup (projeto desta VM); não versionar
