@@ -9,8 +9,7 @@ Documentação para o agente Cursor:
 ## Uso rápido (Arch + Hyprland)
 
 ```bash
-cp ~/git/vm.local.conf.example ~/git/vm.local.conf   # USER_NAME e e-mail do git
-~/git/vm-setup.sh
+~/git/vm-setup.sh   # cria vm.local.conf a partir do .example se ainda não existir
 # reboot
 ~/git/project-setup.sh <projeto>
 ```

@@ -1,9 +1,7 @@
-# Identidade desta VM. Copie para vm.local.conf (ao lado deste arquivo).
-# vm.local.conf não entra no git: nome e e-mail não ficam no histórico.
+# Identidade desta VM. Modelo versionado; vm-setup.sh copia para
+# vm.local.conf se o arquivo ainda não existir (não versionado).
 #
-#   cp vm.local.conf.example vm.local.conf
-#
-# vm-setup.sh exige as três variáveis. Um valor já exportado no ambiente
+# As três variáveis são obrigatórias. Um valor já exportado no ambiente
 # não é sobrescrito.
 
 USER_NAME=fabricio

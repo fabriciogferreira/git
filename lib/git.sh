@@ -24,27 +24,36 @@ workvm_discover_repo_root() {
 
 # Load USER_NAME, GIT_USER_NAME, GIT_USER_EMAIL from <repo>/vm.local.conf.
 # Variables already set in the environment stay. The file is not versioned.
-# Returns 1 if the file is missing.
+# If missing, copies vm.local.conf.example → vm.local.conf (then sources it).
+# Returns 1 if neither file exists.
 workvm_load_vm_local() {
     local repo_root="${1:-}"
-    local file saved_user saved_name saved_email
+    local file example saved_user saved_name saved_email
     if [ -z "$repo_root" ]; then
         echo "error: workvm_load_vm_local <repo-root>" >&2
         return 1
     fi
     file="$repo_root/vm.local.conf"
+    example="$repo_root/vm.local.conf.example"
     if [ ! -f "$file" ]; then
-        echo "error: falta $file — copie vm.local.conf.example e preencha" >&2
-        return 1
+        if [ ! -f "$example" ]; then
+            echo "error: falta $file e $example" >&2
+            return 1
+        fi
+        echo "→ criando $file a partir de vm.local.conf.example"
+        cp "$example" "$file"
     fi
     saved_user="${USER_NAME-}"
     saved_name="${GIT_USER_NAME-}"
     saved_email="${GIT_USER_EMAIL-}"
     # shellcheck source=/dev/null
     source "$file"
-    [ -n "$saved_user" ] && USER_NAME="$saved_user"
-    [ -n "$saved_name" ] && GIT_USER_NAME="$saved_name"
-    [ -n "$saved_email" ] && GIT_USER_EMAIL="$saved_email"
+    # Use if (not &&): with set -e, a failing `[ -n ] && …` would make this
+    # function return 1 and abort vm-setup via `|| exit 1`.
+    if [ -n "$saved_user" ]; then USER_NAME="$saved_user"; fi
+    if [ -n "$saved_name" ]; then GIT_USER_NAME="$saved_name"; fi
+    if [ -n "$saved_email" ]; then GIT_USER_EMAIL="$saved_email"; fi
+    return 0
 }
 
 # Print project ids relative to projects (e.g. opbed, olie, televisao).
