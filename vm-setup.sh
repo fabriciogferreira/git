@@ -6,6 +6,10 @@
 # apply $GIT_ROOT/.config → ~/.config.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/workvm/lib/common.sh"
+
 USER_NAME="${USER_NAME:-fabricio}"
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
 GIT_USER_NAME="${GIT_USER_NAME:-Fabrício Gonçalves Ferreira}"
@@ -141,6 +145,9 @@ setup_apply_dotconfig() {
     fi
 
     mkdir -p "$DOTCONFIG_DST"
+    # Footgun: OLIE_FLOW_AI_TOKEN written as ~/.config/environment.d (file)
+    # while overlay expects environment.d/ (dir of *.conf). Migrate first.
+    workvm_ensure_environment_d
 
     local child base dest
     shopt -s nullglob dotglob
@@ -151,6 +158,10 @@ setup_apply_dotconfig() {
         fi
         dest="$DOTCONFIG_DST/$base"
         if [ -d "$child" ]; then
+            if [ -e "$dest" ] && [ ! -d "$dest" ]; then
+                log "error: $dest existe e não é diretório; overlay .config/$base/ precisa de um dir" >&2
+                return 1
+            fi
             mkdir -p "$dest"
             log "  sync dir: .config/$base/"
             if command -v rsync >/dev/null 2>&1; then
