@@ -18,6 +18,7 @@ No login, o Cursor abre o meta-repo **`~/git`** junto com os clones do projeto s
 2. **Runtime/systemd:** `~/.config/workvm/current` → `projects/<id>`
 3. **Fonte da verdade:** `projects/<id>/project.conf` (`CLONE_REPOS`)
 4. `workvm.service` roda `lib/project-start.sh` com o diretório de `current` no login gráfico
+   (Hyprland precisa dar `systemctl --user start graphical-session.target` — SDDM/`start-hyprland` não sobem esse target sozinhos)
 
 `<id>` é o diretório em `projects` (`olie`, `televisao`, `opbed`). Basename único também funciona no setup.
 

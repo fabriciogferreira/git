@@ -16,6 +16,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** essa pasta existia para ser a raiz do Cursor. A janela já abre `~/git`, e o nível extra só alongava caminho
 - **resolvido como:** as quatro pastas subiram para a raiz. `~/.config/workvm` e `workvm.service` continuam: são o projeto ativo nesta máquina, não um diretório do repo
 
+## Docker do projeto não sobe após reboot
+
+- **problema:** depois do login gráfico só o `cloudflared` voltava; backend/frontend/pgsql ficavam `Exited`
+- **por que é um problema:** `workvm.service` faz o `docker compose up`, mas está em `WantedBy=graphical-session.target`. SDDM + `start-hyprland` nunca ativam esse target, então o unit não roda. O cloudflared tem `restart: unless-stopped`; os outros serviços do compose têm `restart: no`
+- **resolvido como:** no `hyprland.start`, `systemctl --user start graphical-session.target` — puxa `workvm-git-pull` e `workvm.service` com Wayland já no ar
+
 ## MCP de projeto começa desligado no Cursor
 
 - **problema:** os `.cursor/mcp.json` dos roots (clones, e2e) abriam desligados; era preciso ligar à mão nas settings
