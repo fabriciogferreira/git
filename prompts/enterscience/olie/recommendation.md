@@ -2,13 +2,13 @@
 
 ## 1. Objective
 
-Analyze card `''` and its related codebase to identify small, directly related improvements that could reasonably be implemented alongside the requested changes.
+Analyze card `{{ code }}` and its related codebase to identify small, directly related improvements that could reasonably be implemented alongside the requested changes.
 
 The goal is to avoid creating future cards for closely related changes that can be completed now with minimal additional effort, without unnecessarily expanding the current card's scope.
 
 ## 2. Gather Context
 
-1. Retrieve the card's complete context using the MCP OlieFlowAi by searching for the card code `''`.
+1. Retrieve the card's complete context using the MCP OlieFlowAi by searching for the card code `{{ code }}`.
 2. Identify the card's requirements, business rules, acceptance criteria, and intended behavior.
 3. Inspect the relevant code, tests, dependencies, and related implementations to understand the existing behavior.
 4. Trace the affected functionality far enough to identify equivalent components, related endpoints, shared flows, and adjacent business rules.

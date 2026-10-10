@@ -2,7 +2,9 @@
 
 Use this at the start of the day, and again whenever the current card is no longer the next action. Text inside single quotes is a board label or a field name. Do not rename it.
 
-Do not repeat `project.md`, `implementation.md`, `pre-qa.md`, `colleague-review.md`, `correction.md`, or `recommendation.md`. Those files say how to execute or review. This file says the order.
+Do not repeat `project.md`, `implementation.md`, `pre-qa.md`, `colleague-review.md`, `correction.md`, `production-review.md`, or `recommendation.md`. Those files say how to execute or review. This file says the order.
+
+Resolve the live board labels and IDs through OlieFlowAi as described in `workflow-policy.md`. The labels below are examples, not a substitute for the live funnel.
 
 ## Order
 
@@ -19,7 +21,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | 'Não iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em progresso' | You | Execute the card. |
 | 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. |
-| 'corrigir' ou melhorar | The person who owns the card | The review failed. Fix it. |
+| `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. |
 
@@ -32,9 +34,7 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Follow `colleague-rev
 
 ## 2. Production review
 
-Review cards in 'Revisão de Produção' that are already in production.
-
-Check the behavior the card asked for on production, not only on `*.olie.localhost`. A flow that works locally and fails in production is a failed review. Record what failed and where.
+Review cards in 'Revisão de Produção' that are already in production with `production-review.md`.
 
 ## 3. Choose a card
 
@@ -57,7 +57,7 @@ You do not perform 'validação'. The tech lead does.
 
 ## 5. Fix loop
 
-When your card is in 'corrigir' ou melhorar, follow `correction.md`. That prompt moves it from 'Corrigir' to 'Em progresso' and applies the review fixes.
+When your card is in `changes-requested`, follow `correction.md`. That prompt moves it to `in-progress` and applies the review fixes.
 
 Then hand it off to 'QA/CR' again. Repeat until the card leaves 'corrigir' ou melhorar toward 'validação', and the tech lead sends it to 'Revisão de Produção'.
 

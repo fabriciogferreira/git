@@ -137,5 +137,6 @@ EOF
 check_unset_arrays "$tmp"
 check_compose_file_log "$tmp"
 check_e2e_drops_compose_file "$tmp"
+"$BIN_DIR/check-prompts.sh"
 
 echo "check ok (${#checked[@]} scripts)"

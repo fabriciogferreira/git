@@ -4,7 +4,7 @@ Run this after implementation and before the card moves to 'QA/CR'. The workday 
 
 ## 1. Objective
 
-Perform a comprehensive quality and readiness review of card `{{ code }}` before moving it to the QA/CR stage or considering its implementation ready for review.
+Perform a comprehensive quality and readiness review of card `{{ code }}` before moving it to the 'QA/CR' stage or considering its implementation ready for review.
 
 Inspect all relevant changes across the involved repositories. Use the card's requirements and acceptance criteria as the source of truth.
 
@@ -40,8 +40,8 @@ Do not mark a check as complete unless the corresponding action has been perform
 - [ ] Verify that PHPStan checks pass.
 - [ ] Run all relevant tests in parallel using the repository's supported test execution method.
 - [ ] Review test results and investigate any failures instead of assuming they are unrelated to the changes.
-- [ ] Run Pint to format the code.
-- [ ] Create a dedicated commit containing only Pint formatting changes. This keeps formatting changes separate from functional changes and makes peer review easier.
+- [ ] Run Pint to format affected PHP changes.
+- [ ] If Pint changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.
 
 #### Frontend management application
 
@@ -77,7 +77,7 @@ API outputs include, but are not limited to:
 - HTTP response status codes.
 - Other externally observable response behavior.
 
-If any API input or output changes, mark card `` as requiring an API documentation update.
+If any API input or output changes, mark card `{{ code }}` as requiring an API documentation update.
 
 Do not assume that a change is internal merely because it involves an existing endpoint. Evaluate its externally observable behavior.
 
@@ -114,10 +114,10 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 For every required pull request:
 
-- [ ] Create the pull request in English.
+- [ ] Create the pull request title and body in English, as required by `workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch uses exactly the branch name specified in the card.
-- [ ] Set Assignees to the person identified in the 'Assigned to' field of card ``.
+- [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}`.
 - [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field.
 - [ ] Select the label that most closely matches the source branch name prefix.
 
@@ -135,7 +135,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 
 **Proceed only after the required pull request or pull requests have been created and verified.**
 
-- [ ] Open card `` through the MCP OlieFlowAi.
+- [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
 - [ ] In the 'QA/CR' stage, check off the item 'Pull request created'.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.

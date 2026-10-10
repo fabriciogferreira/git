@@ -32,7 +32,7 @@ done < <(workvm_list_project_ids projects)
 
 - Do not run `project-setup.sh`. Do not create or change `~/.config/workvm/current`. Do not enable `workvm.service`.
 - Do not run `docker compose`, `post-clone.sh`, or `docker run`.
-- Do not apply the `files/` overlay and do not commit.
+- Do not apply the `projects/<id>/overlay/` overlay and do not commit.
 
 ## Done when
 

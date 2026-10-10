@@ -10,14 +10,15 @@ Use the card's content as the source of truth for the intended behavior. Before 
 
 Before making any code changes:
 
-1. Check the current Git status. Preserve existing user changes and never overwrite, discard, or silently modify unrelated work.
-2. Switch to the 'develop' branch. If the working tree contains changes that could interfere with switching branches or updating the repository, stop and report the situation before proceeding.
-3. Pull the latest changes from 'develop'. If the update fails or cannot be completed safely, report the issue and wait for further instructions.
-4. Read the card's content to identify the required branch name.
-5. Create and switch to the card-specific branch based on the updated 'develop' branch.
-6. Verify that the active branch is correct before proceeding.
+1. Identify every repository the card changes and its configured base branch. Use the card when it specifies a base; otherwise use the repository's documented working branch in `project.md`.
+2. Check the current Git status in every affected repository. Preserve existing user changes and never overwrite, discard, or silently modify unrelated work.
+3. Switch each affected repository to its base branch. If the working tree contains changes that could interfere with switching branches or updating the repository, stop and report the situation before proceeding.
+4. Pull the latest changes from each base branch. If an update fails or cannot be completed safely, report the issue and wait for further instructions.
+5. Read the card's content to identify the required branch name.
+6. Create and switch to that card-specific branch from the updated base in every repository the card changes.
+7. Verify every active branch before proceeding.
 
-Do not implement the card on 'develop'.
+Do not implement the card on a base branch.
 
 ## 3. Planning Phase
 
@@ -49,7 +50,7 @@ Do not assume that the absence of an obvious test means no relevant tests exist.
 
 ### 3.3. Plan Documentation
 
-Create a Markdown document in `/docs` containing the implementation plan.
+Create the implementation plan in the agent's native planning mechanism. If that mechanism is unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
 The document must include:
 
@@ -68,16 +69,16 @@ Do not begin implementation until the plan is documented and presented for revie
 
 ## 4. Step-by-Step Implementation
 
-Implementation must be incremental and controlled by the user's explicit command.
+Implementation must be incremental. Use controlled mode only when the user requests step-by-step approval or the card spans multiple repositories or high-risk changes.
 
 After presenting the plan:
 
-1. Wait for the user to send 'next'.
-2. When 'next' is received, implement only the next incomplete checklist item.
+1. In controlled mode, wait for the user to send 'next' and implement only the next incomplete checklist item.
+2. Otherwise, implement the checklist in dependency order, reporting after each meaningful verification boundary.
 3. Mark an item as complete only after its requirements have been implemented and the relevant verification has succeeded.
-4. Update the plan document whenever progress, findings, or implementation details change.
+4. Update the plan whenever progress, findings, or implementation details change.
 5. Report what changed, which files were affected, what verification was performed, and any remaining concerns.
-6. Stop and wait for the next 'next' command before proceeding to another checklist item.
+6. In controlled mode, stop and wait for the next 'next' command before proceeding to another checklist item.
 
 If a task reveals new requirements, unexpected dependencies, significant risks, or a need to change the plan, document the findings and present the proposed adjustment before proceeding with work that depends on that adjustment.
 
@@ -102,28 +103,23 @@ For each issue, describe the observed problem, its impact, its status, and the r
 
 Do not silently omit failed checks or describe an issue as resolved without verification.
 
-## 6. Mandatory E2E CAPTCHA Configuration
+## 6. Temporary E2E CAPTCHA Configuration
 
-**This configuration is mandatory when running Playwright E2E tests that require CAPTCHA authentication through `api-main`.**
+Use this only when a Playwright E2E scenario must authenticate through `api-main`.
 
-To allow Playwright to log in, use the Google test secret in `~/git/olie/api-main/.env`. It accepts any token, including the E2E stub.
-
-Set the following local environment variable:
+The Google test secret is:
 
 `RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
 
 Follow these requirements strictly:
 
-1. Before changing the variable, preserve the original secret as a commented-out entry in the same `.env` file so it can be restored later.
-2. Modify only the local `.env` configuration to enable the test secret. Do not modify PHP code or application logic to disable CAPTCHA.
-3. After changing the configuration, run:
-
-   `docker exec olie-api-main php artisan config:clear`
-
-4. Verify that the configuration change has taken effect before relying on it for E2E testing.
-5. Keep this configuration local. Never commit or push the test secret, the original secret, or any `.env` file.
-6. Do not open a pull request containing this configuration or its secrets.
-7. These restrictions apply even if the user requests a commit or pull request for the rest of the work.
+1. Confirm that `~/git/olie/api-main/.env` is ignored and create a permission-restricted backup outside the repository before changing it.
+2. Replace the local `RECAPTCHA_SECRET` value with the test secret. Do not retain the original secret as a comment or in any repository file.
+3. Do not modify PHP code or application logic to bypass CAPTCHA.
+4. Run `docker exec olie-api-main php artisan config:clear` and verify the configuration change before relying on it.
+5. Restore the exact `.env` backup and run `config:clear` again immediately after the E2E run, even if the test fails.
+6. Delete the backup after restoration. If restoration fails, report that the test configuration may still be active.
+7. Never commit, push, log, or include `.env` content or secrets in a pull request.
 
 If the environment or container is unavailable, report the blocker rather than introducing a code-level CAPTCHA bypass.
 
@@ -138,7 +134,7 @@ Follow the project's existing architecture, conventions, and established pattern
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
 
-**Do not run 'pint' unless the user explicitly instructs you to do so.** This restriction applies throughout the workflow, including final cleanup and verification.
+**Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `workflow-policy.md` when it applies.
 
 ## 8. Completion Criteria
 

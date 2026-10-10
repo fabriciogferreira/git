@@ -4,7 +4,7 @@ Use this when a card comes back from review. The workday order stays in `workflo
 
 ## 1. Objective and Context
 
-The card with the code `'{{ code }}'` was returned for corrections. Its expected workflow is to move from the stage named 'Corrigir' to the stage named 'Em progresso' before correction work begins, provided it is still in 'Corrigir'.
+The card with the code `{{ code }}` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.
 
 Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 
@@ -19,37 +19,11 @@ Treat the reviewer's findings and the card's requirements as the source of truth
 
 ## 2. Update the Card Stage
 
-Before modifying code, check the card's current stage through the MCP OlieFlowAi.
+Before modifying code, check the card's current stage and live funnel through the MCP OlieFlowAi. Apply the stage-resolution rules in `workflow-policy.md`.
 
-- If the card is still in the stage named 'Corrigir', move it to the stage named 'Em progresso'.
+- If the card is still in `changes-requested`, move it to `in-progress`.
 - If the card has already moved to another stage, do not move it automatically. Report its current stage and wait for instructions.
 - Verify that the stage transition succeeded before continuing.
-
-### API fallback
-
-If a Bearer token has been provided and the card ID and project ID can be retrieved through the MCP OlieFlowAi, the following API request may be used to perform the transition when necessary.
-
-Use the actual project ID in place of `{project id}` and the actual card ID to verify that the operation targets the correct card.
-
-```bash
-curl --fail-with-body --silent --show-error \
-  --url 'https://api.olie.ai/api/management/projects/{project id}/project-executions' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'content-type: application/json' \
-  -H 'authorization: Bearer {{ token }}' \
-  --data-raw '{"funnel_step_id":1450}'
-```
-
-Before executing the request:
-
-1. Verify that the endpoint and `funnel_step_id` correspond to the intended project and the stage named 'Em progresso'.
-2. Verify the card's current stage and identify the correct execution record or ID required by the API.
-3. Confirm that the request will update the intended card rather than create a new execution or modify another card.
-4. Use the request only if the endpoint's behavior and required parameters have been verified.
-
-Do not execute the request if its target or semantics are uncertain. Prefer the MCP OlieFlowAi operation when it supports the required stage transition.
-
-Never expose the Bearer token in logs, reports, commits, or pull requests. Do not retrieve or invent credentials if a token was not provided.
 
 ## 3. Analyze the Reviewer's Findings
 
@@ -95,7 +69,7 @@ Verify the active branch before any code modification. Never apply a correction 
 
 ## 5. Create the Correction Plan
 
-Before implementing any fix, create a Markdown plan in `/docs`.
+Before implementing any fix, create the plan in the agent's native planning mechanism. If unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
 The plan must include:
 
@@ -140,36 +114,31 @@ For each correction, follow this sequence:
 - If a test fails for an unrelated environmental reason, document the evidence and distinguish that failure from the correction's result.
 - Do not modify production code before writing the relevant regression test, unless a documented technical limitation makes the test-first sequence impossible. If that happens, explain the limitation and request authorization before deviating from TDD.
 
-## 7. Mandatory E2E CAPTCHA Configuration
+## 7. Temporary E2E CAPTCHA Configuration
 
-When running Playwright E2E tests that require CAPTCHA authentication through `api-main`, use the Google test secret in `~/git/olie/api-main/.env`.
+Use this only when a Playwright E2E scenario must authenticate through `api-main`.
 
-It accepts any token, including the E2E stub.
-
-Set the following local environment variable:
+The Google test secret is:
 
 `RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
 
 Follow these requirements strictly:
 
-1. Preserve the original secret as a commented-out entry in the same `.env` file so it can be restored later.
-2. Change only the local `.env` configuration. Never modify PHP code or application logic to disable CAPTCHA.
-3. After making the change, run:
+1. Confirm that `~/git/olie/api-main/.env` is ignored and create a permission-restricted backup outside the repository before changing it.
+2. Replace the local `RECAPTCHA_SECRET` value with the test secret. Do not retain the original secret as a comment or in any repository file.
+3. Do not modify PHP code or application logic to bypass CAPTCHA.
+4. Run `docker exec olie-api-main php artisan config:clear` and verify the configuration change before relying on it.
+5. Restore the exact `.env` backup and run `config:clear` again immediately after the E2E run, even if the test fails.
+6. Delete the backup after restoration. If restoration fails, report that the test configuration may still be active.
+7. Never commit, push, log, or include `.env` content or secrets in a pull request.
 
-   `docker exec olie-api-main php artisan config:clear`
-
-4. Verify that the configuration change has taken effect before relying on it for E2E testing.
-5. Keep the change strictly local. Never commit or push the test secret, the original secret, or any `.env` file.
-6. Do not open a pull request containing this configuration or its secrets.
-7. These restrictions remain in effect even if the user requests a commit or pull request for the rest of the work.
-
-If the environment or container is unavailable, report the blocker instead of introducing a code-level CAPTCHA bypass.
+If the environment or container is unavailable, report the blocker rather than introducing a code-level CAPTCHA bypass.
 
 ## 8. Incremental Execution
 
-After presenting the plan, wait for the user to send 'next'.
+After presenting the plan, use controlled mode only when the user requests step-by-step approval or the correction spans multiple repositories or high-risk changes.
 
-Each time the user sends 'next':
+In controlled mode, wait for the user to send 'next' and then:
 
 1. Select the next incomplete checklist item whose dependencies have been satisfied.
 2. Implement only that item.
@@ -178,6 +147,8 @@ Each time the user sends 'next':
 5. Update the plan and mark the item complete only after its completion conditions have been verified.
 6. Report the changes, affected files, test results, and any remaining concerns.
 7. Stop and wait for the next 'next' command.
+
+Outside controlled mode, perform the same checklist in dependency order and report after each meaningful verification boundary.
 
 Do not implement multiple independent checklist items in one step. Do not skip ahead to later items without authorization.
 
