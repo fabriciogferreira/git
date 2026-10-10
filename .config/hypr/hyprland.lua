@@ -57,6 +57,9 @@ hl.on("hyprland.start", function ()
     -- hyprpaper 0.8 (hyprtoolkit) segfaults on QEMU/GBM; swaybg is reliable in VMs.
     hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.jpg -m fill")
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
+    -- No project bound yet → script opens Kitty with project-setup menu.
+    -- Keep this path simple (no nested quotes): hl.exec_cmd runs via sh -c.
+    hl.exec_cmd("~/git/workvm/bin/maybe-project-setup.sh")
 end)
 
 

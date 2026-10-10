@@ -14,17 +14,21 @@ SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 # shellcheck source=/dev/null
 source "$REPO_ROOT/workvm/lib/common.sh"
 
-list_projects() {
+load_project_ids() {
+    PROJECT_IDS=()
     local id
     while IFS= read -r id; do
         [ -n "$id" ] || continue
-        echo "  $id"
+        PROJECT_IDS+=("$id")
     done < <(workvm_list_project_ids "$PROJECTS_SRC")
 }
 
 show_valid_projects() {
+    local id
     echo "Projetos válidos:"
-    list_projects
+    for id in "${PROJECT_IDS[@]}"; do
+        echo "  $id"
+    done
 }
 
 # Returns 0 if $1 resolves to a usable project id (sets RESOLVED_PROJECT).
@@ -39,30 +43,115 @@ project_is_valid() {
     return 0
 }
 
+# Arrow-key menu in pure bash (↑/↓, Enter confirma, Esc/q cancela o script).
+pick_project_menu() {
+    local idx=0 n i key k1 k2
+    local selected=0
+
+    if [ "${#PROJECT_IDS[@]}" -eq 0 ]; then
+        echo "error: nenhum projeto em $PROJECTS_SRC" >&2
+        exit 1
+    fi
+
+    if [ ! -t 0 ] || [ ! -t 1 ]; then
+        echo "error: menu interativo exige um TTY (passe o projeto como argumento)" >&2
+        show_valid_projects
+        exit 1
+    fi
+
+    n=${#PROJECT_IDS[@]}
+
+    _menu_cleanup() {
+        printf '\e[?25h' >/dev/tty
+    }
+    trap '_menu_cleanup' EXIT INT TERM
+    printf '\e[?25l' >/dev/tty
+
+    echo "Escolha o projeto (↑/↓ Enter · Esc cancela)" >/dev/tty
+    echo >/dev/tty
+
+    while true; do
+        for i in "${!PROJECT_IDS[@]}"; do
+            if [ "$i" -eq "$idx" ]; then
+                printf '\e[7m> %s\e[0m\n' "${PROJECT_IDS[$i]}" >/dev/tty
+            else
+                printf '  %s\n' "${PROJECT_IDS[$i]}" >/dev/tty
+            fi
+        done
+
+        # Read one key from the real terminal (not from pipes).
+        IFS= read -r -s -n1 key </dev/tty || key=""
+
+        case "$key" in
+            $'\x1b')
+                # Arrow: Esc [ A/B. Bare Esc: nothing within timeout → cancel.
+                k1=""
+                k2=""
+                IFS= read -r -s -n1 -t 0.15 k1 </dev/tty || true
+                if [ -z "$k1" ]; then
+                    _menu_cleanup
+                    trap - EXIT INT TERM
+                    echo "Cancelado." >&2
+                    exit 1
+                fi
+                IFS= read -r -s -n1 -t 0.15 k2 </dev/tty || true
+                case "${k1}${k2}" in
+                    '[A' | 'OA') idx=$(( (idx - 1 + n) % n )) ;;
+                    '[B' | 'OB') idx=$(( (idx + 1) % n )) ;;
+                    *)
+                        # Other Esc sequence (or Esc Esc): cancel
+                        _menu_cleanup
+                        trap - EXIT INT TERM
+                        echo "Cancelado." >&2
+                        exit 1
+                        ;;
+                esac
+                ;;
+            j | J) idx=$(( (idx + 1) % n )) ;;
+            k | K) idx=$(( (idx - 1 + n) % n )) ;;
+            '' | $'\n' | $'\r')
+                selected=1
+                break
+                ;;
+            q | Q)
+                _menu_cleanup
+                trap - EXIT INT TERM
+                echo "Cancelado." >&2
+                exit 1
+                ;;
+        esac
+
+        printf '\e[%dA' "$n" >/dev/tty
+    done
+
+    _menu_cleanup
+    trap - EXIT INT TERM
+
+    PROJECT="${PROJECT_IDS[$idx]}"
+    echo "→ $PROJECT"
+}
+
 resolve_project() {
     local answer="${1:-}"
 
-    while true; do
+    if [ -n "$answer" ]; then
         if project_is_valid "$answer"; then
             PROJECT="$RESOLVED_PROJECT"
             return 0
         fi
-
-        if [ -z "$answer" ]; then
-            echo "Informe um projeto." >&2
-        else
-            echo "Projeto inválido: '$answer'" >&2
-        fi
+        echo "Projeto inválido: '$answer'" >&2
         show_valid_projects
         echo
-        printf 'Projeto: '
-        read -r answer || true
-        answer="${answer//[[:space:]]/}"
-    done
+    fi
+
+    pick_project_menu
 }
+
+load_project_ids
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
     echo "Usage: $0 [project]"
+    echo "Sem argumento: menu com setas (Enter confirma, Esc cancela)."
     echo
     show_valid_projects
     exit 0

@@ -79,6 +79,16 @@ workvm_resolve_project_id() {
     return 1
 }
 
+# True if this VM already has a project bound by project-setup.sh
+# (~/.config/workvm/current → dir with project.conf + start.sh).
+workvm_project_is_setup() {
+    local current="${XDG_CONFIG_HOME:-$HOME/.config}/workvm/current"
+    local resolved
+
+    resolved="$(readlink -f "$current" 2>/dev/null)" || return 1
+    [ -f "$resolved/project.conf" ] && [ -f "$resolved/start.sh" ]
+}
+
 # git fetch --prune when HEAD already matches the expected branch (no checkout/merge).
 # Never fails the caller: missing repo / wrong branch / network only warn.
 workvm_fetch_repo() {
