@@ -61,7 +61,7 @@ hl.on("hyprland.start", function ()
     -- Delay so WAYLAND_DISPLAY/socket exist (hl.exec_cmd is async at start).
     -- Keep this path simple (no nested quotes): hl.exec_cmd runs via sh -c.
     hl.timer(function()
-        hl.exec_cmd("$HOME/git/workvm/bin/maybe-project-setup.sh")
+        hl.exec_cmd("$HOME/git/bin/maybe-project-setup.sh")
     end, { timeout = 1500, type = "oneshot" })
 end)
 
