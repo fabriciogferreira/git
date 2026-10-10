@@ -53,11 +53,14 @@ pick_project_menu() {
         exit 1
     fi
 
-    if [ ! -t 0 ] || [ ! -t 1 ]; then
+    # Menu I/O uses /dev/tty — don't require stdin/stdout to be ttys
+    # (Kitty/hl.exec_cmd often attach odd fds).
+    if [ ! -c /dev/tty ] || ! exec 3<>/dev/tty; then
         echo "error: menu interativo exige um TTY (passe o projeto como argumento)" >&2
         show_valid_projects
         exit 1
     fi
+    exec 3>&-
 
     n=${#PROJECT_IDS[@]}
 
@@ -98,12 +101,11 @@ pick_project_menu() {
                 case "${k1}${k2}" in
                     '[A' | 'OA') idx=$(( (idx - 1 + n) % n )) ;;
                     '[B' | 'OB') idx=$(( (idx + 1) % n )) ;;
+                    # Kitty/xterm focus-in/out — ignore, do not cancel.
+                    '[I' | '[O') ;;
                     *)
-                        # Other Esc sequence (or Esc Esc): cancel
-                        _menu_cleanup
-                        trap - EXIT INT TERM
-                        echo "Cancelado." >&2
-                        exit 1
+                        # Unknown Esc sequence: ignore (avoid auto-cancel on
+                        # terminal startup noise). Use q to quit.
                         ;;
                 esac
                 ;;

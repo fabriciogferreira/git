@@ -58,8 +58,11 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.jpg -m fill")
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
     -- No project bound yet → script opens Kitty with project-setup menu.
+    -- Delay so WAYLAND_DISPLAY/socket exist (hl.exec_cmd is async at start).
     -- Keep this path simple (no nested quotes): hl.exec_cmd runs via sh -c.
-    hl.exec_cmd("~/git/workvm/bin/maybe-project-setup.sh")
+    hl.timer(function()
+        hl.exec_cmd("$HOME/git/workvm/bin/maybe-project-setup.sh")
+    end, { timeout = 1500, type = "oneshot" })
 end)
 
 
