@@ -1,0 +1,32 @@
+---
+description: Não engolir falha de comando/MCP/tool que deveria funcionar — parar e avisar
+alwaysApply: true
+---
+
+# Parar quando a ferramenta falha
+
+Este meta-repo existe para a VM e o fluxo de desenvolvimento já estarem prontos. Se algo que **deveria funcionar** falha, não contorne em silêncio nem invente workaround longo: **pare o prompt e avise**.
+
+## O que conta
+
+- Comando de shell, script de bootstrap (`vm-setup`, `project-setup`, `project-start`)
+- MCP (auth, conexão, tool ausente ou erro)
+- Docker / compose / URL de wait do projeto
+- Git remoto, gh, ou integração que o setup assume disponível
+- Env esperado (`environment.d`, token, path do projeto ativo)
+
+## O que fazer
+
+1. Pare a tarefa em curso (não “siga em frente” como se estivesse ok).
+2. Avise com: o que falhou, o erro objetivo (status, mensagem curta), e a hipótese mais provável.
+3. Se souber o próximo passo óbvio (um comando, um arquivo a checar), diga — sem executar correção grande sem o usuário pedir, salvo fix trivial que ele já pediu.
+
+## O que não fazer
+
+- Engolir 401/timeout/exit ≠ 0 e continuar a feature
+- Trocar de ferramenta só para mascarar (ex.: outro MCP, outro path) sem dizer que a principal quebrou
+- Tratar falha de infra da VM como “limitação normal do chat”
+
+## Exceção
+
+Falha **esperada** do pedido atual (ex.: testar um caso de erro, comando exploratório que pode falhar) — reporte o resultado e siga se ainda fizer sentido. Não é o caso de MCP/auth/compose que o login deveria ter deixado de pé.
