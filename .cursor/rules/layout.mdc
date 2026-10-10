@@ -12,7 +12,7 @@ alwaysApply: true
 | `vm-setup.sh` | VM nova ainda pede senha, login e pacotes. Deixa Arch + Hyprland pronto e aplica `.config` → `~/.config`. |
 | `vm.local.conf` | Usuário e e-mail do git desta máquina. Fora do git. O `.example` só mostra as chaves. |
 | `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra em `projects/<id>` e liga `workvm.service`. |
-| `systemd/workvm.service` | No login gráfico nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. Precisa de `graphical-session.target` (Hyprland sobe isso no `hyprland.start`). |
+| `systemd/workvm.service` | No login nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. `WantedBy=default.target` (não `graphical-session`: RefuseManualStart + SDDM não ativa). |
 | `systemd/workvm-git-pull.service` | O meta-repo fica atrás do remoto. Fetch no login; rede caída não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
 | `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |

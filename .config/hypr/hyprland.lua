@@ -57,9 +57,10 @@ hl.on("hyprland.start", function ()
     -- hyprpaper 0.8 (hyprtoolkit) segfaults on QEMU/GBM; swaybg is reliable in VMs.
     hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.jpg -m fill")
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
-    -- SDDM + start-hyprland never reach graphical-session.target. workvm.service
-    -- (compose, Cursor, browser) is WantedBy that target — start it once Wayland is up.
-    hl.exec_cmd("systemctl --user start graphical-session.target")
+    -- workvm is WantedBy=default.target (graphical-session refuses manual start and
+    -- SDDM+start-hyprland never activate it). Start again once Wayland is up in case
+    -- the oneshot finished before Hyprland (RemainAfterExit → no-op if already active).
+    hl.exec_cmd("systemctl --user start workvm.service")
     -- No project bound yet → script opens Kitty with project-setup menu.
     -- Delay so WAYLAND_DISPLAY/socket exist (hl.exec_cmd is async at start).
     -- Keep this path simple (no nested quotes): hl.exec_cmd runs via sh -c.

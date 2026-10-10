@@ -18,9 +18,9 @@ resolvido como: o que foi feito e por que dessa forma
 
 ## Docker do projeto não sobe após reboot
 
-- **problema:** depois do login gráfico só o `cloudflared` voltava; backend/frontend/pgsql ficavam `Exited`
-- **por que é um problema:** `workvm.service` faz o `docker compose up`, mas está em `WantedBy=graphical-session.target`. SDDM + `start-hyprland` nunca ativam esse target, então o unit não roda. O cloudflared tem `restart: unless-stopped`; os outros serviços do compose têm `restart: no`
-- **resolvido como:** no `hyprland.start`, `systemctl --user start graphical-session.target` — puxa `workvm-git-pull` e `workvm.service` com Wayland já no ar
+- **problema:** depois do login gráfico só o `cloudflared` voltava; backend/frontend/pgsql ficavam `Exited`; Cursor não abria
+- **por que é um problema:** `workvm.service` faz o `docker compose up` e abre o Cursor, mas estava em `WantedBy=graphical-session.target`. SDDM + `start-hyprland` nunca ativam esse target. Tentativa de `systemctl --user start graphical-session.target` no Hyprland falha: o unit tem `RefuseManualStart`. O cloudflared tem `restart: unless-stopped`; os outros do compose têm `restart: no`
+- **resolvido como:** `WantedBy=default.target` nos units WorkVM (sobe com a sessão do usuário). `project-start.sh` já espera Wayland. No `hyprland.start`, `systemctl --user start workvm.service` como rede de segurança com Wayland no ar
 
 ## MCP de projeto começa desligado no Cursor
 

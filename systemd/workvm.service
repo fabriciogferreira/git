@@ -1,10 +1,11 @@
+# No login gráfico: compose, Cursor e browser do projeto em current.
+# WantedBy=default.target — graphical-session.target tem RefuseManualStart e
+# SDDM+start-hyprland nunca o ativam; default.target sobe com a sessão do usuário.
 [Unit]
 Description=WorkVM project startup
 Documentation=file://%h/git/projects
-After=graphical-session.target workvm-git-pull.service
+After=workvm-git-pull.service
 Wants=workvm-git-pull.service
-PartOf=graphical-session.target
-
 
 [Service]
 Type=oneshot
@@ -15,4 +16,4 @@ ExecStart=%h/git/lib/project-start.sh %h/.config/workvm/current
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target

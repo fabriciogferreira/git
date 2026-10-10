@@ -1,8 +1,9 @@
+# git fetch do meta-repo no login do usuário.
+# Só na branch de origin (main). Falha de rede não derruba a sessão.
+# Mesmo WantedBy que workvm.service — ver comentário lá sobre graphical-session.
 [Unit]
 Description=WorkVM meta-repo git fetch (~/git, branch main)
 Documentation=file://%h/git/vm-setup.sh
-After=graphical-session.target
-PartOf=graphical-session.target
 
 [Service]
 Type=oneshot
@@ -12,4 +13,4 @@ ExecStart=%h/git/bin/pull-meta.sh
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target
