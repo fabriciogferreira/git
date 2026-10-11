@@ -43,14 +43,14 @@ workvm_laravel_post_clone() {
     echo "→ ${label}: cp -n .env.example → .env"
     cp -n "${app}/.env.example" "${app}/.env"
 
-    echo "→ ${label}: .env para stack docker (postgres/redis/nginx)"
+    # DB_DATABASE / DB_USERNAME / DB_PASSWORD vêm do .env.example e precisam
+    # bater com POSTGRES_* no compose.dev.yaml — não sobrescrever com defaults
+    # genéricos (ex.: laravel/app vs root/boilerplate-laravel).
+    echo "→ ${label}: .env para stack docker (hosts postgres/redis; credenciais do .env.example)"
     workvm_laravel_set_env_kv "${app}/.env" APP_URL "http://localhost"
     workvm_laravel_set_env_kv "${app}/.env" DB_CONNECTION pgsql
     workvm_laravel_set_env_kv "${app}/.env" DB_HOST postgres
     workvm_laravel_set_env_kv "${app}/.env" DB_PORT 5432
-    workvm_laravel_set_env_kv "${app}/.env" DB_DATABASE app
-    workvm_laravel_set_env_kv "${app}/.env" DB_USERNAME laravel
-    workvm_laravel_set_env_kv "${app}/.env" DB_PASSWORD secret
     workvm_laravel_set_env_kv "${app}/.env" REDIS_HOST redis
     workvm_laravel_set_env_kv "${app}/.env" REDIS_PORT 6379
 
