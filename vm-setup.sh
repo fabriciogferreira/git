@@ -59,11 +59,18 @@ aur_install() {
 }
 
 setup_base() {
-    step "Pacotes base (git, base-devel, openssh, shellcheck)"
+    step "Pacotes base (git, base-devel, openssh, shellcheck, zsh)"
 
     # bin/check.sh precisa do binário shellcheck.
-    sudo pacman -S --needed --noconfirm git base-devel openssh shellcheck
-    ok "git + base-devel + openssh + shellcheck"
+    # zsh-completions: definições extras de tab-completion para o zsh.
+    sudo pacman -S --needed --noconfirm \
+        git \
+        base-devel \
+        openssh \
+        shellcheck \
+        zsh \
+        zsh-completions
+    ok "git + base-devel + openssh + shellcheck + zsh + zsh-completions"
 }
 
 setup_git_identity() {
