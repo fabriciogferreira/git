@@ -10,6 +10,12 @@ por que é um problema: o custo
 resolvido como: o que foi feito e por que dessa forma
 ```
 
+## `project-setup olie` morria no re-seed
+
+- **problema:** `./project-setup.sh olie` falhava com OOM (256M) e `frame_max_limit_exceeded` no `FrameDataSeeder`
+- **por que é um problema:** o `post-clone` sempre rodava `migrate --seed`; com frames já no MySQL o seeder repovoava tudo e o setup inteiro saía com exit 255
+- **resolvido como:** seed só se não existir frame; re-run faz só `migrate --force`. No seed fresco, `memory_limit=1G`
+
 ## Pasta `workvm/` em volta de bin, lib, projects e systemd
 
 - **problema:** `bin`, `lib`, `projects` e `systemd` ficavam dentro de `workvm/`

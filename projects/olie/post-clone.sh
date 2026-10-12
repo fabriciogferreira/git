@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # One-time bootstrap after cloning Olie repos (run by project-setup.sh).
+# Seed só no banco vazio: re-seed com frames já cheios estoura memória e
+# frame_max_limit no FrameDataSeeder do api-main.
 set -euo pipefail
 
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
@@ -109,7 +111,25 @@ mysql_ready() {
             olie-api-main php -r 'new PDO("mysql:host=mysql;port=3306", getenv("DB_USERNAME"), getenv("DB_PASSWORD"));' >/dev/null 2>&1
 }
 
-echo "→ workvm stack: compose up, key, migrate --seed, restart"
+# True when FrameDataSeeder already ran (frames exist). Missing tables → fresh.
+db_already_seeded() {
+    local out
+    out="$(
+        docker container exec olie-api-main php -r '
+            require "/var/www/html/vendor/autoload.php";
+            $app = require "/var/www/html/bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            try {
+                echo \App\Models\Frame::query()->exists() ? "yes" : "no";
+            } catch (Throwable $e) {
+                echo "no";
+            }
+        ' 2>/dev/null || echo "no"
+    )"
+    [[ "$out" == "yes" ]]
+}
+
+echo "→ workvm stack: compose up, key, migrate (+ seed se banco vazio), restart"
 (
     cd "$COMPOSE_DIR"
     docker compose up -d
@@ -119,7 +139,16 @@ echo "→ workvm stack: compose up, key, migrate --seed, restart"
 
     # key:generate first (login fails hard with empty APP_KEY). Then migrate/seed.
     docker container exec olie-api-main php artisan key:generate --force
-    docker container exec olie-api-main php artisan migrate --seed --force
+
+    if db_already_seeded; then
+        echo "  banco já tem frames — migrate sem --seed"
+        docker container exec olie-api-main php artisan migrate --force
+    else
+        echo "  banco vazio — migrate --seed"
+        # FrameDataSeeder + activitylog passam dos 256M default do container.
+        docker container exec olie-api-main php -d memory_limit=1G artisan migrate --seed --force
+    fi
+
     docker container exec olie-api-main php artisan config:clear
 
     if ! grep -q '^APP_KEY=base64:' "$OLIE/api-main/.env"; then
