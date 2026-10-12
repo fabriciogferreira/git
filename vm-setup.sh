@@ -59,7 +59,7 @@ aur_install() {
 }
 
 setup_base() {
-    step "Pacotes base (git, base-devel, openssh, shellcheck, zsh)"
+    step "Pacotes base (git, base-devel, openssh, shellcheck, zsh, neovim)"
 
     # bin/check.sh precisa do binário shellcheck.
     # zsh-completions: definições extras de tab-completion para o zsh.
@@ -69,8 +69,9 @@ setup_base() {
         openssh \
         shellcheck \
         zsh \
-        zsh-completions
-    ok "git + base-devel + openssh + shellcheck + zsh + zsh-completions"
+        zsh-completions \
+        neovim
+    ok "git + base-devel + openssh + shellcheck + zsh + zsh-completions + neovim"
 }
 
 setup_git_identity() {
