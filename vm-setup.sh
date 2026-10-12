@@ -230,8 +230,18 @@ setup_apps() {
         swaybg \
         dbeaver
 
-    log "AUR: cursor-bin google-chrome postman-bin"
-    aur_install cursor-bin google-chrome postman-bin
+    log "AUR: cursor-bin brave-bin postman-bin"
+    aur_install cursor-bin brave-bin postman-bin
+
+    # Brave as default browser (xdg + login openers in lib/session.sh).
+    if [ -f /usr/share/applications/brave-browser.desktop ]; then
+        xdg-settings set default-web-browser brave-browser.desktop \
+            || log "aviso: xdg-settings não definiu o Brave como padrão"
+        ok "Brave como browser padrão (brave-browser.desktop)"
+    else
+        log "aviso: brave-browser.desktop ausente; padrão não alterado"
+    fi
+
     ok "apps instalados (ou já presentes)"
 }
 
