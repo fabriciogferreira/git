@@ -192,3 +192,82 @@ export async function setCompanyMultipleActiveChannelsViaApi(
         { apiUrl, value }
     )
 }
+
+/** DOP-1214 audio transcription row inside Business Rules. */
+export function audioTranscriptionSettingsRow(page: Page): Locator {
+    return page.locator('#audio_transcription_settings')
+}
+
+export function audioTranscriptionSwitch(page: Page): Locator {
+    return page.locator('#audio_transcription_enabled')
+}
+
+export async function companyAudioTranscriptionEnabled(page: Page): Promise<boolean> {
+    return audioTranscriptionSwitch(page).isChecked()
+}
+
+/**
+ * Skip when this front build lacks the DOP-1214 transcription toggle
+ * (e.g. develop without the feature branch).
+ */
+export async function requireAudioTranscriptionSettings(page: Page, timeout = 8_000) {
+    await requireVisible(page, 'DOP-1214', audioTranscriptionSettingsRow(page), timeout)
+}
+
+/**
+ * Set the Business Rules transcription switch and save the card.
+ * Resolves with the POST response so callers can assert the payload.
+ */
+export async function saveCompanyAudioTranscription(page: Page, value: boolean) {
+    const card = businessRulesCard(page)
+    const toggle = audioTranscriptionSwitch(page)
+
+    if ((await toggle.isChecked()) !== value) {
+        await toggle.click({ force: true })
+        await expect(toggle).toBeChecked({ checked: value })
+    }
+
+    const response = page.waitForResponse(
+        r =>
+            /frame-configurations/.test(r.url()) &&
+            r.request().method() === 'POST' &&
+            (r.status() === 200 || r.status() === 422),
+        { timeout: 30_000 }
+    )
+
+    await card.getByRole('button', { name: /Salvar|Save/i }).click({ force: true })
+
+    return response
+}
+
+/**
+ * Company default straight through the API (no settings page).
+ * Useful when a behaviour spec only needs the gate flipped.
+ */
+export async function setCompanyAudioTranscriptionViaApi(
+    page: Page,
+    value: boolean
+): Promise<number> {
+    const apiUrl = `${apiBaseUrl()}/api/management/frame-configurations`
+
+    return page.evaluate(
+        async ({ apiUrl, value }) => {
+            const token = localStorage.getItem('token')
+            if (!token) return 0
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ audio_transcription_enabled: value }),
+            })
+
+            return res.status
+        },
+        { apiUrl, value }
+    )
+}
+

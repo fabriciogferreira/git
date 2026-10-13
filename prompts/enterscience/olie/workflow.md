@@ -2,7 +2,7 @@
 
 Use this at the start of the day, and again whenever the current card is no longer the next action. Text inside single quotes is a board label or a field name. Do not rename it.
 
-Do not repeat `project.md`, `implementation.md`, `pre-qa.md`, `colleague-review.md`, `correction.md`, `production-review.md`, or `recommendation.md`. Those files say how to execute or review. This file says the order.
+Do not repeat `project.md`, `implementation.md`, `pre-qa.md`, `colleague-review.md`, `correction.md`, `validation.md`, `production-review.md`, or `recommendation.md`. Those files say how to execute or review. This file says the order.
 
 Resolve the live board labels and IDs through OlieFlowAi as described in `workflow-policy.md`. The labels below are examples, not a substitute for the live funnel.
 
@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | 'Em progresso' | You | Execute the card. |
 | 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
-| 'validação' | Tech lead | Approve or send it back. |
+| 'validação' | Tech lead | Approve or send it back. Follow `validation.md`. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. |
 
 ## 1. Colleague QA/CR
@@ -50,7 +50,7 @@ Move the card you take to 'Em progresso', then execute it with `implementation.m
 
 When the requested behavior is implemented, move the card to 'QA/CR' so a teammate can review it. Run `pre-qa.md` before that move.
 
-You do not perform 'validação'. The tech lead does.
+You do not perform 'validação' while developing or during colleague 'QA/CR'. When the request is a tech-lead validation pass, use `validation.md`.
 
 - Tech lead approves: the card goes to 'Revisão de Produção'.
 - Tech lead rejects: the card returns to 'corrigir' ou melhorar.

@@ -10,6 +10,12 @@ por que é um problema: o custo
 resolvido como: o que foi feito e por que dessa forma
 ```
 
+## Validação de card sem prompt
+
+- **problema:** o estágio 'validação' existia no `workflow.md`, mas não havia prompt com a régua (cinco critérios + revisores)
+- **por que é um problema:** cada pedido de validação improvisava o que olhar; multitenancy e advogado-do-diabo não entravam por padrão
+- **resolvido como:** `prompts/enterscience/olie/validation.md` + referência no `workflow.md`
+
 ## `project-setup olie` morria no re-seed
 
 - **problema:** `./project-setup.sh olie` falhava com OOM (256M) e `frame_max_limit_exceeded` no `FrameDataSeeder`
