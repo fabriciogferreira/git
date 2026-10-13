@@ -31,4 +31,5 @@ alwaysApply: true
 | `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
 | `olie/`, `televisao/` | Clones da empresa. O e2e que não pode ir no remoto deles fica em `projects/`. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
+| `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `prompts/` | Prompts de agente em inglês e Markdown. Texto entre aspas simples ou `{{ }}` não se traduz. A raiz é global; abaixo, empresa / projeto / repositório. O mais fundo vence. |
