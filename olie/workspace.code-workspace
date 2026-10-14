@@ -1,0 +1,37 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "api-main",
+      "path": "api-main"
+    },
+    {
+      "name": "olie-fronts",
+      "path": "olie-fronts"
+    },
+    {
+      "name": "backoffice",
+      "path": "backoffice"
+    },
+    {
+      "name": "landing",
+      "path": "landing"
+    },
+    {
+      "name": "docker-workspace",
+      "path": "docker-workspace"
+    },
+    {
+      "name": "websocket",
+      "path": "websocket"
+    },
+    {
+      "name": "olie-e2e",
+      "path": "olie-e2e"
+    }
+  ],
+  "settings": {}
+}

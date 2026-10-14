@@ -25,8 +25,6 @@ vm.local.conf
 !.config/**
 !.cursor/
 !.cursor/**
-!prompts/
-!prompts/**
 !mcps/
 !mcps/**
 !life.md
@@ -34,10 +32,81 @@ vm.local.conf
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
 projects/**/.env
+olie/**/.env
 # Marker do stub MCP (servidores em ~/.cursor/mcp.json); local da VM
 projects/**/.cursor/mcp.workvm-user
+olie/**/.cursor/mcp.workvm-user
 
-# Clones em olie/ e televisao/ ficam de fora. O e2e local mora em projects/.
+# Clones em olie/<repo>/ ficam de fora. Definição do projeto + e2e + overlay versionados.
+!olie/
+olie/*
+!olie/README.md
+!olie/project.conf
+!olie/post-clone.sh
+!olie/workspace.code-workspace
+!olie/docker-compose.yml
+!olie/.env.example
+!olie/api-main.vscode.settings.json
+!olie/docker/
+!olie/docker/**
+!olie/overlay/
+!olie/overlay/**
+!olie/olie-e2e/
+!olie/olie-e2e/**
+!olie/cards/
+!olie/cards/*/
+!olie/cards/*/*.md
+!olie/prompts/
+!olie/prompts/**
+
+# vid2agent-code: definição + prompts; clone em vid2agent-code/vid2agent-code/ fica fora.
+!vid2agent-code/
+vid2agent-code/*
+!vid2agent-code/README.md
+!vid2agent-code/project.conf
+!vid2agent-code/post-clone.sh
+!vid2agent-code/workspace.code-workspace
+!vid2agent-code/prompts/
+!vid2agent-code/prompts/**
+
+# opbed: definição do projeto; clones em opbed/opbed-backend|frontend ficam fora.
+!opbed/
+opbed/*
+!opbed/README.md
+!opbed/project.conf
+!opbed/post-clone.sh
+!opbed/workspace.code-workspace
+
+# televisao: definição + e2e; clones televisao-api|front|meet-* ficam fora.
+!televisao/
+televisao/*
+!televisao/README.md
+!televisao/project.conf
+!televisao/post-clone.sh
+!televisao/workspace.code-workspace
+!televisao/televisao-front-e2e/
+!televisao/televisao-front-e2e/**
+!televisao/televisao-meet-front-e2e/
+!televisao/televisao-meet-front-e2e/**
+televisao/**/.env
+televisao/**/.cursor/mcp.workvm-user
+
+# da-o-play: definição; clone em da-o-play/da-o-play-api/ fica fora.
+!da-o-play/
+da-o-play/*
+!da-o-play/README.md
+!da-o-play/project.conf
+!da-o-play/post-clone.sh
+!da-o-play/workspace.code-workspace
+
+# boilerplate-laravel: definição; clone em boilerplate-laravel/boilerplate-laravel/ fica fora.
+!boilerplate-laravel/
+boilerplate-laravel/*
+!boilerplate-laravel/README.md
+!boilerplate-laravel/project.conf
+!boilerplate-laravel/post-clone.sh
+!boilerplate-laravel/workspace.code-workspace
+
 # Gerado por project-setup (projeto desta VM); não versionar
 .cursor/rules/workvm-project.mdc
 # Cópia do MCP do projeto setado (fonte em mcps/)

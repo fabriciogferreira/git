@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "da-o-play-api",
+      "path": "da-o-play-api"
+    }
+  ],
+  "settings": {}
+}

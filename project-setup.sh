@@ -2,11 +2,10 @@
 # Bind this Arch + Hyprland machine to a workvm project and enable startup on
 # graphical login.
 # Usage: ./project-setup.sh <project>
-# O id é o diretório em projects. Basename único também serve.
+# O id é o diretório do projeto (olie/ ou projects/<id>/). Basename único também serve.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECTS_SRC="$REPO_ROOT/projects"
 UNIT_SRC="$REPO_ROOT/systemd/workvm.service"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
@@ -20,7 +19,7 @@ load_project_ids() {
     while IFS= read -r id; do
         [ -n "$id" ] || continue
         PROJECT_IDS+=("$id")
-    done < <(workvm_list_project_ids "$PROJECTS_SRC")
+    done < <(workvm_list_project_ids "$REPO_ROOT")
 }
 
 show_valid_projects() {
@@ -36,7 +35,7 @@ project_is_valid() {
     local name="$1"
     local resolved
     [ -n "$name" ] || return 1
-    if ! resolved="$(workvm_resolve_project_id "$PROJECTS_SRC" "$name")"; then
+    if ! resolved="$(workvm_resolve_project_id "$REPO_ROOT" "$name")"; then
         return 1
     fi
     RESOLVED_PROJECT="$resolved"
@@ -48,7 +47,7 @@ pick_project_menu() {
     local idx=0 n i key k1 k2
 
     if [ "${#PROJECT_IDS[@]}" -eq 0 ]; then
-        echo "error: nenhum projeto em $PROJECTS_SRC" >&2
+        echo "error: nenhum projeto com project.conf em $REPO_ROOT (olie/ ou projects/)" >&2
         exit 1
     fi
 
@@ -158,7 +157,11 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
 fi
 
 resolve_project "${1:-}"
-PROJECT_SRC="$PROJECTS_SRC/$PROJECT"
+PROJECT_SRC="$(workvm_project_dir "$REPO_ROOT" "$PROJECT")"
+if [ -z "$PROJECT_SRC" ]; then
+    echo "error: project.conf não encontrado para '$PROJECT'" >&2
+    exit 1
+fi
 
 CLONE_REPOS=()
 POST_CLONE=()

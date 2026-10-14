@@ -1,12 +1,12 @@
 ---
 description: Overlay do projeto e .config/ existem para não commitar no repo da empresa nem vazar secret
-globs: "{projects/**/overlay,.config}/**/*"
+globs: "{*/overlay,.config}/**/*"
 alwaysApply: false
 ---
 
 # Overlays
 
-`projects/<id>/overlay/<repo>/cursor` é copiado para o clone como `.cursor` (`overlay/api-main/cursor` → `~/git/olie/api-main/.cursor`). Resolve ajuste local de agente sem push no remoto da empresa. A pasta no meta-repo não se chama `.cursor`: a janela abre `~/git` e não deve carregar essas rules.
+`olie/overlay/<repo>/cursor` (ou `<projeto>/overlay/…`) é copiado para o clone como `.cursor` (`overlay/api-main/cursor` → `~/git/olie/api-main/.cursor`). Resolve ajuste local de agente sem push no remoto da empresa. A pasta no meta-repo não se chama `.cursor`: a janela abre `~/git` e não deve carregar essas rules.
 
 `.config/` é copiado para `~/.config` pelo `vm-setup.sh`. Resolve Hyprland/sessão iguais entre VMs. Ao editar o live, espelhe em `~/git/.config` (skill `sync-git-dotconfig`).
 

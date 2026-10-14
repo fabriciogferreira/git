@@ -70,7 +70,7 @@ alwaysApply: true
 
 > Gerado por \`project-setup.sh\` via \`workvm_write_cursor_project_rule\`.
 > Não edite à mão — rode de novo o project-setup para atualizar.
-> Runtime symlink: \`~/.config/workvm/current\` → \`projects/${project}\`.
+> Runtime symlink: \`~/.config/workvm/current\` → pasta do projeto (\`${project}/\`).
 > A janela abre o meta-repo \`~/git\` e os clones deste projeto.
 
 ## Repositórios
@@ -96,7 +96,7 @@ EOF
 - **Compose file:** \`${compose_file_disp}\`
 - **Wait URL:** \`${wait_disp}\`
 - **Browser URLs:** \`${browser_disp}\`
-- **Workspace:** \`projects/${project}/workspace.code-workspace\`
+- **Workspace:** \`workspace.code-workspace\` na pasta do projeto
 - **Start:** \`lib/project-start.sh\` com \`~/.config/workvm/current\` (via \`workvm.service\`)
 
 Ao trabalhar nesta VM, trate os caminhos da tabela como o escopo do projeto ativo.
@@ -207,11 +207,17 @@ workvm_patch_project_clone_cursor() {
 
     if [ -n "${CLONE_REPOS+x}" ] && [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
         entries=("${CLONE_REPOS[@]}")
-    elif [ -n "$project" ] && [ -f "$git_root/projects/$project/project.conf" ]; then
-        # shellcheck disable=SC1090
-        source "$git_root/projects/$project/project.conf"
-        git_root="${GIT_ROOT:-$git_root}"
-        entries=("${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}")
+    elif [ -n "$project" ]; then
+        local pdir
+        pdir="$(workvm_project_dir "$git_root" "$project" 2>/dev/null || true)"
+        if [ -n "$pdir" ] && [ -f "$pdir/project.conf" ]; then
+            # shellcheck disable=SC1090
+            source "$pdir/project.conf"
+            git_root="${GIT_ROOT:-$git_root}"
+            entries=("${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}")
+        else
+            return 0
+        fi
     else
         return 0
     fi
@@ -249,34 +255,35 @@ workvm_patch_project_clone_cursor() {
     done
 }
 
-# Patch clones for every projects/**/project.conf (or a single project id).
+# Patch clones for every project.conf (or a single project id).
 workvm_patch_all_projects_clone_cursor() {
     local only="${1:-}"
     local git_root="${GIT_ROOT:-$HOME/git}"
-    local projects_dir="$git_root/projects"
-    local proj resolved
+    local proj resolved pdir
 
     if [ -n "$only" ]; then
-        if ! resolved="$(workvm_resolve_project_id "$projects_dir" "$only")"; then
+        if ! resolved="$(workvm_resolve_project_id "$git_root" "$only")"; then
             echo "error: projeto desconhecido: $only" >&2
             return 1
         fi
+        pdir="$(workvm_project_dir "$git_root" "$resolved")" || return 1
         unset CLONE_REPOS 2>/dev/null || true
         CLONE_REPOS=()
         # shellcheck disable=SC1090
-        source "$projects_dir/$resolved/project.conf"
+        source "$pdir/project.conf"
         workvm_patch_project_clone_cursor "$resolved"
         return 0
     fi
 
     while IFS= read -r proj; do
         [ -n "$proj" ] || continue
+        pdir="$(workvm_project_dir "$git_root" "$proj")" || continue
         unset CLONE_REPOS 2>/dev/null || true
         CLONE_REPOS=()
         # shellcheck disable=SC1090
-        source "$projects_dir/$proj/project.conf"
+        source "$pdir/project.conf"
         workvm_patch_project_clone_cursor "$proj"
-    done < <(workvm_list_project_ids "$projects_dir")
+    done < <(workvm_list_project_ids "$git_root")
 }
 
 # Merge top-level keys from $2 (source) into $1 (dest). Creates dest if missing.

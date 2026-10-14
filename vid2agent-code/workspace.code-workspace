@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "vid2agent-code",
+      "path": "vid2agent-code"
+    }
+  ],
+  "settings": {}
+}

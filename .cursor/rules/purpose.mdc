@@ -13,8 +13,8 @@ O mapa do problema que cada pasta resolve: `layout.mdc`. Ao criar ou mudar texto
 
 ## Quais rules usar
 
-Rules em `projects/**/overlay/**/cursor`, `olie/**/.cursor` e `televisao/**/.cursor` são do produto ou do overlay daquele clone. Use-as só ao editar esse clone ou esse overlay.
+Rules em `*/overlay/**/cursor` e `*/**/.cursor` dos clones são do produto ou do overlay daquele clone. Use-as só ao editar esse clone ou esse overlay.
 
-Ao editar `bin/`, `lib/`, `projects/`, `systemd/`, `vm-setup.sh`, `project-setup.sh`, `.config/` ou esta pasta, ignore regras de Laravel, front e e2e.
+Ao editar `bin/`, `lib/`, ou a pasta de definição do projeto na raiz (`olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `vid2agent-code/`, …), `systemd/`, `vm-setup.sh`, `project-setup.sh`, `.config/` ou esta pasta, ignore regras de Laravel, front e e2e nos clones.
 
-`olie/` e `televisao/` são checkouts. O que este repo versiona para eles está em `projects/<id>/overlay/`.
+Clones da empresa ficam sob `olie/<repo>/`, `televisao/<repo>/`, etc. (fora do meta-repo). O que o meta-repo versiona para esses produtos está na pasta do projeto (`overlay/`, e2e, prompts, …).

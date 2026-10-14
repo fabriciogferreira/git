@@ -36,7 +36,7 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 - [ ] **Ajustar prompt(s) de revisão Olie: não reclamar de PR inexistente**
   - **Por quê:** revisão gasta tempo em falso positivo — PR ainda não aberto (fase errada).
   - **Objetivo:** economizar tempo nas revisões.
-  - **Onde:** `prompts/enterscience/olie/` (ex.: `colleague-review.md`, `validation.md`).
+  - **Onde:** `olie/prompts/` (ex.: `colleague-review.md`, `validation.md`).
   - **Já feito:** não mexer / não falhar por `en.json` (resolvido depois; só `pt-br.json`) — ver `project.md` e prompts aplicáveis.
   - **Entrega:** regra explícita “não falhar revisão só por PR não criado”; agente para de insistir nisso.
 
@@ -65,22 +65,11 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Como:** um item do roadmap por vez; ao concluir → marcar lá, atualizar estado, não acumular `[x]` eterno nesta lista.
   - **Entrega:** roadmap §1 zerado (ou só itens “depois / se doer” restantes).
 
-- [ ] **Remover `projects/` do meta-repo e mover para o host**
-  - **Por quê:** hoje há árvore dupla e caminho longo — `projects/<id>/` (conf, overlay, e2e) **e** clones em `olie/` / `televisao/` / etc.; agente e humano ficam indo e voltando entre pastas.
-  - **Ganho:** **sem pastas duplicadas**; **sem ir e voltar** em todos os caminhos (um lugar por projeto no host).
-  - **Objetivo:** economizar tempo (navegação, prompts, overlay, e2e) + menos atrito mental.
-  - **Hoje (a desfazer):** `~/git/projects/<id>/` = `project.conf`, `post-clone.sh`, `overlay/`, e2e, workspace; runtime `~/.config/workvm/current` aponta para aí; clones em `~/git/<empresa>/`.
-  - **Cuidado:** `project-setup.sh`, `project-start.sh`, `lib/*`, rules (`layout.mdc`, `meta-repo.mdc`), workspaces e paths nos prompts/skills que citam `projects/olie/...`.
-  - **Entrega:** layout novo só no host documentado aqui + scripts/rules apontando para os paths novos; pasta `projects/` removida (ou esvaziada) do meta-repo sem quebrar bootstrap das WorkVMs.
-
-- [ ] **Mover os prompts para as pastas dos respectivos projetos**
-  - **Por quê:** prompts de produto ficam em `prompts/enterscience/olie/`, `prompts/vid2agent-code/`, etc., longe da pasta do projeto (`projects/<id>/` ou o layout novo no host) — outro hop de caminho.
-  - **Ganho:** prompt do projeto **junto** do projeto (conf, overlay, e2e, `.xml` da VM); menos ir e voltar.
-  - **Objetivo:** economizar tempo + alinhar com “um lugar por projeto”.
-  - **depends:** encaixa com **Remover `projects/` … para o host** (mesmo destino final da pasta do projeto); prompts globais (`prompts/agent.md`, etc.) podem ficar na raiz do meta-repo.
-  - **Hoje:** `prompts/<empresa>/<projeto>/` e `prompts/<projeto>/`; regra em `layout.mdc` / `prompts/README.md` (mais fundo vence).
-  - **Cuidado:** links em `life.md`, `HISTORICO.md`, skills e qualquer doc que cite `prompts/enterscience/olie/...`.
-  - **Entrega:** prompts de projeto dentro da pasta do projeto; README/rules atualizados; globais só o que for de verdade global.
+- [x] **Remover `projects/` do meta-repo (migrar cada id para a pasta do produto)**
+  - **Por quê:** árvore dupla — `projects/<id>/` e clones em `olie/` / etc.
+  - **Ganho:** um lugar por projeto; menos hop de caminho.
+  - **Feito:** olie, opbed, televisao, da-o-play, boilerplate-laravel, vid2agent-code na raiz; `projects/` removido; discovery em `lib/git.sh` na raiz do meta-repo.
+  - **Após migrar nesta VM:** `./project-setup.sh <id>` de novo (atualiza `~/.config/workvm/current`).
 
 - [ ] **Descobrir utilidade para os 2 SSDs sobrando**
   - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar VMs, libvirt images, Docker, backups locais sem comprar outro drive.
@@ -236,7 +225,7 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | **WorkVM** (uma por card/projeto) | Clone(s) + Docker + Cursor multi-root (`~/git` + repos) + browser |
 | **Meta-repo** `~/git` | Provisiona VM, projeto ativo, overlays, prompts, skills locais |
 
-Projetos definidos em `projects/<id>/` hoje: `olie`, `vid2agent-code`, `televisao`, `opbed`, `boilerplate-laravel`, `da-o-play-api`, …
+Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `vid2agent-code/`.
 
 VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `telvesiao`, `da-o-play`, …
 
@@ -338,9 +327,10 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 | Path | Uso |
 | --- | --- |
 | `~/git/.cursor/rules/*` | Como a VM e o meta-repo funcionam |
-| `~/git/prompts/**` | Prompts para colar no agente |
-| `projects/<id>/overlay/**/cursor` | Rules/skills locais (não vão pro remoto da empresa) |
-| `projects/<id>/project.conf` | Clones, compose, URLs |
+| `~/git/olie/prompts/` | Prompts do projeto Olie |
+| `~/git/vid2agent-code/prompts/` | Prompts do vid2agent-code |
+| `<projeto>/overlay/**/cursor` | Rules/skills locais (não vão pro remoto da empresa) |
+| `<projeto>/project.conf` | Clones, compose, URLs |
 | `HISTORICO.md` | Decisões já tomadas |
 | Host: `~/.local/share/doc/ollama-workvm.md` | Ollama sob demanda (hoje **fora do git**) |
 | Host: `~/.local/share/doc/vid2agent-api.md` | API `:18080` (hoje **fora do git**) |
@@ -349,7 +339,7 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 
 ### Fluxos de produto recorrentes
 1. **Card Olie (DOP/OS)**  
-   Abrir VM do card → Cursor no workspace olie → MCP media → skill `olie-project-image-analysis` (screenshots) e/ou `olie-project-video-conversion` (vídeo → markdown via vid2agent).
+   Abrir VM do card → Cursor no workspace olie → MCP media → skill `olie-project-image-analysis` / `olie-project-video-conversion`. Salvar em `~/git/olie/cards/{código}/{mediaId}.md`, **versionar no meta-repo** (commit/push); na correção, **reusar** (não reanalisar). Tech lead: **não** enviar análise no conteúdo do projeto.
 2. **vid2agent-code**  
    VM sobe → Ollama no host → app Docker → `POST /api/conversions` → markdown. Outras VMs chamam `http://10.0.2.2:18080/api/conversions`.
 3. **Meta-repo**  
@@ -436,7 +426,7 @@ Marque `[x]` quando feito; detalhe o “como” em `HISTORICO.md`.
 | Mapa do meta-repo | `.cursor/rules/layout.mdc` |
 | Como a VM opera | `.cursor/rules/meta-repo.mdc` |
 | Problemas resolvidos | `HISTORICO.md` |
-| Prompt guest Ollama | `prompts/vid2agent-code/host-ollama-ready.md` |
-| Prompt API para Olie | `prompts/vid2agent-code/guest-api-ready-for-olie.md` |
-| Skill imagens | `projects/olie/overlay/**/olie-project-image-analysis` |
-| Skill vídeo | `projects/olie/overlay/**/olie-project-video-conversion` |
+| Prompt guest Ollama | `vid2agent-code/prompts/host-ollama-ready.md` |
+| Prompt API para Olie | `vid2agent-code/prompts/guest-api-ready-for-olie.md` |
+| Skill imagens | `olie/overlay/**/olie-project-image-analysis` |
+| Skill vídeo | `olie/overlay/**/olie-project-video-conversion` |

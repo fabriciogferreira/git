@@ -56,37 +56,67 @@ workvm_load_vm_local() {
     return 0
 }
 
-# Print project ids relative to projects (e.g. opbed, olie, televisao).
-# A project is a directory with project.conf.
-workvm_list_project_ids() {
-    local projects_dir="${1:-}"
-    local conf rel dir
-    if [ -z "$projects_dir" ] || [ ! -d "$projects_dir" ]; then
-        echo "error: workvm_list_project_ids <projects-dir>" >&2
+# Absolute path of a project dir (has project.conf).
+# Prefers <git-root>/<id>/ over <git-root>/projects/<id>/ (product roots win).
+workvm_project_dir() {
+    local git_root="${1:-}"
+    local id="${2:-}"
+
+    if [ -z "$git_root" ] || [ -z "$id" ]; then
         return 1
     fi
-    while IFS= read -r -d '' conf; do
-        dir="$(dirname "$conf")"
-        rel="${dir#"${projects_dir}/"}"
-        [ "$rel" != "$dir" ] || continue
-        printf '%s\n' "$rel"
-    done < <(find "$projects_dir" -type f -name project.conf -print0 | sort -z)
+    if [ -f "$git_root/$id/project.conf" ]; then
+        printf '%s\n' "$git_root/$id"
+        return 0
+    fi
+    if [ -f "$git_root/projects/$id/project.conf" ]; then
+        printf '%s\n' "$git_root/projects/$id"
+        return 0
+    fi
+    return 1
 }
 
-# Resolve a user project argument to a relative id under projects.
+# Print project ids (e.g. opbed, olie, televisao).
+# A project is a directory with project.conf under projects/ or at <git-root>/<id>/.
+# Arg: meta-repo root (~/git), not only projects/.
+workvm_list_project_ids() {
+    local git_root="${1:-}"
+    local conf dir id
+    if [ -z "$git_root" ] || [ ! -d "$git_root" ]; then
+        echo "error: workvm_list_project_ids <git-root>" >&2
+        return 1
+    fi
+    {
+        if [ -d "$git_root/projects" ]; then
+            find "$git_root/projects" -mindepth 2 -maxdepth 2 -type f -name project.conf -print0
+        fi
+        find "$git_root" -mindepth 2 -maxdepth 2 -type f -name project.conf -print0
+    } | while IFS= read -r -d '' conf; do
+        dir="$(dirname "$conf")"
+        id="$(basename "$dir")"
+        # Skip accidental project.conf inside clone paths (depth would usually
+        # exclude them; basename collision still prints once via sort -u).
+        case "$dir" in
+            */projects/*/*/*) continue ;;
+        esac
+        printf '%s\n' "$id"
+    done | sort -u
+}
+
+# Resolve a user project argument to a project id (basename).
 # Accepts the directory id (televisao) or a unique basename.
 # Prints the id on stdout; returns 1 if missing/ambiguous.
 workvm_resolve_project_id() {
-    local projects_dir="${1:-}"
+    local git_root="${1:-}"
     local answer="${2:-}"
     local id base
     local -a matches=()
 
-    if [ -z "$projects_dir" ] || [ -z "$answer" ]; then
+    if [ -z "$git_root" ] || [ -z "$answer" ]; then
         return 1
     fi
 
-    if [ -f "$projects_dir/$answer/project.conf" ]; then
+    if workvm_project_dir "$git_root" "$answer" >/dev/null; then
         printf '%s\n' "$answer"
         return 0
     fi
@@ -97,7 +127,7 @@ workvm_resolve_project_id() {
         if [ "$id" = "$answer" ] || [ "$base" = "$answer" ]; then
             matches+=("$id")
         fi
-    done < <(workvm_list_project_ids "$projects_dir")
+    done < <(workvm_list_project_ids "$git_root")
 
     if [ "${#matches[@]}" -eq 1 ]; then
         printf '%s\n' "${matches[0]}"

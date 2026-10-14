@@ -2,6 +2,60 @@
 
 Problema resolvido entra aqui.
 
+## Projeto Olie em `olie/` (saiu de `projects/olie`)
+
+- **problema:** definição Olie em `projects/olie/` e clones em `olie/` — dois lugares
+- **por que é um problema:** hop de caminho; pasta `projects/` duplicava o conceito de produto
+- **resolvido como:** `project.conf`, compose, overlay, e2e movidos para `olie/`; `workvm_list_project_ids` / `workvm_project_dir` aceitam pasta na raiz do meta-repo; workspace paths relativos a `olie/`
+
+## Projeto Opbed em `opbed/` (saiu de `projects/opbed`)
+
+- **problema:** definição em `projects/opbed/` e clones já em `opbed/`
+- **por que é um problema:** mesmo hop de caminho do Olie
+- **resolvido como:** `project.conf`, `post-clone.sh`, workspace movidos para `opbed/`; clones `opbed-backend` / `opbed-frontend` continuam fora do meta-repo
+
+## Projeto Televisão em `televisao/` (saiu de `projects/televisao`)
+
+- **problema:** definição e e2e em `projects/televisao/` e clones já em `televisao/`
+- **por que é um problema:** mesmo hop de caminho do Olie/Opbed
+- **resolvido como:** `project.conf`, `post-clone.sh`, workspace e suítes e2e movidos para `televisao/`; clones `televisao-api` / `front` / `meet-*` continuam fora do meta-repo
+
+## Projeto da-o-play em `da-o-play/` (saiu de `projects/` + `musicians-app/`)
+
+- **problema:** definição em `projects/da-o-play-api/` e clone em `musicians-app/da-o-play-api/`
+- **por que é um problema:** hop de caminho; pasta `musicians-app/` só existia pelo layout antigo do MCP
+- **resolvido como:** pasta do produto `da-o-play/`; clone em `da-o-play/da-o-play-api/` (fora do meta-repo); `musicians-app/` removido
+
+## Projeto boilerplate-laravel em `boilerplate-laravel/` (saiu de `projects/`)
+
+- **problema:** definição em `projects/boilerplate-laravel/` e clone já em `boilerplate-laravel/boilerplate-laravel/`
+- **por que é um problema:** mesmo hop de caminho dos outros ids
+- **resolvido como:** `project.conf`, `post-clone.sh`, workspace movidos para `boilerplate-laravel/`; clone continua fora do meta-repo
+
+## Projeto vid2agent-code em `vid2agent-code/` (saiu de `projects/`; fim de `projects/`)
+
+- **problema:** definição em `projects/vid2agent-code/` enquanto prompts e clone já estavam em `vid2agent-code/`
+- **por que é um problema:** último hop de caminho; pasta `projects/` sem ids
+- **resolvido como:** `project.conf`, `post-clone.sh`, workspace movidos para `vid2agent-code/`; `projects/` removido do meta-repo
+
+## Prompts Olie / vid2agent na pasta do produto
+
+- **problema:** prompts de produto ficavam sob `prompts/<…>/`, longe de `olie/` e `vid2agent-code/`; pasta global com `agent.md`/`clone-repos.md` nunca usados
+- **por que é um problema:** hop de caminho; artefatos espalhados; pasta morta
+- **resolvido como:** `olie/prompts/` e `vid2agent-code/prompts/` no meta-repo; `prompts/` removida; `check-prompts.sh` valida essas pastas
+
+## Análise de mídia não vai no conteúdo do projeto Olie
+
+- **problema:** skills de imagem/vídeo postavam a análise de volta no card (`save-media-tool`)
+- **por que é um problema:** tech lead pediu que análise de imagem, vídeo e áudio **não** entre no conteúdo do projeto
+- **resolvido como:** skills analisam localmente e gravam em `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` (reuso na correção, sem reanalisar); proibido `save-media-tool` para isso (`project.md`, content-language, correction/implementation)
+
+## Cache local de análise de mídia por card
+
+- **problema:** sem postar no card, voltar o card para 'Em progresso' faria o agente reanalisar imagem/vídeo
+- **por que é um problema:** custo de tempo/VLM e resultado inconsistente entre passes
+- **resolvido como:** um `.md` por media id em `olie/cards/{código}/{mediaId}.md`, **versionado no meta-repo** (`.gitignore` libera só esses `.md` + `olie/README.md`; clones continuam fora); skill lê o arquivo se existir
+
 ## Ollama/VLM na RX 580 (host)
 
 - **problema:** VLM do vid2agent competia (ou ocupava) a RTX 5060; a RX 580 estava no `vfio-pci` (OSX) e blacklisted no host
@@ -26,7 +80,7 @@ resolvido como: o que foi feito e por que dessa forma
 
 - **problema:** o estágio 'validação' existia no `workflow.md`, mas não havia prompt com a régua (cinco critérios + revisores)
 - **por que é um problema:** cada pedido de validação improvisava o que olhar; multitenancy e advogado-do-diabo não entravam por padrão
-- **resolvido como:** `prompts/enterscience/olie/validation.md` + referência no `workflow.md`
+- **resolvido como:** `olie/prompts/validation.md` (+ referência no `workflow.md`; pasta movida de `prompts/enterscience/olie/`)
 
 ## `project-setup olie` morria no re-seed
 

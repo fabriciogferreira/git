@@ -11,7 +11,7 @@ alwaysApply: true
 | --- | --- |
 | `vm-setup.sh` | VM nova ainda pede senha, login e pacotes. Deixa Arch + Hyprland pronto e aplica `.config` → `~/.config`. |
 | `vm.local.conf` | Usuário e e-mail do git desta máquina. Fora do git. O `.example` só mostra as chaves. |
-| `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra em `projects/<id>` e liga `workvm.service`. |
+| `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra na pasta do projeto na raiz do meta-repo e liga `workvm.service`. |
 | `systemd/workvm.service` | No login nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. `WantedBy=default.target` (não `graphical-session`: RefuseManualStart + SDDM não ativa). |
 | `systemd/workvm-git-pull.service` | O meta-repo fica atrás do remoto. Fetch no login; rede caída não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
@@ -21,15 +21,20 @@ alwaysApply: true
 | `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
 | `lib/project-start.sh` | A subida (fetch, compose, e2e, Cursor, browser) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`. |
 | `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` só diz esse nome. No login o merge vai para `~/.cursor/mcp.json` (user-level). |
-| `projects/<id>/` | Sem definição por projeto não há o que clonar, qual compose e quais URLs. `project.conf` é a fonte; `post-clone.sh` é o bootstrap pesado. |
-| `projects/<id>/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone, para essas rules não valerem na janela `~/git`. Skills do Boost vêm de `boost:update` no clone. |
+| `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
+| `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
+| `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
+| `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
+| `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
+| `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
+| `*/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone. Skills do Boost vêm de `boost:update` no clone. |
 | `workspace.code-workspace` | No login o Cursor abre este meta-repo e os clones do projeto setado. Paths relativos ao arquivo, para valer em outro `$HOME`. |
 | `.config/` | Hyprland e sessão iguais em toda VM. Secrets em `environment.d/*.conf` ficam só no live. |
 | `code-profiles/` | Perfil do Cursor reaproveitável numa VM nova. |
 | `bin/check.sh` | Scripts mudam e ninguém roda shellcheck. Pega `set -u` em array vazio e o log de `COMPOSE_FILE`. |
 | `bin/patch-clone-cursor.sh` | `alwaysApply` de um clone vaza em todo chat multi-root. Patch local (`skip-worktree`), sem commit. |
 | `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
-| `olie/`, `televisao/` | Clones da empresa. O e2e que não pode ir no remoto deles fica em `projects/`. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
-| `prompts/` | Prompts de agente em inglês e Markdown. Texto entre aspas simples ou `{{ }}` não se traduz. A raiz é global; abaixo, empresa / projeto / repositório. O mais fundo vence. |
+| `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
+| `vid2agent-code/prompts/` | Prompts do projeto **vid2agent-code**. |

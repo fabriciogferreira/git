@@ -6,8 +6,9 @@ set -euo pipefail
 
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$BIN_DIR/.." && pwd)"
-PROMPTS_DIR="$REPO_ROOT/prompts"
-OLIE_DIR="$PROMPTS_DIR/enterscience/olie"
+# Project prompts live next to the product tree (olie/, vid2agent-code/, …).
+OLIE_DIR="$REPO_ROOT/olie/prompts"
+VID2_DIR="$REPO_ROOT/vid2agent-code/prompts"
 
 required_card_prompts=(
     implementation.md
@@ -30,10 +31,12 @@ if rg -n -P '\{\{(?! code \}\})' "$OLIE_DIR" >/dev/null; then
     exit 1
 fi
 
-if rg -n 'files/|funnel_step_id|/docs' "$PROMPTS_DIR" >/dev/null; then
-    echo "error: prompt contém caminho ou ID de ciclo de vida aposentado" >&2
-    exit 1
-fi
+for dir in "$OLIE_DIR" "$VID2_DIR"; do
+    if [ -d "$dir" ] && rg -n 'files/|funnel_step_id|/docs' "$dir" >/dev/null; then
+        echo "error: prompt em $dir contém caminho ou ID de ciclo de vida aposentado" >&2
+        exit 1
+    fi
+done
 
 for prompt in workflow.md correction.md; do
     if ! rg -F 'workflow-policy.md' "$OLIE_DIR/$prompt" >/dev/null; then
