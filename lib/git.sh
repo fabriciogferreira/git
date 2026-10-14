@@ -219,7 +219,9 @@ workvm_clone_repo() {
     if [ ! -d "$destination/.git" ]; then
         if [ -n "$branch" ]; then
             echo "→ Clonando: $repo ($branch) → $destination"
-            git clone --branch "$branch" --single-branch "$repo" "$destination"
+            # Keep --branch for initial checkout, but fetch all remote heads
+            # (not --single-branch) so teammates' feature branches are visible.
+            git clone --branch "$branch" "$repo" "$destination"
         else
             echo "→ Clonando: $repo → $destination"
             git clone "$repo" "$destination"
