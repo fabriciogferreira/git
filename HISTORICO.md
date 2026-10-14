@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Ollama/VLM na RX 580 (host)
+
+- **problema:** VLM do vid2agent competia (ou ocupava) a RTX 5060; a RX 580 estava no `vfio-pci` (OSX) e blacklisted no host
+- **por que é um problema:** 8 GB da 5060 ficavam amarrados ao VLM; passthrough/blacklist impediam usar a 580 no Linux
+- **resolvido como:** liberar 580 do vfio (`host-rx580-for-ollama.sh`), `amdgpu` + `vulkan-radeon`; drop-in Ollama com `CUDA_VISIBLE_DEVICES=` e `VK_ICD_FILENAMES` só `radeon_icd.json`. Smoke: modelo na 580, NVIDIA ~idle. OSX passthrough da 580 fica em backup `.osx-passthrough.bak`
+
 Formato:
 
 ```

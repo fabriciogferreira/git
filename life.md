@@ -1,9 +1,12 @@
 # life.md — o que me faz ganhar tempo
 
 Documento vivo de **tudo que importa na minha vida operacional** (máquina, host, VMs, fluxos, atritos) e decisões que empurram os objetivos abaixo.  
-Não substitui `HISTORICO.md` (lá só entra problema **já resolvido**).
+Não substitui `HISTORICO.md` (lá: narrativa do problema resolvido, se precisar).
 
-**Como usar:** anote atrito → “Melhorias”; ao resolver → `HISTORICO.md` + risque a melhoria; diário curto no fim.
+**Como usar**
+- **Estado atual** (hardware, papéis, URLs): o que está assim **agora** e **por quê** — isso fica no documento.
+- **Tarefas:** só o que ainda falta. Ao concluir → **apagar** a tarefa e **atualizar o estado** (não deixar checkbox `[x]`).
+- Atrito aberto → Melhorias / Dúvidas; diário curto se ajudar.
 
 ## Objetivos
 
@@ -17,31 +20,18 @@ Tudo neste arquivo deve, no fim, servir a um desses objetivos. Se não servir, q
 
 ## Tarefas
 
-Lista viva do que falta fazer. Risque ou apague ao concluir; se gerou aprendizado duradouro, anote no diário / melhorias / `HISTORICO.md`.
-
-Dependências: use `depends:` apontando para outra tarefa. Não comece a filha antes da mãe estar `[x]`.
+Só o que **ainda falta**. Ao concluir: apague daqui e atualize o **estado** (Hardware / papéis).  
+Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 
 - [ ] **Trocar o host de Omarchy para Arch Linux**
   - **Por quê:** Arch é mais leve que Omarchy; as WorkVMs já usam Arch — manter distros diferentes exige mais conhecimento e dobra atrito (pacotes, paths, hábitos).
   - **Objetivo:** economizar tempo (uma só “língua” host+guest) e sobrar CPU/RAM/disco para VMs e trabalho.
   - **Cuidado:** backup de `~/git`, `life.md`, hooks Ollama (`~/bin`, `~/.config/libvirt/hooks`, sudoers), `environment.d` (tokens), imagens libvirt; reaplicar Hyprland/meta-repo com cuidado.
 
-- [ ] **Instalar a RX 580 na máquina** *(hoje está fora do PC)*
-  - **Por quê:** segunda GPU no host; libera desenho “5060 = pesado / 580 = VLM”.
-  - **Objetivo:** economizar tempo depois (menos disputa de VRAM) e capacidade (5060 livre para cargas maiores).
-  - **Cuidado:** slot PCIe, PSU, drivers `amdgpu` no host; display continua na iGPU salvo decisão explícita.
-
-- [ ] **Mover a LLM de análise de vídeo (Ollama/VLM) para a RX 580**
-  - **depends:** Instalar a RX 580 na máquina
-  - **Por quê:** a RTX 5060 (8 GB) fica livre para tarefas mais pesadas; VLM do vid2agent usa os 8 GB da 580.
-  - **Objetivo:** economizar tempo / aumentar capacidade sem upgrade imediato da 5060 (**muito com pouco**).
-  - **Cuidado:** Ollama/ROCm ou backend AMD estável; validar `VIDEO_LLM_*` e hook da VM; 580 é mais lenta que 5060 — aceitar trade-off de velocidade do VLM.
-
 - [ ] **Descobrir qual outra tarefa atribuir à RTX 5060**
-  - **depends:** Mover a LLM de análise de vídeo (Ollama/VLM) para a RX 580 *(pesquisa pode começar antes; decisão de uso permanente depois da 5060 estar livre)*
-  - **Por quê:** 5060 com CUDA/VRAM sobrando sem papel claro = desperdício; precisa de uma carga que pague o silício (treino leve, LLM maior, encode, etc.).
+  - **Por quê:** VLM já saiu da 5060 (está na RX 580); a 5060 está livre sem papel fixo — precisa de carga que pague o silício.
   - **Objetivo:** muito com pouco + aumentar capacidade/renda sem comprar outra GPU.
-  - **Entrega:** 1–3 candidatos ranqueados (valor × esforço × VRAM) e escolha padrão documentada aqui.
+  - **Entrega:** 1–3 candidatos + atualizar o estado da 5060 neste arquivo.
 
 - [ ] **Ajustar prompt(s) de revisão Olie: não reclamar de PR inexistente nem de falta em `en.json`**
   - **Por quê:** revisão gasta tempo em falsos positivos — PR ainda não aberto (fase errada) e chaves EN preenchidas depois sob demanda (já há nota em `colleague-review.md` sobre `en.json`/`pt-br.json`; reforçar e alinhar os outros prompts).
@@ -77,9 +67,10 @@ Dependências: use `depends:` apontando para outra tarefa. Não comece a filha a
 - [ ] **Descobrir utilidade para os 2 SSDs sobrando**
   - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar VMs, libvirt images, Docker, backups locais sem comprar outro drive.
   - **Objetivo:** **muito com pouco** + economizar tempo (I/O menos gargalo).
-  - **Inventário conhecido:** Samsung 980 PRO 1 TB; Samsung 970 EVO Plus 250 GB *(confirmar quais 2 estão sobrando vs boot)*.
-  - **Candidatos a avaliar:** pool de imagens `~/.local/share/images` / libvirt; scratch Docker; cache de builds; backup/rsync local; separar OS host vs dados.
-  - **Entrega:** papel de cada SSD sobrando + layout de montagem/slots M.2 documentado na seção Hardware.
+  - **Já definido:** MoveSpeed no **M2_1** = OS do dia a dia (máx. velocidade + mín. latência).
+  - **Sobrando a mapear:** Samsung 980 PRO 1 TB; Samsung 970 EVO Plus 250 GB *(slots + papel)*.
+  - **Candidatos:** imagens libvirt / `~/.local/share/images`; scratch Docker; cache de builds; backup local.
+  - **Entrega:** atualizar a tabela de armazenamento (slot + papel + por quê) para os dois Samsung.
 
 - [ ] **Empreendimento de ventoinhas** *(renda / produto)*
   - **Diferenciais:** filtragem excelente de produtos + poder **ouvir o som da ventoinha** como se já tivesse comprado (amostra de áudio confiável por modelo).
@@ -146,11 +137,32 @@ Perguntas abertas. Quando tiver resposta confiável → mover para **Dúvidas re
 
 **Prático:** na BIOS, confirme frequência ~**5600** (ou a JEDEC que o SPD escolher) e que **XMP/EXPO está off** se quiser zero OC. Não use os presets 6400+ da placa.
 
+### SSDs no M2_1 (CPU) são mais rápidos que nos outros slots?
+
+**Resposta curta:** no **pico sequencial**, M2_1 (CPU, PCIe 4.0 x4) e M2_2 / M2_4 (chipset, também PCIe 4.0 x4) têm a **mesma** largura teórica (~PCIe 4.0 x4). O SSD (ex. MoveSpeed 7450/6500) é o que limita o topo, não o fato de ser “no CPU” por si só.
+
+**Onde M2_1 ganha de verdade:**
+- **Latência** um pouco melhor (sem hop chipset → DMI → CPU).
+- **Menos disputa:** M.2 no chipset compartilha o DMI e o chipset com USB, SATA, rede e outros M.2 — sob carga pesada (VMs + Docker + downloads) o slot do CPU **sustenta** melhor.
+- **M2_3** na PRO Z690-A é **PCIe 3.0 x4** (ou SATA) → esse sim é claramente mais lento que M2_1/2/4 em NVMe.
+
+**Prático:** boot + imagens de VM quentes / scratch intenso → preferir **M2_1** (e o SSD mais rápido). Arquivo frio / backup → M2_2/4 ok; evitar M2_3 para NVMe “rápido”.
+
 ---
 
 ## Hardware (host jarvis)
 
-Configuração física usada para decidir: VMs, Ollama/VRAM, display na iGPU vs dGPU, upgrades.
+Inventário + **estado atual** (o que faz o quê e por quê).
+
+### Estado atual — GPUs
+
+| Peça | Onde | Papel agora | Por quê |
+| --- | --- | --- | --- |
+| **iGPU Intel** | CPU | **Display** do host (Hyprland) | Não gasta VRAM das dGPUs no desktop |
+| **RX 580** (8 GB) | slot PCIe **2** (`06:00.0`, `amdgpu`) | **Ollama / VLM** para a WorkVM **vid2agent-code** (API + `10.0.2.2:11434`) | É a GPU **mais fraca**; serve LLM de vídeo e deixa a 5060 livre. Vulkan só RADV (`VK_ICD_FILENAMES=…/radeon_icd.json`, `CUDA_VISIBLE_DEVICES=`). Passthrough OSX dessa placa **off** (backup `*.osx-passthrough.bak`) |
+| **RTX 5060** (8 GB) | slot PCIe principal (`01:00.0`) | **Livre** para serviços/cargas mais pesadas (ainda sem papel fixo — ver tarefa) | Mais capaz que a 580; não deve correr o VLM “de rotina” |
+
+Scripts de referência no host: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-amd-rx580.conf`.
 
 ### CPU
 | | |
@@ -164,13 +176,15 @@ Configuração física usada para decidir: VMs, Ollama/VRAM, display na iGPU vs 
 | Modelo | **Arctic Liquid Freezer III Pro 360** (AIO 360 mm) |
 | Importante | Refrigeração do 13700K sob carga (VMs + compile); headroom térmico sem OC agressivo |
 
-### Armazenamento (NVMe)
-| Modelo | Capacidade | Notas |
-| --- | --- | --- |
-| **Samsung 980 PRO** | **1 TB** | PCIe 4.0 — bom para sistema / imagens de VM quentes |
-| **Samsung 970 EVO Plus** | **250 GB** | PCIe 3.0/4.0 conforme slot — bom para scratch, cache ou papel secundário |
+### Armazenamento (NVMe) — estado atual
 
-Board tem **4× M.2** (ver placa-mãe). Mapear qual SSD está em qual slot e qual é boot vs sobra.
+| Modelo | Slot | Papel agora | Por quê |
+| --- | --- | --- | --- |
+| **MoveSpeed** (NVMe M.2, ~7450 / 6500 MB/s) | **M2_1** (CPU) | **Sistema operacional do dia a dia** (boot/host) | Precisa de **velocidade máxima** e **menor latência**; M2_1 é direto no CPU |
+| **Samsung 980 PRO** 1 TB | *(mapear)* | *(definir — ver tarefa SSDs)* | PCIe 4.0 |
+| **Samsung 970 EVO Plus** 250 GB | *(mapear)* | *(definir — ver tarefa SSDs)* | Secundário / scratch |
+
+Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, não “qualquer SSD no slot rápido”.
 
 ### Memória
 | | |
@@ -180,18 +194,6 @@ Board tem **4× M.2** (ver placa-mãe). Mapear qual SSD está em qual slot e qua
 | Placa (máx.) | até **192 GB** (4 slots) |
 | Máx. sem overclock (JEDEC, MSI) | até **DDR5-5600** em config 1R (POR/JEDEC); com mais DIMMs/ranks a placa pode baixar (ex. 4800). Perfis **XMP** = OC de memória. Kit atual 5600 casa com o teto JEDEC 1R da board. |
 
-### GPU — NVIDIA (compute / VLM)
-| | |
-| --- | --- |
-| Modelo | **GeForce RTX 5060 Shadow 2X OC** |
-| Importante | **8 GB VRAM** — teto para Ollama/VLM; display do host fica na **iGPU** para não disputar VRAM |
-
-### GPU — AMD (secundária)
-| | |
-| --- | --- |
-| Modelo | **Radeon RX 580** |
-| Importante | **8 GB** — GPU extra no sistema (não é a do Ollama; Ollama usa a 5060) |
-
 ### Placa-mãe
 | | |
 | --- | --- |
@@ -200,23 +202,22 @@ Board tem **4× M.2** (ver placa-mãe). Mapear qual SSD está em qual slot e qua
 
 **Expansion Slot**
 - 3× PCIe x16:
-  - `PCI_E1` (CPU): até **PCIe 5.0 x16**
-  - `PCI_E3` e `PCI_E4` (Z690): até **PCIe 3.0 x4** e **3.0 x1**
+  - `PCI_E1` (CPU): até **PCIe 5.0 x16** — hoje **RTX 5060**
+  - `PCI_E3` e `PCI_E4` (Z690): até **PCIe 3.0 x4** e **3.0 x1** — hoje **RX 580** no slot 2
 - 1× PCIe 3.0 x1 (Z690)
 
 **M.2 (Key M) — 4 slots**
 | Slot | Origem | Link | Notas |
 | --- | --- | --- | --- |
-| M2_1 | CPU | PCIe 4.0 x4 | 2242 / 2260 / 2280 / 22110 |
+| M2_1 | CPU | PCIe 4.0 x4 | Preferir boot / I/O quente |
 | M2_2 | Z690 | PCIe 4.0 x4 | 2242 / 2260 / 2280 |
-| M2_3 | Z690 | PCIe 3.0 x4 **ou** SATA 6 Gb/s | 2242 / 2260 / 2280 |
+| M2_3 | Z690 | PCIe 3.0 x4 **ou** SATA 6 Gb/s | Mais lento em NVMe |
 | M2_4 | Z690 | PCIe 4.0 x4 **ou** SATA 6 Gb/s | 2242 / 2260 / 2280 |
 
-### Implicações rápidas (tempo / setup)
-- **8 GB VRAM (5060):** VLM grande aperta; preferir quantização / `qwen2.5vl:3b` se 7b estourar; não deixar desktop na 5060.
-- **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs ligadas = swap/dor.
+### Implicações rápidas
+- **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs = swap/dor.
 - **24 threads:** bom para compose/build paralelo nas guests.
-- **RX 580:** candidata a display secundário ou passthrough futuro — não misturar com o papel da 5060 (Ollama) sem desenho explícito.
+- **VLM na 580:** mais lento que na 5060 — trade-off consciente (**muito com pouco**).
 
 ---
 
@@ -238,9 +239,9 @@ VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbe
 
 ### Host
 1. Login gráfico Omarchy (Hyprland).
-2. Monitor na **iGPU** (placa-mãe); RTX 5060 livre para Ollama (compute).
+2. Monitor na **iGPU**; **RX 580** = Ollama/VLM (vid2agent); **RTX 5060** = cargas pesadas (papel ainda em aberto).
 3. VMs sobem sob demanda (`virsh` / virt-manager), não “um app só”.
-4. Ollama **não** sobe no boot do host (`systemctl disable ollama`). Deve subir com a VM `vid2agent-code` via hook.
+4. Ollama **não** sobe no boot do host; sobe/para com a VM `vid2agent-code` (hook).
 
 ### WorkVM (quando abre um card)
 1. Ligar a VM do card (ex.: `olie-dop-1412`, `vid2agent-code`).
