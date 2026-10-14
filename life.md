@@ -122,21 +122,6 @@ Perguntas abertas. Quando tiver resposta confiável → mover para **Dúvidas re
 
 ## Dúvidas respondidas
 
-### Até quantos MHz minhas memórias RAM podem trabalhar? *(sem overclock — preservar vida útil)*
-
-**Premissa:** sem OC, sem XMP “empurrando” voltagem/frequência além do JEDEC do módulo. Objetivo: não reduzir vida útil à toa.
-
-**Resposta curta:** sem overclock, o teto seguro é a velocidade **JEDEC** do pente/board — no seu caso, até **DDR5-5600** (5600 MT/s) na config que a MSI lista como JEDEC 1R. **Não** subir para 5800/6000/6400.
-
-| Cenário | O que fazer |
-| --- | --- |
-| Sem OC (recomendado para vida útil) | Deixar memória em **JEDEC / Auto** na BIOS; **XMP desligado** se o XMP for o que sobe clock/voltagem além do JEDEC |
-| Teto JEDEC na PRO Z690-A | até **5600 MT/s** (1R, spec MSI); com mais DIMMs/ranks pode estabilizar mais baixo (ex. 4800) — isso é normal, não force |
-| Kit marcado 5600 | Rodar a **5600 JEDEC** (ou o que o SPD entregar sem XMP) está ok; é a faixa “oficial”, não OC |
-| Acima de 5600 | É OC → fora do objetivo de preservar vida útil |
-
-**Prático:** na BIOS, confirme frequência ~**5600** (ou a JEDEC que o SPD escolher) e que **XMP/EXPO está off** se quiser zero OC. Não use os presets 6400+ da placa.
-
 ### SSDs no M2_1 (CPU) são mais rápidos que nos outros slots?
 
 **Resposta curta:** no **pico sequencial**, M2_1 (CPU, PCIe 4.0 x4) e M2_2 / M2_4 (chipset, também PCIe 4.0 x4) têm a **mesma** largura teórica (~PCIe 4.0 x4). O SSD (ex. MoveSpeed 7450/6500) é o que limita o topo, não o fato de ser “no CPU” por si só.
@@ -186,13 +171,17 @@ Scripts de referência no host: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-
 
 Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, não “qualquer SSD no slot rápido”.
 
-### Memória
+### Memória — estado atual
+
 | | |
 | --- | --- |
-| Instalada | **32 GB DDR5-5600** |
-| Importante | **32 GB RAM** — limite prático de VMs simultâneas + Chrome/Cursor; upgrade sobe esse teto |
+| Instalada | **32 GB** (4×8 GiB) Kingston **KF556C40-8**, DDR5, 1R, 4 slots |
+| Velocidade agora | **5600 MT/s** (antes ~4000 MT/s com 4 DIMMs em Auto) |
+| Tensão agora | **1,25 V** (perfil do kit 5600 CL40) |
+| Por quê 5600 | Memória mais rápida → host/VMs/compile/Cursor respondem melhor → **trabalho feito mais rápido** (objetivo economizar tempo) |
+| Capacidade | **32 GB** — limite prático de VMs simultâneas + Chrome/Cursor; upgrade sobe esse teto |
 | Placa (máx.) | até **192 GB** (4 slots) |
-| Máx. sem overclock (JEDEC, MSI) | até **DDR5-5600** em config 1R (POR/JEDEC); com mais DIMMs/ranks a placa pode baixar (ex. 4800). Perfis **XMP** = OC de memória. Kit atual 5600 casa com o teto JEDEC 1R da board. |
+| Teto MSI sem OC de marketing | até **DDR5-5600** JEDEC 1R; acima (5800+) = OC. Não subir além de 5600. |
 
 ### Placa-mãe
 | | |
