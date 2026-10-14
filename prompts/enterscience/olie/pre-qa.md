@@ -53,7 +53,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 #### `olie-fronts`
 
-- [ ] Do not include English translations. Preserve the project's existing translation requirements and conventions.
+- [ ] Do not edit `en.json`. English translations are resolved later. New or changed UI keys must be in `pt-br.json` only; do not add or sync English strings in this pass.
 
 #### All involved repositories
 

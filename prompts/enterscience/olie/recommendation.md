@@ -45,6 +45,7 @@ Do not suggest:
 - Work that should clearly be tracked in a separate card.
 - Changes that duplicate behavior already implemented correctly.
 - Speculative changes based on code that has not been inspected sufficiently.
+- Filling or syncing `en.json`. English translations are resolved later; do not expand the card with English locale work.
 
 The fact that code is nearby, old, or imperfect does not automatically make it relevant to the current card.
 

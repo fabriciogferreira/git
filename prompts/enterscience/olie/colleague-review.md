@@ -49,7 +49,7 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 - The behavior matches the card, including the edge cases the card states.
 - The pull request contains that behavior and does not smuggle unrelated changes.
 - Light and dark theme text contrast both hold on the screens the card changes.
-- Do not flag a missing key in 'en.json' when the new key exists in 'pt-br.json'. Those English keys are filled in on a schedule.
+- Do not edit `en.json`, and do not fail the review for missing or outdated English strings there. English translations are resolved later. A new key in 'pt-br.json' without a matching 'en.json' entry is not a defect.
 
 If `olie-fronts` changed, the e2e tests in section 3 cover the requested frontend behavior, or you say which case could not be automated and why.
 

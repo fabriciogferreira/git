@@ -129,6 +129,7 @@ Follow the project's existing architecture, conventions, and established pattern
 
 - Avoid unrelated refactoring and unnecessary changes.
 - Preserve existing behavior unless the card explicitly requires changing it.
+- Do not edit `en.json`. English translations are resolved later. Add or update user-facing keys in `pt-br.json` only.
 - Add or update tests to cover the intended behavior, relevant edge cases, and regressions.
 - Run appropriate tests and verification commands for the current checklist item when the environment permits.
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.

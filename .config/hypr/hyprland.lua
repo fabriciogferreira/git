@@ -53,9 +53,8 @@ local menu        = "rofi -show drun"
 hl.on("hyprland.start", function ()
 --   hl.exec_cmd(terminal)
 --   hl.exec_cmd("nm-applet")
---   hl.exec_cmd("waybar & hyprpaper & firefox")
-    -- hyprpaper 0.8 (hyprtoolkit) segfaults on QEMU/GBM; swaybg is reliable in VMs.
-    hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.jpg -m fill")
+--   hl.exec_cmd("waybar & firefox")
+    -- No wallpaper (saves guest RAM/CPU; solid Hyprland clear color only).
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
     -- workvm is WantedBy=default.target (graphical-session refuses manual start and
     -- SDDM+start-hyprland never activate it). Start again once Wayland is up in case
@@ -251,8 +250,8 @@ hl.config({
 
 hl.config({
     misc = {
-        force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        force_default_wallpaper = 0,  -- no anime/default wallpaper asset
+        disable_hyprland_logo   = true,
     },
 })
 

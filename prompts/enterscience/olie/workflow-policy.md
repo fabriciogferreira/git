@@ -25,6 +25,7 @@ The live label wins if it differs from the examples above.
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.
 - Commit messages, pull request titles, and pull request bodies are English.
+- Do not edit `en.json`. English translations are resolved later. New or changed UI keys go in `pt-br.json` only.
 
 ## Formatting
 

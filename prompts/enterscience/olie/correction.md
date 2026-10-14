@@ -113,6 +113,7 @@ For each correction, follow this sequence:
 - Do not claim a test passed if it was not executed successfully.
 - If a test fails for an unrelated environmental reason, document the evidence and distinguish that failure from the correction's result.
 - Do not modify production code before writing the relevant regression test, unless a documented technical limitation makes the test-first sequence impossible. If that happens, explain the limitation and request authorization before deviating from TDD.
+- Do not edit `en.json` while correcting. English translations are resolved later. Fix or add user-facing keys in `pt-br.json` only.
 
 ## 7. Temporary E2E CAPTCHA Configuration
 

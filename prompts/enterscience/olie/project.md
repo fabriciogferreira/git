@@ -22,6 +22,7 @@ The workday order is `workflow.md`.
 ## Required
 
 - UI copy and user-facing project content are Brazilian Portuguese. Commit messages and pull request titles and bodies are English; see `workflow-policy.md`.
+- Do not edit `en.json` translation files. English strings are filled in later on a schedule. Add or update user-facing keys in `pt-br.json` only (and wire those keys in code).
 - PHP, Artisan, Composer, Pint, and `api-main` tests: `docker exec olie-api-main <command>`. Do not run `php` on the host.
 - Frontend: Yarn 1 in `olie-fronts`. Do not use npm or `package-lock.json`.
 - A rule that exists in only one repository (tenant, permissions, an internal package) is not copied here.

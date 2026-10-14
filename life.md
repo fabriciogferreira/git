@@ -33,11 +33,12 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Objetivo:** muito com pouco + aumentar capacidade/renda sem comprar outra GPU.
   - **Entrega:** 1–3 candidatos + atualizar o estado da 5060 neste arquivo.
 
-- [ ] **Ajustar prompt(s) de revisão Olie: não reclamar de PR inexistente nem de falta em `en.json`**
-  - **Por quê:** revisão gasta tempo em falsos positivos — PR ainda não aberto (fase errada) e chaves EN preenchidas depois sob demanda (já há nota em `colleague-review.md` sobre `en.json`/`pt-br.json`; reforçar e alinhar os outros prompts).
+- [ ] **Ajustar prompt(s) de revisão Olie: não reclamar de PR inexistente**
+  - **Por quê:** revisão gasta tempo em falso positivo — PR ainda não aberto (fase errada).
   - **Objetivo:** economizar tempo nas revisões.
-  - **Onde:** `prompts/enterscience/olie/` (`colleague-review.md`, e qualquer outro que ainda flagre PR / `en.json`).
-  - **Entrega:** regra explícita “não falhar revisão só por PR não criado” + “não falhar só por chave ausente em `en.json` se existir em `pt-br.json`”; agente para de insistir nisso.
+  - **Onde:** `prompts/enterscience/olie/` (ex.: `colleague-review.md`, `validation.md`).
+  - **Já feito:** não mexer / não falhar por `en.json` (resolvido depois; só `pt-br.json`) — ver `project.md` e prompts aplicáveis.
+  - **Entrega:** regra explícita “não falhar revisão só por PR não criado”; agente para de insistir nisso.
 
 - [ ] **Começar a criar conteúdo no YouTube** *(renda a longo prazo)*
   - **Por quê:** renda de emprego/freelance é linear; canal pode virar ativo que gera sem trocar hora↔hora.
@@ -58,11 +59,11 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Muito com pouco:** gravar com o setup que já serve o canal; não investir em plataforma cara antes de ter lista/interessados.
   - **Entrega (quando desbloquear):** 1 oferta mínima (tema validado pelo canal) + página/checkout simples + 1 venda ou waitlist real.
 
-- [ ] **Otimizar uso de recursos das WorkVMs** *(ex.: retirar plano de fundo)*
-  - **Por quê:** wallpaper, efeitos e extras do desktop comem RAM/CPU/GPU da guest; com 32 GB no host e várias VMs, cada MiB conta.
-  - **Objetivo:** economizar tempo (VMs mais leves) + **muito com pouco** (mais VMs/estabilidade sem comprar RAM).
-  - **Ideias iniciais:** fundo sólido / sem wallpaper; desligar blur/animações pesadas do Hyprland na guest; revisar autostart (apps que sobem sem precisar).
-  - **Entrega:** mudanças no overlay/`.config` da VM (meta-repo) + checklist curto “VM leve” documentado aqui ou no HISTORICO.
+- [ ] **Otimizar eficiência das WorkVMs** *(roadmap ponto a ponto — ver §1)*
+  - **Por quê:** 32 GB no host; VM mal dimensionada ou I/O/CPU emulado desperdiça tempo e impede 2ª VM útil.
+  - **Objetivo:** economizar tempo + **muito com pouco**.
+  - **Como:** um item do roadmap por vez; ao concluir → marcar lá, atualizar estado, não acumular `[x]` eterno nesta lista.
+  - **Entrega:** roadmap §1 zerado (ou só itens “depois / se doer” restantes).
 
 - [ ] **Descobrir utilidade para os 2 SSDs sobrando**
   - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar VMs, libvirt images, Docker, backups locais sem comprar outro drive.
@@ -204,8 +205,8 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | M2_4 | Z690 | PCIe 4.0 x4 **ou** SATA 6 Gb/s | 2242 / 2260 / 2280 |
 
 ### Implicações rápidas
-- **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs = swap/dor.
-- **24 threads:** bom para compose/build paralelo nas guests.
+- **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs = swap/dor. Por isso cada VM leva só a RAM que o projeto precisa (ver §1).
+- **24 threads:** bom para compose/build paralelo nas guests; vCPU também **por projeto**, não “máximo igual em todas”.
 - **VLM na 580:** mais lento que na 5060 — trade-off consciente (**muito com pouco**).
 
 ---
@@ -221,6 +222,45 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 Projetos definidos em `projects/<id>/` hoje: `olie`, `vid2agent-code`, `televisao`, `opbed`, `boilerplate-laravel`, `da-o-play-api`, …
 
 VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `telvesiao`, `da-o-play`, …
+
+### WorkVMs: recursos por projeto (não clone genérico)
+
+VMs **diferentes** devem ter **configurações diferentes** (vCPU e RAM no libvirt). Motivo: cada uma é um **projeto diferente**, com carga diferente (compose, browsers, Cursor, builds).
+
+| Regra | Por quê |
+| --- | --- |
+| Dimensionar **vCPU e RAM por VM/projeto** | Projeto leve não precisa do mesmo teto que Olie/Docker pesado; projeto pesado não pode ficar faminto |
+| Evitar “todas as VMs iguais” (ex. 8 vCPU / 16 GB) | Com **32 GB** no host, clones idênticos gastam RAM ociosa e impedem 2ª VM útil |
+| Ajustar no libvirt (`virsh` / virt-manager) conforme o `projects/<id>` | O meta-repo define o que sobe na guest; o host define quanto silício a guest pode usar |
+
+Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco** (cabem mais VMs úteis no mesmo host).
+
+### WorkVMs: eficiência — roadmap (ponto a ponto)
+
+Fazer **um item por vez**, na ordem. Ao concluir: marcar `[x]`, anotar o que mudou (e onde), seguir o próximo. Não priorizar pinning/hugepages no início.
+
+**Já feito**
+- [x] Sem wallpaper na guest — removidos `swaybg`, `wallpaper.jpg`, autostart; logo/fundo padrão Hyprland off (overlay `.config/hypr`).
+
+**Agora (maior ganho / baixo risco)**
+- [ ] **RAM e vCPU por projeto** — inventariar VMs libvirt; ajustar cada uma ao `projects/<id>` (leve vs pesado); documentar valores na tabela de estado quando estabilizar.
+- [ ] **Uma VM pesada por vez** quando o host estiver apertado — hábito, não XML; parar a que não está em uso.
+- [ ] **Guest mais leve** — desligar blur/animações pesadas do Hyprland; revisar autostart (apps que sobem sem precisar); refletir no overlay `.config/`.
+- [ ] **virtio em disco e rede** — conferir/ajustar no libvirt (evitar IDE/SATA/e1000 emulado).
+- [ ] **CPU host-passthrough** (ou host-model) — guest usa instruções do 13700K; builds mais rápidos.
+
+**Em seguida (I/O e RAM)**
+- [ ] **Imagens libvirt no NVMe dedicado** — 980 PRO 1 TB em M2_2 ou M2_4; mover `~/.local/share/libvirt/images` (ou path atual); depende da tarefa dos SSDs.
+- [ ] **Opções de disco** — testar `cache`/`io` (ex. writeback + threads/native); anotar o que ficou estável.
+- [ ] **Memballoon** — ligar para o host recuperar RAM ociosa da guest.
+- [ ] **Scratch no 970 EVO 250 GB** — Docker cache / builds / downloads (se a tarefa dos SSDs confirmar esse papel).
+
+**Depois / só se doer**
+- [ ] **Virtio-GPU / gráfico** — se a guest estiver pesada no desktop.
+- [ ] **CPU pinning** (P-cores vs E-cores) — só com duas cargas pesadas brigando; senão o scheduler basta.
+- [ ] Hugepages / isolcpus — fora do caminho feliz; alto custo de manutenção.
+
+**Fora de escopo deste roadmap:** OC de CPU/RAM “para a VM ficar mais rápida”.
 
 ---
 

@@ -69,6 +69,7 @@ Flag these gaps in the report when they hurt the review. They are not separate p
 - Do not implement or push fixes.
 - Do not treat colleague 'QA/CR' success as validation success.
 - Do not treat local success as the production check. That check is `production-review.md`.
+- Do not fail validation for missing or outdated keys in `en.json`. English translations are resolved later; require user-facing keys in `pt-br.json` when the card adds UI copy.
 - Do not move the card unless the user asks you to apply the verdict. Recommend the stage from `workflow.md`: approve → 'Revisão de Produção'; reject → `changes-requested` ('corrigir ou melhorar').
 
 ## 7. Verdict
