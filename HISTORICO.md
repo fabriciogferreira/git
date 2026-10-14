@@ -32,6 +32,24 @@ Problema resolvido entra aqui.
 - **por que é um problema:** mesmo hop de caminho dos outros ids
 - **resolvido como:** `project.conf`, `post-clone.sh`, workspace movidos para `boilerplate-laravel/`; clone continua fora do meta-repo
 
+## Implementation move 'Não iniciado' → 'Em progresso'
+
+- **problema:** `implementation.md` não movia o card; o move ficava manual ou só no `workflow.md`
+- **por que é um problema:** paste de implementation sozinho deixava o card em 'Não iniciado'
+- **resolvido como:** § Update the Card Stage em `implementation.md` (espelha correction); procedimento HTTP/MCP compartilhado em `workflow-policy.md` com `OLIE_FLOW_AI_TOKEN` + UUID do MCP (sem hard-code de step_id/token)
+
+## Implementation validation separado do validation de board
+
+- **problema:** `validation.md` exigia PRs/forms/QA/CR logo após o implementation, quando ainda não existiam
+- **por que é um problema:** validação prematura falhava ou misturava handoff com review de código
+- **resolvido como:** `implementation-validation.md` (só código) → `pre-qa.md` (commits/PRs/forms) → depois board `validation.md`; workflow atualizado
+
+## Project execution ao começar a trabalhar no card
+
+- **problema:** o board não registrava execução (implementação, correção, review colega, revisão de produção)
+- **por que é um problema:** ninguém vê que você está ativo naquele step; fluxo divergia do UI
+- **resolvido como:** `POST …/projects/{id}/project-executions` documentado em `workflow-policy.md`; chamado após o move (ou no início do review) em implementation, correction, colleague-review e production-review
+
 ## Prompts: falha/demora de tooling = sinal para melhorar o prompt
 
 - **problema:** agente engolia MCP/request/timeout e seguia; o atrito não voltava para o texto do prompt

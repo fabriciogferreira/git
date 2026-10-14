@@ -25,7 +25,8 @@ Do not start development while a card is waiting in step 1 or step 2.
 | 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. Use `~/git/olie/prompts/validation.md`. |
-| 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. |
+| 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'concluído' (pass) or 'corrigir' (fail). |
+| 'concluído' | — | Production review passed and the user allowed the move. |
 
 ## 1. Colleague QA/CR
 
@@ -46,13 +47,19 @@ After steps 1 and 2:
 - Otherwise take a card from 'Não iniciado'. A card whose 'atribuído a' is you comes before any card with 'atribuído a' empty.
 - Do not take a card assigned to someone else.
 
-Move the card you take to 'Em progresso', then execute it with `~/git/olie/prompts/implementation.md`.
+Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 'Não iniciado' → 'Em progresso' when needed).
 
-## 4. Hand off
+## 4. Hand off (your card in 'Em progresso')
 
-When the requested behavior is implemented, move the card to 'QA/CR' so a teammate can review it. Run `~/git/olie/prompts/pre-qa.md` before that move.
+After implementation (or correction) on the card:
 
-You do not perform 'validação' while developing or during colleague 'QA/CR'. When the request is a tech-lead validation pass, use `~/git/olie/prompts/validation.md`.
+1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
+2. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) only after implementation-validation passes.
+3. Move to 'QA/CR' when the user authorizes that move (pre-qa does not move by itself unless instructed).
+
+Colleague 'QA/CR' uses `~/git/olie/prompts/colleague-review.md`.
+
+Board **'validação'** (tech lead, after colleague QA/CR) uses `~/git/olie/prompts/validation.md` — PRs, forms, and handoff readiness. Do not use it right after implementation.
 
 - Tech lead approves: the card goes to 'Revisão de Produção'.
 - Tech lead rejects: the card returns to 'corrigir' ou melhorar.
@@ -65,7 +72,7 @@ Then hand it off to 'QA/CR' again. Repeat until the card leaves 'corrigir' ou me
 
 ## 6. Production
 
-When the card reaches 'Revisão de Produção' and the change is in production, review it as in step 2.
+When the card reaches 'Revisão de Produção' and the change is in production, review it as in step 2. That prompt asks yes/no before moving to 'concluído' (pass) or 'corrigir' (fail).
 
 ## Out of scope
 

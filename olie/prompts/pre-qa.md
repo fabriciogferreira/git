@@ -1,12 +1,12 @@
 # Pre-QA/CR Checklist and Pull Request Workflow
 
-Run this after implementation and before the card moves to 'QA/CR'.
+Run this **after** `~/git/olie/prompts/implementation-validation.md` has passed (code-only ready) and **before** the card moves to 'QA/CR'. Do not run this while expecting a code-only review — that is implementation-validation. Do not run board 'validação' yet — that is `~/git/olie/prompts/validation.md` after colleague QA/CR.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## 1. Objective
 
-Perform a comprehensive quality and readiness review of card `{{ code }}` before moving it to the 'QA/CR' stage or considering its implementation ready for review.
+Prepare card `{{ code }}` for colleague 'QA/CR': commits, pull requests, forms, and checklist items. Code quality gates here assume implementation-validation already cleared the five code criteria.
 
 Inspect all relevant changes across the involved repositories. Use the card's requirements and acceptance criteria as the source of truth.
 
@@ -114,22 +114,26 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 **Proceed only after all applicable checks in Phases 1–3 have passed.**
 
+**Create and configure every pull request with the GitHub MCP** (`create_pull_request`, then `update_pull_request` / related tools for assignees, reviewers, and labels). Do **not** rely on `gh pr create`, browser UI, or other CLI paths for creation — those routinely fail in this environment. If the GitHub MCP is missing, unauthorized, or errors, **stop and report** (prompt-health); do not silently switch tools.
+
+Push the source branch first when needed so the MCP can open the PR against a remote head.
+
 For every required pull request:
 
-- [ ] Create the pull request title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
+- [ ] Create the PR via GitHub MCP `create_pull_request` with title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch uses exactly the branch name specified in the card.
-- [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}`.
-- [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field.
-- [ ] Select the label that most closely matches the source branch name prefix.
+- [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (GitHub MCP).
+- [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field (GitHub MCP).
+- [ ] Select the label that most closely matches the source branch name prefix (GitHub MCP).
 
 Example: for `feature/teste-123`, select the label closest to `feature`.
 
 - [ ] Provide a clear title and description summarizing the purpose of the changes, the relevant card, and the verification performed.
 - [ ] Link the pull request to the card when supported by the repository workflow.
-- [ ] Verify that the pull request exists, targets the correct base branch, and contains the intended commits.
+- [ ] Verify that the pull request exists (GitHub MCP `pull_request_read` or `list_pull_requests`), targets the correct base branch, and contains the intended commits.
 
-Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration.
+Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through the GitHub MCP.
 
 If a required reviewer, assignee, label, or other setting is unavailable, report the limitation rather than silently omitting the requirement.
 

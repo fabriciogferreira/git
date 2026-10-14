@@ -32,8 +32,15 @@ if rg -n -P '\{\{(?! code \}\})' "$OLIE_DIR" >/dev/null; then
 fi
 
 for dir in "$OLIE_DIR" "$VID2_DIR"; do
-    if [ -d "$dir" ] && rg -n 'files/|funnel_step_id|/docs' "$dir" >/dev/null; then
-        echo "error: prompt em $dir contém caminho ou ID de ciclo de vida aposentado" >&2
+    if [ -d "$dir" ] && rg -n 'files/|/docs' "$dir" >/dev/null; then
+        echo "error: prompt em $dir contém caminho aposentado (files/ ou /docs)" >&2
+        rg -n 'files/|/docs' "$dir" >&2 || true
+        exit 1
+    fi
+    # API field name funnel_step_id is fine with a variable; hard-coded numeric ids are not.
+    if [ -d "$dir" ] && rg -n 'funnel_step_id["[:space:]]*[:=]["[:space:]]*[0-9]' "$dir" >/dev/null; then
+        echo "error: prompt em $dir hard-coda funnel_step_id numérico — use o id vivo do MCP" >&2
+        rg -n 'funnel_step_id["[:space:]]*[:=]["[:space:]]*[0-9]' "$dir" >&2 || true
         exit 1
     fi
 done
@@ -60,9 +67,19 @@ fi
 paste_ready=(
     "${required_card_prompts[@]}"
     validation.md
+    implementation-validation.md
     workflow.md
     project.md
 )
+if [ ! -f "$OLIE_DIR/implementation-validation.md" ]; then
+    echo "error: falta implementation-validation.md (validação só de código antes do pre-qa)" >&2
+    exit 1
+fi
+if ! rg -F 'implementation-validation.md' "$OLIE_DIR/pre-qa.md" >/dev/null ||
+    ! rg -F 'implementation-validation.md' "$OLIE_DIR/workflow.md" >/dev/null; then
+    echo "error: pre-qa.md e workflow.md devem referenciar implementation-validation.md" >&2
+    exit 1
+fi
 for prompt in "${paste_ready[@]}"; do
     if ! rg -F 'this prompt needs updating' "$OLIE_DIR/$prompt" >/dev/null; then
         echo "error: $prompt (colar sozinho) precisa da linha 'this prompt needs updating'" >&2

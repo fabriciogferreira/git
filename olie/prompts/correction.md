@@ -23,11 +23,14 @@ Media already analyzed for this card lives under `~/git/olie/cards/{CARD_CODE}/{
 
 ## 2. Update the Card Stage
 
-Before modifying code, check the card's current stage and live funnel through the MCP OlieFlowAi. Apply the stage-resolution rules in `~/git/olie/prompts/workflow-policy.md`.
+Before modifying code, load the card and its live funnel through MCP `olie-flow-ai`. Apply the stage-resolution and move procedure in `~/git/olie/prompts/workflow-policy.md`.
 
-- If the card is still in `changes-requested`, move it to `in-progress`.
+- If the card is still in `changes-requested` ('corrigir ou melhorar'), move it to `in-progress` ('Em progresso').
+- If the card is already in `in-progress`, continue without moving it again.
 - If the card has already moved to another stage, do not move it automatically. Report its current stage and wait for instructions.
+- Resolve the card UUID and target `step_id` from MCP / the live funnel. Use `OLIE_FLOW_AI_TOKEN` for auth. Never hard-code ids or paste tokens.
 - Verify that the stage transition succeeded before continuing.
+- After the card is in `in-progress`, start a project execution for that step (see **Starting a project execution** in `~/git/olie/prompts/workflow-policy.md`). Do not begin correction analysis or code work until execution has started successfully.
 
 ## 3. Analyze the Reviewer's Findings
 

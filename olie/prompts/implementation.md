@@ -8,7 +8,18 @@ Implement the card identified by `{{ code }}`. Its requirements, business rules,
 
 Use the card's content as the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
-## 2. Git Workflow
+## 2. Update the Card Stage
+
+Before modifying code, load the card and its live funnel through MCP `olie-flow-ai`. Apply the stage-resolution and move procedure in `~/git/olie/prompts/workflow-policy.md`.
+
+- If the card is still in `not-started` ('Não iniciado'), move it to `in-progress` ('Em progresso').
+- If the card is already in `in-progress`, continue without moving it again.
+- If the card is in another stage, do not move it automatically. Report its current stage and wait for instructions.
+- Resolve the card UUID and target `step_id` from MCP / the live funnel. Use `OLIE_FLOW_AI_TOKEN` for auth. Never hard-code ids or paste tokens.
+- Verify that the stage transition succeeded before continuing.
+- After the card is in `in-progress`, start a project execution for that step (see **Starting a project execution** in `~/git/olie/prompts/workflow-policy.md`). Do not begin git or implementation work until execution has started successfully.
+
+## 3. Git Workflow
 
 Before making any code changes:
 
@@ -22,11 +33,11 @@ Before making any code changes:
 
 Do not implement the card on a base branch.
 
-## 3. Planning Phase
+## 4. Planning Phase
 
 Before implementing anything, analyze the card requirements and create a concrete implementation plan.
 
-### 3.1. Codebase Investigation
+### 4.1. Codebase Investigation
 
 Inspect the relevant application code, architecture, business rules, dependencies, and existing tests.
 
@@ -40,7 +51,7 @@ Identify and document:
 
 Document the findings that are relevant to implementation and testing. Do not modify unrelated code merely to simplify the implementation.
 
-### 3.2. Test Coverage
+### 4.2. Test Coverage
 
 Before implementing the card, inspect the E2E test suite located at `~/git/olie/olie-e2e`.
 
@@ -50,7 +61,7 @@ If tests are missing or coverage is insufficient, add `create tests for the beha
 
 Do not assume that the absence of an obvious test means no relevant tests exist. Search the existing test suite and inspect related scenarios before identifying gaps.
 
-### 3.3. Plan Documentation
+### 4.3. Plan Documentation
 
 Create the implementation plan in the agent's native planning mechanism. If that mechanism is unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
@@ -69,7 +80,7 @@ The checklist must contain small, independently reviewable tasks, ordered by dep
 
 Do not begin implementation until the plan is documented and presented for review.
 
-## 4. Step-by-Step Implementation
+## 5. Step-by-Step Implementation
 
 Implementation must be incremental. Use controlled mode only when the user requests step-by-step approval or the card spans multiple repositories or high-risk changes.
 
@@ -88,7 +99,7 @@ Do not skip checklist items, combine multiple independent items into one step, o
 
 If an issue blocks the current item, explain the blocker and wait for instructions when resolving it requires a decision or action beyond the existing plan.
 
-## 5. Development Issue Tracking
+## 6. Development Issue Tracking
 
 Maintain the section titled 'Issues encountered during development' in the plan document throughout the implementation.
 
@@ -105,7 +116,7 @@ For each issue, describe the observed problem, its impact, its status, and the r
 
 Do not silently omit failed checks or describe an issue as resolved without verification.
 
-## 6. Temporary E2E CAPTCHA Configuration
+## 7. Temporary E2E CAPTCHA Configuration
 
 Use this only when a Playwright E2E scenario must authenticate through `api-main`.
 
@@ -125,7 +136,7 @@ Follow these requirements strictly:
 
 If the environment or container is unavailable, report the blocker rather than introducing a code-level CAPTCHA bypass.
 
-## 7. Code Quality and Validation
+## 8. Code Quality and Validation
 
 Follow the project's existing architecture, conventions, and established patterns. Prefer the smallest change that correctly satisfies the card's requirements.
 
@@ -140,7 +151,7 @@ Follow the project's existing architecture, conventions, and established pattern
 
 **Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/olie/prompts/workflow-policy.md` when it applies.
 
-## 8. Completion Criteria
+## 9. Completion Criteria
 
 The card is complete only when all applicable checklist items have been completed and verified, including:
 
@@ -155,3 +166,5 @@ The card is complete only when all applicable checklist items have been complete
 When all checklist items are complete, provide a concise final report covering the implementation, changed files, tests and verification results, unresolved issues, and any remaining manual actions.
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable restrictions above.
+
+When implementation work on this paste is done, the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet.
