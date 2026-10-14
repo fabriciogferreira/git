@@ -1,6 +1,8 @@
 # Production Review
 
-Use this for a card in the logical `production-review` stage. The workday order stays in `workflow.md`.
+Use this for a card in the logical `production-review` stage.
+
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## Objective
 

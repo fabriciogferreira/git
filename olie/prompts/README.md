@@ -8,4 +8,8 @@ Card / workday prompts for Olie. Paste into the agent when working this project.
 | `~/git/olie/cards/` | Media analyses per card |
 | `~/git/.cursor/rules/` | Meta-repo Cursor rules (automatic) |
 
-A rule for only one clone goes in `olie/prompts/<repository>/` and wins over this folder.
+Paste-ready: copy one file, replace `{{ code }}`, paste.
+
+Referencing another markdown/prompt is fine when the file exists in this meta-repo or in a clone you are working on — prefer an absolute path the agent can open (e.g. `~/git/olie/prompts/workflow-policy.md`, or a path under `~/git/olie/<clone>/`). Do not leave maintainer-only notes (“do not repeat X.md”); the paste is the instruction, not a style guide for editing prompts.
+
+Shared policy: `~/git/olie/prompts/workflow-policy.md` (not usually pasted alone).

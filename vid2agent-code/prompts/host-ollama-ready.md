@@ -18,6 +18,10 @@ docker exec vid2agent-code-php-fpm curl -sS http://10.0.2.2:11434/api/tags
 
 **Fora de escopo neste prompt:** instalar/reconfigurar Ollama no host, GPU passthrough, APIs pagas.
 
+## Se algo falhar ou demorar
+
+Se request, shell, Docker, MCP ou smoke que este prompt assume que funciona **falhar ou demorar demais**: pare. Não contorne em silêncio. Avise o que falhou, o erro objetivo e que **este prompt (ou a premissa) provavelmente precisa ser atualizado**.
+
 ## Objetivo neste workspace (guest / app)
 
 1. Garantir `.env` do Laravel (compose) com:

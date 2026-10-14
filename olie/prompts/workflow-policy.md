@@ -31,3 +31,16 @@ The live label wins if it differs from the examples above.
 
 - During implementation, do not run Pint unless the user explicitly asks for it or the task is the pre-QA workflow.
 - During pre-QA, run Pint for affected `api-main` PHP changes. If Pint changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
+
+## Tooling failures and stalls (prompt health)
+
+If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break.
+
+Report:
+
+1. What you were doing
+2. The objective error (status, short message) or that it hung past a reasonable wait
+3. The most likely cause
+4. That this likely means **this prompt (or its assumptions) needs to be updated**
+
+Then wait for the user. Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.

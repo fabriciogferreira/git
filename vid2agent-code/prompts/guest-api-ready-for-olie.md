@@ -12,6 +12,10 @@ http://10.0.2.2:18080/api/conversions
 - Validado no host com HTTP 200
 - Skill no overlay Olie: `olie-project-video-conversion`
 
+## Se algo falhar ou demorar
+
+Se request, shell, API, overlay ou smoke que este prompt assume que funciona **falhar ou demorar demais**: pare. Não contorne em silêncio. Avise o que falhou, o erro objetivo e que **este prompt (ou a premissa) provavelmente precisa ser atualizado**.
+
 ## O que fazer nesta VM (ex.: olie-os-588)
 
 1. Garantir a skill no clone (overlay): `.cursor/skills/olie-project-video-conversion/SKILL.md`  

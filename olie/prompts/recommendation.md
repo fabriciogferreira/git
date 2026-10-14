@@ -1,5 +1,7 @@
 # Related Improvements Discovery
 
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
+
 ## 1. Objective
 
 Analyze card `{{ code }}` and its related codebase to identify small, directly related improvements that could reasonably be implemented alongside the requested changes.

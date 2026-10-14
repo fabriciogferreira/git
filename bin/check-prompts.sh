@@ -51,4 +51,45 @@ for prompt in workflow.md correction.md; do
     fi
 done
 
+# Prompt health: paste-ready prompts are copied alone — the stop-on-stall line
+# must live in each file, not only in workflow-policy.md.
+if ! rg -F 'Tooling failures and stalls' "$OLIE_DIR/workflow-policy.md" >/dev/null; then
+    echo "error: workflow-policy.md precisa da seção Tooling failures and stalls" >&2
+    exit 1
+fi
+paste_ready=(
+    "${required_card_prompts[@]}"
+    validation.md
+    workflow.md
+    project.md
+)
+for prompt in "${paste_ready[@]}"; do
+    if ! rg -F 'this prompt needs updating' "$OLIE_DIR/$prompt" >/dev/null; then
+        echo "error: $prompt (colar sozinho) precisa da linha 'this prompt needs updating'" >&2
+        exit 1
+    fi
+done
+# Cross-refs to other prompts are allowed when resolvable (absolute under ~/git/…).
+# Bare `foo.md` after paste is ambiguous — require ~/git/… path.
+if rg -n '`[a-z0-9-]+\.md`' "$OLIE_DIR" --glob '!README.md' --glob '!workflow-policy.md' |
+    rg -v '`~/git/' |
+    rg -v '^\S+:[0-9]+:.*(pt-br|en)\.json' >/dev/null; then
+    echo "error: prompt Olie referencia *.md sem path absoluto sob ~/git/:" >&2
+    rg -n '`[a-z0-9-]+\.md`' "$OLIE_DIR" --glob '!README.md' --glob '!workflow-policy.md' |
+        rg -v '`~/git/' >&2 || true
+    exit 1
+fi
+# Maintainer-only notes (how to edit the prompt set), not agent instructions.
+if rg -n 'Do not repeat `' "$OLIE_DIR" --glob '!README.md' >/dev/null; then
+    echo "error: nota de manutenção 'Do not repeat' em prompt paste-ready" >&2
+    rg -n 'Do not repeat `' "$OLIE_DIR" --glob '!README.md' >&2 || true
+    exit 1
+fi
+for f in "$VID2_DIR"/guest-api-ready-for-olie.md "$VID2_DIR"/host-ollama-ready.md; do
+    if [ -f "$f" ] && ! rg -i 'prompt.*(atualizado|melhorar)|prompt needs' "$f" >/dev/null; then
+        echo "error: $(basename "$f") deve avisar para parar e melhorar o prompt se tooling falhar" >&2
+        exit 1
+    fi
+done
+
 echo "prompt check ok (${#required_card_prompts[@]} card prompts)"

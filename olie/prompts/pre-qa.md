@@ -1,6 +1,8 @@
 # Pre-QA/CR Checklist and Pull Request Workflow
 
-Run this after implementation and before the card moves to 'QA/CR'. The workday order stays in `workflow.md`.
+Run this after implementation and before the card moves to 'QA/CR'.
+
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## 1. Objective
 
@@ -114,7 +116,7 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 For every required pull request:
 
-- [ ] Create the pull request title and body in English, as required by `workflow-policy.md`.
+- [ ] Create the pull request title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch uses exactly the branch name specified in the card.
 - [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}`.

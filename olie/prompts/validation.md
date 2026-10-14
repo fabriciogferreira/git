@@ -1,8 +1,10 @@
 # Card Validation
 
-Use this for a card in the logical `validation` stage ('validação'). The workday order stays in `workflow.md`. This is the tech-lead pass after colleague 'QA/CR'. It is not `colleague-review.md`, `pre-qa.md`, or `production-review.md`.
+Use this for a card in the logical `validation` stage ('validação'). This is the tech-lead pass after colleague 'QA/CR', not colleague review, pre-QA, or production review.
 
 Apply this rubric by default on every card-validation request. Do not wait to be reminded of the criteria or the mandatory reviewers.
+
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## 1. Objective
 
@@ -68,16 +70,16 @@ Flag these gaps in the report when they hurt the review. They are not separate p
 
 - Do not implement or push fixes.
 - Do not treat colleague 'QA/CR' success as validation success.
-- Do not treat local success as the production check. That check is `production-review.md`.
+- Do not treat local success as the production check. That check is 'Revisão de Produção' (`~/git/olie/prompts/production-review.md`).
 - Do not fail validation for missing or outdated keys in `en.json`. English translations are resolved later; require user-facing keys in `pt-br.json` when the card adds UI copy.
-- Do not move the card unless the user asks you to apply the verdict. Recommend the stage from `workflow.md`: approve → 'Revisão de Produção'; reject → `changes-requested` ('corrigir ou melhorar').
+- Do not move the card unless the user asks you to apply the verdict. Recommend: approve → 'Revisão de Produção'; reject → `changes-requested` ('corrigir ou melhorar').
 
 ## 7. Verdict
 
 Only two outcomes. Always justify item by item. Never answer with a bare pass or fail.
 
 **Approve**  
-All five criteria passed and no reviewer raised a blocker. Ready for merge path per `workflow.md`.
+All five criteria passed and no reviewer raised a blocker. Ready for the merge path toward 'Revisão de Produção'.
 
 **Send for correction**  
 List every failure: which criterion, which reviewer, and where in the code or PR — so the author can fix without guessing.

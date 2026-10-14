@@ -1,6 +1,8 @@
 # Card Correction Workflow
 
-Use this when a card comes back from review. The workday order stays in `workflow.md`. Do not repeat `implementation.md` except where this file names a step that lives only there.
+Use this when a card comes back from review.
+
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## 1. Objective and Context
 
@@ -21,7 +23,7 @@ Media already analyzed for this card lives under `~/git/olie/cards/{CARD_CODE}/{
 
 ## 2. Update the Card Stage
 
-Before modifying code, check the card's current stage and live funnel through the MCP OlieFlowAi. Apply the stage-resolution rules in `workflow-policy.md`.
+Before modifying code, check the card's current stage and live funnel through the MCP OlieFlowAi. Apply the stage-resolution rules in `~/git/olie/prompts/workflow-policy.md`.
 
 - If the card is still in `changes-requested`, move it to `in-progress`.
 - If the card has already moved to another stage, do not move it automatically. Report its current stage and wait for instructions.

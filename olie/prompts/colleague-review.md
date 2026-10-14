@@ -1,6 +1,8 @@
 # Colleague Card Review
 
-Review card {{ code }} while it sits in 'QA/CR'. The workday order stays in `workflow.md`. This is not `pre-qa.md`. That file prepares your own card. This file reviews someone else's.
+Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
+
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## 1. Objective
 
@@ -56,9 +58,9 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 ## 6. Out of scope
 
 - Do not fix the author's code.
-- Do not move the card. `workflow.md` decides the stage after the report.
-- Do not treat a local-only success as the production check. That check is `Revisão de Produção`.
-- Do not apply `recommendation.md`. This pass is a review, not a search for extra work.
+- Do not move the card. Report the result; the user (or a later workday paste) decides the next stage.
+- Do not treat a local-only success as the production check. That check is 'Revisão de Produção'.
+- Do not search for related improvements in this pass. This is a review only.
 
 ## 7. Report
 

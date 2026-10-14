@@ -32,6 +32,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** mesmo hop de caminho dos outros ids
 - **resolvido como:** `project.conf`, `post-clone.sh`, workspace movidos para `boilerplate-laravel/`; clone continua fora do meta-repo
 
+## Prompts: falha/demora de tooling = sinal para melhorar o prompt
+
+- **problema:** agente engolia MCP/request/timeout e seguia; o atrito não voltava para o texto do prompt
+- **por que é um problema:** o prompt continua errado; o workaround vira o caminho normal
+- **resolvido como:** `olie/prompts/workflow-policy.md` + `project.md`; prompts vid2agent; `check-prompts.sh` exige o contrato
+
 ## Projeto vid2agent-code em `vid2agent-code/` (saiu de `projects/`; fim de `projects/`)
 
 - **problema:** definição em `projects/vid2agent-code/` enquanto prompts e clone já estavam em `vid2agent-code/`

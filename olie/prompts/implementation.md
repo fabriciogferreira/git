@@ -1,5 +1,7 @@
 # Card Development Workflow
 
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
+
 ## 1. Context and Objective
 
 Implement the card identified by `{{ code }}`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
@@ -10,7 +12,7 @@ Use the card's content as the source of truth for the intended behavior. Before 
 
 Before making any code changes:
 
-1. Identify every repository the card changes and its configured base branch. Use the card when it specifies a base; otherwise use the repository's documented working branch in `project.md`.
+1. Identify every repository the card changes and its configured base branch. Use the card when it specifies a base; otherwise use the repository's documented working branch in `~/git/olie/prompts/project.md`.
 2. Check the current Git status in every affected repository. Preserve existing user changes and never overwrite, discard, or silently modify unrelated work.
 3. Switch each affected repository to its base branch. If the working tree contains changes that could interfere with switching branches or updating the repository, stop and report the situation before proceeding.
 4. Pull the latest changes from each base branch. If an update fails or cannot be completed safely, report the issue and wait for further instructions.
@@ -136,7 +138,7 @@ Follow the project's existing architecture, conventions, and established pattern
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
 
-**Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `workflow-policy.md` when it applies.
+**Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/olie/prompts/workflow-policy.md` when it applies.
 
 ## 8. Completion Criteria
 
