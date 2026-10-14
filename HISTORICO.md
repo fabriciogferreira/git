@@ -16,6 +16,12 @@ por que é um problema: o custo
 resolvido como: o que foi feito e por que dessa forma
 ```
 
+## Workspace Olie vazio: `Unable to resolve workspace folder`
+
+- **problema:** no login o Cursor abria roots `~/.config/olie/*` vazios; hover: `Unable to resolve workspace folder`
+- **por que é um problema:** os clones existem em `~/git/olie/`, mas a janela não enxergava nenhum repo do produto
+- **resolvido como:** `project-start` faz `pwd -P` em `current/` antes de sourcar o `project.conf`, e `workvm_open_cursor` passa `realpath` do `.code-workspace`. Os `../../olie/...` passam a resolver a partir de `~/git/projects/olie`, não de `~/.config/workvm/current`
+
 ## Validação de card sem prompt
 
 - **problema:** o estágio 'validação' existia no `workflow.md`, mas não havia prompt com a régua (cinco critérios + revisores)

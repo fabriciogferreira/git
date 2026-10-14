@@ -42,6 +42,11 @@ workvm_project_start() {
         return 1
     fi
 
+    # current/ é symlink sob ~/.config/workvm. Sem -P, o project.conf calcula
+    # WORKSPACE_FILE pelo path lógico; o Cursor resolve ../../olie a partir
+    # dali → ~/.config/olie/* (inexistente) em vez de ~/git/olie/*.
+    project_dir="$(cd "$project_dir" && pwd -P)"
+
     lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     # shellcheck source=common.sh

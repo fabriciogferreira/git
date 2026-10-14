@@ -143,6 +143,11 @@ workvm_open_cursor() {
         return 1
     fi
 
+    # Paths relativos do .code-workspace são resolvidos a partir do diretório
+    # do arquivo como o Cursor o recebeu. Se passar o symlink
+    # ~/.config/workvm/current/..., ../../olie vira ~/.config/olie.
+    workspace="$(realpath "$workspace")"
+
     if ! command -v cursor >/dev/null 2>&1; then
         echo "workvm: cursor not found in PATH" >&2
         return 1
