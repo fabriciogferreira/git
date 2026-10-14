@@ -65,6 +65,23 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Como:** um item do roadmap por vez; ao concluir → marcar lá, atualizar estado, não acumular `[x]` eterno nesta lista.
   - **Entrega:** roadmap §1 zerado (ou só itens “depois / se doer” restantes).
 
+- [ ] **Remover `projects/` do meta-repo e mover para o host**
+  - **Por quê:** hoje há árvore dupla e caminho longo — `projects/<id>/` (conf, overlay, e2e) **e** clones em `olie/` / `televisao/` / etc.; agente e humano ficam indo e voltando entre pastas.
+  - **Ganho:** **sem pastas duplicadas**; **sem ir e voltar** em todos os caminhos (um lugar por projeto no host).
+  - **Objetivo:** economizar tempo (navegação, prompts, overlay, e2e) + menos atrito mental.
+  - **Hoje (a desfazer):** `~/git/projects/<id>/` = `project.conf`, `post-clone.sh`, `overlay/`, e2e, workspace; runtime `~/.config/workvm/current` aponta para aí; clones em `~/git/<empresa>/`.
+  - **Cuidado:** `project-setup.sh`, `project-start.sh`, `lib/*`, rules (`layout.mdc`, `meta-repo.mdc`), workspaces e paths nos prompts/skills que citam `projects/olie/...`.
+  - **Entrega:** layout novo só no host documentado aqui + scripts/rules apontando para os paths novos; pasta `projects/` removida (ou esvaziada) do meta-repo sem quebrar bootstrap das WorkVMs.
+
+- [ ] **Mover os prompts para as pastas dos respectivos projetos**
+  - **Por quê:** prompts de produto ficam em `prompts/enterscience/olie/`, `prompts/vid2agent-code/`, etc., longe da pasta do projeto (`projects/<id>/` ou o layout novo no host) — outro hop de caminho.
+  - **Ganho:** prompt do projeto **junto** do projeto (conf, overlay, e2e, `.xml` da VM); menos ir e voltar.
+  - **Objetivo:** economizar tempo + alinhar com “um lugar por projeto”.
+  - **depends:** encaixa com **Remover `projects/` … para o host** (mesmo destino final da pasta do projeto); prompts globais (`prompts/agent.md`, etc.) podem ficar na raiz do meta-repo.
+  - **Hoje:** `prompts/<empresa>/<projeto>/` e `prompts/<projeto>/`; regra em `layout.mdc` / `prompts/README.md` (mais fundo vence).
+  - **Cuidado:** links em `life.md`, `HISTORICO.md`, skills e qualquer doc que cite `prompts/enterscience/olie/...`.
+  - **Entrega:** prompts de projeto dentro da pasta do projeto; README/rules atualizados; globais só o que for de verdade global.
+
 - [ ] **Descobrir utilidade para os 2 SSDs sobrando**
   - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar VMs, libvirt images, Docker, backups locais sem comprar outro drive.
   - **Objetivo:** **muito com pouco** + economizar tempo (I/O menos gargalo).
@@ -227,13 +244,18 @@ VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbe
 
 VMs **diferentes** devem ter **configurações diferentes** (vCPU e RAM no libvirt). Motivo: cada uma é um **projeto diferente**, com carga diferente (compose, browsers, Cursor, builds).
 
+**Fonte da config da VM:** cada projeto tem um **`.xml` na própria pasta do projeto** — domain libvirt individual daquela WorkVM (vCPU, RAM, disco, rede, etc.). Não reutilizar um XML genérico para todos.
+
 | Regra | Por quê |
 | --- | --- |
-| Dimensionar **vCPU e RAM por VM/projeto** | Projeto leve não precisa do mesmo teto que Olie/Docker pesado; projeto pesado não pode ficar faminto |
+| Um **`.xml` por projeto** (na pasta do projeto) | Config individual versionável/reaplicável; bate com “projeto ≠ recursos iguais” |
+| Dimensionar **vCPU e RAM** nesse XML | Projeto leve não precisa do mesmo teto que Olie/Docker pesado; projeto pesado não pode ficar faminto |
 | Evitar “todas as VMs iguais” (ex. 8 vCPU / 16 GB) | Com **32 GB** no host, clones idênticos gastam RAM ociosa e impedem 2ª VM útil |
-| Ajustar no libvirt (`virsh` / virt-manager) conforme o `projects/<id>` | O meta-repo define o que sobe na guest; o host define quanto silício a guest pode usar |
+| Definir / atualizar via esse XML (`virsh define` / virt-manager) | O meta-repo / pasta do projeto guarda o desejado; o libvirt no host aplica |
 
 Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco** (cabem mais VMs úteis no mesmo host).
+
+*Nota:* com a tarefa de tirar `projects/` do meta-repo, o `.xml` acompanha a pasta do projeto no host (mesmo princípio: um arquivo por projeto, ao lado do resto da definição).
 
 ### WorkVMs: eficiência — roadmap (ponto a ponto)
 
@@ -243,7 +265,7 @@ Fazer **um item por vez**, na ordem. Ao concluir: marcar `[x]`, anotar o que mud
 - [x] Sem wallpaper na guest — removidos `swaybg`, `wallpaper.jpg`, autostart; logo/fundo padrão Hyprland off (overlay `.config/hypr`).
 
 **Agora (maior ganho / baixo risco)**
-- [ ] **RAM e vCPU por projeto** — inventariar VMs libvirt; ajustar cada uma ao `projects/<id>` (leve vs pesado); documentar valores na tabela de estado quando estabilizar.
+- [ ] **RAM e vCPU por projeto** — um `.xml` na pasta de cada projeto (config individual da VM); inventariar, ajustar (leve vs pesado), `virsh define`; documentar valores quando estabilizar.
 - [ ] **Uma VM pesada por vez** quando o host estiver apertado — hábito, não XML; parar a que não está em uso.
 - [ ] **Guest mais leve** — desligar blur/animações pesadas do Hyprland; revisar autostart (apps que sobem sem precisar); refletir no overlay `.config/`.
 - [ ] **virtio em disco e rede** — conferir/ajustar no libvirt (evitar IDE/SATA/e1000 emulado).
