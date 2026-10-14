@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## App launcher: hyprlauncher (não rofi)
+
+- **problema:** overlay do Hyprland ainda abria `rofi -show drun` enquanto o `vm-setup` já instalava `hyprlauncher`
+- **por que é um problema:** Super+R falhava em VM nova (rofi ausente) ou puxava um launcher que o setup não provisiona
+- **resolvido como:** `local menu = "hyprlauncher"` em `.config/hypr/hyprland.lua`; pacote já vem de `setup_apps` via pacman
+
 ## Projeto Olie em `olie/` (saiu de `projects/olie`)
 
 - **problema:** definição Olie em `projects/olie/` e clones em `olie/` — dois lugares
