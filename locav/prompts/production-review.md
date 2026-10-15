@@ -12,7 +12,7 @@ Verify the card's acceptance criteria in production. A local or staging result i
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Start a project execution on the live 'Revisão em Produção' funnel step for this card (see **Starting a project execution** in `~/git/locav/prompts/workflow-policy.md`). That records that you are reviewing in production. Resolve UUID and `funnel_step_id` from MCP; use `OLIE_FLOW_AI_TOKEN`. Do not begin production checks until execution has started successfully.
+2. Start a project execution on the live 'Revisão em Produção' funnel step for this card (see **Starting a project execution** in `~/git/locav/prompts/workflow-policy.md`). That records that you are reviewing in production. Resolve UUID and `funnel_step_id` from MCP; use `OLIE_MANAGEMENT_TOKEN` for the HTTP call (not the MCP token). Do not begin production checks until execution has started successfully.
 3. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
 4. Do not expose credentials, tokens, personal data, or private production records in the report.
 

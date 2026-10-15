@@ -34,12 +34,12 @@ Resolve **card id** and **funnel steps** through MCP `olie-flow-ai` (search by c
 ```bash
 curl -sS --url 'https://api.olie.ai/api/management/project-bulk-step-move' \
   -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_FLOW_AI_TOKEN}" \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
   -H 'content-type: application/json' \
   --data-raw "{\"project_ids\":[\"${CARD_PROJECT_ID}\"],\"step_id\":${TARGET_STEP_ID},\"unlink_others\":true,\"force_funnel_link\":false}"
 ```
 
-- `OLIE_FLOW_AI_TOKEN` — same token as MCP (`~/.config/environment.d/*.conf`, `chmod 600`). Same value the Cursor MCP header uses.
+- `OLIE_MANAGEMENT_TOKEN` — Bearer for management HTTP only (`~/.config/environment.d/*.conf`, `chmod 600`). Not the MCP token. See **Tokens** below.
 - `CARD_PROJECT_ID` — UUID from MCP for that card (the `project_ids` array entry).
 - `TARGET_STEP_ID` — numeric id of the matched live funnel step (e.g. 'Em progresso'), never a remembered constant.
 
@@ -57,12 +57,23 @@ When you **begin working** on a card in a given stage (implement, correct, colle
 ```bash
 curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/project-executions" \
   -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_FLOW_AI_TOKEN}" \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
   -H 'content-type: application/json' \
   --data-raw "{\"funnel_step_id\":${FUNNEL_STEP_ID}}"
 ```
 
 On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
+
+## Tokens
+
+Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same value by assumption; never paste into chat or repo files.
+
+| Variable | Use |
+| --- | --- |
+| `OLIE_FLOW_AI_MCP_TOKEN` | Cursor MCP `olie-flow-ai` only (`mcps/olie.json` → `${env:OLIE_FLOW_AI_MCP_TOKEN}`) |
+| `OLIE_MANAGEMENT_TOKEN` | HTTP `https://api.olie.ai/api/management/...` (move card, project-executions). Needs `management:access`. |
+
+Layout and examples: `~/git/.config/environment.d/README.md`.
 
 ## Production verification URL
 

@@ -28,7 +28,7 @@ vm.local.conf
 !mcps/
 !mcps/**
 !life.md
-# Secrets locais de sessão (OLIE_FLOW_AI_TOKEN etc.) — nunca versionar
+# Secrets locais de sessão (OLIE_FLOW_AI_MCP_TOKEN, OLIE_MANAGEMENT_TOKEN etc.) — nunca versionar
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
 projects/**/.env

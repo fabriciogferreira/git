@@ -55,10 +55,11 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   é refeita a cada subida. Nos `.cursor/mcp.json` de projeto fica stub local
   (`mcp.workvm-user` + `skip-worktree`) para o mesmo nome não sobrescrever o
   global desligado. Não commitar o stub.
-- MCP HTTP (`mcps/<nome>.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_TOKEN}`.
+- MCP HTTP (`mcps/<nome>.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}`.
   O `project.conf` só informa `MCP=<nome>`.
-- O valor vive em **`~/.config/environment.d/*.conf`** (diretório, não arquivo).
-  Ex.: `~/.config/environment.d/olie.conf` com `OLIE_FLOW_AI_TOKEN=...` (`chmod 600`).
+- Tokens em **`~/.config/environment.d/*.conf`** (diretório, não arquivo), `chmod 600`:
+  `OLIE_FLOW_AI_MCP_TOKEN` (só MCP) e `OLIE_MANAGEMENT_TOKEN` (HTTP `/api/management/...`).
+  Ex.: `~/.config/environment.d/olie.conf`.
 - `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como
   arquivo, `workvm_ensure_environment_d` migra para `local.conf`.
 - Não versionar tokens; overlay versionado pode documentar o layout em

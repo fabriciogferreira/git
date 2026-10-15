@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Tokens Olie: MCP ≠ management HTTP
+
+- **problema:** prompts usavam `OLIE_FLOW_AI_TOKEN` no MCP e nas requests `/api/management/...`; o PAT do MCP não tem `management:access`
+- **por que é um problema:** project-execution / move de card falhavam com 403 mesmo com MCP ok
+- **resolvido como:** `OLIE_FLOW_AI_MCP_TOKEN` só no MCP; `OLIE_MANAGEMENT_TOKEN` nas requests HTTP; docs em `environment.d/README.md` e `workflow-policy.md`
+
 ## URL de produção nos prompts Olie (EsOlie)
 
 - **problema:** 'Revisão de Produção' pedia “identificar a URL” sem fixar onde testar
@@ -72,7 +78,7 @@ Problema resolvido entra aqui.
 
 - **problema:** `implementation.md` não movia o card; o move ficava manual ou só no `workflow.md`
 - **por que é um problema:** paste de implementation sozinho deixava o card em 'Não iniciado'
-- **resolvido como:** § Update the Card Stage em `implementation.md` (espelha correction); procedimento HTTP/MCP compartilhado em `workflow-policy.md` com `OLIE_FLOW_AI_TOKEN` + UUID do MCP (sem hard-code de step_id/token)
+- **resolvido como:** § Update the Card Stage em `implementation.md` (espelha correction); procedimento HTTP/MCP compartilhado em `workflow-policy.md` (hoje: `OLIE_MANAGEMENT_TOKEN` + UUID do MCP; sem hard-code de step_id/token)
 
 ## Implementation validation separado do validation de board
 
@@ -164,7 +170,7 @@ resolvido como: o que foi feito e por que dessa forma
 
 - **problema:** `olie-flow-ai` no Cursor dava 401; `~/.cursor/mcp.json` ficava com Bearer antigo
 - **por que é um problema:** o merge do login restaura o `.cursor/mcp.json` do e2e e ele sobrescrevia `mcps/olie.json` (`${env:…}`) com um token commitado
-- **resolvido como:** e2e só declara `playwright`; `olie-flow-ai` vem de `mcps/olie.json` + `OLIE_FLOW_AI_TOKEN` em `environment.d`
+- **resolvido como:** e2e só declara `playwright`; `olie-flow-ai` vem de `mcps/olie.json` + `OLIE_FLOW_AI_MCP_TOKEN` em `environment.d`
 
 ## Marker `mcp.workvm-user` do e2e aparecia no git
 

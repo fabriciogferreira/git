@@ -4,19 +4,26 @@ Este path deve ser um **diretório** de arquivos `*.conf` (estilo systemd),
 nunca um arquivo único chamado `environment.d`.
 
 O overlay `~/git/.config` → `~/.config` (vm-setup) e o Hyprland/Cursor leem
-`~/.config/environment.d/*.conf` para interpolar `${env:NAME}` nos headers MCP.
+`~/.config/environment.d/*.conf` para interpolar `${env:NAME}` nos headers MCP
+e para o shell do agente nas requests HTTP de management.
 
-## Token Olie Flow AI (MCP)
+## Tokens Olie (dois papéis)
 
 Crie um arquivo local (não versionado):
 
 ```bash
 mkdir -p ~/.config/environment.d
 cat > ~/.config/environment.d/olie.conf <<'EOF'
-OLIE_FLOW_AI_TOKEN=seu_token_aqui
+# MCP olie-flow-ai only (Cursor ${env:OLIE_FLOW_AI_MCP_TOKEN})
+OLIE_FLOW_AI_MCP_TOKEN=seu_token_mcp_aqui
+# Management HTTP API (move card, project-executions, etc.)
+OLIE_MANAGEMENT_TOKEN=seu_token_management_aqui
 EOF
 chmod 600 ~/.config/environment.d/olie.conf
 ```
+
+- **`OLIE_FLOW_AI_MCP_TOKEN`** — só o MCP `olie-flow-ai` (`mcps/olie.json`).
+- **`OLIE_MANAGEMENT_TOKEN`** — Bearer das requests `https://api.olie.ai/api/management/...` nos prompts (`workflow-policy.md`). Precisa da ability `management:access` (ex.: sessão/PAT do app, não o token do MCP).
 
 Depois feche o Cursor por completo e reabra (login gráfico).
 

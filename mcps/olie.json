@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://api.olie.ai/mcp/management",
       "headers": {
-        "Authorization": "Bearer ${env:OLIE_FLOW_AI_TOKEN}"
+        "Authorization": "Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}"
       }
     }
   }

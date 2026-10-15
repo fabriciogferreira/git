@@ -157,7 +157,7 @@ setup_apply_dotconfig() {
     fi
 
     mkdir -p "$DOTCONFIG_DST"
-    # Footgun: OLIE_FLOW_AI_TOKEN written as ~/.config/environment.d (file)
+    # Footgun: token written as ~/.config/environment.d (file)
     # while overlay expects environment.d/ (dir of *.conf). Migrate first.
     workvm_ensure_environment_d
 

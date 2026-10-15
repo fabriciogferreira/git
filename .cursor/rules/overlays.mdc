@@ -10,4 +10,4 @@ alwaysApply: false
 
 `.config/` é copiado para `~/.config` pelo `vm-setup.sh`. Resolve Hyprland/sessão iguais entre VMs. Ao editar o live, espelhe em `~/git/.config` (skill `sync-git-dotconfig`).
 
-`environment.d/` é um diretório de `*.conf`. Token (`OLIE_FLOW_AI_TOKEN`) fica só em `~/.config/environment.d/*.conf` (`chmod 600`). Não versionar secret. O README versionado só explica o layout.
+`environment.d/` é um diretório de `*.conf`. Tokens (`OLIE_FLOW_AI_MCP_TOKEN`, `OLIE_MANAGEMENT_TOKEN`) ficam só em `~/.config/environment.d/*.conf` (`chmod 600`). Não versionar secret. O README versionado só explica o layout.
