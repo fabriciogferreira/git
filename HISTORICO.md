@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation testing pessoal, arquivo a arquivo
+
+- **problema:** o tech lead apontou testes que continuam verdes se o comportamento mudar; mutation testing do Pest mostra isso, mas a Olie não adota essa prática no `api-main`
+- **por que é um problema:** colocar `covers()`, PCOV ou job de CI no remoto da empresa impõe um fluxo que o time não pediu; sem um registro, cada sessão recomeça do zero
+- **resolvido como:** prompt `olie/prompts/mutation-testing.md` prepara PCOV e o cache de plugins só no container, muta um `*Test.php` por colagem (`--covered-only`, sem `covers()`), e empilha o resultado em `olie/prompts/mutation-ledger.md` no meta-repo
+
 ## Checklist 'Pull request created' via toggle-funnel-checklist
 
 - **problema:** pre-QA pedia marcar 'Pull request created' no QA/CR, mas o MCP devolvia `project_checklists` vazio
