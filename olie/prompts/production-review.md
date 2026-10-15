@@ -13,14 +13,14 @@ Verify the card's acceptance criteria in production. A local or staging result i
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
 2. Start a project execution on the live 'Revisão de Produção' funnel step for this card (see **Starting a project execution** in `~/git/olie/prompts/workflow-policy.md`). That records that you are reviewing in production. Resolve UUID and `funnel_step_id` from MCP; use `OLIE_FLOW_AI_TOKEN`. Do not begin production checks until execution has started successfully.
-3. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
+3. Run production checks on **https://esolie.olie.ai/overview** (EsOlie production). Identify the permitted account or data and the observable success and error paths for the card. Stop and report any missing prerequisite rather than guessing or using customer credentials. Do not use `*.olie.localhost` or other local/staging hosts as production evidence.
 4. Do not expose credentials, tokens, personal data, or private production records in the report.
 
 ## Verify
 
-1. Test the primary acceptance path in production.
+1. Test the primary acceptance path in production at https://esolie.olie.ai/overview (navigate from there to the feature the card changed).
 2. Test the relevant error or edge path when the card specifies one or production-safe data makes it possible.
-3. Record concise evidence: URL or feature area, action, expected result, and observed result. Redact sensitive values.
+3. Record concise evidence: production URL or feature area, action, expected result, and observed result. Redact sensitive values.
 4. Compare the deployed behavior to the card, not merely to local behavior.
 
 ## Result

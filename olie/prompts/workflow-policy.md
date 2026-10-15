@@ -64,6 +64,10 @@ curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/p
 
 On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
 
+## Production verification URL
+
+Production review (`production-review` / 'Revisão de Produção') checks the live product at **https://esolie.olie.ai/overview**. Local hosts (`*.olie.localhost`) and staging are not production evidence.
+
 ## Language
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.

@@ -37,7 +37,7 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/olie/promp
 
 ## 2. Production review
 
-Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`.
+Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`. Production checks use https://esolie.olie.ai/overview (see **Production verification URL** in `~/git/olie/prompts/workflow-policy.md`).
 
 ## 3. Choose a card
 

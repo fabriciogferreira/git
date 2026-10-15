@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## URL de produção nos prompts Olie (EsOlie)
+
+- **problema:** 'Revisão de Produção' pedia “identificar a URL” sem fixar onde testar
+- **por que é um problema:** agente/local confundem `*.olie.localhost` com evidência de produção
+- **resolvido como:** URL canônica **https://esolie.olie.ai/overview** em `olie/prompts/production-review.md`, `workflow-policy.md` e `workflow.md`
+
 ## Cursor/browser não abrem no login (workvm + RemainAfterExit)
 
 - **problema:** no boot o `workvm.service` logava `opening Cursor workspace` / `done`, mas o Cursor não aparecia (sem sessão em `~/.config/Cursor/logs`); só abria depois de `project-setup` na sessão gráfica
