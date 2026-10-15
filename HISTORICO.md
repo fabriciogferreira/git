@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Olie WorkVM: 8 GiB → 10 GiB (config versionada)
+
+- **problema:** guest `olie` com 8 GiB já usava ~1.8 GiB de swap sob carga (compose + Cursor + browser); o XML da domain não estava no git (`olie/*` no ignore)
+- **por que é um problema:** swap = lag; sem XML versionado não dá para distribuir RAM/CPU por projeto de forma repetível
+- **resolvido como:** `olie/config-vm.xml` com 10 GiB / 4 vCPU, whitelist no `.gitignore`; valores anotados em `life.md`
+
 ## Tokens Olie: MCP ≠ management HTTP
 
 - **problema:** prompts usavam `OLIE_FLOW_AI_TOKEN` no MCP e nas requests `/api/management/...`; o PAT do MCP não tem `management:access`

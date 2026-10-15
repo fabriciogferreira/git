@@ -29,6 +29,7 @@ alwaysApply: true
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
+| `*/config-vm.xml` | Domain libvirt do projeto (RAM/vCPU). Sem isso toda WorkVM vira clone genérico e o host de 32 GiB não distribui bem. |
 | `*/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone. Skills do Boost vêm de `boost:update` no clone. |
 | `workspace.code-workspace` | No login o Cursor abre este meta-repo e os clones do projeto setado. Paths relativos ao arquivo, para valer em outro `$HOME`. |
 | `.config/` | Hyprland e sessão iguais em toda VM. Secrets em `environment.d/*.conf` ficam só no live. |

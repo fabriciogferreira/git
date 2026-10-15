@@ -58,6 +58,7 @@ olie/*
 !olie/cards/*/*.md
 !olie/prompts/
 !olie/prompts/**
+!olie/config-vm.xml
 
 # vid2agent-code: definição + prompts; clone em vid2agent-code/vid2agent-code/ fica fora.
 !vid2agent-code/

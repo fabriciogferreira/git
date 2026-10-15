@@ -244,7 +244,13 @@ VMs **diferentes** devem ter **configurações diferentes** (vCPU e RAM no libvi
 
 Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco** (cabem mais VMs úteis no mesmo host).
 
-*Nota:* com a tarefa de tirar `projects/` do meta-repo, o `.xml` acompanha a pasta do projeto no host (mesmo princípio: um arquivo por projeto, ao lado do resto da definição).
+**Valores documentados** (ajustar no XML + `virsh define` no host; medido sob carga real):
+
+| Projeto | XML | RAM | vCPU | Nota |
+| --- | --- | --- | --- | --- |
+| `olie` | `olie/config-vm.xml` | **10 GiB** | 4 | Com 8 GiB: ~1.8 GiB swap em uso (`top`); subiu para aliviar pressão |
+
+*Nota:* o `.xml` fica na pasta do projeto no meta-repo (mesmo princípio: um arquivo por projeto, ao lado do resto da definição).
 
 ### WorkVMs: eficiência — roadmap (ponto a ponto)
 
