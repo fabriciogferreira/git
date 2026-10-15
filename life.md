@@ -248,7 +248,7 @@ Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco*
 
 | Projeto | XML | RAM | vCPU | Nota |
 | --- | --- | --- | --- | --- |
-| `olie` | `olie/config-vm.xml` | **10 GiB** | 4 | Domain libvirt **`olie`** (disco `olie.qcow2`); com 8 GiB já usava ~1.8 GiB swap |
+| `olie` | `olie/config-vm.xml` | **12 GiB** | 4 | Domain **`olie`**; 8→10 GiB tirou o pior do swap; 12 GiB para folga com Postman/DBeaver |
 
 Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só redefine se a domain já existe e está `shut off`. Conferir com a **mesma** URI que o script usou (Olie costuma ser `qemu:///system`): `virsh -c qemu:///system dumpxml olie | grep memory`.
 

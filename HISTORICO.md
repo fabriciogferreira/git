@@ -20,11 +20,11 @@ Problema resolvido entra aqui.
 - **por que é um problema:** handoff QA/CR incompleto; agente parado no create PR
 - **resolvido como:** `github-cli` no `vm-setup.sh`; Phase 4 do `olie/prompts/pre-qa.md` (e nota no Locav) usa `gh pr create` / `gh pr edit`; removido `mcps/github.json`; auth com `gh auth login` (não PAT no environment.d para GitHub)
 
-## Olie WorkVM: 8 GiB → 10 GiB (config versionada)
+## Olie WorkVM: RAM 8 → 10 → 12 GiB (config versionada)
 
-- **problema:** guest `olie` com 8 GiB já usava ~1.8 GiB de swap sob carga (compose + Cursor + browser); o XML da domain não estava no git (`olie/*` no ignore)
+- **problema:** guest `olie` com 8 GiB já usava ~1.8 GiB de swap sob carga (compose + Cursor + browser); o XML da domain não estava no git (`olie/*` no ignore); com 10 GiB ainda restava ~0.7 GiB de swap e pouco margem para Postman/DBeaver
 - **por que é um problema:** swap = lag; sem XML versionado não dá para distribuir RAM/CPU por projeto de forma repetível
-- **resolvido como:** `olie/config-vm.xml` com 10 GiB / 4 vCPU alinhado à domain real `olie` (não `olie-dop-1206`); `bin/apply-config-vm.sh` resolve domain pelo `<name>` do XML ou pelo id do projeto e aplica RAM/vCPU só com a guest `shut off`
+- **resolvido como:** `olie/config-vm.xml` alinhado à domain real `olie` (não `olie-dop-1206`); **12 GiB** / 4 vCPU; `bin/apply-config-vm.sh` resolve domain pelo `<name>` ou pelo id do projeto e aplica só com a guest `shut off`
 
 ## Tokens Olie: MCP ≠ management HTTP
 

@@ -6,9 +6,9 @@
       <libosinfo:os id="http://archlinux.org/archlinux/rolling"/>
     </libosinfo:libosinfo>
   </metadata>
-  <!-- 10 GiB: com 8 GiB a guest Olie (compose + Cursor + browser) já usava ~1.8 GiB de swap. -->
-  <memory unit="KiB">10485760</memory>
-  <currentMemory unit="KiB">10485760</currentMemory>
+  <!-- 12 GiB: folga para Postman/DBeaver além de compose + Cursor + browser (10 GiB ainda tinha ~0.7 GiB swap). -->
+  <memory unit="KiB">12582912</memory>
+  <currentMemory unit="KiB">12582912</currentMemory>
   <vcpu placement="static">4</vcpu>
   <os>
     <type arch="x86_64" machine="pc-q35-11.1">hvm</type>
