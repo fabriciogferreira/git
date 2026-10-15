@@ -1,6 +1,6 @@
 <domain type="kvm">
-  <name>olie-dop-1206</name>
-  <uuid>aea54466-cfc4-4cfe-8f16-d012ca1ce7bc</uuid>
+  <name>olie</name>
+  <uuid>3679c49c-fa3e-4cef-98a0-60acd43874cc</uuid>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
       <libosinfo:os id="http://archlinux.org/archlinux/rolling"/>
@@ -36,7 +36,7 @@
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type="file" device="disk">
       <driver name="qemu" type="qcow2" discard="unmap"/>
-      <source file="/var/lib/libvirt/images/olie-dop-1206.qcow2"/>
+      <source file="/var/lib/libvirt/images/olie.qcow2"/>
       <target dev="vda" bus="virtio"/>
       <address type="pci" domain="0x0000" bus="0x04" slot="0x00" function="0x0"/>
     </disk>
@@ -127,7 +127,7 @@
       <address type="pci" domain="0x0000" bus="0x03" slot="0x00" function="0x0"/>
     </controller>
     <interface type="network">
-      <mac address="52:54:00:35:20:70"/>
+      <mac address="52:54:00:eb:c3:33"/>
       <source network="default"/>
       <model type="virtio"/>
       <address type="pci" domain="0x0000" bus="0x01" slot="0x00" function="0x0"/>

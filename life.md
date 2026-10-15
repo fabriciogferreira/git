@@ -248,9 +248,9 @@ Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco*
 
 | Projeto | XML | RAM | vCPU | Nota |
 | --- | --- | --- | --- | --- |
-| `olie` | `olie/config-vm.xml` | **10 GiB** | 4 | Com 8 GiB: ~1.8 GiB swap em uso (`top`); subiu para aliviar pressão |
+| `olie` | `olie/config-vm.xml` | **10 GiB** | 4 | Domain libvirt **`olie`** (disco `olie.qcow2`); com 8 GiB já usava ~1.8 GiB swap |
 
-Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só redefine se a domain já existe e está `shut off`.
+Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só redefine se a domain já existe e está `shut off`. Conferir com a **mesma** URI que o script usou (Olie costuma ser `qemu:///system`): `virsh -c qemu:///system dumpxml olie | grep memory`.
 
 *Nota:* o `.xml` fica na pasta do projeto no meta-repo (mesmo princípio: um arquivo por projeto, ao lado do resto da definição).
 

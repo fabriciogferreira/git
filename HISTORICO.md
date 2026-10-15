@@ -6,7 +6,7 @@ Problema resolvido entra aqui.
 
 - **problema:** guest `olie` com 8 GiB já usava ~1.8 GiB de swap sob carga (compose + Cursor + browser); o XML da domain não estava no git (`olie/*` no ignore)
 - **por que é um problema:** swap = lag; sem XML versionado não dá para distribuir RAM/CPU por projeto de forma repetível
-- **resolvido como:** `olie/config-vm.xml` com 10 GiB / 4 vCPU, whitelist no `.gitignore`; valores anotados em `life.md`; `bin/apply-config-vm.sh` faz `virsh define` só se a domain existe e está `shut off`
+- **resolvido como:** `olie/config-vm.xml` com 10 GiB / 4 vCPU alinhado à domain real `olie` (não `olie-dop-1206`); `bin/apply-config-vm.sh` resolve domain pelo `<name>` do XML ou pelo id do projeto e aplica RAM/vCPU só com a guest `shut off`
 
 ## Tokens Olie: MCP ≠ management HTTP
 
