@@ -97,20 +97,26 @@ workvm_project_start() {
         workvm_project_log "docker compose up -d ($COMPOSE_DIR${COMPOSE_FILE:+ -f $COMPOSE_FILE})"
         if ! workvm_docker_compose_up "$COMPOSE_DIR"; then
             workvm_project_log "docker compose failed; continuing with editor/browser"
-        elif [ -n "${WAIT_URL:-}" ]; then
-            workvm_project_log "waiting for $WAIT_URL"
-            workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-180}" \
-                || workvm_project_log "continuing without $WAIT_URL"
+        else
+            # Hook before WAIT_URL: Locav (e similares) precisam de composer/migrate
+            # depois do compose e antes do healthcheck HTTP.
+            if declare -F workvm_project_after_compose >/dev/null; then
+                workvm_project_after_compose
+            fi
+            if [ -n "${WAIT_URL:-}" ]; then
+                workvm_project_log "waiting for $WAIT_URL"
+                workvm_wait_for_http "$WAIT_URL" "${WAIT_TIMEOUT_SECONDS:-180}" \
+                    || workvm_project_log "continuing without $WAIT_URL"
+            fi
         fi
     else
         workvm_project_log "sem COMPOSE_DIR; pulando docker compose"
+        if declare -F workvm_project_after_compose >/dev/null; then
+            workvm_project_after_compose
+        fi
     fi
 
     workvm_project_start_e2e
-
-    if declare -F workvm_project_after_compose >/dev/null; then
-        workvm_project_after_compose
-    fi
 
     # workvm_open_cursor já chama workvm_load_environment_d, que garante
     # ~/.config/environment.d como diretório (${env:NAME} do MCP).

@@ -20,6 +20,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** o ciclo (implement → validate → pre-qa → QA/CR) existia só em `olie/prompts/`; colar prompts da Olie quebrava paths e stack
 - **resolvido como:** cópia adaptada em `locav/prompts/` (Bun/Sail/Cypress); `MCP=olie` no `project.conf`; labels do funil Locav ('Em andamento', 'Corrigir', 'Revisão em Produção', …); IDs numéricos resolvidos no funil vivo (não hard-coded)
 
+## Locav: composer/migrate no start.hook (não no post-clone)
+
+- **problema:** compose subia sem `vendor/`; PHP entrava em FATAL e `/api/hello` estourava o wait; bootstrap era manual
+- **por que é um problema:** toda VM Locav nova pedia `composer install` à mão; Cursor abria com API morta
+- **resolvido como:** `locav/start.hook.sh` (`workvm_project_after_compose`) faz composer+migrate+seed+passport no primeiro boot; `project-start.sh` roda o hook **antes** do WAIT_URL
+
 ## App launcher: fuzzel (hyprlauncher ainda quebra no Virtio)
 
 - **problema:** Super+R chamava `hyprlauncher`; na WorkVM (Virtio GPU) o hyprtoolkit/aquamarine falha EGL, cai em `kms_swrast`, não aloca GBM e segfaulta

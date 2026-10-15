@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Bootstrap depois do clone Locav (project-setup.sh).
-# Copia example.env → .env e alinha UID do Sail; o compose monta ../locav-front.
+# Bootstrap depois do clone Locav (project-setup.sh), antes do compose.
+# Só .env + UID do Sail. Composer/migrate/passport: locav/start.hook.sh
+# (depois do compose; o volume da API ainda não existe neste passo).
 set -euo pipefail
 
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"

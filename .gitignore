@@ -105,6 +105,7 @@ locav/*
 !locav/README.md
 !locav/project.conf
 !locav/post-clone.sh
+!locav/start.hook.sh
 !locav/workspace.code-workspace
 !locav/prompts/
 !locav/prompts/**
