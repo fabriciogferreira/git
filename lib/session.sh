@@ -18,16 +18,31 @@ workvm_ensure_session_env() {
         fi
     fi
 
-    if [ -z "${DISPLAY:-}" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
-        export DISPLAY=:0
+    # systemd user units often lack DISPLAY. Hardcoding :0 is wrong on this
+    # stack (Hyprland/Xwayland is usually :1; :0 may be SDDM). Prefer an
+    # existing X11 socket; leave unset if none — Electron goes Wayland-only.
+    if [ -z "${DISPLAY:-}" ]; then
+        if [ -S /tmp/.X11-unix/X1 ]; then
+            export DISPLAY=:1
+        elif [ -S /tmp/.X11-unix/X0 ]; then
+            export DISPLAY=:0
+        fi
+    fi
+
+    if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -S "${XDG_RUNTIME_DIR}/bus" ]; then
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
     fi
 }
 
-# Wait until a Wayland socket is available. Timeout in seconds (default 90).
-# hyprctl is optional confirmation — socket presence is enough to proceed.
+# Wait until Wayland is usable for GUI apps. Timeout in seconds (default 90).
+# Socket alone is not enough: default.target can see the socket before Hyprland
+# accepts clients; Cursor/Brave then exit with an empty log.
 workvm_wait_for_wayland() {
     local timeout="${1:-90}"
     local elapsed=0
+    local have_hyprctl=0
+
+    command -v hyprctl >/dev/null 2>&1 && have_hyprctl=1
 
     workvm_ensure_session_env
 
@@ -35,10 +50,13 @@ workvm_wait_for_wayland() {
         workvm_ensure_session_env
 
         if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
-            if command -v hyprctl >/dev/null 2>&1; then
-                hyprctl monitors -j >/dev/null 2>&1 || true
+            if [ "$have_hyprctl" -eq 1 ]; then
+                if hyprctl monitors -j >/dev/null 2>&1; then
+                    return 0
+                fi
+            else
+                return 0
             fi
-            return 0
         fi
 
         sleep 1
@@ -137,6 +155,7 @@ workvm_load_environment_d() {
 
 workvm_open_cursor() {
     local workspace="$1"
+    local pid
 
     if [ ! -f "$workspace" ]; then
         echo "workvm: workspace not found: $workspace" >&2
@@ -153,9 +172,22 @@ workvm_open_cursor() {
         return 1
     fi
 
+    # Hyprland restarts workvm after compositor is up; skip duplicate window.
+    if pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
+        echo "workvm: Cursor already open for $workspace" >&2
+        return 0
+    fi
+
+    workvm_ensure_session_env
     workvm_load_environment_d
 
+    # systemd has no graphical env; force Wayland so Electron ignores a wrong DISPLAY.
+    export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-wayland}"
+
     setsid cursor "$workspace" </dev/null >/tmp/workvm-cursor.log 2>&1 &
+    pid=$!
+    echo "$pid" >/tmp/workvm-cursor.pid
+    echo "workvm: Cursor pid $pid → $workspace (log /tmp/workvm-cursor.log)" >&2
 }
 
 workvm_open_chromium() {
@@ -163,7 +195,8 @@ workvm_open_chromium() {
         return 0
     fi
 
-    local browser=""
+    local browser="" pid
+    local pidfile=/tmp/workvm-browser.pid
     if command -v brave >/dev/null 2>&1; then
         browser=brave
     elif command -v brave-browser >/dev/null 2>&1; then
@@ -173,7 +206,21 @@ workvm_open_chromium() {
         return 1
     fi
 
+    # Same restart path as Cursor — one window is enough.
+    if [ -f "$pidfile" ]; then
+        pid="$(cat "$pidfile" 2>/dev/null || true)"
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            echo "workvm: browser already open (pid $pid); skipping" >&2
+            return 0
+        fi
+    fi
+
+    workvm_ensure_session_env
+
     setsid "$browser" --new-window "$@" </dev/null >/tmp/workvm-browser.log 2>&1 &
+    pid=$!
+    echo "$pid" >"$pidfile"
+    echo "workvm: browser pid $pid (log /tmp/workvm-browser.log)" >&2
 }
 
 workvm_docker_compose_up() {

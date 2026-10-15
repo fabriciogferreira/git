@@ -58,9 +58,10 @@ hl.on("hyprland.start", function ()
     -- No wallpaper (saves guest RAM/CPU; solid Hyprland clear color only).
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
     -- workvm is WantedBy=default.target (graphical-session refuses manual start and
-    -- SDDM+start-hyprland never activate it). Start again once Wayland is up in case
-    -- the oneshot finished before Hyprland (RemainAfterExit → no-op if already active).
-    hl.exec_cmd("systemctl --user start workvm.service")
+    -- SDDM+start-hyprland never activate it). Restart once Wayland is up: RemainAfterExit
+    -- makes plain `start` a no-op if the oneshot already finished before Hyprland,
+    -- and Cursor/Brave then never open. open_cursor/open_chromium are idempotent.
+    hl.exec_cmd("systemctl --user restart workvm.service")
     -- No project bound yet → script opens Kitty with project-setup menu.
     -- Delay so WAYLAND_DISPLAY/socket exist (hl.exec_cmd is async at start).
     -- Keep this path simple (no nested quotes): hl.exec_cmd runs via sh -c.
