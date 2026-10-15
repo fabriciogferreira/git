@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "LocavApi",
+      "path": "LocavApi"
+    },
+    {
+      "name": "locav-front",
+      "path": "locav-front"
+    }
+  ],
+  "settings": {}
+}

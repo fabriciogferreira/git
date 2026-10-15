@@ -8,6 +8,18 @@ Problema resolvido entra aqui.
 - **por que é um problema:** a VM sobe compose e MCP, mas o workspace Olie não abre; o “start de novo” no Hyprland era no-op
 - **resolvido como:** (1) `DISPLAY` deixa de ser `:0` fixo — detecta socket X11 (`:1` no Hyprland) e define `DBUS_SESSION_BUS_ADDRESS` + `ELECTRON_OZONE_PLATFORM_HINT=wayland`; (2) espera Wayland exige `hyprctl monitors` quando há hyprctl; (3) `hyprland.start` faz `systemctl --user restart workvm.service` (não `start`); (4) open Cursor/browser idempotente no restart
 
+## Projeto Locav em `locav/`
+
+- **problema:** WorkVM sem definição para Locav (LocavApi + LocavFront em `preview`)
+- **por que é um problema:** sem `project.conf` o `project-setup` não clona, não sobe compose nem abre o workspace
+- **resolvido como:** pasta `locav/` com clones em `LocavApi` + `locav-front` (nome exigido pelo mount do compose); branch `preview`; pós-clone copia `example.env`
+
+## Prompts Locav em `locav/prompts/`
+
+- **problema:** Locav no board OlieFlowAi sem prompts de card/workday versionados
+- **por que é um problema:** o ciclo (implement → validate → pre-qa → QA/CR) existia só em `olie/prompts/`; colar prompts da Olie quebrava paths e stack
+- **resolvido como:** cópia adaptada em `locav/prompts/` (Bun/Sail/Cypress); `MCP=olie` no `project.conf`; labels do funil Locav ('Em andamento', 'Corrigir', 'Revisão em Produção', …); IDs numéricos resolvidos no funil vivo (não hard-coded)
+
 ## App launcher: fuzzel (hyprlauncher ainda quebra no Virtio)
 
 - **problema:** Super+R chamava `hyprlauncher`; na WorkVM (Virtio GPU) o hyprtoolkit/aquamarine falha EGL, cai em `kms_swrast`, não aloca GBM e segfaulta

@@ -25,6 +25,7 @@ alwaysApply: true
 | `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
 | `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
+| `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, workspace). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
 | `*/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone. Skills do Boost vêm de `boost:update` no clone. |
@@ -37,4 +38,5 @@ alwaysApply: true
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
+| `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `vid2agent-code/prompts/` | Prompts do projeto **vid2agent-code**. |

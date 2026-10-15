@@ -99,6 +99,19 @@ da-o-play/*
 !da-o-play/post-clone.sh
 !da-o-play/workspace.code-workspace
 
+# locav: definição + prompts; clones LocavApi / locav-front ficam fora.
+!locav/
+locav/*
+!locav/README.md
+!locav/project.conf
+!locav/post-clone.sh
+!locav/workspace.code-workspace
+!locav/prompts/
+!locav/prompts/**
+!locav/cards/
+!locav/cards/*/
+!locav/cards/*/*.md
+
 # boilerplate-laravel: definição; clone em boilerplate-laravel/boilerplate-laravel/ fica fora.
 !boilerplate-laravel/
 boilerplate-laravel/*
