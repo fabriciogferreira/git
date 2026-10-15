@@ -25,6 +25,17 @@ chmod 600 ~/.config/environment.d/olie.conf
 - **`OLIE_FLOW_AI_MCP_TOKEN`** — só o MCP `olie-flow-ai` (`mcps/olie.json`).
 - **`OLIE_MANAGEMENT_TOKEN`** — Bearer das requests `https://api.olie.ai/api/management/...` nos prompts (`workflow-policy.md`). Precisa da ability `management:access` (ex.: sessão/PAT do app, não o token do MCP).
 
-Depois feche o Cursor por completo e reabra (login gráfico).
+### GitHub (PRs)
+
+Use **GitHub CLI** (`gh`), instalado pelo `vm-setup.sh` (`github-cli`):
+
+```bash
+gh auth login
+gh auth status
+```
+
+Não coloque PAT do GitHub no `environment.d` só para o agente: o pre-QA usa `gh pr create` / `gh pr edit` com a sessão do `gh`. Se ainda existir `GITHUB_PERSONAL_ACCESS_TOKEN` no `olie.conf` de tentativas antigas com MCP, pode remover.
+
+Depois feche o Cursor por completo e reabra (login gráfico) se mudou tokens Olie.
 
 `*.conf` com secrets ficam só no live (`~/.config`); não copiar para o git.

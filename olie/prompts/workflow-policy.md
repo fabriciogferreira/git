@@ -64,6 +64,24 @@ curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/p
 
 On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
 
+## Toggling a funnel-step checklist item
+
+Board checklists on a funnel step (e.g. QA/CR item **Pull request created**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. MCP `get-project-details` may return empty `project_checklists` even when the UI shows items.
+
+```bash
+curl -sS --url 'https://api.olie.ai/api/management/toggle-funnel-checklist' \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
+  -H 'content-type: application/json' \
+  --data-raw "{\"project_id\":\"${CARD_PROJECT_ID}\",\"step_checklist_id\":${STEP_CHECKLIST_ID}}"
+```
+
+- `CARD_PROJECT_ID` — project UUID from MCP.
+- `STEP_CHECKLIST_ID` — numeric id of the checklist row to toggle (resolve from the live board / network for that step; do not invent or hard-code across funnels). Match by the item's display label when discovering (e.g. 'Pull request created').
+- Expect `{"response":true}` and HTTP 2xx. On failure: stop and report (prompt-health).
+
+Never paste a Bearer token into a prompt, chat, or repo file — only `${OLIE_MANAGEMENT_TOKEN}` from `environment.d`.
+
 ## Tokens
 
 Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same value by assumption; never paste into chat or repo files.
@@ -71,7 +89,7 @@ Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same v
 | Variable | Use |
 | --- | --- |
 | `OLIE_FLOW_AI_MCP_TOKEN` | Cursor MCP `olie-flow-ai` only (`mcps/olie.json` → `${env:OLIE_FLOW_AI_MCP_TOKEN}`) |
-| `OLIE_MANAGEMENT_TOKEN` | HTTP `https://api.olie.ai/api/management/...` (move card, project-executions). Needs `management:access`. |
+| `OLIE_MANAGEMENT_TOKEN` | HTTP `https://api.olie.ai/api/management/...` (move card, project-executions, toggle-funnel-checklist). Needs `management:access`. |
 
 Layout and examples: `~/git/.config/environment.d/README.md`.
 

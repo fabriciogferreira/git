@@ -21,7 +21,7 @@ alwaysApply: true
 | `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
 | `lib/project-start.sh` | A subida (fetch, compose, after_compose, wait URL, e2e, Cursor, browser) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`. |
 | `*/start.hook.sh` | Passo pós-compose que não cabe em variável (`workvm_project_after_compose`). Roda antes do WAIT_URL. |
-| `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` só diz esse nome. No login o merge vai para `~/.cursor/mcp.json` (user-level). |
+| `mcps/<nome>.json` | O mesmo MCP serve a mais de um projeto. O arquivo leva o nome do que ele conecta; o `project.conf` aponta o MCP principal (`MCP=`). No login o merge inclui **todos** os `mcps/*.json` → `~/.cursor/mcp.json` (user-level). PRs usam `gh` (pacote `github-cli` no `vm-setup`), não um MCP GitHub. |
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
 | `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
 | `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e). Clones `televisao-api/` / `front` / `meet-*` fora do git. |

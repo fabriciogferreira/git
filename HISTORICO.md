@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Checklist 'Pull request created' via toggle-funnel-checklist
+
+- **problema:** pre-QA pedia marcar 'Pull request created' no QA/CR, mas o MCP devolvia `project_checklists` vazio
+- **por que é um problema:** handoff incompleto; item fica desmarcado na UI
+- **resolvido como:** HTTP `POST /api/management/toggle-funnel-checklist` com `OLIE_MANAGEMENT_TOKEN`, `project_id` e `step_checklist_id` vivos; documentado em `workflow-policy.md` e Phase 5 do `pre-qa.md`
+
+## GitHub: pre-QA via `gh`, não MCP
+
+- **problema:** GitHub MCP (`create_pull_request`) abria form deferral (às vezes invisível) e não setava assignee/label de forma confiável; PAT no `environment.d` + MCP `github-direct` ainda falhava sem scope `read:org`
+- **por que é um problema:** handoff QA/CR incompleto; agente parado no create PR
+- **resolvido como:** `github-cli` no `vm-setup.sh`; Phase 4 do `olie/prompts/pre-qa.md` (e nota no Locav) usa `gh pr create` / `gh pr edit`; removido `mcps/github.json`; auth com `gh auth login` (não PAT no environment.d para GitHub)
+
 ## Olie WorkVM: 8 GiB → 10 GiB (config versionada)
 
 - **problema:** guest `olie` com 8 GiB já usava ~1.8 GiB de swap sob carga (compose + Cursor + browser); o XML da domain não estava no git (`olie/*` no ignore)

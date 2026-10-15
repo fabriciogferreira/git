@@ -388,8 +388,9 @@ EOF
     fi
 }
 
-# Junta mcps/<MCP>, .cursor/mcp.json dos CLONE_REPOS, E2E_COMPOSE_DIRS e
-# suítes sob projects/<id>/*/ em ~/.cursor/mcp.json (user-level).
+# Junta todos os mcps/*.json (MCP do projeto + extras como github),
+# .cursor/mcp.json dos CLONE_REPOS, E2E_COMPOSE_DIRS e suítes sob
+# projects/<id>/*/ em ~/.cursor/mcp.json (user-level).
 # Problema: MCP só em .cursor/mcp.json do root exige opt-in manual a cada
 # workspace; user-level não. Relê no login porque os fontes são versionados.
 # Stub local nos de projeto para o nome igual não ganhar do global desligado.
@@ -417,14 +418,21 @@ workvm_apply_mcp() {
     fi
     name="${MCP:-}"
 
+    # MCP nomeado pelo projeto continua obrigatório quando MCP= está setado.
     if [ -n "$name" ]; then
         src="$repo_root/mcps/$name.json"
         if [ ! -f "$src" ]; then
             echo "error: MCP '$name' não está em mcps/$name.json" >&2
             return 1
         fi
-        sources+=("$src")
     fi
+
+    # Todos os mcps/*.json (olie, github com feature flags, etc.).
+    shopt -s nullglob
+    for src in "$repo_root"/mcps/*.json; do
+        sources+=("$src")
+    done
+    shopt -u nullglob
 
     for entry in "${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}"; do
         [ -n "$entry" ] || continue

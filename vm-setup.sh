@@ -232,13 +232,15 @@ setup_apps() {
 
     # fuzzel = Super+R hoje; hyprlauncher fica instalado para quando a GPU do guest
     # deixar o hyprtoolkit alocar buffer (Virtio + GBM ainda crasha).
-    log "oficial: hyprland kitty fuzzel hyprlauncher dbeaver"
+    # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
+    log "oficial: hyprland kitty fuzzel hyprlauncher dbeaver github-cli"
     sudo pacman -S --needed --noconfirm \
         hyprland \
         kitty \
         fuzzel \
         hyprlauncher \
-        dbeaver
+        dbeaver \
+        github-cli
 
     log "AUR: cursor-bin brave-bin postman-bin"
     aur_install cursor-bin brave-bin postman-bin

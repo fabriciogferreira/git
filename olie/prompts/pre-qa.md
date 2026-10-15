@@ -114,26 +114,40 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 **Proceed only after all applicable checks in Phases 1–3 have passed.**
 
-**Create and configure every pull request with the GitHub MCP** (`create_pull_request`, then `update_pull_request` / related tools for assignees, reviewers, and labels). Do **not** rely on `gh pr create`, browser UI, or other CLI paths for creation — those routinely fail in this environment. If the GitHub MCP is missing, unauthorized, or errors, **stop and report** (prompt-health); do not silently switch tools.
+**Create and configure every pull request with GitHub CLI (`gh`)**. Prefer `gh` over the GitHub MCP: MCP App form deferral blocks create/update, and the MCP tools do not reliably set assignees or labels. If `gh` is missing, unauthenticated, or errors, **stop and report** (prompt-health); do not silently switch to the browser UI. GitHub MCP is optional fallback only when `gh` cannot run and the user explicitly authorizes it.
 
-Push the source branch first when needed so the MCP can open the PR against a remote head.
+Push the source branch first when needed so `gh` can open the PR against a remote head.
+
+```bash
+gh auth status   # must be logged in (gh auth login)
+gh pr create --repo <owner>/<repo> --base <base> --head <branch> \
+  --title "<English title>" --body "$(cat <<'EOF'
+...
+EOF
+)" \
+  --assignee <github-login> \
+  --reviewer <login1>,<login2> \
+  --label <label>
+```
+
+For an already-open PR: `gh pr edit <n> --add-assignee … --add-reviewer … --add-label …`.
 
 For every required pull request:
 
-- [ ] Create the PR via GitHub MCP `create_pull_request` with title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
+- [ ] Create the PR via `gh pr create` with title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch uses exactly the branch name specified in the card.
-- [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (GitHub MCP).
-- [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field (GitHub MCP).
-- [ ] Select the label that most closely matches the source branch name prefix (GitHub MCP).
+- [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (`gh --assignee` / `--add-assignee`).
+- [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field (`gh --reviewer` / `--add-reviewer`).
+- [ ] Select the label that most closely matches the source branch name prefix (`gh --label` / `--add-label`).
 
 Example: for `feature/teste-123`, select the label closest to `feature`.
 
 - [ ] Provide a clear title and description summarizing the purpose of the changes, the relevant card, and the verification performed.
 - [ ] Link the pull request to the card when supported by the repository workflow.
-- [ ] Verify that the pull request exists (GitHub MCP `pull_request_read` or `list_pull_requests`), targets the correct base branch, and contains the intended commits.
+- [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, and contains the intended commits.
 
-Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through the GitHub MCP.
+Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through `gh pr view` (JSON or web URL).
 
 If a required reviewer, assignee, label, or other setting is unavailable, report the limitation rather than silently omitting the requirement.
 
@@ -142,7 +156,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 **Proceed only after the required pull request or pull requests have been created and verified.**
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
-- [ ] In the 'QA/CR' stage, check off the item 'Pull request created'.
+- [ ] Check off the funnel checklist item 'Pull request created' via management HTTP `toggle-funnel-checklist` (see **Toggling a funnel-step checklist item** in `~/git/olie/prompts/workflow-policy.md`). Use `${OLIE_MANAGEMENT_TOKEN}`, the card UUID, and the live `step_checklist_id` for that item — never paste a Bearer token. Confirm `{"response":true}`.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
 

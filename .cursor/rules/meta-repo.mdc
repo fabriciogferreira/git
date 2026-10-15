@@ -49,17 +49,21 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 ## MCP / env de sessão (Cursor)
 
 - No login (`project-start.sh`, depois do overlay), `workvm_apply_mcp` junta
-  `mcps/<MCP>.json`, `.cursor/mcp.json` dos clones e dos e2e em
+  **todos** os `mcps/*.json`, `.cursor/mcp.json` dos clones e dos e2e em
   **`~/.cursor/mcp.json`** (user-level). MCP só no root do workspace exige
   opt-in manual; user-level não. Os fontes continuam versionados — a cópia
   é refeita a cada subida. Nos `.cursor/mcp.json` de projeto fica stub local
   (`mcp.workvm-user` + `skip-worktree`) para o mesmo nome não sobrescrever o
   global desligado. Não commitar o stub.
-- MCP HTTP (`mcps/<nome>.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}`.
-  O `project.conf` só informa `MCP=<nome>`.
+- MCP HTTP Olie (`mcps/olie.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}`.
+  O `project.conf` informa `MCP=<nome>` (arquivo obrigatório); os demais `mcps/*.json`
+  entram no merge automaticamente.
+- PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`), não o MCP GitHub. Auth: `gh auth login`
+  (sessão do usuário). Pacote instalado no `vm-setup.sh`.
 - Tokens em **`~/.config/environment.d/*.conf`** (diretório, não arquivo), `chmod 600`:
-  `OLIE_FLOW_AI_MCP_TOKEN` (só MCP) e `OLIE_MANAGEMENT_TOKEN` (HTTP `/api/management/...`).
-  Ex.: `~/.config/environment.d/olie.conf`.
+  `OLIE_FLOW_AI_MCP_TOKEN` (MCP Olie), `OLIE_MANAGEMENT_TOKEN` (HTTP `/api/management/...`).
+  Ex.: `~/.config/environment.d/olie.conf`. Não use PAT no `environment.d` só para GitHub
+  se `gh auth login` já cobrir o CLI.
 - `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como
   arquivo, `workvm_ensure_environment_d` migra para `local.conf`.
 - Não versionar tokens; overlay versionado pode documentar o layout em
