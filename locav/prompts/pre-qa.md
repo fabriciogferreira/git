@@ -1,12 +1,12 @@
 # Pre-QA/CR Checklist and Pull Request Workflow
 
-Run this **after** `~/git/locav/prompts/implementation-validation.md` has passed (code-only ready) and **before** the card moves to 'QA/CR'. Do not run this while expecting a code-only review — that is implementation-validation. Do not run board 'Validação' yet — that is `~/git/locav/prompts/validation.md` after colleague QA/CR.
+Run this **after** `~/git/locav/prompts/implementation-validation.md` has passed (code-only ready). This prompt prepares the handoff and, when every applicable check has passed, **moves the card to 'QA/CR'**. Do not run this while expecting a code-only review — that is implementation-validation. Do not run board 'Validação' yet — that is `~/git/locav/prompts/validation.md` after colleague QA/CR.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
 ## 1. Objective
 
-Prepare card `{{ code }}` for colleague 'QA/CR': commits, pull requests, forms, and checklist items. Code quality gates here assume implementation-validation already cleared the five code criteria.
+Prepare card `{{ code }}` for colleague 'QA/CR': commits, pull requests, forms, checklist items, and the board move to 'QA/CR' when everything required is verified. Code quality gates here assume implementation-validation already cleared the five code criteria.
 
 Inspect all relevant changes across the involved repositories. Use the card's requirements and acceptance criteria as the source of truth.
 
@@ -130,16 +130,18 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 
 ## 6. Phase 5 — Card Lifecycle Update
 
-**Proceed only after the required pull request or pull requests have been created and verified.**
+**Proceed only after the required pull request or pull requests have been created and verified, and all applicable checks in Phases 1–4 have passed.**
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
 - [ ] Check off the funnel checklist item 'Pull request created' via management HTTP `toggle-funnel-checklist` (see `~/git/olie/prompts/workflow-policy.md` — shared policy). Use `${OLIE_MANAGEMENT_TOKEN}` and the live `step_checklist_id`; never paste a Bearer token.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
+- [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using `~/git/olie/prompts/workflow-policy.md` (prefer MCP move; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.
+- [ ] Verify the card's current stage is 'QA/CR' after the move.
 
 Do not mark 'Pull request created' as complete before the relevant pull request has been verified.
 
-Do not move the card to QA/CR automatically unless explicitly instructed to do so. Completing this checklist and updating the checklist item does not, by itself, authorize a stage transition.
+Do not move to 'QA/CR' if any mandatory check from Phases 1–4 (or earlier items in this phase) failed, was skipped, or remains unresolved. If the move fails, stop and report (prompt-health); do not claim the handoff is complete.
 
 ## 7. Failure Handling and Reporting
 
@@ -167,6 +169,7 @@ After completing the applicable workflow, provide a concise report containing:
 - The pull request URLs and their verified configuration.
 - Whether an API documentation update is required.
 - The status of the 'Pull request created' checklist item.
+- Whether the card was moved to 'QA/CR' and the verified stage after the move.
 - Any unresolved issues, skipped checks, or outstanding actions.
 
-Clearly distinguish completed actions from pending work. Do not claim that the card is fully ready for QA/CR if any mandatory check remains unresolved.
+Clearly distinguish completed actions from pending work. Do not claim that the card is fully ready for QA/CR if any mandatory check remains unresolved or the stage move did not succeed.

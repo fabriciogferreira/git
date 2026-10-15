@@ -14,4 +14,4 @@ Referencing another markdown/prompt is fine when the file exists in this meta-re
 
 Shared policy: `~/git/locav/prompts/workflow-policy.md` (not usually pasted alone). Board stages resolve live via OlieFlowAi / MCP `olie-flow-ai` — do not hard-code step IDs.
 
-Typical develop handoff: `implementation.md` → `implementation-validation.md` (code only) → `pre-qa.md` (commits/PRs/forms) → 'QA/CR' → later board `validation.md`.
+Typical develop handoff: `implementation.md` → `implementation-validation.md` (code only) → `pre-qa.md` (commits/PRs/forms; moves to 'QA/CR' when checks pass) → colleague 'QA/CR' → later board `validation.md`.

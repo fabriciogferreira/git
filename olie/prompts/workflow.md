@@ -54,8 +54,7 @@ Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) only after implementation-validation passes.
-3. Move to 'QA/CR' when the user authorizes that move (pre-qa does not move by itself unless instructed).
+2. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
 
 Colleague 'QA/CR' uses `~/git/olie/prompts/colleague-review.md`.
 
