@@ -388,12 +388,13 @@ EOF
     fi
 }
 
-# Junta todos os mcps/*.json (MCP do projeto + extras como github),
+# Junta o mcps/<MCP>.json do projeto ativo (só se MCP= estiver setado),
 # .cursor/mcp.json dos CLONE_REPOS, E2E_COMPOSE_DIRS e suítes sob
-# projects/<id>/*/ em ~/.cursor/mcp.json (user-level).
+# <projeto>/*/ em ~/.cursor/mcp.json (user-level).
 # Problema: MCP só em .cursor/mcp.json do root exige opt-in manual a cada
 # workspace; user-level não. Relê no login porque os fontes são versionados.
 # Stub local nos de projeto para o nome igual não ganhar do global desligado.
+# Não mescla todos os mcps/*.json: opbed/etc. não devem ganhar olie-flow-ai.
 # Espera MCP/CLONE_REPOS/E2E já sourced. Uso: workvm_apply_mcp <repo-root> [nome] [project-dir]
 workvm_apply_mcp() {
     local repo_root="${1:-}"
@@ -403,7 +404,7 @@ workvm_apply_mcp() {
     local dest="${HOME}/.cursor/mcp.json"
     local legacy_dest="$repo_root/.cursor/mcp.json"
     local legacy_marker="$repo_root/.cursor/${WORKVM_MCP_USER_MARKER}"
-    local src entry repo rest abs path marker child
+    local src entry repo rest abs path marker child project_id
     local -a sources=()
     local -a stub_targets=()
 
@@ -417,22 +418,29 @@ workvm_apply_mcp() {
         MCP="$name"
     fi
     name="${MCP:-}"
+    project_id=""
+    if [ -n "$project_dir" ]; then
+        project_id="$(basename "$project_dir")"
+    fi
 
-    # MCP nomeado pelo projeto continua obrigatório quando MCP= está setado.
+    # MCP nomeado pelo projeto: só o arquivo pedido, e olie só em projetos do board.
     if [ -n "$name" ]; then
         src="$repo_root/mcps/$name.json"
         if [ ! -f "$src" ]; then
             echo "error: MCP '$name' não está em mcps/$name.json" >&2
             return 1
         fi
-    fi
-
-    # Todos os mcps/*.json (olie, github com feature flags, etc.).
-    shopt -s nullglob
-    for src in "$repo_root"/mcps/*.json; do
+        if [ "$name" = "olie" ]; then
+            case "$project_id" in
+                olie|locav|televisao) ;;
+                *)
+                    echo "error: MCP=olie só para olie, locav e televisao (projeto=${project_id:-?})" >&2
+                    return 1
+                    ;;
+            esac
+        fi
         sources+=("$src")
-    done
-    shopt -u nullglob
+    fi
 
     for entry in "${CLONE_REPOS[@]+"${CLONE_REPOS[@]}"}"; do
         [ -n "$entry" ] || continue

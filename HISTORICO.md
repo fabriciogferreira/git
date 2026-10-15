@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## MCP Olie só em olie / locav / televisao
+
+- **problema:** `workvm_apply_mcp` mesclava **todos** os `mcps/*.json` no login; VM de opbed/etc. ganhava `olie-flow-ai` mesmo sem `MCP=`
+- **por que é um problema:** token/tools do board Olie em projeto que não usa; contexto e risco à toa
+- **resolvido como:** merge só de `mcps/<MCP>.json` quando o conf declara; `MCP=olie` recusado fora de olie, locav e televisao
+
 ## Mutation testing pessoal, arquivo a arquivo
 
 - **problema:** o tech lead apontou testes que continuam verdes se o comportamento mudar; mutation testing do Pest mostra isso, mas a Olie não adota essa prática no `api-main`
