@@ -38,7 +38,8 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "hyprlauncher"
+-- fuzzel until hyprlauncher works on Virtio GPU (hyprtoolkit GBM crash).
+local menu        = "fuzzel"
 
 
 -------------------

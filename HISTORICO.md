@@ -2,11 +2,11 @@
 
 Problema resolvido entra aqui.
 
-## App launcher: hyprlauncher (não rofi)
+## App launcher: fuzzel (hyprlauncher ainda quebra no Virtio)
 
-- **problema:** overlay do Hyprland ainda abria `rofi -show drun` enquanto o `vm-setup` já instalava `hyprlauncher`
-- **por que é um problema:** Super+R falhava em VM nova (rofi ausente) ou puxava um launcher que o setup não provisiona
-- **resolvido como:** `local menu = "hyprlauncher"` em `.config/hypr/hyprland.lua`; pacote já vem de `setup_apps` via pacman
+- **problema:** Super+R chamava `hyprlauncher`; na WorkVM (Virtio GPU) o hyprtoolkit/aquamarine falha EGL, cai em `kms_swrast`, não aloca GBM e segfaulta
+- **por que é um problema:** menu de apps inútil no guest; bind “certo” no papel, crash na prática
+- **resolvido como:** `local menu = "fuzzel"` + `fuzzel` no `setup_apps`; `hyprlauncher` continua instalado para quando a GPU do guest permitir
 
 ## Projeto Olie em `olie/` (saiu de `projects/olie`)
 

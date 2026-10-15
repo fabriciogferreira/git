@@ -230,10 +230,13 @@ setup_passwordless() {
 setup_apps() {
     step "Hyprland, apps e ferramentas"
 
-    log "oficial: hyprland kitty hyprlauncher dbeaver"
+    # fuzzel = Super+R hoje; hyprlauncher fica instalado para quando a GPU do guest
+    # deixar o hyprtoolkit alocar buffer (Virtio + GBM ainda crasha).
+    log "oficial: hyprland kitty fuzzel hyprlauncher dbeaver"
     sudo pacman -S --needed --noconfirm \
         hyprland \
         kitty \
+        fuzzel \
         hyprlauncher \
         dbeaver
 
