@@ -225,7 +225,7 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | **WorkVM** (uma por card/projeto) | Clone(s) + Docker + Cursor multi-root (`~/git` + repos) + browser |
 | **Meta-repo** `~/git` | Provisiona VM, projeto ativo, overlays, prompts, skills locais |
 
-Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `vid2agent-code/`.
+Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `vid2agent-code/`, `use-url-query/`.
 
 VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `telvesiao`, `da-o-play`, …
 

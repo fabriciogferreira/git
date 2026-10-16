@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "use-url-query",
+      "path": "use-url-query"
+    }
+  ],
+  "settings": {}
+}

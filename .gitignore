@@ -122,6 +122,13 @@ boilerplate-laravel/*
 !boilerplate-laravel/post-clone.sh
 !boilerplate-laravel/workspace.code-workspace
 
+# use-url-query: definição; clone em use-url-query/use-url-query/ fica fora.
+!use-url-query/
+use-url-query/*
+!use-url-query/README.md
+!use-url-query/project.conf
+!use-url-query/workspace.code-workspace
+
 # Gerado por project-setup (projeto desta VM); não versionar
 .cursor/rules/workvm-project.mdc
 # Cópia do MCP do projeto setado (fonte em mcps/)

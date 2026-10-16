@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Projeto use-url-query em `use-url-query/`
+
+- **problema:** WorkVM sem definição para o pacote `fabriciogferreira/use-url-query` (`main`)
+- **por que é um problema:** sem `project.conf` o `project-setup` não clona nem abre o workspace
+- **resolvido como:** pasta `use-url-query/` com clone em `use-url-query/use-url-query`; sem compose nem pós-clone (é biblioteca)
+
 ## apply-config-vm não redefine a domain inteira
 
 - **problema:** `virsh define` de `olie/config-vm.xml` falhava porque a domain viva tem outro UUID; o script seguia e imprimia ok com a RAM/vCPU antigas
