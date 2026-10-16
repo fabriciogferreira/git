@@ -57,7 +57,7 @@ Before implementing the card, inspect the Cypress E2E suite at `~/git/locav/loca
 
 Determine whether the existing tests adequately cover the current behavior and the scenarios affected by the proposed changes.
 
-If the card changes `locav-front`, the checklist must include creating or editing Cypress specs under `cypress/e2e` for the frontend behavior the card adds or changes. Extend an existing spec when it already covers that flow; add a spec when it does not. The specs belong on the same `locav-front` branch as the UI change. Run them with `docker exec locav-frontend bun run test-ui` when the stack is up.
+If the card changes `locav-front`, the checklist must include creating or editing Cypress specs under `cypress/e2e` for the frontend behavior the card adds or changes. Extend an existing spec when it already covers that flow; add a spec when it does not. The specs belong on the same `locav-front` branch as the UI change. Run them with **Running Cypress** in `~/git/locav/prompts/workflow-policy.md` when the stack is up.
 
 If the card adds or edits `LocavApi` tests, those files are Pest 4, not new PHPUnit classes. When the card edits an existing PHPUnit test file, convert that file with Drift in the same change: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If the plugin is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/`. If Drift leaves that file as PHPUnit, finish only that file by hand and say what remained. Leave PHPUnit files the card does not touch. Pest 5 needs PHP 8.4. Do not bump PHP or PHPUnit to install it now. When the PHP version is raised, try Pest 5. Run the file with `docker exec -w /var/www/html locav-backend php artisan test --compact <test-path>`.
 
@@ -129,7 +129,7 @@ Follow the project's existing architecture, conventions, and established pattern
 - Preserve existing behavior unless the card explicitly requires changing it.
 - Image/video/audio analysis: follow `locav-project-image-analysis` / `locav-project-video-conversion`. Store at `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md`; reuse if the file exists; **commit/push on meta-repo `~/git`**; never post to project content.
 - Add or update tests to cover the intended behavior, relevant edge cases, and regressions.
-- When the change touches `locav-front`, create or edit Cypress specs under `cypress/e2e` for that frontend behavior, on the same branch. Run `docker exec locav-frontend bun run test-ui` when the environment permits.
+- When the change touches `locav-front`, create or edit Cypress specs under `cypress/e2e` for that frontend behavior, on the same branch. Run them with **Running Cypress** in `~/git/locav/prompts/workflow-policy.md` when the environment permits.
 - New or edited `LocavApi` tests are Pest 4. Convert a PHPUnit test file with Drift (`vendor/bin/pest --drift <that-file>`) only when this card edits it.
 - Run appropriate tests and verification commands for the current checklist item when the environment permits.
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.

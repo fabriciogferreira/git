@@ -124,10 +124,51 @@ curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}" 
 
 `CARD_PROJECT_ID` is the project UUID. Never hard-code it. Never paste a Bearer token. Do not copy browser headers.
 
+## Running Cypress
+
+Do not run Cypress inside `locav-frontend`. That image is Alpine (musl). The Cypress binary is glibc. `apk add xvfb` installs, then the smoke test still exits with `premature close` and `Error relocating ... __memcpy_chk`. More Alpine packages do not fix that.
+
+The dev server stays in `locav-frontend` (`http://localhost:3000`). Run Cypress on the host, from `~/git/locav/locav-front`, with the Node binary. The graphical session already has `DISPLAY`. Do not add `package-lock.json`.
+
+```bash
+cd ~/git/locav/locav-front
+node node_modules/cypress/bin/cypress install
+node node_modules/cypress/bin/cypress run
+```
+
+`cypress install` extracts the binary into `~/.cache/Cypress` and needs `unzip` on `PATH`. If `unzip` is missing, install it and run `cypress install` again. This VM is Arch: `sudo pacman -S --needed --noconfirm unzip`. A missing `unzip` leaves the cache without `Cypress/Cypress` and the next run reports `No version of Cypress is installed`.
+
+If `node_modules/cypress` is missing, `docker exec locav-frontend bun install` first, then run the host commands again. If the host command fails for another reason, stop and report (prompt-health rules).
+
+## Code review form
+
+The card's code-review form holds **Revisor(es)**, **Pull Request (front)**, and **Pull Request (back)**. Read and write it with MCP `olie-flow-ai`. Do not call `dynamic-forms/get-form-answers` or `system/bulk-update/answer_pool`. Never hard-code form ids, funnel ids, or field ids. Never paste a Bearer token.
+
+1. `get-model-dynamic-forms-tool` with `model` `project` and `model_id` the project UUID (not the card code).
+2. Copy, unchanged, the funnel-form `target` whose fields include those three labels.
+3. `get-form-answers-tool` with that `target`.
+
+**Revisor(es).** `answer` is a JSON string of an array of `{id, name}`. Those items are the PR reviewers. Do not use every collaborator, and do not drop the assignee unless that person is absent from this list. Parse the string. If `answer` is null or the array is empty, stop and report. `gh --reviewer` needs a GitHub login. Match each `name` to one collaborator login. If a name does not match exactly one login, stop and report that name.
+
+**Pull request links.** After each PR exists and `gh pr view` confirms it, write the URL with `set-form-answers-tool` on the same `target`. Send only the fields that change. **Pull Request (front)** gets the `locav-front` PR URL. **Pull Request (back)** gets the `LocavApi` PR URL. Use each field's `id` from `get-form-answers-tool`. The value is an array of one URL, `["https://..."]`, not a bare URL. If that repository has no PR, do not send that field. Then `get-form-answers-tool` again and confirm each written URL is stored.
+
+## Pull request body
+
+The body of each pull request is `.github/pull_request_template.md` in that repository, with every section filled. `LocavApi` uses `~/git/locav/LocavApi/.github/pull_request_template.md`. `locav-front` uses `~/git/locav/locav-front/.github/pull_request_template.md`. Keep the headings and the checklist items. Replace the HTML comments that ask for content. Do not replace the template with a short summary.
+
+- **Link do card na Olie:** `https://esolie.olie.ai/projects/{CARD_PROJECT_ID}/details/overview`, with the project UUID.
+- **PR(s) relacionados:** the other repository's pull request URL when this card changes both. After every required PR exists, `gh pr edit` each body so that line has the real URL. When this card changes only one repository, mark **Não se aplica**.
+- **Descrição da solução técnica:** what changed in this repository, in Brazilian Portuguese.
+- **Pontos em aberto:** the open points, or **Não se aplica** when there are none.
+- Check a checklist box only when that item was done for this change. Leave it unchecked when it does not apply.
+
+The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists.
+
 ## Language
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.
-- Commit messages, pull request titles, and pull request bodies are English.
+- Commit messages and pull request titles are English.
+- Pull request bodies follow **Pull request body** above.
 
 ## Formatting
 

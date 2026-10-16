@@ -113,7 +113,7 @@ For each correction, follow this sequence:
 ### Testing rules
 
 - Prefer tests that verify observable behavior rather than internal implementation details.
-- When a correction changes `locav-front`, the red step is a Cypress spec under `cypress/e2e` (new or edited) that covers the frontend behavior being fixed. Keep it on the same `locav-front` branch. Run it with `docker exec locav-frontend bun run test-ui`.
+- When a correction changes `locav-front`, the red step is a Cypress spec under `cypress/e2e` (new or edited) that covers the frontend behavior being fixed. Keep it on the same `locav-front` branch. Run it with **Running Cypress** in `~/git/locav/prompts/workflow-policy.md`.
 - When a correction adds or edits a `LocavApi` test, that file is Pest 4. If the red step edits an existing PHPUnit test file, convert that file with Drift in the same change: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If the plugin is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/`. If Drift leaves that file as PHPUnit, finish only that file by hand and say what remained. Leave untouched PHPUnit files. Pest 5 needs PHP 8.4. Do not bump PHP or PHPUnit to install it now. When the PHP version is raised, try Pest 5. Run it with `docker exec -w /var/www/html locav-backend php artisan test --compact <test-path>`.
 - Use real integration or E2E coverage when the defect involves interaction between components or repositories.
 - Add regression tests for confirmed bugs.

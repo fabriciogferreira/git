@@ -48,7 +48,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 - [ ] Run lint: `docker exec locav-frontend bun run lint` (or the equivalent Bun command in that container).
 - [ ] Resolve lint errors introduced by the changes and rerun lint to verify the result.
 - [ ] Cypress specs under `cypress/e2e` were created or edited for the frontend behavior this card changes, on the same branch. Extend an existing spec when it already covers that flow.
-- [ ] Run the affected Cypress specs: `docker exec locav-frontend bun run test-ui`. Investigate failures instead of treating them as unrelated.
+- [ ] Run the affected Cypress specs with **Running Cypress** in `~/git/locav/prompts/workflow-policy.md`. Investigate failures instead of treating them as unrelated.
 
 #### All involved repositories
 
@@ -113,18 +113,19 @@ Push the source branch first when needed so `gh` can open the PR against a remot
 
 For every required pull request:
 
-- [ ] Create the PR via `gh pr create` with title and body in English, as required by `~/git/locav/prompts/workflow-policy.md`.
+- [ ] Create the PR via `gh pr create` with an English title and a body that is the filled `.github/pull_request_template.md` of that repository (**Pull request body** in `~/git/locav/prompts/workflow-policy.md`).
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch is the name built in **Card branch name** in `~/git/locav/prompts/workflow-policy.md`.
 - [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (`gh --assignee` / `--add-assignee`).
-- [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field (`gh --reviewer` / `--add-reviewer`).
+- [ ] Set Reviewers to the people in the **Revisor(es)** answer, using **Code review form** in `~/git/locav/prompts/workflow-policy.md` (`gh --reviewer` / `--add-reviewer`).
 - [ ] Select the label that most closely matches the source branch name prefix (`gh --label` / `--add-label`).
 
 Example: for `feature/teste-123`, select the label closest to `feature`.
 
-- [ ] Provide a clear title and description summarizing the purpose of the changes, the relevant card, and the verification performed.
-- [ ] Link the pull request to the card when supported by the repository workflow.
-- [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, and contains the intended commits.
+- [ ] Fill every section of that template: card link, related PRs, technical description, open points, and the checklists. Check a box only when that item was done.
+- [ ] After every required PR exists, `gh pr edit` each body so **PR(s) relacionados** has the other PR URL. If this card changes only one repository, mark **Não se aplica**.
+- [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, contains the intended commits, and the body still has the template headings, the card link, and the related PR URL when one exists.
+- [ ] After those PRs are verified, write **Pull Request (front)** and **Pull Request (back)** with `set-form-answers-tool`, using **Code review form** in `~/git/locav/prompts/workflow-policy.md`. Read the fields back and confirm the stored URLs.
 
 Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through `gh pr view`.
 
@@ -168,7 +169,7 @@ After completing the applicable workflow, provide a concise report containing:
 - The results of PHPStan, tests, lint, and Pint, as applicable.
 - The identifier of the dedicated Pint commit.
 - The commit convention and branch-name validation results.
-- The pull request URLs and their verified configuration.
+- The pull request URLs and their verified configuration, including the filled template body and the **Pull Request (front)** and **Pull Request (back)** values read back from the card.
 - Whether an API documentation update is required.
 - The status of the 'Pull request created' checklist item.
 - Whether the card was moved to 'QA/CR' and the verified stage after the move.
