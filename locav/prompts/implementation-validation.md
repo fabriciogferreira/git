@@ -33,9 +33,10 @@ Also:
 Follow these steps in order. If card context is empty, stop and report that validation cannot proceed without guessing.
 
 1. Load the card through OlieFlowAi: description, requirements, acceptance criteria, and attached media (spec, PRD). Forms and PR links may be empty — that is expected here.
-2. State the proposal before opening code: what the card asked for, for whom, and which behavior changes in practice.
-3. Inspect the **local** branches and working trees for every repository the card changes (card-specific branch from the card / implementation). Review the actual diff against the correct base. Do not invent a PR if none exists.
-4. Score the delivery against the five criteria.
+2. Read every project thread and the latest version of each one (**Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`). Those texts are part of what the card asked for.
+3. State the proposal before opening code: what the card asked for, for whom, and which behavior changes in practice.
+4. Inspect the **local** branches and working trees for every repository the card changes (card-specific branch from the card / implementation). Review the actual diff against the correct base. Do not invent a PR if none exists.
+5. Score the delivery against the five criteria.
 
 ## 4. The five criteria
 

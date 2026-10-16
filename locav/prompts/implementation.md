@@ -6,7 +6,7 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 Implement the card identified by `{{ code }}`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
 
-Use the card's content as the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
+Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
 ## 2. Update the Card Stage
 
@@ -57,7 +57,11 @@ Before implementing the card, inspect the Cypress E2E suite at `~/git/locav/loca
 
 Determine whether the existing tests adequately cover the current behavior and the scenarios affected by the proposed changes.
 
-If tests are missing or coverage is insufficient, add `create tests for the behavior` as an explicit item in the implementation checklist.
+If the card changes `locav-front`, the checklist must include creating or editing Cypress specs under `cypress/e2e` for the frontend behavior the card adds or changes. Extend an existing spec when it already covers that flow; add a spec when it does not. The specs belong on the same `locav-front` branch as the UI change. Run them with `docker exec locav-frontend bun run test-ui` when the stack is up.
+
+If the card adds or edits `LocavApi` tests, those files are Pest 4, not new PHPUnit classes. When the card edits an existing PHPUnit test file, convert that file to Pest in the same change. Leave PHPUnit files the card does not touch. Pest 5 needs PHP 8.4. Do not bump PHP or PHPUnit to install it now. When the PHP version is raised, try Pest 5. Run the file with `docker exec -w /var/www/html locav-backend php artisan test --compact <test-path>`.
+
+If tests are missing or coverage is insufficient in other repositories, add `create tests for the behavior` as an explicit item in the implementation checklist.
 
 Do not assume that the absence of an obvious test means no relevant tests exist. Search the existing test suite and inspect related scenarios before identifying gaps.
 
@@ -125,6 +129,8 @@ Follow the project's existing architecture, conventions, and established pattern
 - Preserve existing behavior unless the card explicitly requires changing it.
 - Image/video/audio analysis: store at `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md`; reuse if the file exists; **commit/push on meta-repo `~/git`**; never post to project content.
 - Add or update tests to cover the intended behavior, relevant edge cases, and regressions.
+- When the change touches `locav-front`, create or edit Cypress specs under `cypress/e2e` for that frontend behavior, on the same branch. Run `docker exec locav-frontend bun run test-ui` when the environment permits.
+- New or edited `LocavApi` tests are Pest 4. Convert a PHPUnit test file only when this card edits it.
 - Run appropriate tests and verification commands for the current checklist item when the environment permits.
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
@@ -137,6 +143,8 @@ The card is complete only when all applicable checklist items have been complete
 
 - The implementation satisfies the card's requirements and acceptance criteria.
 - Relevant tests have been created or updated, and coverage gaps have been addressed as planned.
+- If `locav-front` changed, Cypress specs under `cypress/e2e` were created or edited for that frontend behavior on the same branch.
+- If `LocavApi` tests were added or edited, they are Pest 4. A PHPUnit file this card edited was converted in the same change.
 - Required tests and verification checks have been run, with any remaining limitations explicitly reported.
 - Relevant documentation and the implementation checklist are up to date.
 - The 'Issues encountered during development' section accurately reflects resolved and unresolved issues.

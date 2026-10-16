@@ -17,7 +17,7 @@ Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 - The implementation changes that were reviewed.
 - Any attached specifications, test results, and relevant comments.
 
-Treat the reviewer's findings and the card's requirements as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
+Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. Treat the reviewer's findings, the card's requirements, and those thread texts as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
 
 Media already analyzed for this card lives under `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md` (versioned on the meta-repo). **Read those files first** (after `git pull` if needed). Do not re-analyze image/video/audio or call vid2agent again unless the user asks to redo a specific media id. Never post that analysis to project content.
 
@@ -113,6 +113,8 @@ For each correction, follow this sequence:
 ### Testing rules
 
 - Prefer tests that verify observable behavior rather than internal implementation details.
+- When a correction changes `locav-front`, the red step is a Cypress spec under `cypress/e2e` (new or edited) that covers the frontend behavior being fixed. Keep it on the same `locav-front` branch. Run it with `docker exec locav-frontend bun run test-ui`.
+- When a correction adds or edits a `LocavApi` test, that file is Pest 4. If the red step edits an existing PHPUnit test file, convert that file to Pest in the same change. Leave untouched PHPUnit files. Pest 5 needs PHP 8.4. Do not bump PHP or PHPUnit to install it now. When the PHP version is raised, try Pest 5. Run it with `docker exec -w /var/www/html locav-backend php artisan test --compact <test-path>`.
 - Use real integration or E2E coverage when the defect involves interaction between components or repositories.
 - Add regression tests for confirmed bugs.
 - Keep tests focused on the specific defect and relevant edge cases.

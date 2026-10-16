@@ -15,3 +15,5 @@ Referencing another markdown/prompt is fine when the file exists in this meta-re
 Shared policy: `~/git/locav/prompts/workflow-policy.md` (not usually pasted alone). Board stages resolve live via OlieFlowAi / MCP `olie-flow-ai` — do not hard-code step IDs.
 
 Typical develop handoff: `implementation.md` → `implementation-validation.md` (code only) → `pre-qa.md` (commits/PRs/forms; moves to 'QA/CR' when checks pass) → colleague 'QA/CR' → later board `validation.md`.
+
+Personal, not a card prompt: `~/git/locav/prompts/mutation-testing.md` converts the next changed `LocavApi` PHPUnit test to Pest 4 when needed, runs mutation testing on that file, and appends it to `~/git/locav/prompts/mutation-ledger.md`. Paste again to stack the next file. Do not copy that workflow into CI or the company compose.

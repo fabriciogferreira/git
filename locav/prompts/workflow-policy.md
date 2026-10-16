@@ -66,6 +66,42 @@ curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/p
 
 On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
 
+## Reading the project forum
+
+The card from MCP is not the whole spec. Before deciding what to implement, correct, or review, also read every thread on that project and the text of the **latest version** of each thread.
+
+`CARD_PROJECT_ID` is the project UUID from MCP (the same id used in `project_ids`). Never hard-code it. Never paste a Bearer token; use `${OLIE_MANAGEMENT_TOKEN}`. Do not copy browser headers (sentry, sec-ch-ua, cookies, socket id).
+
+1. Load the forum:
+
+```bash
+curl -sS --url 'https://api.olie.ai/api/management/get-forum' \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
+  -H 'content-type: application/json' \
+  --data-raw '{"model_class":"App\\Models\\Project","model_id":"'"${CARD_PROJECT_ID}"'"}'
+```
+
+2. Take `forum.id` as `FORUM_ID`. Walk `forum.threads` and every nested `children` array. Collect each thread's `id` and `name`, including the default thread. Do not stop at `default_thread_id`.
+3. For each thread, load its versions:
+
+```bash
+curl -sS --url "https://api.olie.ai/api/management/get-thread/${FORUM_ID}/${THREAD_ID}" \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
+```
+
+4. From `thread.versions`, choose the version with the latest `created_at`. That id is `VERSION_ID`. If `versions` is empty, note the thread name and continue with the others.
+5. Load that version. The body is a TipTap document; read its text. That text is part of what the card asks for.
+
+```bash
+curl -sS --url "https://api.olie.ai/api/management/get-thread-data/${FORUM_ID}/${THREAD_ID}?version=${VERSION_ID}" \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
+```
+
+On non-2xx or missing env: stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the forum call failed.
+
 ## Language
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.

@@ -38,7 +38,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 #### `LocavApi`
 
-- [ ] Run all relevant tests using `docker exec locav-backend` (PHPUnit / Paratest as the repo supports).
+- [ ] Run the tests this card touched: `docker exec -w /var/www/html locav-backend php artisan test --compact` with those paths. New or edited `LocavApi` tests are Pest 4. A PHPUnit file this card edited was converted in the same change. Untouched PHPUnit files stay as they are.
 - [ ] Review test results and investigate any failures instead of assuming they are unrelated to the changes.
 - [ ] Run Pint to format affected PHP changes (`docker exec locav-backend ./vendor/bin/pint` or the project equivalent).
 - [ ] If Pint changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.
@@ -47,6 +47,8 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 - [ ] Run lint: `docker exec locav-frontend bun run lint` (or the equivalent Bun command in that container).
 - [ ] Resolve lint errors introduced by the changes and rerun lint to verify the result.
+- [ ] Cypress specs under `cypress/e2e` were created or edited for the frontend behavior this card changes, on the same branch. Extend an existing spec when it already covers that flow.
+- [ ] Run the affected Cypress specs: `docker exec locav-frontend bun run test-ui`. Investigate failures instead of treating them as unrelated.
 
 #### All involved repositories
 

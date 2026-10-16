@@ -8,7 +8,7 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
 
-The card's requirements and acceptance criteria are the source of truth. A change that works but does not match the card is not a pass.
+The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
 
 ## 2. Context
 
@@ -49,7 +49,9 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 - The behavior matches the card, including the edge cases the card states.
 - The pull request contains that behavior and does not smuggle unrelated changes.
 - Light and dark theme text contrast both hold on the screens the card changes.
-If `locav-front` changed, note whether Cypress under `cypress/` covers the requested frontend behavior, or say which case could not be automated and why.
+If `locav-front` changed, the author's branch must create or edit Cypress specs under `cypress/e2e` for the requested frontend behavior. Missing coverage is a failed review, unless you state which case could not be automated and why. Do not add the specs yourself; they belong on that branch.
+
+If `LocavApi` tests were added or edited, those files are Pest 4. A new PHPUnit test class, or a PHPUnit file the card edited and left as PHPUnit, is a failed review. Untouched PHPUnit files are not a defect. Do not convert them yourself.
 
 ## 6. Out of scope
 
@@ -64,7 +66,8 @@ If `locav-front` changed, note whether Cypress under `cypress/` covers the reque
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.
 - Contrast result for light and dark themes.
-- Whether Cypress coverage was adequate or which gaps remain.
+- If `locav-front` changed, whether the branch created or edited Cypress specs under `cypress/e2e` for that behavior, or which case could not be automated and why.
+- If `LocavApi` tests changed, whether new or edited files are Pest 4, or which edited file is still PHPUnit.
 - Checks that did not run, and why.
 
 A failed requirement is a failed review. Do not call the card ready for 'Validação' while one remains open.
