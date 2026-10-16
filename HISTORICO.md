@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## apply-config-vm não redefine a domain inteira
+
+- **problema:** `virsh define` de `olie/config-vm.xml` falhava porque a domain viva tem outro UUID; o script seguia e imprimia ok com a RAM/vCPU antigas
+- **por que é um problema:** o teto novo não entra, e o log mente
+- **resolvido como:** com a guest `shut off`, só `setmaxmem` / `setmem` / `setvcpus`; falha de `virsh` encerra sem ok. UUID e MAC da domain ficam como estão
+
+## Olie WorkVM: teto de 9 vCPU
+
+- **problema:** a guest `olie` estava em 4 vCPU; o teto é o que limita o paralelismo, não uma reserva no host
+- **por que é um problema:** compose, front e Cursor da Olie são a carga mais pesada e ficavam abaixo do que o host aguenta com uma VM só
+- **resolvido como:** `<vcpu>9</vcpu>` em `olie/config-vm.xml`; aplicar com a VM parada via `bin/apply-config-vm.sh olie`
+
 ## Clone no primeiro boot da VM clonada, antes do DNS
 
 - **problema:** o autologin abre o menu do `project-setup` e o `git clone` morre com `Could not resolve hostname github.com: Temporary failure in name resolution`

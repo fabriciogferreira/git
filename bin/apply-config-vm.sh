@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Aplica RAM/vCPU de <projeto>/config-vm.xml na domain libvirt existente e parada.
-# Problema: o XML versionado pode ter <name> velho (ex. olie-dop-1206) enquanto a
-# domain real é o id do projeto (olie); virsh define no nome errado não muda a VM.
-# Não cria domain nova. Não redefine o XML inteiro se o <name> não bate com a
-# domain viva (só setmaxmem/setmem/setvcpus). Roda no host.
+# Problema: virsh define do XML inteiro falha (ou troca disco/MAC) quando o UUID
+# da domain viva não é o do arquivo. O que muda de projeto para projeto é o teto.
+# Não cria domain nova. Não redefine o XML inteiro. Roda no host.
 # Usage:
 #   bin/apply-config-vm.sh              # todo projeto com config-vm.xml
 #   bin/apply-config-vm.sh olie         # um projeto (falha se a domain não existir)
@@ -146,17 +145,13 @@ workvm_apply_config_vm() {
 
     echo "→ $id: $name ($uri) → ${mem_kib} KiB RAM, ${vcpus} vCPU"
 
-    if [ "$name" = "$xml_name" ]; then
-        virsh -c "$uri" define "$xml"
-    else
-        # Nome diverge: não define o XML inteiro (criaria/alteraria outra domain).
-        virsh -c "$uri" setmaxmem "$name" "$mem_kib" --config
-        virsh -c "$uri" setmem "$name" "$mem_kib" --config
-        virsh -c "$uri" setvcpus "$name" "$vcpus" --config --maximum
-        virsh -c "$uri" setvcpus "$name" "$vcpus" --config
-    fi
+    # set -e não vale aqui: main chama esta função dentro de if.
+    # Máximo antes do atual: subir o teto com o atual ainda alto falha no libvirt.
+    virsh -c "$uri" setmaxmem "$name" "$mem_kib" --config || return 1
+    virsh -c "$uri" setmem "$name" "$mem_kib" --config || return 1
+    virsh -c "$uri" setvcpus "$name" "$vcpus" --config --maximum || return 1
+    virsh -c "$uri" setvcpus "$name" "$vcpus" --config || return 1
 
-    # Confirma na mesma URI (virsh sem -c costuma ser session; olie está em system).
     echo "  ok: próximo boot de '$name' usa a config nova"
     virsh -c "$uri" dumpxml "$name" | grep -E '^\s*<(memory|currentMemory|vcpu) ' || true
     return 0
