@@ -84,10 +84,10 @@ If API documentation is required, record this explicitly in the card and report 
 
 ### 4.1. Branch Naming
 
-- [ ] Verify that every involved repository uses exactly the branch name specified in the card content, specifically the 'Branch' field in the repository form or branch generator.
-- [ ] Apply the same branch name across all involved repositories, including repositories containing only tests.
+- [ ] Verify that every involved repository uses the branch name built in **Card branch name** in `~/git/locav/prompts/workflow-policy.md`. Locav does not store that name in a Branch field on the card.
+- [ ] Apply that same built name across all involved repositories, including repositories containing only tests.
 - [ ] Do not invent alternative prefixes or suffixes such as `test/`, `fix/`, or `chore/`.
-- [ ] If the branch does not exist on a remote repository, create it using the exact required name and the correct base branch for that repository, such as `develop` or `master`.
+- [ ] If the branch does not exist on a remote repository, create it with the built name from the repository base in `~/git/locav/prompts/project.md` (`preview`).
 - [ ] If a branch was created with an incorrect name, correct the branch name locally and remotely and update any associated pull request references as necessary.
 
 Before renaming or deleting a remote branch, verify that it is the incorrect branch associated with this card. Preserve unrelated branches and work. If renaming or deleting the branch could affect other contributors or existing work, stop and request confirmation before performing the destructive operation.
@@ -115,7 +115,7 @@ For every required pull request:
 
 - [ ] Create the PR via `gh pr create` with title and body in English, as required by `~/git/locav/prompts/workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
-- [ ] Verify that the source branch uses exactly the branch name specified in the card.
+- [ ] Verify that the source branch is the name built in **Card branch name** in `~/git/locav/prompts/workflow-policy.md`.
 - [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (`gh --assignee` / `--add-assignee`).
 - [ ] Set Reviewers to all available reviewers except the person identified in the 'Assigned to' field (`gh --reviewer` / `--add-reviewer`).
 - [ ] Select the label that most closely matches the source branch name prefix (`gh --label` / `--add-label`).

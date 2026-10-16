@@ -27,8 +27,8 @@ Before making any code changes:
 2. Check the current Git status in every affected repository. Preserve existing user changes and never overwrite, discard, or silently modify unrelated work.
 3. Switch each affected repository to its base branch. If the working tree contains changes that could interfere with switching branches or updating the repository, stop and report the situation before proceeding.
 4. Pull the latest changes from each base branch. If an update fails or cannot be completed safely, report the issue and wait for further instructions.
-5. Read the card's content to identify the required branch name.
-6. Create and switch to that card-specific branch from the updated base in every repository the card changes.
+5. Build the branch name with **Card branch name** in `~/git/locav/prompts/workflow-policy.md`. Do not look for a Branch field in the card.
+6. Create and switch to that branch from the updated base in every repository the card changes. Use the same name in each repository.
 7. Verify every active branch before proceeding.
 
 Do not implement the card on a base branch.

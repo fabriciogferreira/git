@@ -63,10 +63,10 @@ Identify every repository involved in the card, including:
 For each repository:
 
 1. Inspect the Git status and identify uncommitted changes.
-2. Determine the exact branch used by the associated pull request and the branch naming specified in the card.
+2. Determine the exact branch used by the associated pull request. The Locav name is the one built in **Card branch name** in `~/git/locav/prompts/workflow-policy.md`, not a Branch field on the card.
 3. Inspect the relevant commits and compare the branch against the correct base.
 4. Switch to the correct existing branch when it is safe to do so.
-5. If the branch is missing, determine the correct base and branch name from the card and repository workflow before creating it.
+5. If the branch is missing, create it with the name from **Card branch name** in `~/git/locav/prompts/workflow-policy.md`, from that repository's base branch in `~/git/locav/prompts/project.md`.
 
 Never discard, overwrite, or silently modify existing user changes. If uncommitted changes prevent a safe branch switch, stop and report the blocker.
 

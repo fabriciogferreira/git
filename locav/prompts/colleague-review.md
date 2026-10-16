@@ -39,7 +39,7 @@ On each company repository the card touches:
 
 1. Find the branch the author created.
 2. Check it out so you can run the feature.
-3. If that branch does not exist yet, create it from the repository's base (`develop` or `master`, as that repository uses).
+3. If that branch does not exist yet, create the name from **Card branch name** in `~/git/locav/prompts/workflow-policy.md`, from the repository base in `~/git/locav/prompts/project.md` (`preview`).
 4. Do not rename their branch and do not commit on it.
 
 Leave unrelated local changes untouched. If a checkout would overwrite them, stop and report the blocker.

@@ -102,6 +102,28 @@ curl -sS --url "https://api.olie.ai/api/management/get-thread-data/${FORUM_ID}/$
 
 On non-2xx or missing env: stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the forum call failed.
 
+## Card branch name
+
+Locav does not store the git branch in the card. Build it. Use the same name in every repository the card changes.
+
+`{type}/{code}-{english-slug}`
+
+- `type` is `feature` or `bug`. Read `project.tags[].name`. A tag named Feature (any case) means `feature`. A tag named Bug means `bug`. If both are present, stop and report the tags. If neither is present, infer `feature` or `bug` from the card name, description, and threads, and say why.
+- `code` is the card code in lowercase (`LCV-24` → `lcv-24`).
+- `english-slug` is the card `name` translated to English, then lowercased. Separate words with `-`. Keep only letters and numbers. Drop punctuation, accents, and extra dots (`L.ogin!!!!!!` → `login`).
+
+Example: type `feature`, code `LCV-24`, name `adicionar Botão de login na tela de L.ogin!!!!!!` → `feature/lcv-24-add-a-login-button-to-the-login-screen`.
+
+Tags come with the project. MCP project details include `tags`. If they are missing, load the project:
+
+```bash
+curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}" \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
+```
+
+`CARD_PROJECT_ID` is the project UUID. Never hard-code it. Never paste a Bearer token. Do not copy browser headers.
+
 ## Language
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.
