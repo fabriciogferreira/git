@@ -29,7 +29,7 @@ alwaysApply: true
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
-| `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clone em `use-url-query/use-url-query/` fora do git. Sem compose. |
+| `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clone em `use-url-query/use-url-query/` fora do git. Compose: `docker-compose.yml` no clone. |
 | `*/config-vm.xml` | Domain libvirt do projeto (RAM/vCPU). Sem isso toda WorkVM vira clone genérico e o host de 32 GiB não distribui bem. |
 | `bin/apply-config-vm.sh` | XML mudou e a domain no host ficou velha. Com a VM `shut off`, aplica só RAM/vCPU (`setmaxmem`/`setvcpus`); não cria guest nem redefine UUID/disco. |
 | `*/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone. Skills do Boost vêm de `boost:update` no clone. |

@@ -134,7 +134,27 @@ workvm_open_chromium() { :; }
 workvm_wait_for_http() { return 0; }
 EOF
 
+# A rule do Cursor roda no project-setup, antes do project-start zerar os arrays.
+check_rule_without_chromium() {
+    local tmp="$1"
+    local repo="$tmp/rule-repo"
+
+    mkdir -p "$repo"
+    bash -euo pipefail -c '
+        source "$1"
+        unset CHROMIUM_URLS
+        CLONE_REPOS=()
+        workvm_write_cursor_project_rule "$2" check
+    ' bash "$REPO_ROOT/lib/common.sh" "$repo" >/dev/null
+
+    if ! grep -q 'Browser URLs:' "$repo/.cursor/rules/workvm-project.mdc"; then
+        echo "error: rule sem CHROMIUM_URLS não gravou Browser URLs" >&2
+        exit 1
+    fi
+}
+
 check_unset_arrays "$tmp"
+check_rule_without_chromium "$tmp"
 check_compose_file_log "$tmp"
 check_e2e_drops_compose_file "$tmp"
 "$BIN_DIR/check-prompts.sh"

@@ -2,11 +2,23 @@
 
 Problema resolvido entra aqui.
 
+## Login do use-url-query não sobe o compose
+
+- **problema:** depois do reboot `docker ps` vinha vazio
+- **por que é um problema:** o clone tem `docker-compose.yml` (bun), mas o `project.conf` não setava `COMPOSE_DIR`, então o `project-start` pulava o Docker
+- **resolvido como:** `COMPOSE_DIR` aponta para o clone; o arquivo default já é `docker-compose.yml`. Sem `WAIT_URL`: o serviço não escuta HTTP
+
+## Setup de use-url-query aborta em CHROMIUM_URLS
+
+- **problema:** `project-setup.sh use-url-query` morria em `lib/cursor.sh` com `CHROMIUM_URLS: unbound variable`
+- **por que é um problema:** o conf da biblioteca não declara browser; com `set -u` a rule do projeto ativo não grava e o `workvm.service` não habilita
+- **resolvido como:** a rule só lê o array se ele existir; o setup zera `CHROMIUM_URLS` antes do `source`, como o `project-start.sh` já fazia
+
 ## Projeto use-url-query em `use-url-query/`
 
 - **problema:** WorkVM sem definição para o pacote `fabriciogferreira/use-url-query` (`main`)
 - **por que é um problema:** sem `project.conf` o `project-setup` não clona nem abre o workspace
-- **resolvido como:** pasta `use-url-query/` com clone em `use-url-query/use-url-query`; sem compose nem pós-clone (é biblioteca)
+- **resolvido como:** pasta `use-url-query/` com clone em `use-url-query/use-url-query`; pós-clone vazio. O compose do clone entra no login via `COMPOSE_DIR`
 
 ## apply-config-vm não redefine a domain inteira
 

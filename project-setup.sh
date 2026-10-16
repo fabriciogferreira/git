@@ -165,6 +165,9 @@ fi
 
 CLONE_REPOS=()
 POST_CLONE=()
+# Lido pela rule do Cursor; project.conf de biblioteca não declara.
+# shellcheck disable=SC2034
+CHROMIUM_URLS=()
 # shellcheck source=/dev/null
 source "$PROJECT_SRC/project.conf"
 

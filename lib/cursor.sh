@@ -56,7 +56,9 @@ workvm_write_cursor_project_rule() {
     local compose_file_disp="${COMPOSE_FILE:-docker-compose.yml}"
     local wait_disp="${WAIT_URL:-—}"
     local browser_disp="—"
-    if [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
+    # project.conf de biblioteca não declara o array. set -u trata
+    # ${#CHROMIUM_URLS[@]} não declarado como unbound e aborta o setup.
+    if [ -n "${CHROMIUM_URLS+x}" ] && [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
         browser_disp="${CHROMIUM_URLS[*]}"
     fi
 
