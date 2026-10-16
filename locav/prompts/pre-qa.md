@@ -129,7 +129,7 @@ Example: for `feature/teste-123`, select the label closest to `feature`.
 
 Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through `gh pr view`.
 
-If a required reviewer, assignee, label, or other setting is unavailable, report the limitation rather than silently omitting the requirement.
+If a **Revisor(es)** name does not match exactly one collaborator, do not add that reviewer (**Code review form** in `~/git/locav/prompts/workflow-policy.md`). If an assignee, label, or other required setting is unavailable, report the limitation rather than silently omitting it.
 
 ## 6. Phase 5 — Card Lifecycle Update
 
