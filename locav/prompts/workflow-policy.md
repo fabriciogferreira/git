@@ -108,7 +108,7 @@ Locav does not store the git branch in the card. Build it. Use the same name in 
 
 `{type}/{code}-{english-slug}`
 
-- `type` is `feature` or `bug`. Read `project.tags[].name`. A tag named Feature (any case) means `feature`. A tag named Bug means `bug`. If both are present, stop and report the tags. If neither is present, infer `feature` or `bug` from the card name, description, and threads, and say why.
+- `type` is `feature` or `bug`. Read `project.tags[].name`. A tag named Melhoria (any case) means `feature`. A tag named Bug means `bug`. If both are present, stop and report the tags. If neither is present, infer `feature` or `bug` from the card name, description, and threads, and say why.
 - `code` is the card code in lowercase (`LCV-24` → `lcv-24`).
 - `english-slug` is the card `name` translated to English, then lowercased. Separate words with `-`. Keep only letters and numbers. Drop punctuation, accents, and extra dots (`L.ogin!!!!!!` → `login`).
 
