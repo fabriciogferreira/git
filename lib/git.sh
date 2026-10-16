@@ -263,10 +263,40 @@ workvm_clone_repo() {
     workvm_pull_repo "$destination" "$branch"
 }
 
+# Espera github.com resolver.
+# Problema: o autologin abre o menu do project-setup antes do DHCP. O git
+# clone morre com "Temporary failure in name resolution"; a frase de access
+# rights do git é genérica e parece permissão de SSH.
+# Se já resolve, retorna na hora. Não espera no fetch do login (esse só avisa).
+workvm_wait_for_github_dns() {
+    local host="github.com"
+    local timeout="${1:-60}"
+    local elapsed=0
+
+    if getent hosts "$host" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo "==> Rede ainda sem DNS ($host); esperando até ${timeout}s"
+    while [ "$elapsed" -lt "$timeout" ]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+        if getent hosts "$host" >/dev/null 2>&1; then
+            echo "✓ DNS ok: $host"
+            return 0
+        fi
+    done
+
+    echo "error: DNS não resolveu $host em ${timeout}s (DHCP desta VM ainda não subiu?)" >&2
+    return 1
+}
+
 # Entries: "<git-url> <path> [branch]". Relative paths are under GIT_ROOT (default $HOME/git).
 workvm_clone_project_repos() {
     local git_root="${GIT_ROOT:-$HOME/git}"
     local entry repo dest branch rest
+
+    workvm_wait_for_github_dns
 
     mkdir -p "$git_root"
 

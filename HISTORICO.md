@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Clone no primeiro boot da VM clonada, antes do DNS
+
+- **problema:** o autologin abre o menu do `project-setup` e o `git clone` morre com `Could not resolve hostname github.com: Temporary failure in name resolution`
+- **por que é um problema:** a VM nova não clona o projeto. A frase de access rights do git parece permissão de SSH; abrir o Cursor e rodar de novo só funciona porque o DHCP já subiu
+- **resolvido como:** `workvm_clone_project_repos` espera o DNS de `github.com` (até 60s) antes do clone. Se já resolve, segue na hora. O fetch do login continua só avisando
+
 ## MCP Olie só em olie / locav / televisao
 
 - **problema:** `workvm_apply_mcp` mesclava **todos** os `mcps/*.json` no login; VM de opbed/etc. ganhava `olie-flow-ai` mesmo sem `MCP=`
