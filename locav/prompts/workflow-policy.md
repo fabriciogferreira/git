@@ -92,7 +92,7 @@ curl -sS --url "https://api.olie.ai/api/management/get-thread/${FORUM_ID}/${THRE
 ```
 
 4. From `thread.versions`, choose the version with the latest `created_at`. That id is `VERSION_ID`. If `versions` is empty, note the thread name and continue with the others.
-5. Load that version. The body is a TipTap document; read its text. That text is part of what the card asks for.
+5. Load that version. The body is a TipTap document. Read its text. That text is part of what the card asks for. Walk every node, including nested `content`. A node with `type` `image` and a non-empty `attrs.src` is an image: follow `locav-project-image-analysis` (thread images). `imageUpload` without `src` is an empty editor node; skip it. Do not store the query string of `src`; it is a signed URL and expires.
 
 ```bash
 curl -sS --url "https://api.olie.ai/api/management/get-thread-data/${FORUM_ID}/${THREAD_ID}?version=${VERSION_ID}" \

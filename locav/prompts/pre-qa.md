@@ -38,7 +38,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 #### `LocavApi`
 
-- [ ] Run the tests this card touched: `docker exec -w /var/www/html locav-backend php artisan test --compact` with those paths. New or edited `LocavApi` tests are Pest 4. A PHPUnit file this card edited was converted in the same change. Untouched PHPUnit files stay as they are.
+- [ ] Run the tests this card touched: `docker exec -w /var/www/html locav-backend php artisan test --compact` with those paths. New or edited `LocavApi` tests are Pest 4. A PHPUnit file this card edited was converted with Drift (`vendor/bin/pest --drift <that-file>`) in the same change. Untouched PHPUnit files stay as they are.
 - [ ] Review test results and investigate any failures instead of assuming they are unrelated to the changes.
 - [ ] Run Pint to format affected PHP changes (`docker exec locav-backend ./vendor/bin/pint` or the project equivalent).
 - [ ] If Pint changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.

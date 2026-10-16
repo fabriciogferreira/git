@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Locav não converte imagem e vídeo do card
+
+- **problema:** o prompt da Locav só dizia onde salvar a análise; não havia skill no overlay
+- **por que é um problema:** o agente não analisa a imagem nem chama o vid2agent, e na correção o texto da mídia não existe
+- **resolvido como:** as mesmas skills da Olie, com destino `~/git/locav/cards/`, em `locav/overlay/` (`LocavApi` e `locav-front`). Áudio continua só na regra de não postar a análise, como na Olie
+
 ## Login do use-url-query não sobe o compose
 
 - **problema:** depois do reboot `docker ps` vinha vazio
