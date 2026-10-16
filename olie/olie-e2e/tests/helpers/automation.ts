@@ -339,3 +339,47 @@ export async function pickSelectOptionByText(
     await expect(option).toBeVisible({ timeout: 10_000 })
     await option.click({ force: true })
 }
+
+// ---------------------------------------------------------------------------
+// DOP-1132 — send step/funnel attachments via "Envia conteúdo do projeto"
+// ---------------------------------------------------------------------------
+
+/** Picker title for the project-content-add action. */
+export const DOP_1132_PROJECT_CONTENT_ADD_ACTION =
+    /Envia conteúdo do projeto|Send project content/i
+
+/** Skip unless "Envia conteúdo do projeto" is listed after a trigger exists. */
+export async function requireProjectContentAddAction(page: Page) {
+    await searchComponentPicker(page, 'Envia conteúdo')
+    await requireVisible(
+        page,
+        'DOP-1132',
+        page
+            .locator('.new-component-selector .component-layout')
+            .filter({ hasText: DOP_1132_PROJECT_CONTENT_ADD_ACTION }),
+        5_000
+    )
+}
+
+/**
+ * New automation → any trigger → action palette →
+ * open "Envia conteúdo do projeto".
+ */
+export async function openProjectContentAddAction(page: Page) {
+    await openNewAutomationModal(page)
+    await pickFlowComponent(page, /Projeto movido de etapa|Project moved/i)
+    await openActionOrConditionPicker(page)
+    await requireProjectContentAddAction(page)
+    await pickFlowComponent(page, DOP_1132_PROJECT_CONTENT_ADD_ACTION)
+
+    await expect(projectContentAddAttachmentsBlock(page)).toBeVisible({ timeout: 15_000 })
+}
+
+/** Block with the optional step/funnel attachment MultiSelect (DOP-1132). */
+export function projectContentAddAttachmentsBlock(page: Page): Locator {
+    return page.locator('#project_content_add_attachments')
+}
+
+export function projectContentAddAttachmentsMultiSelect(page: Page): Locator {
+    return projectContentAddAttachmentsBlock(page).locator('.p-multiselect').first()
+}
