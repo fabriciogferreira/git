@@ -79,7 +79,8 @@ if ! pick_uri; then
     exit 0
 fi
 
-payload=$(printf '{"execute":"guest-exec","arguments":{"path":"/bin/sh","arg":["-c","hostnamectl set-hostname %s && systemctl try-reload-or-restart avahi-daemon.service"],"capture-output":true}}' "$domain")
+# Reload keeps the name Avahi already published. A restart reads the new hostname.
+payload=$(printf '{"execute":"guest-exec","arguments":{"path":"/bin/sh","arg":["-c","hostnamectl set-hostname %s && systemctl restart avahi-daemon.service"],"capture-output":true}}' "$domain")
 response=$(virsh_agent "$payload")
 pid=$(printf '%s' "$response" | grep -o '"pid"[[:space:]]*:[[:space:]]*[0-9][0-9]*' | grep -o '[0-9][0-9]*$')
 
