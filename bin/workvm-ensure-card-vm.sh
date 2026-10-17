@@ -41,6 +41,26 @@ find_uri() {
     return 1
 }
 
+print_ip() {
+    local uri=$1
+    local name=$2
+    local source line ip
+
+    for _ in $(seq 1 10); do
+        for source in lease agent; do
+            line=$("$virsh_bin" -c "$uri" domifaddr "$name" --source "$source" 2>/dev/null | awk '/ipv4/ { print $NF; exit }' || true)
+            ip=${line%%/*}
+
+            if printf '%s' "$ip" | grep -Eq '^[0-9]+(\.[0-9]+){3}$'; then
+                printf 'ip=%s\n' "$ip"
+                return 0
+            fi
+        done
+
+        sleep 1
+    done
+}
+
 start_if_needed() {
     local uri=$1
     local name=$2
@@ -65,6 +85,7 @@ start_if_needed() {
 
 if uri=$(find_uri "$clone"); then
     start_if_needed "$uri" "$clone"
+    print_ip "$uri" "$clone"
     exit 0
 fi
 
@@ -90,3 +111,4 @@ fi
 "$virt_clone" --connect "$uri" --original "$template" --name "$clone" --auto-clone
 "$virsh_bin" -c "$uri" start "$clone"
 printf '%s clonada e ligada\n' "$clone"
+print_ip "$uri" "$clone"
