@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Card novo não ganha VM
+
+- **problema:** cadastrar o card no site não procura nem liga a VM `nomeDoProjeto-código`
+- **por que é um problema:** o clone fica manual no host, e o card abre sem máquina
+- **resolvido como:** `bin/workvm-ensure-card-vm.sh` no host liga a domain se ela existe; senão clona a VM do projeto (desligada) e dá start. O site chama isso por SSH em `fabricio@192.168.122.1` ao salvar o card
+
 ## Hostname da VM continua jarvis-vm depois do rename
 
 - **problema:** ao clonar um card o nome da domain vira `nomeDoProjeto-dop-24`, mas o sistema continua `jarvis-vm`
