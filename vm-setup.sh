@@ -240,14 +240,13 @@ setup_passwordless() {
 setup_apps() {
     step "Hyprland, apps e ferramentas"
 
-    # fuzzel = Super+R hoje; hyprlauncher fica instalado para quando a GPU do guest
-    # deixar o hyprtoolkit alocar buffer (Virtio + GBM ainda crasha).
+    # Super+R is hyprlauncher (.config/hypr/hyprland.lua). fuzzel was the
+    # stand-in while hyprtoolkit segfaulted on Virtio GBM.
     # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
-    log "oficial: hyprland kitty fuzzel hyprlauncher dbeaver github-cli"
+    log "oficial: hyprland kitty hyprlauncher dbeaver github-cli"
     sudo pacman -S --needed --noconfirm \
         hyprland \
         kitty \
-        fuzzel \
         hyprlauncher \
         dbeaver \
         github-cli

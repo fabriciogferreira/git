@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Super+R ainda instala fuzzel
+
+- **problema:** o bind do menu já era `hyprlauncher`, mas o `setup_apps` ainda instalava `fuzzel` e o comentário dizia que o Super+R era ele
+- **por que é um problema:** VM nova ganha o launcher que o Hyprland não abre, e o comentário mente sobre o atalho
+- **resolvido como:** `setup_apps` instala `hyprlauncher` e deixa de instalar `fuzzel`. O `fuzzel` foi o substituto enquanto o hyprtoolkit quebrava no Virtio (GBM)
+
 ## Card novo não ganha VM
 
 - **problema:** cadastrar o card no site não procura nem liga a VM `nomeDoProjeto-código`
