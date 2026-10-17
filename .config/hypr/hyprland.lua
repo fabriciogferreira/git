@@ -24,10 +24,10 @@
 
 -- See https://wiki.hypr.land/Configuring/Basics/Monitors/
 hl.monitor({
-    output   = "Virtual-1",
-    mode     = "2050x1080@60",
-    position = "0x0",
-    scale    = 1.25,
+	output   = "",
+	mode     = "preferred",
+	position = "auto",
+	scale    = "auto",
 })
 
 
@@ -38,8 +38,7 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
--- fuzzel until hyprlauncher works on Virtio GPU (hyprtoolkit GBM crash).
-local menu        = "fuzzel"
+local menu        = "hyprlauncher"
 
 
 -------------------
