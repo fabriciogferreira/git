@@ -74,6 +74,10 @@ workvm_project_start() {
 
     WORKVM_PROJECT_LOG_TAG="workvm[${PROJECT_NAME}]"
 
+    # sshd does not start with the package. Without it the card chat cannot connect.
+    workvm_enable_sshd
+    workvm_authorize_workvm_ssh "$repo_root/lib/workvm_ed25519.pub"
+
     if [ "${#CLONE_REPOS[@]}" -gt 0 ]; then
         workvm_project_log "git fetch nos CLONE_REPOS (somente na branch de origem)"
         workvm_fetch_project_repos "${CLONE_REPOS[@]}"

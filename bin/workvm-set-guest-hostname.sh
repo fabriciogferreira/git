@@ -80,7 +80,18 @@ if ! pick_uri; then
 fi
 
 # Reload keeps the name Avahi already published. A restart reads the new hostname.
-payload=$(printf '{"execute":"guest-exec","arguments":{"path":"/bin/sh","arg":["-c","hostnamectl set-hostname %s && systemctl restart avahi-daemon.service"],"capture-output":true}}' "$domain")
+# sshd stays disabled after the openssh package install; enable it on each start.
+pub_file="$(cd "$(dirname "$script_path")/.." && pwd)/lib/workvm_ed25519.pub"
+ssh_fix="systemctl enable --now sshd"
+
+if [ -f "$pub_file" ]; then
+    pub=$(tr -d '\n' < "$pub_file")
+    ssh_fix="${ssh_fix}; mkdir -p /home/fabricio/.ssh; touch /home/fabricio/.ssh/authorized_keys; grep -qxF '${pub}' /home/fabricio/.ssh/authorized_keys || printf '%s\n' '${pub}' >> /home/fabricio/.ssh/authorized_keys; chown -R fabricio:fabricio /home/fabricio/.ssh; chmod 700 /home/fabricio/.ssh; chmod 600 /home/fabricio/.ssh/authorized_keys"
+fi
+
+inner="hostnamectl set-hostname ${domain} && systemctl restart avahi-daemon.service; ${ssh_fix}"
+escaped=$(printf '%s' "$inner" | sed 's/\\/\\\\/g; s/"/\\"/g')
+payload=$(printf '{"execute":"guest-exec","arguments":{"path":"/bin/sh","arg":["-c","%s"],"capture-output":true}}' "$escaped")
 response=$(virsh_agent "$payload")
 pid=$(printf '%s' "$response" | grep -o '"pid"[[:space:]]*:[[:space:]]*[0-9][0-9]*' | grep -o '[0-9][0-9]*$')
 

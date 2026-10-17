@@ -251,3 +251,38 @@ workvm_docker_compose_up() {
 
     (cd "$compose_dir" && docker compose up -d)
 }
+
+# Arch installs openssh with sshd disabled. The card chat SSHs to the guest;
+# with the unit down, port 22 answers connection refused.
+workvm_enable_sshd() {
+    if [ ! -f /usr/lib/systemd/system/sshd.service ]; then
+        return 0
+    fi
+
+    sudo systemctl enable --now sshd.service || return 0
+}
+
+# The site holds the private key. Guests only need this public key.
+workvm_authorize_workvm_ssh() {
+    local pub="$1"
+    local keys line
+
+    if [ ! -f "$pub" ]; then
+        return 0
+    fi
+
+    keys="${HOME}/.ssh/authorized_keys"
+    mkdir -p "${HOME}/.ssh"
+    chmod 700 "${HOME}/.ssh"
+    touch "$keys"
+    chmod 600 "$keys"
+    line=$(tr -d '\n' < "$pub")
+
+    if [ -z "$line" ]; then
+        return 0
+    fi
+
+    if ! grep -qxF "$line" "$keys"; then
+        printf '%s\n' "$line" >> "$keys"
+    fi
+}

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Chat do card recebe connection refused
+
+- **problema:** enviar o prompt fazia `ssh` para a VM do card e a porta 22 recusava a conexão
+- **por que é um problema:** o turno nem começa; o `agent` não roda
+- **resolvido como:** o Arch instala o OpenSSH com o `sshd` desligado. O login (`project-start`), o script do guest agent e o hook de hostname passam a ligar o `sshd` e a autorizar `lib/workvm_ed25519.pub`. O site usa `~/.ssh/workvm_ed25519`, não a chave do GitHub
+
 ## Atalhos de grupo e workspace estouram o teclado
 
 - **problema:** cada ação de grupo ou workspace 01–99 precisava de um acorde longo, e o overlay do Hyprland só tinha os binds de exemplo
