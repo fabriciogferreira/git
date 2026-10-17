@@ -243,9 +243,17 @@ setup_apps() {
     # Super+R is hyprlauncher (.config/hypr/hyprland.lua). fuzzel was the
     # stand-in while hyprtoolkit segfaulted on Virtio GBM.
     # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
-    log "oficial: hyprland kitty hyprlauncher dbeaver github-cli"
+    # hyprland (extra) conflicts with hyprland-git. Re-running setup must not
+    # try to replace the compositor that is already installed.
+    if pacman -Q hyprland-git >/dev/null 2>&1; then
+        ok "hyprland-git já instalado"
+    else
+        log "AUR: hyprland-git"
+        aur_install hyprland-git
+    fi
+
+    log "oficial: kitty hyprlauncher dbeaver github-cli"
     sudo pacman -S --needed --noconfirm \
-        hyprland \
         kitty \
         hyprlauncher \
         dbeaver \
@@ -410,7 +418,7 @@ setup_autologin() {
     sudo pacman -S --needed --noconfirm sddm
 
     if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland)" >&2
+        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland-git)" >&2
         exit 1
     fi
 

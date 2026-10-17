@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## vm-setup troca o hyprland-git pelo pacote oficial
+
+- **problema:** `setup_apps` pedia `hyprland` do extra numa VM que já tinha `hyprland-git`
+- **por que é um problema:** os pacotes conflitam; com `--noconfirm` o pacman recusa remover o git e o setup morre antes do Docker e do overlay
+- **resolvido como:** o compositor é o `hyprland-git` (AUR). Se `pacman -Q hyprland-git` já acha o pacote, o setup segue sem reinstalar
+
 ## Super+R ainda instala fuzzel
 
 - **problema:** o bind do menu já era `hyprlauncher`, mas o `setup_apps` ainda instalava `fuzzel` e o comentário dizia que o Super+R era ele
