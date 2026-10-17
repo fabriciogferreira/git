@@ -3,6 +3,7 @@
 # bootstrap (base-devel, yay), Hyprland stack, apps, Docker,
 # clipboard Host↔VM, passwordless user/sudo, GRUB timeout=0,
 # SDDM autologin (no login prompt), optional LUKS auto-unlock,
+# qemu-guest-agent so the host can copy the libvirt name into the hostname,
 # apply $GIT_ROOT/.config → ~/.config.
 set -euo pipefail
 
@@ -72,6 +73,19 @@ setup_base() {
         zsh-completions \
         neovim
     ok "git + base-devel + openssh + shellcheck + zsh + zsh-completions + neovim"
+}
+
+# Every clone boots as jarvis-vm. The host hook copies the libvirt name
+# (nomeDoProjeto-dop-24) in at start; Avahi publishes it on the LAN.
+setup_guest_hostname() {
+    step "Agente de convidado e Avahi (hostname = nome da VM)"
+
+    sudo pacman -S --needed --noconfirm qemu-guest-agent
+    # The packaged unit is static (empty [Install]); enable would fail the script.
+    sudo systemctl add-wants multi-user.target qemu-guest-agent.service
+    sudo systemctl start qemu-guest-agent.service
+    sudo systemctl enable --now avahi-daemon.service
+    ok "qemu-guest-agent + avahi-daemon"
 }
 
 setup_git_identity() {
@@ -423,6 +437,7 @@ main() {
     require_user
     setup_passwordless
     setup_base
+    setup_guest_hostname
     setup_git_identity
     setup_git_no_cursor_attribution
     setup_yay

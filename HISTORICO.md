@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Hostname da VM continua jarvis-vm depois do rename
+
+- **problema:** ao clonar um card o nome da domain vira `nomeDoProjeto-dop-24`, mas o sistema continua `jarvis-vm`
+- **por que é um problema:** o site só vê esse hostname e o IP; as VMs parecem iguais
+- **resolvido como:** `vm-setup.sh` liga `qemu-guest-agent` e `avahi-daemon`. O hook do host chama `bin/workvm-set-guest-hostname.sh` em `started`/`restore` e o agente roda `hostnamectl`. O Avahi publica o nome novo na rede da libvirt
+
 ## Locav não converte imagem e vídeo do card
 
 - **problema:** o prompt da Locav só dizia onde salvar a análise; não havia skill no overlay
