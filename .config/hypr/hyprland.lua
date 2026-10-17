@@ -307,7 +307,6 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Move focus with mainMod + arrow keys
@@ -335,6 +334,114 @@ hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Submaps: um modificador entra no mapa e a tecla seguinte é curta (hjkl).
+-- Sem isso cada ação de grupo ou workspace 01-99 vira um acorde longo.
+-- SUPER+P era o exemplo pseudo; agora abre o picker de workspace.
+hl.bind(mainMod .. " + G", hl.dsp.submap("group_management"), { description = "Enter a group management submap" })
+
+local map = function(key, action, description)
+    hl.bind(key, function()
+        hl.dispatch(action)
+        hl.dispatch(hl.dsp.submap("reset"))
+    end, { description = description })
+end
+
+hl.define_submap("group_management", function()
+    map("g", hl.dsp.group.toggle(), "Toggle window group")
+
+    map("h", hl.dsp.window.move({ into_group = "l" }), "Move window into a group on the left")
+    map("j", hl.dsp.window.move({ into_group = "d" }), "Move window into a group on the bottom")
+    map("k", hl.dsp.window.move({ into_group = "u" }), "Move window into a group on the top")
+    map("l", hl.dsp.window.move({ into_group = "r" }), "Move window into a group on the right")
+
+    map("e", hl.dsp.window.move({ out_of_group = true }), "Move window out of group")
+
+    map("n", hl.dsp.group.next(), "Next window in group")
+    map("p", hl.dsp.group.prev(), "Previous window in group")
+
+    map("f", hl.dsp.group.move_window(), "Move window forward in the group order")
+    map("b", hl.dsp.group.move_window({ forward = false }), "Move window backward in the group order")
+
+    map("t", hl.dsp.group.lock_active(), "Toggle group lock")
+
+    for i = 1, 10 do
+        map(tostring(i % 10), hl.dsp.group.active({ index = i }), "Focus window " .. i .. " in a group")
+    end
+
+    hl.bind("escape", hl.dsp.submap("reset"), { description = "Quit submap" })
+end)
+
+local function closeAllWindows()
+    local windows = hl.get_windows()
+
+    for _, w in pairs(windows) do
+        hl.dispatch(hl.dsp.window.close({ window = w }))
+    end
+end
+
+local function closeAllWindowsCurrentWorkspace()
+    local cws = hl.get_active_workspace()
+    local windows = hl.get_windows({ workspace = cws })
+
+    for _, w in pairs(windows) do
+        hl.dispatch(hl.dsp.window.close({ window = w }))
+    end
+end
+
+hl.bind(mainMod .. " + BackSpace", closeAllWindowsCurrentWorkspace)
+hl.bind(mainMod .. " + Delete", closeAllWindows)
+
+local function moveWindowsCurrentWorkspace(ws, follow)
+    local cws = hl.get_active_workspace()
+    local windows = hl.get_windows({ workspace = cws })
+
+    for _, w in pairs(windows) do
+        hl.dispatch(hl.dsp.window.move({
+            window    = w,
+            workspace = ws,
+            follow    = follow,
+        }))
+    end
+end
+
+-- Move every window on the current workspace. SHIFT+ALT follows; CTRL+ALT stays.
+for i = 1, 10 do
+    local key = i % 10
+    hl.bind(mainMod .. " + SHIFT + ALT + " .. key, function()
+        moveWindowsCurrentWorkspace(i, true)
+    end)
+    hl.bind(mainMod .. " + CTRL + ALT + " .. key, function()
+        moveWindowsCurrentWorkspace(i, false)
+    end)
+end
+
+hl.bind(mainMod .. " + P", hl.dsp.submap("ws_tens"), { description = "Workspace picker (01-99)" })
+
+hl.define_submap("ws_tens", function()
+    for tens = 0, 9 do
+        hl.bind(tostring(tens), hl.dsp.submap("ws_units_" .. tens))
+    end
+
+    local letters = "abcdefghijklmnopqrstuvwxyz"
+    for i = 1, #letters do
+        hl.bind(letters:sub(i, i), hl.dsp.submap("reset"))
+    end
+    hl.bind("escape", hl.dsp.submap("reset"))
+end)
+
+for tens = 0, 9 do
+    hl.define_submap("ws_units_" .. tens, "reset", function()
+        for units = 0, 9 do
+            local target = tens * 10 + units
+            if target > 0 then
+                hl.bind(tostring(units), hl.dsp.focus({ workspace = target }))
+            end
+        end
+        hl.bind("escape", hl.dsp.submap("reset"))
+        hl.bind("catchall", hl.dsp.submap("reset"))
+    end)
+end
 
 -- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })

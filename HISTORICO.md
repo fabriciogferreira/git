@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Atalhos de grupo e workspace estouram o teclado
+
+- **problema:** cada ação de grupo ou workspace 01–99 precisava de um acorde longo, e o overlay do Hyprland só tinha os binds de exemplo
+- **por que é um problema:** a VM fica sem hjkl para grupos e sem picker de workspace; o `vm-setup` copia esse `hyprland.lua`
+- **resolvido como:** submaps no `.config/hypr/hyprland.lua` (grupos em SUPER+G, fechar workspace, mover janelas do workspace, picker 01–99 em SUPER+P). O pseudo de exemplo saiu do SUPER+P
+
 ## vm-setup troca o hyprland-git pelo pacote oficial
 
 - **problema:** `setup_apps` pedia `hyprland` do extra numa VM que já tinha `hyprland-git`
