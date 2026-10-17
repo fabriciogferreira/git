@@ -39,6 +39,7 @@ alwaysApply: true
 | `bin/check.sh` | Scripts mudam e ninguém roda shellcheck. Pega `set -u` em array vazio e o log de `COMPOSE_FILE`. |
 | `bin/patch-clone-cursor.sh` | `alwaysApply` de um clone vaza em todo chat multi-root. Patch local (`skip-worktree`), sem commit. |
 | `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
+| `bin/workvm-install-guest-agent.sh` | VM já clonada não passa de novo pelo `vm-setup`. Uma vez dentro dela, instala o agente e o Avahi. |
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |

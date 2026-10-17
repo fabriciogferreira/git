@@ -80,11 +80,7 @@ setup_base() {
 setup_guest_hostname() {
     step "Agente de convidado e Avahi (hostname = nome da VM)"
 
-    sudo pacman -S --needed --noconfirm qemu-guest-agent
-    # The packaged unit is static (empty [Install]); enable would fail the script.
-    sudo systemctl add-wants multi-user.target qemu-guest-agent.service
-    sudo systemctl start qemu-guest-agent.service
-    sudo systemctl enable --now avahi-daemon.service
+    "$GIT_ROOT/bin/workvm-install-guest-agent.sh"
     ok "qemu-guest-agent + avahi-daemon"
 }
 

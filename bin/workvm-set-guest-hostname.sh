@@ -30,29 +30,52 @@ if ! printf '%s' "$domain" | grep -Eq '^[A-Za-z0-9]([A-Za-z0-9-]{0,62}[A-Za-z0-9
 fi
 
 virsh_bin=/usr/bin/virsh
+virsh_uri=""
+last_err=""
 
 if [ ! -x "$virsh_bin" ]; then
     virsh_bin=$(command -v virsh || true)
 fi
 
 virsh_agent() {
-    "$virsh_bin" qemu-agent-command "$domain" "$1"
+    if [ -n "$virsh_uri" ]; then
+        "$virsh_bin" -c "$virsh_uri" qemu-agent-command "$domain" "$1"
+    else
+        "$virsh_bin" qemu-agent-command "$domain" "$1"
+    fi
 }
 
-agent_up() {
-    virsh_agent '{"execute":"guest-ping"}' >/dev/null 2>&1
+# opbed is often qemu:///system; the default virsh URI is session.
+pick_uri() {
+    local uri err
+
+    for uri in "" qemu:///system qemu:///session; do
+        if [ -n "$uri" ]; then
+            if err=$("$virsh_bin" -c "$uri" qemu-agent-command "$domain" '{"execute":"guest-ping"}' 2>&1); then
+                virsh_uri=$uri
+                return 0
+            fi
+        elif err=$("$virsh_bin" qemu-agent-command "$domain" '{"execute":"guest-ping"}' 2>&1); then
+            virsh_uri=""
+            return 0
+        fi
+
+        last_err=$err
+    done
+
+    return 1
 }
 
 for _ in $(seq 1 30); do
-    if agent_up; then
+    if pick_uri; then
         break
     fi
 
     sleep 2
 done
 
-if ! agent_up; then
-    printf 'workvm-set-guest-hostname: agente ausente em %s\n' "$domain" >&2
+if ! pick_uri; then
+    printf 'workvm-set-guest-hostname: agente ausente em %s (%s)\n' "$domain" "$last_err" >&2
     exit 0
 fi
 
