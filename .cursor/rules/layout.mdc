@@ -44,6 +44,7 @@ alwaysApply: true
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
+| `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
