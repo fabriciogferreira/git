@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Chat do card entra na VM errada e a chave é recusada
+
+- **problema:** o chat fazia `ssh fabricio@10.0.2.15`. Toda VM em rede user tem esse endereço, e a partir do container do site ele é a própria VM do Opbed. A chave oferecida era a do host, que o guest não autoriza
+- **por que é um problema:** o prompt não chega na VM do card; a resposta é `Permission denied`
+- **resolvido como:** VM com NIC `user` ganha `hostfwd` de uma porta alta no host (`192.168.122.1`) para o sshd do guest. O chat usa essa porta e a chave `workvm_ed25519`, separada da chave do host libvirt. O endereço `10.0.2.15` deixa de ser aceito como IP do card
+
+## Apagar o card deixa a VM clone no host
+
+- **problema:** o delete do card só tirava o card do config. A domain `projeto-codigo` continuava ligada, com disco
+- **por que é um problema:** concluir o card não libera RAM nem disco no host
+- **resolvido como:** `bin/workvm-drop-card-vm.sh` desliga e faz `undefine --remove-all-storage` só do clone. O nome tem de ser `modelo-código`, e um disco compartilhado com a modelo aborta. O site chama isso por SSH ao apagar o card e só então remove o card. Se o clone ainda estava sendo criado, um segundo drop roda quando o clone termina. Criar o card de novo com o mesmo nome tira essa marca, senão o clone novo era apagado no fim
+
 ## hyprlauncher morre de novo no virtio
 
 - **problema:** Super+R abre o hyprlauncher, o GBM pede `DRM_IOCTL_MODE_CREATE_DUMB` no render node e o virtio responde EPERM. O processo leva segfault

@@ -41,6 +41,28 @@ find_uri() {
     return 1
 }
 
+# User-mode NIC always looks like 10.0.2.15 inside the guest. That address is this VM
+# from the site container, so the chat would SSH into the wrong machine.
+publish_ssh() {
+    local uri=$1
+    local name=$2
+    local kind hash port
+
+    kind=$("$virsh_bin" -c "$uri" domiflist "$name" | awk 'NR > 2 && $2 != "" { print $2; exit }' || true)
+
+    if [ "$kind" != "user" ]; then
+        print_ip "$uri" "$name"
+        printf 'port=22\n'
+        return 0
+    fi
+
+    hash=$(printf '%s' "$name" | cksum | awk '{ print $1 }')
+    port=$((22000 + hash % 1000))
+    "$virsh_bin" -c "$uri" qemu-monitor-command "$name" --hmp "hostfwd_add hostnet0 tcp::${port}-:22" >/dev/null 2>&1 || true
+    printf 'ip=192.168.122.1\n'
+    printf 'port=%s\n' "$port"
+}
+
 print_ip() {
     local uri=$1
     local name=$2
@@ -85,7 +107,7 @@ start_if_needed() {
 
 if uri=$(find_uri "$clone"); then
     start_if_needed "$uri" "$clone"
-    print_ip "$uri" "$clone"
+    publish_ssh "$uri" "$clone"
     exit 0
 fi
 
@@ -111,4 +133,4 @@ fi
 "$virt_clone" --connect "$uri" --original "$template" --name "$clone" --auto-clone
 "$virsh_bin" -c "$uri" start "$clone"
 printf '%s clonada e ligada\n' "$clone"
-print_ip "$uri" "$clone"
+publish_ssh "$uri" "$clone"
