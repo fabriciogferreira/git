@@ -43,7 +43,8 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "hyprlauncher"
+-- Direct hyprlauncher dies on virtio: the render node rejects CREATE_DUMB.
+local menu        = "$HOME/git/bin/hyprlauncher-virtio.sh"
 
 
 -------------------

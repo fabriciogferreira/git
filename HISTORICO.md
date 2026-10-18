@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## hyprlauncher morre de novo no virtio
+
+- **problema:** Super+R abre o hyprlauncher, o GBM pede `DRM_IOCTL_MODE_CREATE_DUMB` no render node e o virtio responde EPERM. O processo leva segfault
+- **por que é um problema:** a VM fica sem menu de aplicativos
+- **resolvido como:** `bin/hyprlauncher-virtio.sh` compila `lib/virtio-dri-primary.c` e redireciona o open do render node para o nó primário (`/dev/dri/by-path/*-card`), onde o mesmo ioctl funciona. O `hyprland.lua` chama esse script
+
 ## Flameshot não captura no Hyprland
 
 - **problema:** print no Wayland não abre; o compositor não entrega a tela sem o portal, e a janela do Flameshot cai fora do monitor

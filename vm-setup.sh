@@ -240,8 +240,8 @@ setup_passwordless() {
 setup_apps() {
     step "Hyprland, apps e ferramentas"
 
-    # Super+R is hyprlauncher (.config/hypr/hyprland.lua). fuzzel was the
-    # stand-in while hyprtoolkit segfaulted on Virtio GBM.
+    # Super+R is hyprlauncher via bin/hyprlauncher-virtio.sh. The render node
+    # on virtio rejects CREATE_DUMB; the wrapper opens the primary node.
     # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
     # hyprland (extra) conflicts with hyprland-git. Re-running setup must not
     # try to replace the compositor that is already installed.
