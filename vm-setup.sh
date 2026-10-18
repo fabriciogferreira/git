@@ -252,12 +252,19 @@ setup_apps() {
         aur_install hyprland-git
     fi
 
-    log "oficial: kitty hyprlauncher dbeaver github-cli"
+    # Flameshot 14 no Wayland usa o portal. O portal 1.22 não exporta
+    # Screenshot sem um impl de Access; o hyprland não tem, o gtk tem.
+    # hyprland-portals.conf já pede default=hyprland;gtk.
+    log "oficial: kitty hyprlauncher dbeaver github-cli flameshot portais"
     sudo pacman -S --needed --noconfirm \
         kitty \
         hyprlauncher \
         dbeaver \
-        github-cli
+        github-cli \
+        flameshot \
+        xdg-desktop-portal \
+        xdg-desktop-portal-hyprland \
+        xdg-desktop-portal-gtk
 
     log "AUR: cursor-bin brave-bin postman-bin"
     aur_install cursor-bin brave-bin postman-bin

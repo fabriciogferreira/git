@@ -29,6 +29,11 @@ hl.monitor({
 	position = "auto",
 	scale    = "auto",
 })
+-- Saída virtual 640x480. O grim trava nela e o Flameshot não abre depois da permissão.
+hl.monitor({
+	output   = "HDMI-A-5",
+	disabled = true,
+})
 
 
 ---------------------
@@ -308,6 +313,8 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
+-- PrtSc sem bind não abre o Flameshot.
+hl.bind("Print", hl.dsp.exec_cmd("flameshot gui"))
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
@@ -506,4 +513,22 @@ hl.window_rule({
 
     move  = "20 monitor_h-120",
     float = true,
+})
+
+-- Sem isto o Flameshot no Hyprland abre fora da tela.
+-- Fator 1: só DP-1 está em 1920x1080; HDMI-A-5 é 640x480 (saída virtual).
+-- A fórmula monitor_w*N da wiki é para monitores da mesma resolução.
+hl.window_rule({
+    name  = "flameshot-multi-display-fix",
+    match = { class = "flameshot" },
+
+    animation        = "fade",
+    rounding         = 0,
+    border_size      = 0,
+    fullscreen_state = "0 0",
+    float            = true,
+    pin              = true,
+    monitor          = "DP-1",
+    move             = "0 0",
+    size             = "(monitor_w*1) (monitor_h)",
 })

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Flameshot não captura no Hyprland
+
+- **problema:** print no Wayland não abre; o compositor não entrega a tela sem o portal, e a janela do Flameshot cai fora do monitor
+- **por que é um problema:** a VM fica sem screenshot
+- **resolvido como:** `vm-setup` instala `flameshot`, `xdg-desktop-portal`, `xdg-desktop-portal-hyprland` e `xdg-desktop-portal-gtk`. O portal 1.22 não exporta Screenshot sem o impl de Access, que só o backend gtk traz. O `HDMI-A-5` virtual (640x480) faz o `grim` travar na captura cheia; o `hyprland.lua` desliga essa saída. A window rule fixa a janela em DP-1. PrtSc dispara `flameshot gui`. O Flameshot 14 não lê `useGrimAdapter` nem `disabledGrimWarning`; esse ini saiu
+
 ## Chat do card recebe connection refused
 
 - **problema:** enviar o prompt fazia `ssh` para a VM do card e a porta 22 recusava a conexão
