@@ -23,7 +23,7 @@ chmod 600 ~/.config/environment.d/olie.conf
 ```
 
 - **`OLIE_FLOW_AI_MCP_TOKEN`** — só o MCP `olie-flow-ai` (`mcps/olie.json`).
-- **`OLIE_MANAGEMENT_TOKEN`** — Bearer das requests `https://api.olie.ai/api/management/...` nos prompts (`workflow-policy.md`). Precisa da ability `management:access` (ex.: sessão/PAT do app, não o token do MCP).
+- **`OLIE_MANAGEMENT_TOKEN`** — Bearer das requests `https://api.olie.ai/api/management/...` nos prompts (`workflow-policy.md`). Precisa da ability `management:access` (ex.: sessão/PAT do app, não o token do MCP). O site, ao criar um card com código Olie, lê o story point com este token e com o do MCP.
 
 ### GitHub (PRs)
 

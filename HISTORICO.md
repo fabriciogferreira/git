@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Projeto sem card não tem para quem mandar o prompt
+
+- **problema:** o chat e o envio de prompt só existem no card, e o card clona `projeto-codigo`. Um projeto como o Opbed não cria card, então nenhuma VM sobe e o prompt do projeto não sai
+- **por que é um problema:** o prompt fica só na tela; a VM que já existe com o nome do projeto não recebe
+- **resolvido como:** o projeto tem chat e botão de enviar no prompt. `bin/workvm-open-project-vm.sh` só liga essa domain e publica o SSH. Não clona
+
 ## Chat do card entra na VM errada e a chave é recusada
 
 - **problema:** o chat fazia `ssh fabricio@10.0.2.15`. Toda VM em rede user tem esse endereço, e a partir do container do site ele é a própria VM do Opbed. A chave oferecida era a do host, que o guest não autoriza
