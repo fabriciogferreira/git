@@ -109,4 +109,53 @@ test.describe('DOP-1215 WhatsApp signup (management profile)', () => {
             await expectReadableContrast(label, `DOP-1215 phone label (${theme})`)
         }
     })
+
+    test('a colleague opened from the users list has no phone field', async ({ page }) => {
+        await page.goto(`${resolvePageOrigin(page)}/frame/users/list`)
+        const colleagueRow = page.getByRole('row').filter({ hasNotText: 'Test User' }).nth(1)
+        await expect(colleagueRow).toBeVisible({ timeout: 20_000 })
+        await colleagueRow.click()
+
+        const modal = await openEditModal(page)
+        await expect(modal.getByText(PHONE_LABEL)).toHaveCount(0)
+        await expect(phoneInputRoot(modal)).toHaveCount(0)
+    })
+})
+
+test.describe('DOP-1215 WhatsApp on public register', () => {
+    test.describe.configure({ timeout: 120_000 })
+
+    test('register shows an optional phone field in both palettes', async ({ page }) => {
+        await page.goto('http://landing-page.olie.localhost/register')
+
+        await expect(page.getByRole('heading', { name: 'Criar cadastro' })).toBeVisible({
+            timeout: 20_000,
+        })
+
+        const phoneLabel = page.locator('label').filter({ hasText: /^Telefone$/ })
+        await expect(phoneLabel).toBeVisible()
+        await expect(phoneLabel).not.toContainText('*')
+        await expect(page.getByRole('button', { name: 'Código do país' })).toBeVisible()
+
+        const targets = [
+            page.getByRole('heading', { name: 'Criar cadastro' }),
+            phoneLabel,
+            page.locator('label').filter({ hasText: 'Seu nome' }),
+            page.getByRole('button', { name: 'Código do país' }),
+        ]
+        for (const locator of targets) {
+            await expectReadableContrast(locator, await locator.innerText())
+        }
+
+        const before = await phoneLabel.evaluate(el => getComputedStyle(el).color)
+        await page.evaluate(() => {
+            document.documentElement.classList.add('dark')
+        })
+        const after = await phoneLabel.evaluate(el => getComputedStyle(el).color)
+        if (before !== after) {
+            for (const locator of targets) {
+                await expectReadableContrast(locator, `dark ${await locator.innerText()}`)
+            }
+        }
+    })
 })
