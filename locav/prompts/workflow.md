@@ -54,7 +54,7 @@ Execute the card with `~/git/locav/prompts/implementation.md` (that prompt moves
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/locav/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Pre-QA** — `~/git/locav/prompts/pre-qa.md` (commits, PRs, forms, checklist) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
+2. **Pre-QA** — `~/git/locav/prompts/pre-qa.md` (commits, PRs, and forms) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Dev - Locav funnel has no step checklists; do not mark 'Pull request created'.
 
 Colleague 'QA/CR' uses `~/git/locav/prompts/colleague-review.md`.
 

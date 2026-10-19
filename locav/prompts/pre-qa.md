@@ -6,7 +6,7 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 ## 1. Objective
 
-Prepare card `{{ code }}` for colleague 'QA/CR': commits, pull requests, forms, checklist items, and the board move to 'QA/CR' when everything required is verified. Code quality gates here assume implementation-validation already cleared the five code criteria.
+Prepare card `{{ code }}` for colleague 'QA/CR': commits, pull requests, forms, and the board move to 'QA/CR' when everything required is verified. Code quality gates here assume implementation-validation already cleared the five code criteria.
 
 Inspect all relevant changes across the involved repositories. Use the card's requirements and acceptance criteria as the source of truth.
 
@@ -136,13 +136,12 @@ If a **Revisor(es)** name does not match exactly one collaborator, do not add th
 **Proceed only after the required pull request or pull requests have been created and verified, and all applicable checks in Phases 1–4 have passed.**
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
-- [ ] Check off the funnel checklist item 'Pull request created' via management HTTP `toggle-funnel-checklist` (see `~/git/olie/prompts/workflow-policy.md` — shared policy). Use `${OLIE_MANAGEMENT_TOKEN}` and the live `step_checklist_id`; never paste a Bearer token.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
 - [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using `~/git/olie/prompts/workflow-policy.md` (prefer MCP move; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.
 - [ ] Verify the card's current stage is 'QA/CR' after the move.
 
-Do not mark 'Pull request created' as complete before the relevant pull request has been verified.
+The Dev - Locav funnel has no step checklists. 'Pull request created' exists only on the Olie funnel. Do not call `toggle-funnel-checklist` for a Locav card.
 
 Do not move to 'QA/CR' if any mandatory check from Phases 1–4 (or earlier items in this phase) failed, was skipped, or remains unresolved. If the move fails, stop and report (prompt-health); do not claim the handoff is complete.
 
@@ -171,7 +170,6 @@ After completing the applicable workflow, provide a concise report containing:
 - The commit convention and branch-name validation results.
 - The pull request URLs and their verified configuration, including the filled template body and the **Pull Request (front)** and **Pull Request (back)** values read back from the card.
 - Whether an API documentation update is required.
-- The status of the 'Pull request created' checklist item.
 - Whether the card was moved to 'QA/CR' and the verified stage after the move.
 - Any unresolved issues, skipped checks, or outstanding actions.
 

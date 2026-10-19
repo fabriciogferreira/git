@@ -364,6 +364,10 @@ workvm_git_exclude_add() {
 # Copy one overlay repo dir onto a clone.
 # A directory named cursor/ becomes .cursor/ on the clone. The source has no
 # dot so the workvm workspace does not load these product rules.
+# Olie's remote already gitignores .cursor. Locav's does not, and that
+# .gitignore change cannot be pushed. After the copy, /.cursor goes into the
+# clone's .git/info/exclude so the folder stays on disk and out of Source
+# Control. project-setup and project-start both call this.
 workvm_sync_overlay_repo() {
     local src="$1"
     local dest="$2"
@@ -389,6 +393,9 @@ workvm_sync_overlay_repo() {
             fi
         elif [ -f "$item" ]; then
             cp -a "$item" "$target"
+        fi
+        if [ "$name" = "cursor" ] && [ -d "$item" ]; then
+            workvm_git_exclude_add "$dest" "/.cursor"
         fi
     done
     shopt -u nullglob dotglob

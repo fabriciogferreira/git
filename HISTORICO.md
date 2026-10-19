@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## `.cursor` do Locav aparecia no Source Control
+
+- **problema:** o overlay copia skills para `.cursor` nos clones do Locav, e essa pasta surgia como arquivo novo no Git
+- **por que é um problema:** o remoto da Olie já ignora `.cursor`. O do Locav não, e uma mudança no `.gitignore` de lá não pode ser enviada. O ignore feito à mão em `.git/info/exclude` sumia num clone novo
+- **resolvido como:** `workvm_sync_overlay_repo` grava `/.cursor` no exclude do clone sempre que o overlay é aplicado (`project-setup` e login)
+
+## Pre-QA do Locav parava no checklist 'Pull request created'
+
+- **problema:** o pre-QA pedia marcar 'Pull request created' no funil antes de mover o card para QA/CR
+- **por que é um problema:** o funil Dev - Locav não tem checklist de etapa. Esse item só existe na Olie, e o handoff ficava parado
+- **resolvido como:** a instrução saiu de `locav/prompts/pre-qa.md`, `validation.md` e `workflow.md`. O prompt da Olie continua marcando o item
+
 ## Locav sem o teto de RAM/vCPU da Olie
 
 - **problema:** só a Olie tinha `config-vm.xml` (12 GiB / 9 vCPU). A Locav sobe a mesma carga (compose, Cursor, browser) e ficava no teto genérico da domain

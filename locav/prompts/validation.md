@@ -1,6 +1,6 @@
 # Card Validation (board 'Validação')
 
-Use this for a card in the logical `validation` stage ('Validação'). This is the tech-lead pass **after** colleague 'QA/CR', when pull requests, forms, and board checklist items should already exist.
+Use this for a card in the logical `validation` stage ('Validação'). This is the tech-lead pass **after** colleague 'QA/CR', when pull requests and forms should already exist. The Dev - Locav funnel has no step checklists. 'Pull request created' exists only on the Olie funnel. Do not require it and do not call `toggle-funnel-checklist`.
 
 **Code** criteria (Security, Integrity, Maturity, Requirements, Front / back coherence) belong to `~/git/locav/prompts/implementation-validation.md`. Do **not** re-score them here unless a PR clearly diverged from what that pass approved — then fail Handoff / packaging and send back for correction.
 
@@ -17,18 +17,18 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 ## 1. Objective
 
-Decide whether card `{{ code }}` may proceed toward merge / 'Revisão em Produção', or must return for correction, based on **handoff packaging** (PRs, forms, checklist). Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass.
+Decide whether card `{{ code }}` may proceed toward merge / 'Revisão em Produção', or must return for correction, based on **handoff packaging** (PRs and forms). Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass.
 
 ## 2. Context first
 
 Follow these steps in order. If card context is empty, stop and report that validation cannot proceed without guessing.
 
-1. Load the card through OlieFlowAi: description, funnel, stage, **answered forms**, and checklist state.
+1. Load the card through OlieFlowAi: description, funnel, stage, and **answered forms**.
 2. Load the card media: spec, PRD, attachments, and **pull-request links**.
-3. Confirm each required repository has a PR, that titles/bodies are usable, and that forms/checklist items for this stage are done.
+3. Confirm each required repository has a PR, that titles/bodies are usable, and that forms for this stage are done.
 4. Spot-check that the open PRs still match the card (wrong branch, empty PR, or obvious packaging gap). Do not re-run the full code rubric from implementation-validation.
 
-If PRs, forms, or required checklist items are missing, **fail this validation** (or stop as blocked) and say to run or re-run `~/git/locav/prompts/pre-qa.md` — do not pretend this is still implementation-validation.
+If PRs or forms are missing, **fail this validation** (or stop as blocked) and say to run or re-run `~/git/locav/prompts/pre-qa.md` — do not pretend this is still implementation-validation.
 
 ## 3. Criteria
 
@@ -36,7 +36,7 @@ These are a set, not a sequence. Fail any one and the card fails.
 
 | Criterion | Look for |
 | --- | --- |
-| Handoff readiness | Required forms answered; board checklist items that belong to this stage are done. |
+| Handoff readiness | Required forms answered. |
 | PR packaging | Each required repo has a PR; title and body in the required languages/quality; assignees/reviewers/labels sensible; PR targets the correct base and the card branch. |
 | Card linkage | PR links (or equivalent) are on the card; the set of PRs matches the repositories the card changed. |
 | Packaging integrity | No placeholder/empty PR, raw dump-only body, or PR that clearly does not contain the card work. |
@@ -47,7 +47,7 @@ Prefer parallel checks when useful:
 
 | Check | When | What it does |
 | --- | --- | --- |
-| `handoff` | Always | Forms, checklist, missing PR links. |
+| `handoff` | Always | Forms and missing PR links. |
 | `pr-packaging` | Always | Title/body quality, base branch, assignees/reviewers/labels gaps. |
 | `card-linkage` | Always | Every changed repo covered; card points at the right PRs. |
 
@@ -78,7 +78,7 @@ Only two outcomes. Always justify item by item. Never answer with a bare pass or
 All handoff criteria passed. Ready for the merge path toward 'Revisão em Produção'.
 
 **Send for correction**  
-List every failure: which criterion and where in the PR, form, or checklist — so the author can fix without guessing.
+List every failure: which criterion and where in the PR or form — so the author can fix without guessing.
 
 ## Done when
 
