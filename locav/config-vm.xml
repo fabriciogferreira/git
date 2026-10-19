@@ -1,0 +1,8 @@
+<!-- Locav sobe compose + Cursor + browser como a Olie e, com teto menor, a guest troca.
+     Mesmos 12 GiB / 9 vCPU de olie/config-vm.xml. apply-config-vm.sh só lê name, memory e vcpu. -->
+<domain type="kvm">
+  <name>locav</name>
+  <memory unit="KiB">12582912</memory>
+  <currentMemory unit="KiB">12582912</currentMemory>
+  <vcpu placement="static">9</vcpu>
+</domain>

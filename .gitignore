@@ -109,6 +109,7 @@ locav/*
 !locav/post-clone.sh
 !locav/start.hook.sh
 !locav/workspace.code-workspace
+!locav/config-vm.xml
 !locav/prompts/
 !locav/prompts/**
 !locav/overlay/

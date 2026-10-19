@@ -249,6 +249,7 @@ Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco*
 | Projeto | XML | RAM | vCPU | Nota |
 | --- | --- | --- | --- | --- |
 | `olie` | `olie/config-vm.xml` | **12 GiB** | **9** | Domain **`olie`**; teto de vCPU (não reserva); 12 GiB para folga com Postman/DBeaver |
+| `locav` | `locav/config-vm.xml` | **12 GiB** | **9** | Mesmo teto da Olie; ainda não aplicado no host |
 
 Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só mexe em RAM/vCPU se a domain já existe e está `shut off`. Conferir com a **mesma** URI que o script usou (Olie costuma ser `qemu:///system`): `virsh -c qemu:///system dumpxml olie | grep memory`.
 

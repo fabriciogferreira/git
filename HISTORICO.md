@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Locav sem o teto de RAM/vCPU da Olie
+
+- **problema:** só a Olie tinha `config-vm.xml` (12 GiB / 9 vCPU). A Locav sobe a mesma carga (compose, Cursor, browser) e ficava no teto genérico da domain
+- **por que é um problema:** a guest troca e o host não sabe o teto certo desse projeto
+- **resolvido como:** `locav/config-vm.xml` com o mesmo teto. O script só lê nome, RAM e vCPU; disco, UUID e MAC da Olie não entram. Ainda não aplicado no host
+
 ## Projeto sem card não tem para quem mandar o prompt
 
 - **problema:** o chat e o envio de prompt só existem no card, e o card clona `projeto-codigo`. Um projeto como o Opbed não cria card, então nenhuma VM sobe e o prompt do projeto não sai
