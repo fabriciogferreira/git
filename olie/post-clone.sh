@@ -2,6 +2,9 @@
 # One-time bootstrap after cloning Olie repos (run by project-setup.sh).
 # Seed só no banco vazio: re-seed com frames já cheios estoura memória e
 # frame_max_limit no FrameDataSeeder do api-main.
+# composer install usa --no-plugins: os scripts do artisan não sobem nesta
+# imagem, e o plugin do Pest não grava vendor/pest-plugins.json. Sem esse
+# arquivo, php artisan test -p cai em "Unknown option --parallel".
 set -euo pipefail
 
 GIT_ROOT="${GIT_ROOT:-$HOME/git}"
@@ -49,7 +52,7 @@ echo "→ api-main: composer install + .env"
         -v "$(pwd):/var/www/html" \
         -w /var/www/html \
         laravelsail/php84-composer:latest \
-        bash -c "composer install --ignore-platform-reqs --no-plugins --no-scripts && composer dump-autoload --optimize --no-plugins --ignore-platform-reqs && cp -n .env.example .env"
+        bash -c "composer install --ignore-platform-reqs --no-plugins --no-scripts && composer dump-autoload --optimize --no-plugins --ignore-platform-reqs && composer pest:dump-plugins --no-interaction && cp -n .env.example .env"
 )
 
 echo "→ olie-fronts: yarn install (vite/workspaces)"

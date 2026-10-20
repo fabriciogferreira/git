@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## `php artisan test -p` recusa `--parallel` na VM Olie
+
+- **problema:** `php artisan test -p` respondia `Unknown option "--parallel"`. No computador dos colegas o mesmo comando roda
+- **por que é um problema:** o pre-QA pede a suíte em paralelo e para quando o runner não sobe
+- **resolvido como:** o `composer install` do `olie/post-clone.sh` usa `--no-plugins`, então o plugin do Pest não grava `vendor/pest-plugins.json`. Sem esse arquivo o Pest não carrega o plugin de paralelismo e o PHPUnit rejeita a opção. O post-clone agora roda `composer pest:dump-plugins` depois do install. Nesta VM o arquivo foi gerado; `php artisan test -p` passou (19 testes, 9 processos)
+
 ## `.cursor` do Locav aparecia no Source Control
 
 - **problema:** o overlay copia skills para `.cursor` nos clones do Locav, e essa pasta surgia como arquivo novo no Git
