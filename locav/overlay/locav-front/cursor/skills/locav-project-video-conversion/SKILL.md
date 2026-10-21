@@ -73,7 +73,52 @@ curl -sS --fail-with-body --max-time 600 \
 # Expect HTTP 200 and JSON: { "markdown": "..." }
 ```
 
-Multipart field name: **`video`** (prefer mp4). On connection failure, report blocker (vid2agent VM / hostfwd); do not reinstall in this VM.
+Multipart field name: **`video`** (prefer mp4).
+
+## If the vid2agent-code API is unreachable (STOP and report)
+
+**Never** work around a missing conversion API. Do **not**:
+
+- transcribe or summarize the audio by hand as a substitute;
+- extract frames and "read" the video as a substitute for the conversion;
+- install vid2agent / Ollama / any model in this VM (the skill forbids it);
+- create the `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md` file without a real conversion
+  (that file means "conversion done" — a later pass would skip the conversion and use a
+  hand-made analysis as if it came from the VLM);
+- continue the card as if the conversion had been made.
+
+When the conversion is needed and the API does not answer, **stop the work that depends on
+it** and report to the user in the chat:
+
+1. **What you were doing** — media `id`, `name`, and the exact call you made.
+2. **The objective error** — the verbatim `curl` output (exit code, HTTP status, message).
+3. **The evidence you collected** — the smoke test result and the connectivity checks.
+4. **That the fix is on the host side** — the vid2agent-code WorkVM and the hostfwd rule for
+   port 18080 live on the physical host; the agent cannot repair them from this VM.
+5. **What is still possible** — the rest of the card can go on without the video, or the user
+   can fix the host and ask to retry the conversion.
+
+Then **wait for the user**. A partial analysis is not a substitute for the conversion.
+
+Smoke test (same URL the host uses to publish the API):
+
+```bash
+curl -sS -m 30 -o /dev/null -w '%{http_code}\n' http://10.0.2.2:18080/
+# 200 esperado
+```
+
+| Signal | Meaning |
+| --- | --- |
+| `000` + `curl: (7) Failed to connect … Connection refused` | vid2agent-code is down, or the hostfwd rule for port 18080 is missing on the host |
+| timeout / hang | the service answered but the conversion did not finish in time — check the host |
+| HTTP 4xx / 5xx | the API answered and rejected the request — report the response body |
+
+Useful evidence to collect before reporting:
+
+```bash
+timeout 5 bash -c 'echo > /dev/tcp/10.0.2.2/18080' && echo '18080 aberta' || echo '18080 recusada'
+# other host ports (e.g. 11435 for Ollama) tell whether the hostfwd itself works
+```
 
 ## Identify videos
 
@@ -91,6 +136,7 @@ Video conversion progress:
 - [ ] Resolve CARD_CODE + MEDIA_ID
 - [ ] If ~/git/locav/cards/CARD_CODE/MEDIA_ID.md exists → Read and skip convert
 - [ ] Else: download → POST API → write file
+        └─ API unreachable → STOP and report the objective error (see the section above)
 - [ ] Use file in chat / implementation
 - [ ] Confirm: nothing written to project content
 ```
@@ -100,6 +146,9 @@ Video conversion progress:
 1. If `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md` exists → Read; stop for this video.
 2. Else download `file_url` to `/tmp/locav-video-MEDIA_ID.mp4` (refresh media once on 403/404).
 3. POST multipart; require JSON key `markdown`.
+   - If the connection fails (or the call hangs), **do not** write the `.md` file and **do not**
+     continue with a hand-made analysis: stop and report the blocker to the user
+     ("If the vid2agent-code API is unreachable").
 
 ### 2. File body
 
@@ -139,3 +188,6 @@ After writing **new** conversion files, remind (or commit if asked) on the meta-
 - Prefer the local file over a new API conversion whenever it exists.
 - One file **per media id**.
 - Do not change host Ollama, GPU, or vid2agent install from this VM.
+- When the API is unreachable, **stop and report the objective error to the user** and wait.
+  Never substitute a hand-made analysis for the conversion, and never create the
+  `{MEDIA_ID}.md` file without a real conversion.
