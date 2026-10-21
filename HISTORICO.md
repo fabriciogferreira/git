@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Plano do Cursor acaba e a VM fica sem agente
+
+- **problema:** o chat do Cursor para quando o plano acaba. O OpenCode não lê `~/.cursor/mcp.json`, então modelo local e MCP não entram juntos
+- **por que é um problema:** a VM já tem o merge de MCP do login e a RTX no host, e mesmo assim não há um comando que ligue os dois
+- **resolvido como:** `bin/workvm-opencode.sh` roda dentro da guest. Instala o OpenCode 2, grava `~/.config/opencode/opencode.json` com o Ollama em `10.0.2.2:11435` (`qwen3.8-4b`) e traduz os MCP do Cursor (`${env:}` vira `{env:}`). Não sobe o Ollama nem copia token
+
 ## `php artisan test -p` recusa `--parallel` na VM Olie
 
 - **problema:** `php artisan test -p` respondia `Unknown option "--parallel"`. No computador dos colegas o mesmo comando roda
