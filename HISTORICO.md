@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Lista de MCPs da VM falha às vezes
+
+- **problema:** `POST /api/work-vm/mcps` às vezes voltava `O host não respondeu o pedido da VM`
+- **por que é um problema:** a lista some no card mesmo com a VM no ar. Um GET falho encerrava a espera, e um clone em andamento segurava a leitura
+- **resolvido como:** o site insiste na consulta até o prazo. Pedidos de MCP do mesmo endereço compartilham um SSH. O agente no host lê MCPs enquanto o clone roda, e o texto guardado no config fica curto para a resposta não quebrar
+
 ## Card em produção não cria a VM no host
 
 - **problema:** criar ou apagar um card em opbed.com fazia SSH para `fabricio@192.168.122.1` e a conexão estourava

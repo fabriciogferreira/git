@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -174,13 +175,45 @@ def run(action: str, template: str | None, name: str, command: dict[str, object]
     return completed.returncode, completed.stdout, completed.stderr
 
 
+def post_result(api: str, token: str, command_id: int, code: int, stdout: str, stderr: str) -> None:
+    payload = {"code": code, "stdout": stdout, "stderr": stderr}
+
+    for _attempt in range(3):
+        try:
+            status, _body = request(api, token, "POST", f"/work-vm-commands/{command_id}/result", payload)
+
+            if status < 500:
+                return
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+            pass
+
+        time.sleep(1)
+
+
+def execute(api: str, token: str, command: dict[str, object]) -> None:
+    action = command.get("action")
+    name = command.get("name")
+    template = command.get("template")
+    command_id = command.get("id")
+
+    if not isinstance(action, str) or not isinstance(name, str) or not isinstance(command_id, int):
+        return
+
+    code, stdout, stderr = run(action, template if isinstance(template, str) else None, name, command)
+    post_result(api, token, command_id, code, stdout, stderr)
+
+
 def main() -> None:
     api, token = load_conf()
     request(api, token, "POST", "/work-vm-commands/release", {})
+    # A clone holds the process for minutes. MCP reads have to keep going.
+    worker: threading.Thread | None = None
 
     while True:
+        claim: dict[str, object] = {"only": "mcps"} if worker is not None and worker.is_alive() else {}
+
         try:
-            status, body = request(api, token, "POST", "/work-vm-commands/claim", {})
+            status, body = request(api, token, "POST", "/work-vm-commands/claim", claim)
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
             time.sleep(PAUSE_S)
             continue
@@ -196,24 +229,20 @@ def main() -> None:
             continue
 
         action = command.get("action")
-        name = command.get("name")
-        template = command.get("template")
-        command_id = command.get("id")
 
-        if not isinstance(action, str) or not isinstance(name, str) or not isinstance(command_id, int):
+        if not isinstance(action, str) or not isinstance(command.get("name"), str) or not isinstance(command.get("id"), int):
             time.sleep(PAUSE_S)
             continue
 
-        code, stdout, stderr = run(action, template if isinstance(template, str) else None, name, command)
+        if action == "mcps":
+            threading.Thread(target=execute, args=(api, token, command), daemon=False).start()
+            continue
 
-        try:
-            request(api, token, "POST", f"/work-vm-commands/{command_id}/result", {
-                "code": code,
-                "stdout": stdout,
-                "stderr": stderr,
-            })
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
-            time.sleep(PAUSE_S)
+        if worker is not None and worker.is_alive():
+            worker.join()
+
+        worker = threading.Thread(target=execute, args=(api, token, command), daemon=False)
+        worker.start()
 
 
 if __name__ == "__main__":
