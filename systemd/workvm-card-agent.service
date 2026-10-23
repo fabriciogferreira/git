@@ -1,0 +1,15 @@
+# The public site cannot SSH to 192.168.122.1. On the libvirt host, poll the
+# API and clone or delete the card VM. The token stays in
+# ~/.config/workvm/agent.conf. WantedBy=default.target so a graphical login
+# starts it; graphical-session.target does not come up with SDDM.
+
+[Unit]
+Description=WorkVM card agent
+
+[Service]
+ExecStart=%h/git/bin/workvm-card-agent.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

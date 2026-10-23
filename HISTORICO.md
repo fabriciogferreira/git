@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Card em produção não cria a VM no host
+
+- **problema:** criar ou apagar um card em opbed.com fazia SSH para `fabricio@192.168.122.1` e a conexão estourava
+- **por que é um problema:** esse endereço só existe na rede da libvirt. O site no Coolify não alcança o host, então a VM não nasce e o delete também falha
+- **resolvido como:** o site grava o pedido na API quando a porta 22 do host não responde. `bin/workvm-card-agent.py` no host busca o pedido e roda o script local. O token fica em `~/.config/workvm/agent.conf`. Dentro da VM o SSH direto continua
+
 ## Plano do Cursor acaba e a VM fica sem agente
 
 - **problema:** o chat do Cursor para quando o plano acaba. O OpenCode não lê `~/.cursor/mcp.json`, então modelo local e MCP não entram juntos

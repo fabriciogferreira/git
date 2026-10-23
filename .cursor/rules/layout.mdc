@@ -45,6 +45,8 @@ alwaysApply: true
 | `bin/workvm-opencode.sh` | O plano do Cursor acaba e o chat perde modelo e MCP. Dentro da VM, instala o OpenCode 2, aponta para o Ollama da RTX (`10.0.2.2:11435`) e copia `~/.cursor/mcp.json`. |
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
+| `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
+| `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |
 | `bin/workvm-open-project-vm.sh` | Projeto sem card não tem clone. Liga a domain que já tem o nome do projeto e publica o SSH do chat. Não clona. |
 | `bin/workvm-drop-card-vm.sh` | Apagar o card conclui o trabalho e a VM clone continua no host. Destrói só `projeto-codigo` e o disco dela; a modelo fica. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
