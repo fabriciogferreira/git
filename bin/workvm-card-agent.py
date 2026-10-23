@@ -66,7 +66,92 @@ def request(api: str, token: str, method: str, path: str, payload: dict[str, obj
         return error.code, body
 
 
-def run(action: str, template: str | None, name: str) -> tuple[int, str, str]:
+LIST_MCPS = r"""
+base="$HOME/.cursor/projects"
+best=""
+best_m=0
+if [ -d "$base" ]; then
+  for dir in "$base"/*/mcps; do
+    [ -d "$dir" ] || continue
+    m=$(stat -c %Y "$dir" 2>/dev/null || printf '0')
+    if [ "$m" -gt "$best_m" ]; then
+      best=$dir
+      best_m=$m
+    fi
+  done
+fi
+if [ -z "$best" ]; then
+  exit 0
+fi
+for server in "$best"/*; do
+  [ -d "$server" ] || continue
+  id=$(basename "$server")
+  case "$id" in
+    cursor-*) continue ;;
+  esac
+  name=$id
+  meta="$server/SERVER_METADATA.json"
+  if [ -f "$meta" ]; then
+    extracted=$(sed -n 's/.*"serverName"[[:space:]]*:[[:space:]]*"\([A-Za-z0-9._-]\{1,64\}\)".*/\1/p' "$meta" | head -n 1)
+    if [ -n "$extracted" ]; then
+      name=$extracted
+    fi
+  fi
+  printf '%s' "$name" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$' || continue
+  status=ok
+  if [ -f "$server/STATUS.md" ]; then
+    if grep -qi authentication "$server/STATUS.md"; then
+      status=auth
+    else
+      status=error
+    fi
+  fi
+  printf '%s\t%s\n' "$name" "$status"
+done
+"""
+
+
+def sh_quote(value: str) -> str:
+    return "'" + value.replace("'", "'\\''") + "'"
+
+
+def run_mcps(user: str, host: str, port: int) -> tuple[int, str, str]:
+    key = Path.home() / ".ssh" / "workvm_ed25519"
+    argv = [
+        "ssh",
+        "-o", "BatchMode=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=/tmp/work-vm-known_hosts",
+        "-o", "ConnectTimeout=12",
+        "-o", "LogLevel=ERROR",
+        "-o", "IdentitiesOnly=yes",
+        "-i", str(key),
+        "-p", str(port),
+        f"{user}@{host}",
+        f"bash -lc {sh_quote(LIST_MCPS)}",
+    ]
+
+    try:
+        completed = subprocess.run(argv, text=True, capture_output=True, timeout=20, check=False)
+    except subprocess.TimeoutExpired as error:
+        stdout = error.stdout if isinstance(error.stdout, str) else ""
+        stderr = error.stderr if isinstance(error.stderr, str) else ""
+        return 1, stdout, stderr or "A VM não respondeu a tempo."
+
+    return completed.returncode, completed.stdout, completed.stderr
+
+
+def run(action: str, template: str | None, name: str, command: dict[str, object]) -> tuple[int, str, str]:
+    if action == "mcps":
+        user = command.get("ssh_user")
+        host = command.get("ssh_host")
+        port = command.get("ssh_port")
+
+        if not isinstance(user, str) or not isinstance(host, str) or not isinstance(port, int):
+            return 1, "", "O pedido de MCP não tem o endereço da VM."
+
+        return run_mcps(user, host, port)
+
     if action == "ensure":
         argv = [str(ROOT / "workvm-ensure-card-vm.sh"), template or "", name]
         timeout = 1700
@@ -119,7 +204,7 @@ def main() -> None:
             time.sleep(PAUSE_S)
             continue
 
-        code, stdout, stderr = run(action, template if isinstance(template, str) else None, name)
+        code, stdout, stderr = run(action, template if isinstance(template, str) else None, name, command)
 
         try:
             request(api, token, "POST", f"/work-vm-commands/{command_id}/result", {

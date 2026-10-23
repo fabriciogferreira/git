@@ -6,7 +6,7 @@ Problema resolvido entra aqui.
 
 - **problema:** criar ou apagar um card em opbed.com fazia SSH para `fabricio@192.168.122.1` e a conexão estourava
 - **por que é um problema:** esse endereço só existe na rede da libvirt. O site no Coolify não alcança o host, então a VM não nasce e o delete também falha
-- **resolvido como:** o site grava o pedido em `users.config.work_vm_commands` quando a porta 22 do host não responde. Não há tabela: isso não é dado do produto. `bin/workvm-card-agent.py` no host busca o pedido e roda o script local. O token fica em `~/.config/workvm/agent.conf`. Dentro da VM o SSH direto continua
+- **resolvido como:** o site grava o pedido em `users.config.work_vm_commands` quando a porta 22 do host não responde. Não há tabela: isso não é dado do produto. `bin/workvm-card-agent.py` no host busca o pedido e roda o script local, inclusive a lista de MCPs da VM. O token fica em `~/.config/workvm/agent.conf`. Dentro da VM o SSH direto continua
 
 ## Plano do Cursor acaba e a VM fica sem agente
 
