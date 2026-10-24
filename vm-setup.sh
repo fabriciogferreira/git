@@ -281,6 +281,26 @@ setup_apps() {
     ok "apps instalados (ou já presentes)"
 }
 
+# The card chat runs `agent`, not the IDE binary from cursor-bin.
+# Without this, the first message on a new VM is "agent: command not found".
+setup_cursor_cli() {
+    step "Cursor CLI (agent) para o chat do card"
+
+    if [ -x "$HOME/.local/bin/agent" ]; then
+        ok "agent já está em ~/.local/bin"
+        return 0
+    fi
+
+    curl -fsSL https://cursor.com/install | bash
+
+    if [ ! -x "$HOME/.local/bin/agent" ]; then
+        log "error: o instalador do Cursor não deixou ~/.local/bin/agent" >&2
+        exit 1
+    fi
+
+    ok "agent em ~/.local/bin"
+}
+
 setup_docker() {
     step "Docker sem sudo (grupo docker)"
 
@@ -452,6 +472,7 @@ main() {
     setup_git_no_cursor_attribution
     setup_yay
     setup_apps
+    setup_cursor_cli
     setup_docker
     setup_clipboard
     setup_apply_dotconfig

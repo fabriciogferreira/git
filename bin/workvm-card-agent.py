@@ -170,11 +170,25 @@ def run_turn(command: dict[str, object]) -> tuple[int, str, str]:
     if isinstance(session, str) and session.strip():
         resume = f"--resume={sh_quote(session)} "
 
+    # cursor-bin ships the IDE. The card chat runs the separate CLI, which
+    # lands in ~/.local/bin. A clone made before that install does not have it.
     inner = (
+        'if [ ! -x "$HOME/.local/bin/agent" ]; then '
+        'curl -fsSL https://cursor.com/install | bash; '
+        'fi; '
         'export PATH="$HOME/.local/bin:$PATH"; '
+        'if [ ! -x "$HOME/.local/bin/agent" ]; then '
+        'printf "%s\\n" "O comando agent não está instalado nesta VM." >&2; exit 127; '
+        'fi; '
         'if [ -z "${CURSOR_API_KEY:-}" ] && [ -f "$HOME/.config/workvm/cursor-api-key" ]; then '
         'CURSOR_API_KEY=$(tr -d "\\n" < "$HOME/.config/workvm/cursor-api-key"); export CURSOR_API_KEY; fi; '
-        f"agent -p --force --trust --output-format json {resume}--workspace {sh_quote(workspace)} {sh_quote(prompt)}"
+        'if [ -z "${CURSOR_API_KEY:-}" ]; then '
+        'agent_status=$("$HOME/.local/bin/agent" status 2>&1 || true); '
+        'case "$agent_status" in '
+        '"Not logged in"*) printf "%s\\n" "O agent desta VM não está logado. Grave a chave do Cursor em ~/.config/workvm/cursor-api-key." >&2; exit 1 ;; '
+        'esac; '
+        'fi; '
+        f'"$HOME/.local/bin/agent" -p --force --trust --output-format json {resume}--workspace {sh_quote(workspace)} {sh_quote(prompt)}'
     )
     key = Path.home() / ".ssh" / "workvm_ed25519"
     argv = [

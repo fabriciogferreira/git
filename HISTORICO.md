@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mensagem do card não acha o comando agent
+
+- **problema:** `POST /api/work-vm/turn` respondia `bash: line 1: agent: command not found`
+- **por que é um problema:** o SSH da VM já funciona, mas o chat chama o CLI `agent`. A VM só tem o aplicativo `cursor` (`cursor-bin`), que não inclui esse comando
+- **resolvido como:** o turno instala o CLI em `~/.local/bin/agent` quando ele falta, e chama esse caminho. `vm-setup.sh` faz o mesmo numa VM nova. Sem login e sem `~/.config/workvm/cursor-api-key`, a resposta diz isso em vez de `Not logged in`
+
 ## Mensagem do card estoura o SSH da VM
 
 - **problema:** `POST /api/work-vm/turn` respondia `ssh: connect to host 192.168.122.1 port 22947: Connection timed out`
