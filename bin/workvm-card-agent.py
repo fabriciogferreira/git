@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -37,6 +38,10 @@ def load_conf() -> tuple[str, str]:
     return api, token
 
 
+def log(text: str) -> None:
+    print(text, file=sys.stderr, flush=True)
+
+
 def request(api: str, token: str, method: str, path: str, payload: dict[str, object] | None) -> tuple[int, dict[str, object]]:
     data = None if payload is None else json.dumps(payload).encode()
     req = urllib.request.Request(
@@ -60,7 +65,11 @@ def request(api: str, token: str, method: str, path: str, payload: dict[str, obj
         body: dict[str, object] = {}
 
         if raw:
-            parsed = json.loads(raw)
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = {"message": raw[:180].decode("utf-8", "replace")}
+
             if isinstance(parsed, dict):
                 body = parsed
 
@@ -148,10 +157,12 @@ def run(action: str, template: str | None, name: str, command: dict[str, object]
         host = command.get("ssh_host")
         port = command.get("ssh_port")
 
-        if not isinstance(user, str) or not isinstance(host, str) or not isinstance(port, int):
+        port_number = whole_int(port)
+
+        if not isinstance(user, str) or not isinstance(host, str) or port_number is None:
             return 1, "", "O pedido de MCP não tem o endereço da VM."
 
-        return run_mcps(user, host, port)
+        return run_mcps(user, host, port_number)
 
     if action == "ensure":
         argv = [str(ROOT / "workvm-ensure-card-vm.sh"), template or "", name]
@@ -175,67 +186,156 @@ def run(action: str, template: str | None, name: str, command: dict[str, object]
     return completed.returncode, completed.stdout, completed.stderr
 
 
+def detail(body: dict[str, object]) -> str:
+    message = body.get("message")
+
+    if isinstance(message, str) and message.strip():
+        return message.replace("\n", " ")[:180]
+
+    errors = body.get("errors")
+
+    if isinstance(errors, dict):
+        return ",".join(str(key) for key in list(errors)[:6])
+
+    return ""
+
+
+def whole_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+
+    return None
+
+
 def post_result(api: str, token: str, command_id: int, code: int, stdout: str, stderr: str) -> None:
     payload = {"code": code, "stdout": stdout, "stderr": stderr}
 
     for _attempt in range(3):
         try:
-            status, _body = request(api, token, "POST", f"/work-vm-commands/{command_id}/result", payload)
-
-            if status < 500:
+            status, body = request(api, token, "POST", f"/work-vm-commands/{command_id}/result", payload)
+            # 404 used to count as done and left the row running forever.
+            if 200 <= status < 300:
+                log(f"result {command_id} {status}")
                 return
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
-            pass
+
+            log(f"result {command_id} {status} {detail(body)}")
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as error:
+            log(f"result {command_id} error {error.__class__.__name__}")
 
         time.sleep(1)
+
+
+def execute_tracked(api: str, token: str, command: dict[str, object], command_id: int, inflight: set[int], inflight_lock: threading.Lock) -> None:
+    try:
+        execute(api, token, command)
+    finally:
+        with inflight_lock:
+            inflight.discard(command_id)
 
 
 def execute(api: str, token: str, command: dict[str, object]) -> None:
     action = command.get("action")
     name = command.get("name")
     template = command.get("template")
-    command_id = command.get("id")
+    command_id = whole_int(command.get("id"))
 
-    if not isinstance(action, str) or not isinstance(name, str) or not isinstance(command_id, int):
+    if not isinstance(action, str) or not isinstance(name, str) or command_id is None:
+        log(f"skip claimed id={command.get('id')!r} action={action!r}")
+        if command_id is not None:
+            post_result(api, token, command_id, 1, "", "O pedido da VM está incompleto.")
         return
 
-    code, stdout, stderr = run(action, template if isinstance(template, str) else None, name, command)
+    try:
+        code, stdout, stderr = run(action, template if isinstance(template, str) else None, name, command)
+    except Exception as error:
+        log(f"run {command_id} {error.__class__.__name__}: {error}")
+        code, stdout, stderr = 1, "", str(error)
+
     post_result(api, token, command_id, code, stdout, stderr)
 
 
 def main() -> None:
     api, token = load_conf()
-    request(api, token, "POST", "/work-vm-commands/release", {})
+    try:
+        me_status, me_body = request(api, token, "GET", "/user/me", None)
+        me_user = me_body.get("user") if isinstance(me_body.get("user"), dict) else {}
+        me_id = me_user.get("id") if isinstance(me_user, dict) else None
+        me_role = me_user.get("system_role") if isinstance(me_user, dict) else None
+        log(f"me {me_status} id={me_id} role={me_role}")
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as error:
+        log(f"me error {error.__class__.__name__}")
+
+    try:
+        release_status, release_body = request(api, token, "POST", "/work-vm-commands/release", {})
+        log(f"release {release_status} {detail(release_body)}")
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as error:
+        log(f"release error {error.__class__.__name__}")
     # A clone holds the process for minutes. MCP reads have to keep going.
+    # working tells the API which MCP rows this process is still inside.
     worker: threading.Thread | None = None
+    inflight: set[int] = set()
+    inflight_lock = threading.Lock()
+    quiet = 0
 
     while True:
-        claim: dict[str, object] = {"only": "mcps"} if worker is not None and worker.is_alive() else {}
+        with inflight_lock:
+            working = sorted(inflight)
+
+        claim: dict[str, object] = {"working": working}
+
+        if worker is not None and worker.is_alive():
+            claim["only"] = "mcps"
 
         try:
             status, body = request(api, token, "POST", "/work-vm-commands/claim", claim)
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as error:
+            log(f"claim error {error.__class__.__name__}")
             time.sleep(PAUSE_S)
             continue
 
         if status == 204:
+            quiet += 1
+            if quiet == 1 or quiet % 15 == 0:
+                log("claim 204")
             time.sleep(PAUSE_S)
             continue
+
+        quiet = 0
 
         command = body.get("command")
 
         if status != 200 or not isinstance(command, dict):
+            log(f"claim {status} {detail(body)}")
             time.sleep(PAUSE_S)
             continue
 
         action = command.get("action")
+        command_id = whole_int(command.get("id"))
+        log(f"claim {status} id={command_id} action={action}")
 
-        if not isinstance(action, str) or not isinstance(command.get("name"), str) or not isinstance(command.get("id"), int):
+        if not isinstance(action, str) or not isinstance(command.get("name"), str) or command_id is None:
+            log(f"claim shape id={command.get('id')!r} action={action!r}")
             time.sleep(PAUSE_S)
             continue
 
         if action == "mcps":
-            threading.Thread(target=execute, args=(api, token, command), daemon=False).start()
+            with inflight_lock:
+                inflight.add(command_id)
+
+            threading.Thread(
+                target=execute_tracked,
+                args=(api, token, command, command_id, inflight, inflight_lock),
+                daemon=False,
+            ).start()
             continue
 
         if worker is not None and worker.is_alive():
