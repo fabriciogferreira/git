@@ -151,6 +151,57 @@ def run_mcps(user: str, host: str, port: int) -> tuple[int, str, str]:
     return completed.returncode, completed.stdout, completed.stderr
 
 
+def run_turn(command: dict[str, object]) -> tuple[int, str, str]:
+    user = command.get("ssh_user")
+    host = command.get("ssh_host")
+    port_number = whole_int(command.get("ssh_port"))
+    workspace = command.get("workspace")
+    prompt = command.get("prompt")
+    session = command.get("session_id")
+
+    if not isinstance(user, str) or not isinstance(host, str) or port_number is None:
+        return 1, "", "O pedido de mensagem não tem o endereço da VM."
+
+    if not isinstance(workspace, str) or not isinstance(prompt, str) or not prompt.strip():
+        return 1, "", "O pedido de mensagem está incompleto."
+
+    resume = ""
+
+    if isinstance(session, str) and session.strip():
+        resume = f"--resume={sh_quote(session)} "
+
+    inner = (
+        'export PATH="$HOME/.local/bin:$PATH"; '
+        'if [ -z "${CURSOR_API_KEY:-}" ] && [ -f "$HOME/.config/workvm/cursor-api-key" ]; then '
+        'CURSOR_API_KEY=$(tr -d "\\n" < "$HOME/.config/workvm/cursor-api-key"); export CURSOR_API_KEY; fi; '
+        f"agent -p --force --trust --output-format json {resume}--workspace {sh_quote(workspace)} {sh_quote(prompt)}"
+    )
+    key = Path.home() / ".ssh" / "workvm_ed25519"
+    argv = [
+        "ssh",
+        "-o", "BatchMode=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=/tmp/work-vm-known_hosts",
+        "-o", "ConnectTimeout=20",
+        "-o", "LogLevel=ERROR",
+        "-o", "IdentitiesOnly=yes",
+        "-i", str(key),
+        "-p", str(port_number),
+        f"{user}@{host}",
+        f"bash -lc {sh_quote(inner)}",
+    ]
+
+    try:
+        # The site gives up at 540s. Finish first so the card gets this answer.
+        completed = subprocess.run(argv, text=True, capture_output=True, timeout=520, check=False)
+    except subprocess.TimeoutExpired as error:
+        stdout = error.stdout if isinstance(error.stdout, str) else ""
+        stderr = error.stderr if isinstance(error.stderr, str) else ""
+        return 1, stdout, stderr or "O agent passou do tempo."
+
+    return completed.returncode, completed.stdout, completed.stderr
+
+
 def run(action: str, template: str | None, name: str, command: dict[str, object]) -> tuple[int, str, str]:
     if action == "mcps":
         user = command.get("ssh_user")
@@ -163,6 +214,9 @@ def run(action: str, template: str | None, name: str, command: dict[str, object]
             return 1, "", "O pedido de MCP não tem o endereço da VM."
 
         return run_mcps(user, host, port_number)
+
+    if action == "turn":
+        return run_turn(command)
 
     if action == "ensure":
         argv = [str(ROOT / "workvm-ensure-card-vm.sh"), template or "", name]

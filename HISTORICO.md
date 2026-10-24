@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mensagem do card estoura o SSH da VM
+
+- **problema:** `POST /api/work-vm/turn` respondia `ssh: connect to host 192.168.122.1 port 22947: Connection timed out`
+- **por que é um problema:** o chat do card sai do site no Coolify. Esse IP e essa porta só existem na rede da libvirt, então a mensagem não chega na VM
+- **resolvido como:** o site grava o turno em `users.config.work_vm_commands` (`action=turn`) e o agente no host faz o SSH do guest com a chave que já lê os MCPs. O `agent` roda lá, e a resposta volta pelo mesmo pedido
+
 ## Apagar a VM no site espera três minutos e diz que o host não respondeu
 
 - **problema:** `POST /api/work-vm/drop` ficava até o prazo (180s) e voltava `O host não respondeu o pedido da VM`, com `name` e `ip` nulos
