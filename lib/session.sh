@@ -154,6 +154,52 @@ workvm_load_environment_d() {
     done
 }
 
+# api.olie.ai publishes OAuth discovery, so Cursor drops the Bearer header and
+# the prompt agent sees needsAuth. The proxy on 127.0.0.1:47331 answers 404
+# there and adds the token. Only MCP=olie keeps the unit.
+workvm_sync_olie_mcp_proxy() {
+    local repo_root="${1:-}"
+    local systemd_user="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+    local unit_dst="$systemd_user/workvm-olie-mcp-proxy.service"
+    local unit_src="$repo_root/systemd/workvm-olie-mcp-proxy.service"
+    local attempt
+
+    if [ -n "${WORKVM_PROJECT_STUBS:-}" ]; then
+        return 0
+    fi
+
+    if [ "${MCP:-}" != "olie" ]; then
+        if [ -e "$unit_dst" ]; then
+            systemctl --user disable --now workvm-olie-mcp-proxy.service >/dev/null 2>&1 || true
+            rm -f "$unit_dst"
+            systemctl --user daemon-reload >/dev/null 2>&1 || true
+        fi
+        return 0
+    fi
+
+    if [ ! -f "$unit_src" ]; then
+        echo "workvm: proxy Olie MCP ausente: $unit_src" >&2
+        return 1
+    fi
+
+    mkdir -p "$systemd_user"
+    ln -sfn "$unit_src" "$unit_dst"
+    systemctl --user daemon-reload || return 1
+    systemctl --user enable --now workvm-olie-mcp-proxy.service || return 1
+
+    attempt=0
+    while [ "$attempt" -lt 10 ]; do
+        if (echo >/dev/tcp/127.0.0.1/47331) >/dev/null 2>&1; then
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 0.2
+    done
+
+    echo "workvm: proxy Olie MCP não abriu 127.0.0.1:47331" >&2
+    return 1
+}
+
 workvm_open_cursor() {
     local workspace="$1"
     local pid

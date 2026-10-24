@@ -20,7 +20,7 @@ Workday order: `~/git/locav/prompts/workflow.md`.
 - Frontend: Bun in `locav-front` (container `locav-frontend`). Prefer Bun over npm; do not introduce `package-lock.json` when the repo uses `bun.lock`.
 - E2E: Cypress under `~/git/locav/locav-front/cypress`. Run it on the host with **Running Cypress** in `~/git/locav/prompts/workflow-policy.md`. The Alpine `locav-frontend` image cannot start the Cypress binary. When a change touches `locav-front`, create or edit specs in `cypress/e2e` for the frontend behavior that change introduces or alters. Extend an existing spec when it already covers that flow. The specs ship on the same `locav-front` branch as the UI change.
 - A rule that exists in only one repository (permissions, an internal package) is not copied here.
-- If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
+- If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
 ## Out of scope
 

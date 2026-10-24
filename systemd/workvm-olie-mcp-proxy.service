@@ -1,0 +1,16 @@
+# Cursor ignores the Bearer header on api.olie.ai because that host publishes
+# OAuth discovery. The desktop stays "authenticated" and the prompt agent
+# reports needsAuth. This unit is the local proxy that returns 404 for
+# discovery and forwards /mcp/management with the token. Only olie, locav,
+# and televisao enable it (MCP=olie).
+
+[Unit]
+Description=WorkVM Olie MCP proxy
+
+[Service]
+ExecStart=%h/git/bin/workvm-olie-mcp-proxy.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

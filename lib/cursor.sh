@@ -539,6 +539,16 @@ for raw in sys.argv[3:]:
     merged.update(servers)
     used.append(str(path))
 
+# api.olie.ai answers OAuth discovery, and Cursor then ignores the Bearer
+# header. The agent reports needsAuth. Point the merged server at the local
+# proxy (bin/workvm-olie-mcp-proxy.py, port 47331) and drop the header.
+olie = merged.get("olie-flow-ai")
+if isinstance(olie, dict):
+    olie = dict(olie)
+    olie["url"] = "http://127.0.0.1:47331/mcp/management"
+    olie.pop("headers", None)
+    merged["olie-flow-ai"] = olie
+
 dest.write_text(
     json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",
     encoding="utf-8",

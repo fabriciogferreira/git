@@ -56,7 +56,8 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   `.cursor/mcp.json` de projeto fica stub local (`mcp.workvm-user` +
   `skip-worktree`) para o mesmo nome não sobrescrever o global desligado. Não
   commitar o stub.
-- MCP HTTP Olie (`mcps/olie.json`) usa `Authorization: Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}`.
+- MCP HTTP Olie (`mcps/olie.json`) declara `https://api.olie.ai/mcp/management` e `Authorization: Bearer ${env:OLIE_FLOW_AI_MCP_TOKEN}`.
+  O merge troca essa URL por `http://127.0.0.1:47331/mcp/management` e tira o header: o host publica descoberta OAuth, o Cursor ignora o Bearer, e o agente do prompt vê `needsAuth` mesmo com o desktop autenticado. O proxy (`bin/workvm-olie-mcp-proxy.py`) responde 404 na descoberta e coloca o token.
   Só com `MCP=olie` em **olie**, **locav** ou **televisao**; outros projetos
   não recebem `olie-flow-ai` no merge.
 - PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`), não o MCP GitHub. Auth: `gh auth login`

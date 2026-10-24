@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Prompt via `needsAuth` com o MCP já autenticado no desktop
+
+- **problema:** o Cursor desktop e o request do MCP diziam que `olie-flow-ai` estava autenticado; o agente do prompt parava em `needsAuth` e pedia `mcp_auth`
+- **por que é um problema:** `api.olie.ai` publica descoberta OAuth, o Cursor ignora o Bearer do `mcp.json`, e o login interativo não existe nesse agente. O card (ex. `tv-35`) não carrega
+- **resolvido como:** o merge aponta `olie-flow-ai` para `127.0.0.1:47331`. O proxy responde 404 na descoberta e encaminha `/mcp/management` com `OLIE_FLOW_AI_MCP_TOKEN`. O workflow manda seguir por aí, ou pela HTTP de management, sem pedir login de novo
+
 ## `docker compose up` do Next não instala
 
 - **problema:** o `project-start` sobe o compose, o build avisa que o plugin buildx não existe, cai no builder clássico e para no `RUN --mount` do `Dockerfile.dev`

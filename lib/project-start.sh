@@ -87,6 +87,10 @@ workvm_project_start() {
     workvm_apply_files "$project_dir" "$PROJECT_NAME"
 
     # Depois do overlay: fontes versionados (mcps/, clones, e2e) → ~/.cursor/mcp.json.
+    # O proxy precisa estar de pé antes do Cursor ler a URL local do olie-flow-ai.
+    workvm_project_log "proxy Olie MCP (só MCP=olie)"
+    workvm_sync_olie_mcp_proxy "$repo_root" \
+        || workvm_project_log "proxy Olie MCP não subiu"
     workvm_project_log "MCP do projeto → ~/.cursor/mcp.json"
     workvm_apply_mcp "$repo_root" "${MCP:-}" "$project_dir" \
         || workvm_project_log "MCP não aplicado"
