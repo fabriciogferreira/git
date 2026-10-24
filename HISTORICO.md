@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Projeto boilerplate-next em `boilerplate-next/`
+
+- **problema:** o clone `fabriciogferreira/boilerplate-next` existia em `boilerplate-next/boilerplate-next/`, mas o meta-repo não tinha `project.conf`
+- **por que é um problema:** o `project-setup.sh` não lista projeto por nome no script; descobre pasta com `project.conf`. Sem isso o menu não oferece o Next, o login não faz fetch nem abre o workspace
+- **resolvido como:** definição em `boilerplate-next/` (`project.conf`, workspace), clone fora do git, branch `main`, `COMPOSE_FILE=compose.yaml`. Sem `post-clone.sh`: não há `.env` nem bootstrap. Produção do compose ficou no profile `prod` para o `docker compose up -d` do login subir só `nextjs-dev` (os dois publicam a porta 3000). Escolhas do container: `DECISIONS.md` no clone
+
 ## Prompt do card era colado à mão no Opbed
 
 - **problema:** mudar `olie/prompts`, `locav/prompts` ou `televisao/prompts` não mudava o site. O texto tinha de ser copiado e salvo em produção

@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "git",
+      "path": ".."
+    },
+    {
+      "name": "boilerplate-next",
+      "path": "boilerplate-next"
+    }
+  ],
+  "settings": {}
+}

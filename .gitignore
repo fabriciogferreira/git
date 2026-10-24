@@ -134,6 +134,13 @@ boilerplate-laravel/*
 !boilerplate-laravel/post-clone.sh
 !boilerplate-laravel/workspace.code-workspace
 
+# boilerplate-next: definição; clone em boilerplate-next/boilerplate-next/ fica fora.
+!boilerplate-next/
+boilerplate-next/*
+!boilerplate-next/README.md
+!boilerplate-next/project.conf
+!boilerplate-next/workspace.code-workspace
+
 # use-url-query: definição; clone em use-url-query/use-url-query/ fica fora.
 !use-url-query/
 use-url-query/*

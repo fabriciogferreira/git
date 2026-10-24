@@ -29,6 +29,7 @@ alwaysApply: true
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts, overlay). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
+| `boilerplate-next/` (projeto) | Definição (`project.conf`, workspace). Clone em `boilerplate-next/boilerplate-next/` fora do git. Compose: `compose.yaml` no clone (dev no `up -d`; produção no profile `prod`). |
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
 | `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clone em `use-url-query/use-url-query/` fora do git. Compose: `docker-compose.yml` no clone. |
 | `*/config-vm.xml` | Domain libvirt do projeto (RAM/vCPU). Sem isso toda WorkVM vira clone genérico e o host de 32 GiB não distribui bem. |
