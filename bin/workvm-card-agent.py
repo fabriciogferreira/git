@@ -224,7 +224,9 @@ def post_result(api: str, token: str, command_id: int, code: int, stdout: str, s
             status, body = request(api, token, "POST", f"/work-vm-commands/{command_id}/result", payload)
             # 404 used to count as done and left the row running forever.
             if 200 <= status < 300:
-                log(f"result {command_id} {status}")
+                command = body.get("command") if isinstance(body.get("command"), dict) else {}
+                command_status = command.get("status") if isinstance(command, dict) else None
+                log(f"result {command_id} {status} {command_status}")
                 return
 
             log(f"result {command_id} {status} {detail(body)}")

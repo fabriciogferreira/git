@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Apagar a VM no site espera três minutos e diz que o host não respondeu
+
+- **problema:** `POST /api/work-vm/drop` ficava até o prazo (180s) e voltava `O host não respondeu o pedido da VM`, com `name` e `ip` nulos
+- **por que é um problema:** o host já tinha apagado a VM no mesmo segundo e publicado o resultado. O card tratava isso como falha e o id do pedido era reutilizado, então a consulta seguinte não achava a resposta
+- **resolvido como:** o resultado fica numa cópia (cache) que a consulta lê se a lista em `users.config` perder a linha. O id não recua (`work_vm_command_seq`). A primeira consulta é imediata e não reaproveita um 404 cacheado. Criar ou apagar a VM passa na frente da leitura de MCPs
+
 ## Lista de MCPs da VM falha às vezes
 
 - **problema:** `POST /api/work-vm/mcps` às vezes voltava `O host não respondeu o pedido da VM`
