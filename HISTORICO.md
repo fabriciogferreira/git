@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Televisão em 1 vCPU
+
+- **problema:** a domain `televisao` estava em 1 vCPU. No primeiro minuto da subida o load foi ~3,7
+- **por que é um problema:** compose, Cursor e browser ficam na fila nesse núcleo
+- **resolvido como:** `<vcpu>4</vcpu>` em `televisao/config-vm.xml`. O 9 continua só na Olie, a guest mais pesada. Aplicar com a VM parada: `bin/apply-config-vm.sh televisao`
+
+## Televisão fica em 8 GiB
+
+- **problema:** a domain `televisao` em 8 GiB, com compose + Cursor IDE + uma aba, mostrava ~2,6 GiB available e ~54 MiB de swap na subida. Parecia pouco
+- **por que é um problema:** aumentar sem medida tira RAM do host de 32 GiB
+- **resolvido como:** `televisao/config-vm.xml` permanece em 8 GiB. O available cobre a carga medida; o swap da subida não pede mais memória
+
 ## Login da VM abria Cursor e Brave
 
 - **problema:** ao subir a VM o `project-start` abria o Cursor e o Brave

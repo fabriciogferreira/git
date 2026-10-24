@@ -86,6 +86,7 @@ televisao/*
 !televisao/project.conf
 !televisao/post-clone.sh
 !televisao/workspace.code-workspace
+!televisao/config-vm.xml
 !televisao/televisao-front-e2e/
 !televisao/televisao-front-e2e/**
 !televisao/televisao-meet-front-e2e/

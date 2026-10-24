@@ -25,7 +25,7 @@ alwaysApply: true
 | `mcps/<nome>.json` | Destino MCP (ex. `olie.json`). Só entra no merge se o conf ativo tem `MCP=<nome>`; `olie` só em olie/locav/televisao → `~/.cursor/mcp.json`. PRs usam `gh`, não MCP GitHub. |
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
 | `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
-| `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
+| `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e, `config-vm.xml`). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts, overlay). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |

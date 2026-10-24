@@ -227,7 +227,7 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 
 Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `vid2agent-code/`, `use-url-query/`.
 
-VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `telvesiao`, `da-o-play`, …
+VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `televisao`, `da-o-play`, …
 
 ### WorkVMs: recursos por projeto (não clone genérico)
 
@@ -250,6 +250,7 @@ Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco*
 | --- | --- | --- | --- | --- |
 | `olie` | `olie/config-vm.xml` | **12 GiB** | **9** | Domain **`olie`**; teto de vCPU (não reserva); 12 GiB para folga com Postman/DBeaver |
 | `locav` | `locav/config-vm.xml` | **12 GiB** | **9** | Mesmo teto da Olie; ainda não aplicado no host |
+| `televisao` | `televisao/config-vm.xml` | **8 GiB** | **4** | Domain **`televisao`**. Compose + Cursor IDE + 1 aba: ~2,6 GiB available e ~54 MiB de swap na subida — 8 GiB basta. Load ~3,7 no primeiro minuto em 1 vCPU; o teto sobe para 4. vCPU ainda não aplicado |
 
 Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só mexe em RAM/vCPU se a domain já existe e está `shut off`. Conferir com a **mesma** URI que o script usou (Olie costuma ser `qemu:///system`): `virsh -c qemu:///system dumpxml olie | grep memory`.
 

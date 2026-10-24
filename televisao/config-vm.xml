@@ -1,0 +1,10 @@
+<!-- Televisão em 8 GiB basta: compose + Cursor IDE + uma aba deixavam ~2,6 GiB
+     available. A subida tocou ~54 MiB de swap; não pede mais RAM.
+     1 vCPU enfileirava (load ~3,7 no primeiro minuto). 4 vCPU cobre esse pico;
+     9 fica com a Olie. apply-config-vm.sh só lê name, memory e vcpu. -->
+<domain type="kvm">
+  <name>televisao</name>
+  <memory unit="KiB">8388608</memory>
+  <currentMemory unit="KiB">8388608</currentMemory>
+  <vcpu placement="static">4</vcpu>
+</domain>
