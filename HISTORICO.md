@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## `docker compose up` do Next não instala
+
+- **problema:** o `project-start` sobe o compose, o build avisa que o plugin buildx não existe, cai no builder clássico e para no `RUN --mount` do `Dockerfile.dev`
+- **por que é um problema:** o `npm ci` não roda. O login segue com "docker compose failed" e a porta 3000 não sobe
+- **resolvido como:** `vm-setup.sh` instala `docker-buildx` junto com `docker` e `docker-compose`. O Compose volta a usar BuildKit, que é o que o `RUN --mount` do guia Docker exige
+
 ## Projeto boilerplate-next em `boilerplate-next/`
 
 - **problema:** o clone `fabriciogferreira/boilerplate-next` existia em `boilerplate-next/boilerplate-next/`, mas o meta-repo não tinha `project.conf`

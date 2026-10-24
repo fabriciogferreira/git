@@ -286,7 +286,9 @@ setup_apps() {
 setup_docker() {
     step "Docker sem sudo (grupo docker)"
 
-    sudo pacman -S --needed --noconfirm docker docker-compose
+    # Sem docker-buildx o compose cai no builder clássico. O Dockerfile.dev
+    # do Next usa RUN --mount e o npm ci nem começa.
+    sudo pacman -S --needed --noconfirm docker docker-compose docker-buildx
 
     if ! getent group docker >/dev/null; then
         sudo groupadd --system docker
