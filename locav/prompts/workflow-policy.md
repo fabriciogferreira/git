@@ -47,24 +47,9 @@ curl -sS --url 'https://api.olie.ai/api/management/project-bulk-step-move' \
 
 Verify the card's stage after the call. On non-2xx, missing env, or ambiguous funnel match: stop and report (prompt-health rules).
 
-## Starting a project execution (claim work)
+## Project execution
 
-When you **begin working** on a card in a given stage (implement, correct, colleague review, or production review), start a project execution so the board shows you are active on that step. Do this **after** any required stage move has succeeded. Resolve UUID and `funnel_step_id` from MCP / the live funnel — never hard-code them. Never paste a Bearer token.
-
-1. `CARD_PROJECT_ID` — UUID from MCP for the card.
-2. `FUNNEL_STEP_ID` — numeric id of the live step that matches the stage you are working in now (e.g. 'Em andamento' while implementing/correcting; 'QA/CR' while colleague-reviewing; 'Revisão em Produção' while production-reviewing).
-3. Prefer an MCP tool that starts an execution when one exists and works.
-4. HTTP fallback:
-
-```bash
-curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/project-executions" \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
-  -H 'content-type: application/json' \
-  --data-raw "{\"funnel_step_id\":${FUNNEL_STEP_ID}}"
-```
-
-On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
+Do not start or end a project execution. Do not POST `project-executions` and do not call an MCP tool that starts one. The Opbed Job page (`/job`) owns that request. Continue the card work without waiting for an execution to start.
 
 ## Reading the project forum
 

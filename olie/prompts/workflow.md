@@ -75,7 +75,7 @@ When the card reaches 'Revisão de Produção' and the change is in production, 
 
 ## Several cards at once
 
-The Job page reads `board_executions` and sends the request in **Starting a project execution** (`~/git/olie/prompts/workflow-policy.md`), one card at a time, for each card's 'Tempo que eu acho'. Do not ask for the codes in chat and do not send that request again from this chat. It does not replace steps 1–6 for a normal single card.
+The Opbed Job page (`/job`) starts project executions from `board_executions`, one card at a time, for each card's 'Tempo que eu acho'. This chat does not call that request. It does not replace steps 1–6 for a normal single card.
 
 ## Out of scope
 

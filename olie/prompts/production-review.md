@@ -12,9 +12,8 @@ Verify the card's acceptance criteria in production. A local or staging result i
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Start a project execution on the live 'Revisão de Produção' funnel step for this card (see **Starting a project execution** in `~/git/olie/prompts/workflow-policy.md`). That records that you are reviewing in production. Resolve UUID and `funnel_step_id` from MCP; use `OLIE_MANAGEMENT_TOKEN` for the HTTP call (not the MCP token). Do not begin production checks until execution has started successfully.
-3. Production is the **gui1** frame. Open **https://gui1.olie.ai/auth/login** and sign in with email `fgoncalves@olie.ai` and password `@olie123`. Do not begin checks until that login succeeds. Identify the observable success and error paths for the card. Stop and report any missing prerequisite rather than guessing or using another account. Do not use `https://esolie.olie.ai`, `*.olie.localhost`, or other hosts as production evidence.
-4. Do not repeat the login password, tokens, personal data, or private production records in the report.
+2. Production is the **gui1** frame. Open **https://gui1.olie.ai/auth/login** and sign in with email `fgoncalves@olie.ai` and password `@olie123`. Do not begin checks until that login succeeds. Identify the observable success and error paths for the card. Stop and report any missing prerequisite rather than guessing or using another account. Do not use `https://esolie.olie.ai`, `*.olie.localhost`, or other hosts as production evidence.
+3. Do not repeat the login password, tokens, personal data, or private production records in the report.
 
 ## Verify
 

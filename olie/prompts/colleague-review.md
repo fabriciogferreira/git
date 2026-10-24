@@ -21,10 +21,6 @@ Load the card through `mcp olie-flow-ai`. Read:
 
 Do not review from the card title alone.
 
-## 2.1. Start review execution
-
-Before reviewing, start a project execution on the live 'QA/CR' funnel step for this card (see **Starting a project execution** in `~/git/olie/prompts/workflow-policy.md`). That records that you are reviewing. Resolve UUID and `funnel_step_id` from MCP; use `OLIE_MANAGEMENT_TOKEN` for the HTTP call (not the MCP token). Do not begin the review until execution has started successfully.
-
 ## 3. What you may change
 
 Do not edit product repositories. That includes `olie-fronts`, `api-main`, `backoffice`, `landing`, `docker-workspace`, and `websocket`.

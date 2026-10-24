@@ -45,40 +45,17 @@ curl -sS --url 'https://api.olie.ai/api/management/project-bulk-step-move' \
 
 Verify the card's stage after the call. On non-2xx, missing env, or ambiguous funnel match: stop and report (prompt-health rules).
 
-## Starting a project execution (claim work)
+## Project execution
 
-When you **begin working** on a card in a given stage (implement, correct, colleague review, or production review), start a project execution so the board shows you are active on that step. Do this **after** any required stage move has succeeded. Resolve UUID and `funnel_step_id` from MCP / the live funnel — never hard-code them. Never paste a Bearer token.
-
-1. `CARD_PROJECT_ID` — UUID from MCP for the card.
-2. `FUNNEL_STEP_ID` — numeric id of the live step that matches the stage you are working in now (e.g. 'Em progresso' while implementing/correcting; 'QA/CR' while colleague-reviewing; 'Revisão de Produção' while production-reviewing).
-3. Prefer an MCP tool that starts an execution when one exists and works.
-4. HTTP fallback:
-
-```bash
-curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/project-executions" \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
-  -H 'content-type: application/json' \
-  --data-raw "{\"funnel_step_id\":${FUNNEL_STEP_ID}}"
-```
-
-On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
+Do not start or end a project execution. Do not POST `project-executions` and do not call an MCP tool that starts one. The Opbed Job page (`/job`) owns that request. Continue the card work without waiting for an execution to start.
 
 ## Several cards at once
 
-The board shows one project execution. VMs can run several cards at the same time. The visible execution stays one card.
+The board shows one project execution. VMs can run several cards at the same time.
 
-The list is the signed-in user's Opbed config `board_executions`. Array order is the execution order. Each `card_id` matches `config.cards`. The card `title` is the board code. Read that list from the config. Do not ask for codes in the chat.
+The Opbed Job page (`/job`) reads `board_executions` and sends the project-execution requests, one card at a time, for each card's 'Tempo que eu acho'. This chat does not send those requests, does not end an execution, and does not ask for the codes.
 
-The user tells teammates which cards they will take, so those cards are not picked or reviewed by someone else. This chat does not send that message.
-
-1. If `board_executions` is missing or empty, say so and stop.
-2. For each row, the card's 'Tempo que eu acho' (`real_time_in_minutes`) must be a positive number of minutes. If any listed card is missing it, name those titles and start nothing.
-3. Do not implement, review, move the funnel, or open a pull request in this pass. Only the execution requests, in the stored order.
-4. The Job page sends the request in **Starting a project execution** (`POST …/project-executions` with the card's current `funnel_step_id`). One card at a time. It leaves that execution open for the card's 'Tempo que eu acho' minutes, ends it, and only then starts the next. This chat does not send that request and does not ask for the codes.
-5. The user works every listed card in parallel on the VMs while those requests run one after another.
-
-If the request that ends an execution fails, stop. Do not open the next execution while the previous one is still the visible one.
+The user works every listed card in parallel on the VMs.
 
 ## Toggling a funnel-step checklist item
 
@@ -105,7 +82,7 @@ Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same v
 | Variable | Use |
 | --- | --- |
 | `OLIE_FLOW_AI_MCP_TOKEN` | Cursor MCP `olie-flow-ai` only (`mcps/olie.json` → `${env:OLIE_FLOW_AI_MCP_TOKEN}`) |
-| `OLIE_MANAGEMENT_TOKEN` | HTTP `https://api.olie.ai/api/management/...` (move card, project-executions, toggle-funnel-checklist). Needs `management:access`. |
+| `OLIE_MANAGEMENT_TOKEN` | HTTP `https://api.olie.ai/api/management/...` (move card, toggle-funnel-checklist). Needs `management:access`. |
 
 Layout and examples: `~/git/.config/environment.d/README.md`.
 

@@ -345,7 +345,7 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 | Host: `~/.local/share/doc/ollama-workvm.md` | Ollama sob demanda (hoje **fora do git**) |
 | Host: `~/.local/share/doc/vid2agent-api.md` | API `:18080` (hoje **fora do git**) |
 | Host: `~/bin/setup-ollama-workvm.sh` | Sudoers + bind Ollama |
-| Host: `~/.config/libvirt/hooks/qemu` | VM up → Ollama + hostfwd |
+| `bin/workvm-libvirt-qemu-hook.sh` | Fonte do hook. No host: `/etc/libvirt/hooks/qemu` → esse script (libvirt 12.8 não lê `~/.config/libvirt/hooks`). Sobe Ollama + hostfwd com a `vid2agent-code` |
 
 ### Fluxos de produto recorrentes
 1. **Card Olie (DOP/OS)**  

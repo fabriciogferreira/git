@@ -17,7 +17,7 @@ Before modifying code, load the card and its live funnel through MCP `olie-flow-
 - If the card is in another stage, do not move it automatically. Report its current stage and wait for instructions.
 - Resolve the card UUID and target `step_id` from MCP / the live funnel. Use `OLIE_MANAGEMENT_TOKEN` for management HTTP auth (not the MCP token). Never hard-code ids or paste tokens.
 - Verify that the stage transition succeeded before continuing.
-- After the card is in `in-progress`, start a project execution for that step (see **Starting a project execution** in `~/git/locav/prompts/workflow-policy.md`). Do not begin git or implementation work until execution has started successfully.
+- Do not start a project execution. The Opbed Job page (`/job`) does that (`~/git/locav/prompts/workflow-policy.md`).
 
 ## 3. Git Workflow
 

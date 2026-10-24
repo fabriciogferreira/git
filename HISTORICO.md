@@ -2,6 +2,30 @@
 
 Problema resolvido entra aqui.
 
+## Prompt do card era colado à mão no Opbed
+
+- **problema:** mudar `olie/prompts`, `locav/prompts` ou `televisao/prompts` não mudava o site. O texto tinha de ser copiado e salvo em produção
+- **por que é um problema:** o arquivo e o Opbed divergem, e o paste do card usa a cópia velha
+- **resolvido como:** o `PUT /api/user/1` regrava só `config.prompts`, com o `config` inteiro em volta. Olie fica na empresa 1. Locav e Televisão ficam nos projetos 4 e 6, porque a API aceita um dono só. A rule `opbed-prompts.mdc` manda repetir isso no próximo create, update ou delete. O token fica em `~/.config/environment.d/opbed.conf`
+
+## Chat da Olie, Locav e Televisão abria a execução do card
+
+- **problema:** os prompts mandavam o agente fazer `POST …/project-executions` ao começar implementação, correção ou revisão
+- **por que é um problema:** a página `/job` do Opbed já dispara essa execução. O chat abria outra
+- **resolvido como:** Olie, Locav e Televisão não chamam mais esse request. A política diz para seguir o card sem esperar a execução. Quem envia é o `/job`
+
+## Análise de mídia da Televisão iria para o conteúdo do card
+
+- **problema:** imagem e vídeo do card da Televisão não tinham skill. Sem ela, a análise entra no conteúdo do projeto
+- **por que é um problema:** o texto da mídia polui o card, e a correção analisa de novo
+- **resolvido como:** `televisao-project-image-analysis` e `televisao-project-video-conversion` no overlay dos quatro clones. O Markdown vai para `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` e é commitado neste meta-repo, como na Olie. Não usa `save-media-tool`
+
+## Televisão sem prompts de card
+
+- **problema:** o trabalho no board da Televisão não tinha texto para colar no agente. Os da Locav cobrem o mesmo funil, com outros nomes de etapa e outro stack
+- **por que é um problema:** cada card reexplica ordem, PR e revisão, e o agente segue Cypress e portas da Locav
+- **resolvido como:** `televisao/prompts/` copia o conjunto da Locav com as etapas deste board ('Não Iniciado', 'Revisão de produção', e as demais). Playwright fica nos e2e do meta-repo. Os quatro clones e o `televisao-backend` substituem LocavApi e o front. O id da etapa continua ao vivo, sem número fixo
+
 ## Televisão em 1 vCPU
 
 - **problema:** a domain `televisao` estava em 1 vCPU. No primeiro minuto da subida o load foi ~3,7
@@ -91,6 +115,24 @@ Problema resolvido entra aqui.
 - **problema:** o chat do Cursor para quando o plano acaba. O OpenCode não lê `~/.cursor/mcp.json`, então modelo local e MCP não entram juntos
 - **por que é um problema:** a VM já tem o merge de MCP do login e a RTX no host, e mesmo assim não há um comando que ligue os dois
 - **resolvido como:** `bin/workvm-opencode.sh` roda dentro da guest. Instala o OpenCode 2, grava `~/.config/opencode/opencode.json` com o Ollama em `10.0.2.2:11435` (`qwen3.8-4b`) e traduz os MCP do Cursor (`${env:}` vira `{env:}`). Não sobe o Ollama nem copia token
+
+## Opbed no teto genérico de RAM/vCPU
+
+- **problema:** a domain `opbed` ficava em 8 GiB e 1 vCPU. A Olie, com a mesma carga (compose, Cursor, browser), está em 12 GiB e 9 vCPU
+- **por que é um problema:** a guest troca e o host não sabe o teto certo desse projeto
+- **resolvido como:** `opbed/config-vm.xml` com o mesmo teto da Olie. `apply-config-vm.sh` só lê nome, RAM e vCPU
+
+## Hook do vid2agent não roda na subida seguinte
+
+- **problema:** a `vid2agent-code` foi religada e `10.0.2.2:18080` voltou a recusar conexão. O Ollama, que já estava no host, continuou
+- **por que é um problema:** o libvirt 12.8 só lê `/etc/libvirt/hooks/qemu`. O symlink tinha ficado em `~/.config/libvirt/hooks/qemu`, então o `virtqemud` não chamou o script. O `setsid` de dentro do hook também falha quando o libvirt é o líder de sessão
+- **resolvido como:** o script vai para `/etc/libvirt/hooks/qemu` e usa `nohup`. O `virtqemud` precisa reiniciar uma vez para reler a lista de hooks. O forward desta VM foi recolocado na hora (`127.0.0.1:18080` → guest `:80`)
+
+## vid2agent-code sobe sem API nem Ollama
+
+- **problema:** o forward `127.0.0.1:18080` e o Ollama em `127.0.0.1:11434` dependiam de um hook só no host. Esse arquivo sumiu. A VM `vid2agent-code` ficava running e as outras tomavam connection refused em `10.0.2.2`
+- **por que é um problema:** a conversão de vídeo do card falha mesmo com a VM ligada; o agente baixa o MP4 e para no `curl`
+- **resolvido como:** `bin/workvm-libvirt-qemu-hook.sh` é o hook da sessão (`~/.config/libvirt/hooks/qemu`). Ele chama o hostname e `bin/workvm-vid2agent-hook.sh`. Na subida, restore e reconnect, o script reaplica o `hostfwd` para a porta 80 da guest e sobe `ollama serve` se o binário existir. Na descida, mata só o Ollama que ele mesmo subiu. Não instala Ollama nem `vulkan-radeon`. Sai 0: hook com erro aborta o start e mata a guest no reconnect
 
 ## `php artisan test -p` recusa `--parallel` na VM Olie
 

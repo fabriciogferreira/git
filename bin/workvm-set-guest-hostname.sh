@@ -2,9 +2,8 @@
 # Libvirt rename (nomeDoProjeto-dop-24) does not change the guest hostname.
 # The image stays jarvis-vm, so every VM looks the same on the site.
 #
-# Call from the host qemu hook on started/begin and restore/begin.
-# Do not replace ~/.config/libvirt/hooks/qemu: that hook also starts Ollama.
-# Add: bin/workvm-set-guest-hostname.sh "$1" "$2" "$3"
+# Call from bin/workvm-libvirt-qemu-hook.sh on started/begin and restore/begin.
+# That hook also publishes vid2agent-code. Do not point the libvirt hook at this file alone.
 #
 # Direct: bin/workvm-set-guest-hostname.sh nomeDoProjeto-dop-24
 set -euo pipefail

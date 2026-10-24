@@ -39,3 +39,14 @@ Não coloque PAT do GitHub no `environment.d` só para o agente: o pre-QA usa `g
 Depois feche o Cursor por completo e reabra (login gráfico) se mudou tokens Olie.
 
 `*.conf` com secrets ficam só no live (`~/.config`); não copiar para o git.
+
+## Token do Opbed
+
+O sync dos prompts (`opbed-prompts.mdc`) lê o Bearer da API `https://api.opbed.com`. O valor tem `|`; entre aspas, senão um `source` trata o pipe como comando.
+
+```bash
+cat > ~/.config/environment.d/opbed.conf <<'EOF'
+OPBED_API_TOKEN="cole_o_bearer_aqui"
+EOF
+chmod 600 ~/.config/environment.d/opbed.conf
+```

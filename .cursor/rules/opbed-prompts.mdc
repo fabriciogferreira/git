@@ -1,0 +1,19 @@
+---
+description: Prompt de Olie, Locav ou Televisão muda no git e fica velho no site do Opbed
+globs: "{olie,locav,televisao}/prompts/**/*.md"
+alwaysApply: false
+---
+
+# Prompt no git também no Opbed
+
+Colar o Markdown no site e salvar à mão deixa o Opbed atrás do arquivo. Ao criar, editar ou apagar um prompt destes três projetos, faça o mesmo em `config.prompts`.
+
+O Bearer fica em `~/.config/environment.d/opbed.conf` (`OPBED_API_TOKEN`), fora do git. Não escreva o token no repo, no histórico nem na resposta.
+
+1. `GET https://api.opbed.com/api/user/me`
+2. Monte de novo só `config.prompts`. O `PUT https://api.opbed.com/api/user/1` manda `{"config": ...}` inteiro.
+3. `GET` de novo. Todo o resto do `config` tem de voltar igual.
+
+Um prompt tem no máximo um dono: `company_id`, `project_id` ou `repository_id`. Os da Olie ficam na empresa 1 (`project_id` nulo). Locav é o projeto 4 e Televisão o 6, com `company_id` nulo. O nome no site acompanha o arquivo: `implementation-validation.md` continua `implemantation-validation` e `mutation-testing.md` continua `mutation-test`. `README.md` e `mutation-ledger.md` não sobem. Id novo é o maior id mais um. `Colleague review` é o único `repeatable`.
+
+A API tira o newline final. Compare o texto com `rstrip`. Se o validador exigir uma chave ausente em outro array, grave só essa chave como nulo e confira que o restante não mudou.
