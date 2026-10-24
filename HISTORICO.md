@@ -2,11 +2,47 @@
 
 Problema resolvido entra aqui.
 
+## A fila do Job não disparava a execução do board
+
+- **problema:** marcar os cards gravava a ordem, mas ninguém mandava o request de execução
+- **por que é um problema:** o board continua sem mostrar o card, e o exemplo do request já estava no workflow
+- **resolvido como:** o botão Executar manda o `POST …/project-executions` do `workflow-policy.md`, um card por vez, pelo tempo de 'Tempo que eu acho', e só então abre o próximo
+
+## A ordem da execução no board só existia no prompt
+
+- **problema:** os códigos e a ordem da execução visível tinham que ser colados no chat
+- **por que é um problema:** cada conversa pedia a lista de novo, e o Job já é onde os cards estão
+- **resolvido como:** no Job, o checkbox grava `config.board_executions` na ordem marcada. O prompt lê essa lista e não pede os códigos
+
+## Revisão de produção ainda abria o EsOlie
+
+- **problema:** o prompt de production review verificava `https://esolie.olie.ai/overview`
+- **por que é um problema:** o que vale para o card é o frame gui1, e sem login a página não mostra o produto
+- **resolvido como:** a revisão entra em `https://gui1.olie.ai/auth/login` no frame gui1. A senha fica só em `olie/prompts/production-review.md`
+
+## Vários cards na VM e uma execução visível no board
+
+- **problema:** as VMs permitem trabalhar vários cards ao mesmo tempo, e o board da Olie mostra uma execução por vez
+- **por que é um problema:** abrir duas execuções ao mesmo tempo aparece para a equipe como dois cards em execução
+- **resolvido como:** o usuário avisa a equipe quais códigos vai pegar. Neste chat, os códigos informados só recebem o request de execução, em sequência, cada um pelo tempo de 'Tempo que eu acho'. O trabalho nos cards segue em paralelo nas VMs
+
+## Card não tem como desligar a VM sem apagar o clone
+
+- **problema:** o card só ligava a VM ou a apagava junto com o disco
+- **por que é um problema:** pausar o trabalho destruía o clone, e deixar ligado ocupava o host
+- **resolvido como:** o botão Pausar manda `shutdown` no clone `projeto-codigo`. A domain e o disco ficam. O Conectar seguinte liga a mesma VM
+
+## Chat do card junta o home com ~/git
+
+- **problema:** o `cursor-agent` respondia `Workspace directory does not exist: /home/fabricio/~/git`
+- **por que é um problema:** o card manda o workspace `~/git` e a mensagem não abre o repositório
+- **resolvido como:** o turno troca `~/` por `$HOME` antes do `--workspace`. O caminho que chega no CLI é absoluto
+
 ## Mensagem do card não acha o comando agent
 
 - **problema:** `POST /api/work-vm/turn` respondia `bash: line 1: agent: command not found`
 - **por que é um problema:** o SSH da VM já funciona, mas o chat chama o CLI `agent`. A VM só tem o aplicativo `cursor` (`cursor-bin`), que não inclui esse comando
-- **resolvido como:** o turno instala o CLI em `~/.local/bin/agent` quando ele falta, e chama esse caminho. `vm-setup.sh` faz o mesmo numa VM nova. Sem login e sem `~/.config/workvm/cursor-api-key`, a resposta diz isso em vez de `Not logged in`
+- **resolvido como:** o comando é `cursor-agent`, do pacote AUR `cursor-cli` (`yay -S cursor-cli`). O turno instala esse pacote quando o comando falta. `vm-setup.sh` instala junto com o `cursor-bin`. Sem login e sem `~/.config/workvm/cursor-api-key`, a resposta diz isso em vez de `Not logged in`
 
 ## Mensagem do card estoura o SSH da VM
 

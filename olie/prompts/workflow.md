@@ -37,7 +37,7 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/olie/promp
 
 ## 2. Production review
 
-Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`. Production checks use https://esolie.olie.ai/overview (see **Production verification URL** in `~/git/olie/prompts/workflow-policy.md`).
+Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`. Production checks use the gui1 frame at https://gui1.olie.ai (see **Production verification URL** in `~/git/olie/prompts/workflow-policy.md`).
 
 ## 3. Choose a card
 
@@ -72,6 +72,10 @@ Then hand it off to 'QA/CR' again. Repeat until the card leaves 'corrigir' ou me
 ## 6. Production
 
 When the card reaches 'Revisão de Produção' and the change is in production, review it as in step 2. That prompt asks yes/no before moving to 'concluído' (pass) or 'corrigir' (fail).
+
+## Several cards at once
+
+The Job page reads `board_executions` and sends the request in **Starting a project execution** (`~/git/olie/prompts/workflow-policy.md`), one card at a time, for each card's 'Tempo que eu acho'. Do not ask for the codes in chat and do not send that request again from this chat. It does not replace steps 1–6 for a normal single card.
 
 ## Out of scope
 

@@ -49,6 +49,7 @@ alwaysApply: true
 | `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |
 | `bin/workvm-open-project-vm.sh` | Projeto sem card não tem clone. Liga a domain que já tem o nome do projeto e publica o SSH do chat. Não clona. |
 | `bin/workvm-drop-card-vm.sh` | Apagar o card conclui o trabalho e a VM clone continua no host. Destrói só `projeto-codigo` e o disco dela; a modelo fica. |
+| `bin/workvm-shutdown-card-vm.sh` | O chat acaba e o clone do card continua ligado. Desliga `projeto-codigo` sem apagar a domain nem o disco; a modelo fica. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |

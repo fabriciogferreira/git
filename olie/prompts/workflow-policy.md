@@ -64,6 +64,22 @@ curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}/p
 
 On non-2xx, missing env, or ambiguous step match: stop and report (prompt-health rules). Do not continue the paste as if execution had started.
 
+## Several cards at once
+
+The board shows one project execution. VMs can run several cards at the same time. The visible execution stays one card.
+
+The list is the signed-in user's Opbed config `board_executions`. Array order is the execution order. Each `card_id` matches `config.cards`. The card `title` is the board code. Read that list from the config. Do not ask for codes in the chat.
+
+The user tells teammates which cards they will take, so those cards are not picked or reviewed by someone else. This chat does not send that message.
+
+1. If `board_executions` is missing or empty, say so and stop.
+2. For each row, the card's 'Tempo que eu acho' (`real_time_in_minutes`) must be a positive number of minutes. If any listed card is missing it, name those titles and start nothing.
+3. Do not implement, review, move the funnel, or open a pull request in this pass. Only the execution requests, in the stored order.
+4. The Job page sends the request in **Starting a project execution** (`POST …/project-executions` with the card's current `funnel_step_id`). One card at a time. It leaves that execution open for the card's 'Tempo que eu acho' minutes, ends it, and only then starts the next. This chat does not send that request and does not ask for the codes.
+5. The user works every listed card in parallel on the VMs while those requests run one after another.
+
+If the request that ends an execution fails, stop. Do not open the next execution while the previous one is still the visible one.
+
 ## Toggling a funnel-step checklist item
 
 Board checklists on a funnel step (e.g. QA/CR item **Pull request created**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. MCP `get-project-details` may return empty `project_checklists` even when the UI shows items.
@@ -95,7 +111,7 @@ Layout and examples: `~/git/.config/environment.d/README.md`.
 
 ## Production verification URL
 
-Production review (`production-review` / 'Revisão de Produção') checks the live product at **https://esolie.olie.ai/overview**. Local hosts (`*.olie.localhost`) and staging are not production evidence.
+Production review (`production-review` / 'Revisão de Produção') checks the **gui1** frame. Log in at **https://gui1.olie.ai/auth/login** with the account in `~/git/olie/prompts/production-review.md`. Local hosts (`*.olie.localhost`), `https://esolie.olie.ai`, and other frames are not production evidence.
 
 ## Language
 

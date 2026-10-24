@@ -266,8 +266,10 @@ setup_apps() {
         xdg-desktop-portal-hyprland \
         xdg-desktop-portal-gtk
 
-    log "AUR: cursor-bin brave-bin postman-bin"
-    aur_install cursor-bin brave-bin postman-bin
+    # cursor-bin is the IDE. The card chat runs cursor-agent, which is the
+    # AUR package cursor-cli (`yay -S cursor-cli`).
+    log "AUR: cursor-bin cursor-cli brave-bin postman-bin"
+    aur_install cursor-bin cursor-cli brave-bin postman-bin
 
     # Brave as default browser (xdg + login openers in lib/session.sh).
     if [ -f /usr/share/applications/brave-browser.desktop ]; then
@@ -279,26 +281,6 @@ setup_apps() {
     fi
 
     ok "apps instalados (ou já presentes)"
-}
-
-# The card chat runs `agent`, not the IDE binary from cursor-bin.
-# Without this, the first message on a new VM is "agent: command not found".
-setup_cursor_cli() {
-    step "Cursor CLI (agent) para o chat do card"
-
-    if [ -x "$HOME/.local/bin/agent" ]; then
-        ok "agent já está em ~/.local/bin"
-        return 0
-    fi
-
-    curl -fsSL https://cursor.com/install | bash
-
-    if [ ! -x "$HOME/.local/bin/agent" ]; then
-        log "error: o instalador do Cursor não deixou ~/.local/bin/agent" >&2
-        exit 1
-    fi
-
-    ok "agent em ~/.local/bin"
 }
 
 setup_docker() {
@@ -472,7 +454,6 @@ main() {
     setup_git_no_cursor_attribution
     setup_yay
     setup_apps
-    setup_cursor_cli
     setup_docker
     setup_clipboard
     setup_apply_dotconfig

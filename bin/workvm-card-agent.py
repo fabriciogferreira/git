@@ -170,25 +170,29 @@ def run_turn(command: dict[str, object]) -> tuple[int, str, str]:
     if isinstance(session, str) and session.strip():
         resume = f"--resume={sh_quote(session)} "
 
-    # cursor-bin ships the IDE. The card chat runs the separate CLI, which
-    # lands in ~/.local/bin. A clone made before that install does not have it.
+    # cursor-bin is the IDE. The card runs cursor-agent from the AUR package
+    # cursor-cli. A clone made before that package does not have the command.
     inner = (
-        'if [ ! -x "$HOME/.local/bin/agent" ]; then '
-        'curl -fsSL https://cursor.com/install | bash; '
+        'if ! command -v cursor-agent >/dev/null 2>&1; then '
+        'yay -S --needed --noconfirm cursor-cli; '
         'fi; '
-        'export PATH="$HOME/.local/bin:$PATH"; '
-        'if [ ! -x "$HOME/.local/bin/agent" ]; then '
-        'printf "%s\\n" "O comando agent não está instalado nesta VM." >&2; exit 127; '
+        'if ! command -v cursor-agent >/dev/null 2>&1; then '
+        'printf "%s\\n" "O comando cursor-agent não está instalado nesta VM." >&2; exit 127; '
         'fi; '
         'if [ -z "${CURSOR_API_KEY:-}" ] && [ -f "$HOME/.config/workvm/cursor-api-key" ]; then '
         'CURSOR_API_KEY=$(tr -d "\\n" < "$HOME/.config/workvm/cursor-api-key"); export CURSOR_API_KEY; fi; '
         'if [ -z "${CURSOR_API_KEY:-}" ]; then '
-        'agent_status=$("$HOME/.local/bin/agent" status 2>&1 || true); '
+        'agent_status=$(cursor-agent status 2>&1 || true); '
         'case "$agent_status" in '
-        '"Not logged in"*) printf "%s\\n" "O agent desta VM não está logado. Grave a chave do Cursor em ~/.config/workvm/cursor-api-key." >&2; exit 1 ;; '
+        '"Not logged in"*) printf "%s\\n" "O cursor-agent desta VM não está logado. Grave a chave do Cursor em ~/.config/workvm/cursor-api-key." >&2; exit 1 ;; '
         'esac; '
         'fi; '
-        f'"$HOME/.local/bin/agent" -p --force --trust --output-format json {resume}--workspace {sh_quote(workspace)} {sh_quote(prompt)}'
+        # cursor-agent joins a relative path onto $HOME. Quoted ~/git becomes /home/fabricio/~/git.
+        f'ws={sh_quote(workspace)}; '
+        'case "$ws" in '
+        "'~'*) ws=\"$HOME${ws#\"~\"}\" ;; "
+        'esac; '
+        f'cursor-agent -p --force --trust --output-format json {resume}--workspace "$ws" {sh_quote(prompt)}'
     )
     key = Path.home() / ".ssh" / "workvm_ed25519"
     argv = [
@@ -238,6 +242,9 @@ def run(action: str, template: str | None, name: str, command: dict[str, object]
     elif action == "drop":
         argv = [str(ROOT / "workvm-drop-card-vm.sh"), template or "", name]
         timeout = 170
+    elif action == "shutdown":
+        argv = [str(ROOT / "workvm-shutdown-card-vm.sh"), template or "", name]
+        timeout = 80
     elif action == "open":
         argv = [str(ROOT / "workvm-open-project-vm.sh"), name]
         timeout = 170
