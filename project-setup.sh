@@ -217,17 +217,15 @@ workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"
 systemctl --user daemon-reload
 systemctl --user enable workvm.service
 
-# Run in this session (inherits Wayland/DISPLAY/PATH). systemd alone often
-# lacks compositor env and would fail or hang on workvm_wait_for_wayland.
 echo "==> Iniciando projeto ($PROJECT)"
-"$REPO_ROOT/lib/project-start.sh" "$PROJECT_SRC"
+WORKVM_OPEN_APPS=1 "$REPO_ROOT/lib/project-start.sh" "$PROJECT_SRC"
 
 echo
 echo "✓ Projeto selecionado: $PROJECT"
 echo "  current -> $CURRENT_LINK -> $(readlink -f "$CURRENT_LINK")"
 echo "  unit    -> $UNIT_DST"
 echo "  cursor  -> $REPO_ROOT/.cursor/rules/workvm-project.mdc"
-echo "  start   -> Cursor + browser (agora) e workvm.service nos próximos logins"
+echo "  start   -> Cursor + browser agora; nos próximos logins só o compose"
 echo
 echo "Nos próximos logins gráficos, workvm.service executará de novo:"
 echo "  $REPO_ROOT/lib/project-start.sh $CURRENT_LINK"

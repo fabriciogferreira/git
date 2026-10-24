@@ -299,7 +299,7 @@ Fazer **um item por vez**, na ordem. Ao concluir: marcar `[x]`, anotar o que mud
    - Docker compose do projeto
    - merge MCP → `~/.cursor/mcp.json`
    - patch local de `.cursor` nos clones
-   - abre Cursor (workspace) + Chromium nas URLs do `project.conf`
+   - no login, não abre Cursor nem browser; a instalação do projeto abre os dois
 3. Agente vê projeto ativo em `.cursor/rules/workvm-project.mdc`.
 
 ### Checklist rápido “estou pronto?”

@@ -91,16 +91,10 @@ workvm_project_start() {
     workvm_apply_mcp "$repo_root" "${MCP:-}" "$project_dir" \
         || workvm_project_log "MCP não aplicado"
 
-    workvm_project_log "waiting for Wayland/Hyprland"
-    if ! workvm_wait_for_wayland 90; then
-        workvm_project_log "Wayland indisponível; tentando abrir apps mesmo assim"
-        workvm_ensure_session_env
-    fi
-
     if [ -n "${COMPOSE_DIR:-}" ]; then
         workvm_project_log "docker compose up -d ($COMPOSE_DIR${COMPOSE_FILE:+ -f $COMPOSE_FILE})"
         if ! workvm_docker_compose_up "$COMPOSE_DIR"; then
-            workvm_project_log "docker compose failed; continuing with editor/browser"
+            workvm_project_log "docker compose failed; continuing"
         else
             # Hook before WAIT_URL: Locav (e similares) precisam de composer/migrate
             # depois do compose e antes do healthcheck HTTP.
@@ -122,16 +116,18 @@ workvm_project_start() {
 
     workvm_project_start_e2e
 
-    # workvm_open_cursor já chama workvm_load_environment_d, que garante
-    # ~/.config/environment.d como diretório (${env:NAME} do MCP).
-    workvm_project_log "opening Cursor workspace"
-    workvm_open_cursor "${WORKSPACE_FILE:-$project_dir/workspace.code-workspace}" \
-        || workvm_project_log "falha ao abrir Cursor; continuando"
+    # A instalação confere o projeto com a janela aberta. O login da VM
+    # sobe o compose sem Cursor nem Brave.
+    if [ "${WORKVM_OPEN_APPS:-}" = 1 ]; then
+        workvm_project_log "opening Cursor workspace"
+        workvm_open_cursor "${WORKSPACE_FILE:-$project_dir/workspace.code-workspace}" \
+            || workvm_project_log "falha ao abrir Cursor; continuando"
 
-    if [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
-        workvm_project_log "opening browser (${#CHROMIUM_URLS[@]} urls)"
-        workvm_open_chromium "${CHROMIUM_URLS[@]}" \
-            || workvm_project_log "falha ao abrir browser; continuando"
+        if [ "${#CHROMIUM_URLS[@]}" -gt 0 ]; then
+            workvm_project_log "opening browser (${#CHROMIUM_URLS[@]} urls)"
+            workvm_open_chromium "${CHROMIUM_URLS[@]}" \
+                || workvm_project_log "falha ao abrir browser; continuando"
+        fi
     fi
 
     workvm_project_log "done"

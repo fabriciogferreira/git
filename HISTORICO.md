@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Login da VM abria Cursor e Brave
+
+- **problema:** ao subir a VM o `project-start` abria o Cursor e o Brave
+- **por que é um problema:** o trabalho passou a ser pelo site; a janela e o browser na VM só ocupam a sessão
+- **resolvido como:** o login chama o `project-start` sem abrir os dois. A instalação do projeto passa `WORKVM_OPEN_APPS=1` e abre, para conferir o que subiu
+
 ## A fila do Job não disparava a execução do board
 
 - **problema:** marcar os cards gravava a ordem, mas ninguém mandava o request de execução

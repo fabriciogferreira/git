@@ -1,4 +1,4 @@
-# No login gráfico: compose, Cursor e browser do projeto em current.
+# No login gráfico: compose do projeto em current. Não abre Cursor nem browser.
 # WantedBy=default.target — graphical-session.target tem RefuseManualStart e
 # SDDM+start-hyprland nunca o ativam; default.target sobe com a sessão do usuário.
 [Unit]

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Wayland, Docker, browser e abertura do Cursor no login gráfico.
+# Wayland, Docker, sshd da VM (o chat do card entra por SSH) e abertura do
+# Cursor e do Brave na instalação do projeto.
 # Problema: a espera da sessão estava no mesmo arquivo que clone e patch.
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
 
@@ -172,7 +173,6 @@ workvm_open_cursor() {
         return 1
     fi
 
-    # Hyprland restarts workvm after compositor is up; skip duplicate window.
     if pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
         echo "workvm: Cursor already open for $workspace" >&2
         return 0
@@ -206,7 +206,6 @@ workvm_open_chromium() {
         return 1
     fi
 
-    # Same restart path as Cursor — one window is enough.
     if [ -f "$pidfile" ]; then
         pid="$(cat "$pidfile" 2>/dev/null || true)"
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then

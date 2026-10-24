@@ -17,10 +17,10 @@ alwaysApply: true
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
 | `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |
 | `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones, merge de JSON do Cursor e MCP → `~/.cursor/mcp.json`. |
-| `lib/session.sh` | Wayland, Docker, browser, abertura do Cursor no login, e sshd da VM (o chat do card entra por SSH). |
+| `lib/session.sh` | Wayland, Docker, sshd da VM (o chat do card entra por SSH) e abertura do Cursor e do Brave na instalação do projeto. |
 | `lib/workvm_ed25519.pub` | O site guarda a chave privada. Sem esta pública no `authorized_keys` do guest, o SSH recusa o login. |
 | `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
-| `lib/project-start.sh` | A subida (fetch, compose, after_compose, wait URL, e2e, Cursor, browser) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`. |
+| `lib/project-start.sh` | A subida (fetch, compose, after_compose, wait URL, e2e) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`, sem Cursor nem browser. A instalação passa `WORKVM_OPEN_APPS=1` e abre os dois. |
 | `*/start.hook.sh` | Passo pós-compose que não cabe em variável (`workvm_project_after_compose`). Roda antes do WAIT_URL. |
 | `mcps/<nome>.json` | Destino MCP (ex. `olie.json`). Só entra no merge se o conf ativo tem `MCP=<nome>`; `olie` só em olie/locav/televisao → `~/.cursor/mcp.json`. PRs usam `gh`, não MCP GitHub. |
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |

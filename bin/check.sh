@@ -3,7 +3,7 @@
 # Problema: ninguém rodava shellcheck. set -u estoura num array que o
 # project.conf não declara, e o log do compose omitia COMPOSE_FILE
 # mesmo quando o conf definia.
-# Não sobe Docker, Cursor nem browser: o trecho de project-start usa stubs.
+# Não sobe Docker: o trecho de project-start usa stubs.
 set -euo pipefail
 
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

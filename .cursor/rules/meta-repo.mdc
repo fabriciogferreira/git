@@ -32,7 +32,7 @@ O porquê de cada pasta e script está em `~/git/.cursor/rules/layout.mdc`. Não
 - root **`~/git`** → este meta-repo (rules, prompts por produto, overlay, projeto setado)
 - root **cada clone** → `.cursor` daquele repositório (MCP de projeto vira stub; o merge ativo está em `~/.cursor/mcp.json`)
 
-O `project-start.sh` abre esse arquivo. A janela é sempre este repositório mais o projeto que a VM tem setado.
+A instalação do projeto abre esse arquivo (`WORKVM_OPEN_APPS=1`). A janela é este repositório mais o projeto que a VM tem setado. O login da VM não abre o Cursor.
 
 ## Patch local nos clones (multi-root)
 
@@ -65,7 +65,7 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   `OLIE_FLOW_AI_MCP_TOKEN` (MCP Olie), `OLIE_MANAGEMENT_TOKEN` (HTTP `/api/management/...`).
   Ex.: `~/.config/environment.d/olie.conf`. Não use PAT no `environment.d` só para GitHub
   se `gh auth login` já cobrir o CLI.
-- `workvm_open_cursor` / Hyprland carregam esses `*.conf`. Se o path existir como
+- Na instalação do projeto, `workvm_open_cursor` carrega esses `*.conf`. O Hyprland também. Se o path existir como
   arquivo, `workvm_ensure_environment_d` migra para `local.conf`.
 - Não versionar tokens; overlay versionado pode documentar o layout em
   `.config/environment.d/README.md`.

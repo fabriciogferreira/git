@@ -65,7 +65,7 @@ hl.on("hyprland.start", function ()
     -- workvm is WantedBy=default.target (graphical-session refuses manual start and
     -- SDDM+start-hyprland never activate it). Restart once Wayland is up: RemainAfterExit
     -- makes plain `start` a no-op if the oneshot already finished before Hyprland,
-    -- and Cursor/Brave then never open. open_cursor/open_chromium are idempotent.
+    -- and the project compose then never runs.
     hl.exec_cmd("systemctl --user restart workvm.service")
     -- No project bound yet → script opens Kitty with project-setup menu.
     -- Delay so WAYLAND_DISPLAY/socket exist (hl.exec_cmd is async at start).
