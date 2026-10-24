@@ -109,6 +109,19 @@ Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same v
 
 Layout and examples: `~/git/.config/environment.d/README.md`.
 
+## Payment test cards
+
+A review that charges a card has no safe number unless these are written down. Use only these numbers. Do not use a real card.
+
+| Number | Result |
+| --- | --- |
+| `4000000000000010` | Success. Order **Pago**, transaction **Capturada**. |
+| `4000000000000028` | Failure. Not authorized. |
+| `4000000000000036` | Processing, then success. |
+| `4000000000000044` | Processing, then failure. |
+
+When the change needs more than one outcome, run each relevant number. A success-only check does not cover an unauthorized charge or a charge that stays in processing.
+
 ## Production verification URL
 
 Production review (`production-review` / 'Revisão de Produção') checks the **gui1** frame. Log in at **https://gui1.olie.ai/auth/login** with the account in `~/git/olie/prompts/production-review.md`. Local hosts (`*.olie.localhost`), `https://esolie.olie.ai`, and other frames are not production evidence.

@@ -53,6 +53,7 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 ## 5. What to verify
 
 - The behavior matches the card, including the edge cases the card states.
+- When the change charges a card or depends on payment authorization, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Cover the outcomes the card requires (success, unauthorized, processing then success, processing then failure).
 - The pull request contains that behavior and does not smuggle unrelated changes.
 - Light and dark theme text contrast both hold on the screens the card changes.
 - Do not edit `en.json`, and do not fail the review for missing or outdated English strings there. English translations are resolved later. A new key in 'pt-br.json' without a matching 'en.json' entry is not a defect.

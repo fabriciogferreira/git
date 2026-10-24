@@ -20,8 +20,9 @@ Verify the card's acceptance criteria in production. A local or staging result i
 
 1. Test the primary acceptance path in the gui1 frame at https://gui1.olie.ai, after the login above (navigate from the page login opens to the feature the card changed).
 2. Test the relevant error or edge path when the card specifies one or production-safe data makes it possible.
-3. Record concise evidence: production URL or feature area, action, expected result, and observed result. Redact sensitive values.
-4. Compare the deployed behavior to the card, not merely to local behavior.
+3. When the acceptance path charges a card, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Record which number you used and the order and transaction state you observed. Cover the outcomes the card requires.
+4. Record concise evidence: production URL or feature area, action, expected result, and observed result. Redact sensitive values.
+5. Compare the deployed behavior to the card, not merely to local behavior.
 
 ## Result
 
