@@ -15,7 +15,7 @@ Workday order: `~/git/televisao/prompts/workflow.md`.
 
 ## Required
 
-- UI copy and user-facing project content are Brazilian Portuguese. Commit messages and pull request titles are English. The pull request body is the filled `.github/pull_request_template.md` of that repository; see `~/git/televisao/prompts/workflow-policy.md`.
+- UI copy and user-facing project content are Brazilian Portuguese. Commit messages and pull request titles are English. The pull request body is the filled `.github/pull_request_template.md` of that repository; see `~/git/televisao/prompts/workflow-policy.md`. `televisao-meet-core` has no template. The body is the four sections in that policy, and the card continues.
 - Do not post image, video, or audio analysis (or transcriptions) into project content. Save under `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md`, **commit/push on the meta-repo** `~/git`, and reuse on correction; see `televisao-project-image-analysis` and `televisao-project-video-conversion`.
 - PHP, Artisan, Composer, Pint, and `televisao-api` tests: `docker exec -w /var/www/html televisao-backend <command>`. Do not run `php` on the host.
 - Use the test runner already installed in `televisao-backend`. When `vendor/bin/pest` exists, new tests and any test file this card edits are written with that Pest. Convert an edited PHPUnit file with Drift inside the container: `vendor/bin/pest --drift <that-file>`. Do not pass `tests/`. Do not convert files this card does not touch. If Pest or Drift is not already installed, stop and report. Do not `composer require` them and do not bump PHP to match another product. Personal mutation testing is `~/git/televisao/prompts/mutation-testing.md`. Do not add that workflow to CI, Dockerfiles, or compose.

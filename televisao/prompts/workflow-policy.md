@@ -140,7 +140,9 @@ The card's code-review form holds **Revisor(es)**, **Pull Request (front)**, and
 
 ## Pull request body
 
-The body of each pull request is `.github/pull_request_template.md` in that repository, with every section filled. Paths: `~/git/televisao/televisao-api/.github/pull_request_template.md`, `~/git/televisao/televisao-front/.github/pull_request_template.md`, `~/git/televisao/televisao-meet-front/.github/pull_request_template.md`, `~/git/televisao/televisao-meet-core/.github/pull_request_template.md`. Keep the headings and the checklist items. Replace the HTML comments that ask for content. Do not replace the template with a short summary. If a repository has no template file, stop and report; do not invent the body.
+The body of each pull request is `.github/pull_request_template.md` in that repository, with every section filled. Paths that have the file: `~/git/televisao/televisao-api/.github/pull_request_template.md`, `~/git/televisao/televisao-front/.github/pull_request_template.md`, `~/git/televisao/televisao-meet-front/.github/pull_request_template.md`. Keep the headings and the checklist items. Replace the HTML comments that ask for content. Do not replace the template with a short summary. Do not copy another repository's template into a repository that has none.
+
+`televisao-meet-core` has no `.github/` directory and no pull request template on `preview`. That is expected. Do not stop the card and do not add a template file to create the pull request. Write the body with the four sections below and no checklist. Say in the report that this repository has no template.
 
 - **Link do card na Olie:** `https://esolie.olie.ai/projects/{CARD_PROJECT_ID}/details/overview`, with the project UUID.
 - **PR(s) relacionados:** the other repositories' pull request URLs when this card changes more than one. After every required PR exists, `gh pr edit` each body so that line has the real URLs. When this card changes only one repository, mark **Não se aplica**.
@@ -148,7 +150,7 @@ The body of each pull request is `.github/pull_request_template.md` in that repo
 - **Pontos em aberto:** the open points, or **Não se aplica** when there are none.
 - Check a checklist box only when that item was done for this change. Leave it unchecked when it does not apply.
 
-The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists.
+The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists. When the repository has no template, `gh pr view` must show the four section headings above, the card link, and the related pull request URL.
 
 ## Language
 

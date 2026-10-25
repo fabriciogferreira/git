@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Pre-QA parava no `televisao-meet-core` sem template de pull request
+
+- **problema:** o pre-QA do TV-35 abriu os outros pull requests e parou. `televisao-meet-core` não tem `.github/pull_request_template.md` em `preview`
+- **por que é um problema:** a policy mandava parar e não inventar o corpo. O card não ia para QA/CR
+- **resolvido como:** a ausência do template fica documentada em `televisao/prompts/workflow-policy.md`. O corpo usa as quatro seções da policy (link do card, PRs relacionados, descrição, pontos em aberto), sem checklist copiado de outro repositório, e o card segue
+
 ## Prompt da Televisão parava em `needsAuth` com o MCP autenticado
 
 - **problema:** o card `tv-35` parava antes de carregar. O desktop mostrava `olie-flow-ai` autenticado; o agente lia `needsAuth` e não usava a HTTP de management

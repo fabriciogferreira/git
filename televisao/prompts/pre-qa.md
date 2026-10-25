@@ -117,7 +117,7 @@ Push the source branch first when needed so `gh` can open the PR against a remot
 
 For every required pull request:
 
-- [ ] Create the PR via `gh pr create` with an English title and a body that is the filled `.github/pull_request_template.md` of that repository (**Pull request body** in `~/git/televisao/prompts/workflow-policy.md`).
+- [ ] Create the PR via `gh pr create` with an English title and a body that is the filled `.github/pull_request_template.md` of that repository (**Pull request body** in `~/git/televisao/prompts/workflow-policy.md`). `televisao-meet-core` has no template file. Do not stop. Use the four sections from that policy and no checklist.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch is the name built in **Card branch name** in `~/git/televisao/prompts/workflow-policy.md`.
 - [ ] Set Assignees to the person identified in the 'Assigned to' field of card `{{ code }}` (`gh --assignee` / `--add-assignee`).
