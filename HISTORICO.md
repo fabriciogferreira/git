@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## `.cursor` do boilerplate-next some do stage no próximo login
+
+- **problema:** o `project-start` reescreve `.mdc` com `alwaysApply: true` e marca `skip-worktree`
+- **por que é um problema:** o `.cursor` deste boilerplate é para subir no git do clone. O próximo arquivo, ou a próxima edição dessas rules, não aparece no stage
+- **resolvido como:** `CURSOR_CLONE_PATCH=0` em `boilerplate-next/project.conf`. O patch dos outros projetos continua. `workvm-local-agents.mdc` segue no exclude local
+
 ## Prompt da Televisão parava em `needsAuth` com o MCP autenticado
 
 - **problema:** o card `tv-35` parava antes de carregar. O desktop mostrava `olie-flow-ai` autenticado; o agente lia `needsAuth` e não usava a HTTP de management

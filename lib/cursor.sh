@@ -228,6 +228,12 @@ workvm_patch_project_clone_cursor() {
         return 0
     fi
 
+    # boilerplate-next versiona .cursor. O skip-worktree esconderia o próximo arquivo.
+    if [ "${CURSOR_CLONE_PATCH:-1}" = "0" ]; then
+        echo "→ Patch Cursor do clone pulado: .cursor entra no git deste projeto"
+        return 0
+    fi
+
     local -a found=()
     for entry in "${entries[@]}"; do
         [ -n "$entry" ] || continue
@@ -270,6 +276,7 @@ workvm_patch_all_projects_clone_cursor() {
         fi
         pdir="$(workvm_project_dir "$git_root" "$resolved")" || return 1
         unset CLONE_REPOS 2>/dev/null || true
+        unset CURSOR_CLONE_PATCH
         CLONE_REPOS=()
         # shellcheck disable=SC1090
         source "$pdir/project.conf"
@@ -281,6 +288,7 @@ workvm_patch_all_projects_clone_cursor() {
         [ -n "$proj" ] || continue
         pdir="$(workvm_project_dir "$git_root" "$proj")" || continue
         unset CLONE_REPOS 2>/dev/null || true
+        unset CURSOR_CLONE_PATCH
         CLONE_REPOS=()
         # shellcheck disable=SC1090
         source "$pdir/project.conf"
