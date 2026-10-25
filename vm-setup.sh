@@ -62,6 +62,11 @@ aur_install() {
 setup_base() {
     step "Pacotes base (git, base-devel, openssh, shellcheck, zsh, neovim)"
 
+    # O db em /var/lib/pacman/sync guarda o nome do .pkg.tar.zst. O mirror
+    # apaga a versão antiga ao publicar a nova. Sem -Sy o -S pede um arquivo
+    # que já não existe (docker-buildx 0.38.0-1) e o download volta 404.
+    sudo pacman -Sy --noconfirm
+
     # bin/check.sh precisa do binário shellcheck.
     # zsh-completions: definições extras de tab-completion para o zsh.
     sudo pacman -S --needed --noconfirm \

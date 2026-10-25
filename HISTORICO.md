@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## `vm-setup` pede um pacote que o mirror já apagou
+
+- **problema:** `pacman -S docker-buildx` baixava `docker-buildx-0.38.0-1` e os mirrors respondiam 404. O arquivo no mirror era `0.38.1-1`
+- **por que é um problema:** o sync local (`/var/lib/pacman/sync`, aqui de 17 de outubro) ainda citava o nome antigo. O script não atualizava o banco, a transação abortava e o Docker ficava sem buildx
+- **resolvido como:** `setup_base` roda `pacman -Sy` antes do primeiro `-S`. O resto do script instala o nome que o mirror publica agora
+
 ## Relato e revisão de produção sem o preview hospedado
 
 - **problema:** card com relato, e a revisão de produção, não tinham URL nem conta do preview em `dashboard.enterscience.com.br`. O agente ficava no localhost ou parava sem credencial
