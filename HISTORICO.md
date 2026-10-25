@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Relato e revisão de produção sem o preview hospedado
+
+- **problema:** card com relato, e a revisão de produção, não tinham URL nem conta do preview em `dashboard.enterscience.com.br`. O agente ficava no localhost ou parava sem credencial
+- **por que é um problema:** o problema relatado está nesse preview; o localhost não reproduz
+- **resolvido como:** `implementation.md` manda reproduzir o relato nesse dashboard e no Meet, com as duas contas de teste. `production-review.md` testa no mesmo host. A senha fica no prompt e fora do relatório
+
 ## `.cursor` do boilerplate-next some do stage no próximo login
 
 - **problema:** o `project-start` reescreve `.mdc` com `alwaysApply: true` e marca `skip-worktree`

@@ -134,8 +134,25 @@ Follow the project's existing architecture, conventions, and established pattern
 - Run appropriate tests and verification commands for the current checklist item when the environment permits.
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
+- When the card has a report, reproduce that problem on the hosted preview in the next section. Local `localhost` does not stand in for that check.
 
 **Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/televisao/prompts/workflow-policy.md` when it applies.
+
+### Hosted preview when the card has a report
+
+A report is a problem described on the card, in a project thread, or in attached media. That problem was seen on the hosted preview. Reproduce it there before treating the reported behavior as verified. Implementation and Playwright still run against the local stack in `~/git/televisao/prompts/project.md`.
+
+| Surface | URL |
+| --- | --- |
+| Dashboard | `https://televisao.dashboard.enterscience.com.br/` |
+| Meet | `https://televisao-meet-front.dashboard.enterscience.com.br/meet/enterscience` |
+
+| Account | Password |
+| --- | --- |
+| `admin@enterscience.com.br` | `Juca@1234` |
+| `superadmin@televisao.com` | `123123` |
+
+Use these accounts only. Leave the passwords out of the plan, the final report, commits, and pull requests.
 
 ## 8. Completion Criteria
 
@@ -146,6 +163,7 @@ The card is complete only when all applicable checklist items have been complete
 - If `televisao-front` or `televisao-meet-front` changed, a Playwright spec in the matching meta-repo suite was created or edited for that frontend behavior.
 - If `televisao-api` tests were added or edited and Pest is installed, they use that Pest. A PHPUnit file this card edited was converted with Drift in the same change.
 - Required tests and verification checks have been run, with any remaining limitations explicitly reported.
+- When the card has a report, that problem was reproduced on the hosted preview.
 - Relevant documentation and the implementation checklist are up to date.
 - The 'Issues encountered during development' section accurately reflects resolved and unresolved issues.
 - No unrelated user changes have been overwritten or included unintentionally.

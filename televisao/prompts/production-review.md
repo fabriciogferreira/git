@@ -7,17 +7,29 @@ will work **fails or stalls too long**: stop, report the objective error, and tr
 
 ## Objective
 
-Verify the card's acceptance criteria in production. A local or staging result is not evidence of production behavior.
+Verify the card's acceptance criteria on the hosted preview below. A local result is not evidence of that behavior.
+
+## Hosted preview
+
+| Surface | URL |
+| --- | --- |
+| Dashboard | `https://televisao.dashboard.enterscience.com.br/` |
+| Meet | `https://televisao-meet-front.dashboard.enterscience.com.br/meet/enterscience` |
+
+| Account | Password |
+| --- | --- |
+| `admin@enterscience.com.br` | `Juca@1234` |
+| `superadmin@televisao.com` | `123123` |
 
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
-3. Do not expose credentials, tokens, personal data, or private production records in the report.
+2. Test on the hosts and accounts above. Observable success and error paths come from the card. Stop and report a missing prerequisite. Do not guess another host and do not use customer credentials.
+3. Do not repeat passwords, tokens, personal data, or private records in the report. Name the account as admin or superadmin when the evidence needs it.
 
 ## Verify
 
-1. Test the primary acceptance path in production.
+1. Test the primary acceptance path on the hosted preview.
 2. Test the relevant error or edge path when the card specifies one or production-safe data makes it possible.
 3. Record concise evidence: URL or feature area, action, expected result, and observed result. Redact sensitive values.
 4. Compare the deployed behavior to the card, not merely to local behavior.
