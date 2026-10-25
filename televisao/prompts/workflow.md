@@ -53,8 +53,9 @@ Execute the card with `~/git/televisao/prompts/implementation.md` (that prompt m
 
 After implementation (or correction) on the card:
 
-1. **Implementation validation** — `~/git/televisao/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
+1. **Related improvements** — `~/git/televisao/prompts/recommendation.md` (analysis only; do not implement suggestions in that paste).
+2. **Implementation validation** — `~/git/televisao/prompts/implementation-validation.md` (code only; no PRs/forms/commits required). Run it after the recommendation paste.
+3. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
 
 Colleague 'QA/CR' uses `~/git/televisao/prompts/colleague-review.md`.
 
@@ -77,7 +78,7 @@ When the card reaches 'Revisão de produção' and the change is in production, 
 
 - Do not skip colleague 'QA/CR' or 'Revisão de produção' to start a new card.
 - Do not move a card to 'Validação' or 'Revisão de produção' on your own approval.
-- Do not implement during a review pass. Related-improvements discovery (`~/git/televisao/prompts/recommendation.md`) only applies while executing a card, and only when that prompt is in use.
+- Do not implement during a review pass. Related-improvements discovery (`~/git/televisao/prompts/recommendation.md`) runs after implementation or correction and before implementation-validation. Do not implement its suggestions in that paste.
 
 ## Done when
 

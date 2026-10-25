@@ -21,6 +21,22 @@ Also read every project thread and the latest version of each one, using **Readi
 
 Media already analyzed for this card lives under `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` (versioned on the meta-repo). **Read those files first** (after `git pull` if needed). If a file is missing, follow `televisao-project-image-analysis` or `televisao-project-video-conversion`. Do not re-analyze image/video/audio or call vid2agent again unless the user asks to redo a specific media id. Never post that analysis to project content.
 
+### Hosted preview when the card has a report
+
+A report is a problem described on the card, in a project thread, or in attached media. A card already in production sometimes returns for correction, and the person who tested it usually attaches that media. The problem was seen on the hosted preview. Log in and reproduce it there before treating the finding as verified. Corrections and Playwright still run against the local stack in `~/git/televisao/prompts/project.md`.
+
+| Surface | URL |
+| --- | --- |
+| Dashboard | `https://televisao.dashboard.enterscience.com.br/` |
+| Meet | `https://televisao-meet-front.dashboard.enterscience.com.br/meet/enterscience` |
+
+| Account | Password |
+| --- | --- |
+| `admin@enterscience.com.br` | `Juca@1234` |
+| `superadmin@televisao.com` | `123123` |
+
+Use these accounts only. Leave the passwords out of the plan, the final report, commits, and pull requests.
+
 ## 2. Update the Card Stage
 
 Before modifying code, load the card and its live funnel through MCP `olie-flow-ai`. Apply the stage-resolution and move procedure in `~/git/televisao/prompts/workflow-policy.md`.
@@ -47,6 +63,8 @@ For every reported issue:
 7. Determine whether the proposed correction could introduce regressions or affect other repositories.
 
 Review each associated pull request and repository independently. Then inspect the integration between repositories to identify contract mismatches or dependencies.
+
+When the finding is a report, reproduce it on the hosted preview in section 1. Local `localhost` does not stand in for that check.
 
 Do not assume that a reviewer's finding is correct without verifying it. If the finding cannot be reproduced or the evidence suggests that the reviewer's interpretation conflicts with the requirements, document the discrepancy and explain it before choosing a correction.
 
@@ -170,6 +188,7 @@ Do not silently dismiss review findings or mark unresolved problems as completed
 The correction work is complete only when:
 
 - Every reviewer finding has been addressed or explicitly resolved with supporting evidence.
+- When the card has a report, that problem was reproduced on the hosted preview.
 - All applicable checklist items have been completed and verified.
 - Regression tests cover the corrected behavior.
 - Relevant tests have been executed, with any limitations documented.
@@ -187,3 +206,5 @@ At completion, provide a concise report containing:
 - Any remaining manual actions.
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
+
+When correction work on this paste is done, the next paste is `~/git/televisao/prompts/recommendation.md` (related improvements only; do not implement them in that paste). After that paste, run `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.

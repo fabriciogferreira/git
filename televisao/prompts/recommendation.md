@@ -1,5 +1,7 @@
 # Related Improvements Discovery
 
+Run this **after** `~/git/televisao/prompts/implementation.md` (or `~/git/televisao/prompts/correction.md` when that pass changed code) and **before** `~/git/televisao/prompts/implementation-validation.md`. This paste only identifies related improvements. Do not implement them here.
+
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
 ## 1. Objective
@@ -136,3 +138,5 @@ End with one of the following conclusions:
 - Do not recommend changes that duplicate the card's acceptance criteria; focus on additional opportunities.
 - Keep the analysis actionable, evidence-based, and proportional to the task.
 - If the available context is insufficient to assess a potential improvement, explicitly state the limitation instead of presenting speculation as a finding.
+
+When this analysis is done, the next paste is `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.

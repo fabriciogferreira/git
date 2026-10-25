@@ -173,4 +173,4 @@ When all checklist items are complete, provide a concise final report covering t
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable restrictions above.
 
-When implementation work on this paste is done, the next paste is `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.
+When implementation work on this paste is done, the next paste is `~/git/televisao/prompts/recommendation.md` (related improvements only; do not implement them in that paste). After that paste, run `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.

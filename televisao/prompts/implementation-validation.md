@@ -1,6 +1,6 @@
 # Implementation Validation
 
-Use this **after** `~/git/televisao/prompts/implementation.md` (or a correction that changed code) and **before** `~/git/televisao/prompts/pre-qa.md`. This is a **code-only** pass while the card is still in `in-progress`. It is not board 'Validação', not colleague 'QA/CR', not pre-QA, and not production review.
+Use this **after** `~/git/televisao/prompts/recommendation.md`. That paste follows `~/git/televisao/prompts/implementation.md` (or `~/git/televisao/prompts/correction.md` when that pass changed code). Run this **before** `~/git/televisao/prompts/pre-qa.md`. This is a **code-only** pass while the card is still in `in-progress`. It is not board 'Validação', not colleague 'QA/CR', not pre-QA, and not production review.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
