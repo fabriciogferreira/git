@@ -30,10 +30,19 @@ if [[ -z "${E2E_CHECKOUT_CONSULTATION_ID:-}" ]] || [[ "${E2E_SEED_CHECKOUT:-1}" 
     echo "  consultation: ${E2E_CHECKOUT_CONSULTATION_ID}"
 fi
 
+# Fresh open consultation so the join-meeting button is inside its 5-minute window.
+if [[ -z "${E2E_MEETING_CONSULTATION_ID:-}" ]] || [[ "${E2E_SEED_MEETING:-1}" == "1" ]]; then
+    echo "→ seeding open consultation for doctor meeting-link E2E"
+    E2E_MEETING_CONSULTATION_ID="$(./scripts/seed-open-consultation.sh)"
+    export E2E_MEETING_CONSULTATION_ID
+    echo "  consultation: ${E2E_MEETING_CONSULTATION_ID}"
+fi
+
 docker compose up -d --build
 docker compose exec -T -u pwuser \
     -e TZ=America/Sao_Paulo \
     -e E2E_CHECKOUT_CONSULTATION_ID \
+    -e E2E_MEETING_CONSULTATION_ID \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
     -e E2E_WORKERS="${E2E_WORKERS:-1}" \

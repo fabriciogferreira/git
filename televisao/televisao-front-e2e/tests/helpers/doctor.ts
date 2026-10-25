@@ -24,6 +24,17 @@ export function checkoutConsultationId(): string {
     return id
 }
 
+/** Open consultation inside the join window for doctor1. Seeded by run.sh. */
+export function meetingConsultationId(): string {
+    const id = process.env.E2E_MEETING_CONSULTATION_ID
+    if (!id) {
+        throw new Error(
+            'E2E_MEETING_CONSULTATION_ID is required (open consultation for doctor1@doctor.test)'
+        )
+    }
+    return id
+}
+
 export async function loginAsDoctor(page: Page) {
     const { user, password } = doctorCredentials()
     await page.goto('/login')
