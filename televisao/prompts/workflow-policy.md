@@ -161,9 +161,40 @@ The title stays English. `gh pr view` must still show the template headings, the
 - During implementation, do not run Pint unless the user explicitly asks for it or the task is the pre-QA workflow.
 - During pre-QA, run Pint for affected `televisao-api` PHP changes (`docker exec televisao-backend`). If Pint changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
 
+## MCP auth
+
+Cursor desktop can show `olie-flow-ai` as authenticated, and the MCP request status can say the same, while this agent still receives `needsAuth`. `https://api.olie.ai` publishes OAuth discovery, so Cursor ignores the `Authorization` header in `mcp.json`. Interactive `mcp_auth` does not run in this agent.
+
+Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the card for that status.
+
+On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
+
+If the tools are still `needsAuth`, or the call returns 401, load the card over management HTTP. If `OLIE_MANAGEMENT_TOKEN` is empty, read `~/.config/environment.d/*.conf` into the shell without printing values, then retry:
+
+```bash
+set -a
+for conf in "${HOME}/.config/environment.d/"*.conf; do
+  [ -f "$conf" ] || continue
+  . "$conf"
+done
+set +a
+```
+
+Search by card code (`name_code` contains the code). Take `projects[].id` for the matching code:
+
+```bash
+curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
+  -H 'accept: application/json' \
+  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
+  -H 'content-type: application/json' \
+  --data-raw "{\"filters\":[{\"field\":\"name_code\",\"operator\":\"contains\",\"value\":\"${CARD_CODE}\",\"logical_operator\":\"and\"}]}"
+```
+
+Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. Otherwise `GET /api/management/get-available-steps` (`funnels[].steps[].id` and `name`). Match the stage by display name. Never hard-code a step id. Never paste a Bearer token.
+
 ## Tooling failures and stalls (prompt health)
 
-If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break.
+If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop.
 
 Report:
 

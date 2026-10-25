@@ -22,7 +22,7 @@ Workday order: `~/git/televisao/prompts/workflow.md`.
 - Frontends: `televisao-front` and `televisao-meet-front`. Use the package manager and lint script each repository already has. Do not introduce a second lockfile.
 - E2E: Playwright in the meta-repo. `televisao-front` → `~/git/televisao/televisao-front-e2e`. `televisao-meet-front` → `~/git/televisao/televisao-meet-front-e2e`. Run with **Running Playwright** in `~/git/televisao/prompts/workflow-policy.md`. When a change touches one of those fronts, create or edit a spec in the matching suite. Extend an existing spec when it already covers that flow. Specs stay in the meta-repo; they do not ship on the company branch.
 - A rule that exists in only one repository (permissions, an internal package) is not copied here.
-- If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
+- If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
 ## Out of scope
 

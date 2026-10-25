@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Prompt da Televisão parava em `needsAuth` com o MCP autenticado
+
+- **problema:** o card `tv-35` parava antes de carregar. O desktop mostrava `olie-flow-ai` autenticado; o agente lia `needsAuth` e não usava a HTTP de management
+- **por que é um problema:** Olie e Locav já tratam esse status como **MCP auth** e seguem. O prompt da Televisão ainda mandava parar e tratar como premissa quebrada
+- **resolvido como:** a mesma exceção entrou nos prompts da Televisão e em `workflow-policy.md`. `needsAuth` com o desktop autenticado não para o card: o agente usa o proxy local ou a HTTP de management
+
 ## Prompt via `needsAuth` com o MCP já autenticado no desktop
 
 - **problema:** o Cursor desktop e o request do MCP diziam que `olie-flow-ai` estava autenticado; o agente do prompt parava em `needsAuth` e pedia `mcp_auth`
