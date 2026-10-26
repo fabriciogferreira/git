@@ -56,14 +56,41 @@ test.describe('DOP-1132 project content add attachments', () => {
         await page.keyboard.press('Escape')
     })
 
-    test('still shows required message and destination fields', async ({ page }) => {
-        await expect(page.getByText(/^Mensagem$|^Message$/i).first()).toBeVisible()
-        await expect(page.getByText(/^Destino$|^Destination$/i).first()).toBeVisible()
+    test('requires the message when no file is selected and always requires the destination', async ({ page }) => {
+        const messageLabel = page.locator('.p-dialog .form-label').filter({ hasText: /^Mensagem$|^Message$/ }).first()
+        const destinationLabel = page.locator('.p-dialog .form-label').filter({ hasText: /^Destino$|^Destination$/ }).first()
+
+        await expect(messageLabel).toBeVisible()
+        await expect(messageLabel).toHaveClass(/\brequired\b/)
+        await expect(destinationLabel).toBeVisible()
+        await expect(destinationLabel).toHaveClass(/\brequired\b/)
+
         const destination = page.locator('select').filter({
             has: page.locator('option', { hasText: /Canal principal|Main channel/i }),
         })
         await expect(destination).toBeVisible()
         await expect(destination).toHaveValue('main')
+    })
+})
+
+test.describe('DOP-1132 funnel attachment listing', () => {
+    test.describe.configure({ timeout: 90_000 })
+
+    test('loads linked funnel files in one request', async ({ page }) => {
+        const funnelAttachmentUrls: string[] = []
+        page.on('request', request => {
+            const url = request.url()
+            if (request.method() === 'GET' && url.includes('/funnel-attachments')) {
+                funnelAttachmentUrls.push(url)
+            }
+        })
+
+        await loginAsE2EUser(page)
+        await openProjectContentAddAction(page)
+
+        await expect.poll(() => funnelAttachmentUrls.length).toBe(1)
+        expect(funnelAttachmentUrls[0]).toContain('all_linked=1')
+        expect(funnelAttachmentUrls[0]).not.toContain('project_funnel_id=')
     })
 })
 
@@ -82,6 +109,18 @@ test.describe('DOP-1132 form attachment location', () => {
 
     test.afterEach(async ({ page }) => {
         if (formId) await deleteE2EForm(page, formId)
+    })
+
+    test('drops the message asterisk after a file is selected', async ({ page }) => {
+        const messageLabel = page.locator('.p-dialog .form-label').filter({ hasText: /^Mensagem$/ }).first()
+        const destinationLabel = page.locator('.p-dialog .form-label').filter({ hasText: /^Destino$/ }).first()
+
+        await expect(messageLabel).toHaveClass(/\brequired\b/)
+
+        await pickProjectContentAddFormField(page, fieldLabel)
+
+        await expect(messageLabel).not.toHaveClass(/\brequired\b/)
+        await expect(destinationLabel).toHaveClass(/\brequired\b/)
     })
 
     test('hides the form location until an attachment field is chosen', async ({ page }) => {
