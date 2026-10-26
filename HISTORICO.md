@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Revisão de produção resolvia o reCAPTCHA sozinha
+
+- **problema:** no login de `gui1.olie.ai` o desafio de imagens aparecia e o agente clicava nos quadros até passar
+- **por que é um problema:** a revisão atrasava muito antes de testar o card
+- **resolvido como:** `olie/prompts/production-review.md` manda parar, destrancar o browser e pedir ao usuário para resolver o desafio. O teste segue depois que o login entra no app
+
 ## A VM da Olie não clona o repositório docs
 
 - **problema:** `project.conf` não listava `olie-ai/docs`. O `project-setup.sh` não criava `olie/docs`
