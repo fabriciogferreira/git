@@ -27,7 +27,8 @@ import {
  * this file does not duplicate that integration fixture.
  *
  * Uses the seeded `tester@olie.ai` frame (same as other baselines). Isolated
- * signup is currently blocked by RecaptchaValidate on this stack.
+ * signup needs the temporary test RECAPTCHA_SECRET
+ * (~/git/olie/prompts/workflow-policy.md); this file logs in with the seed.
  */
 test.describe('OS-557 phone input', () => {
     test.describe.configure({ timeout: 120_000 })

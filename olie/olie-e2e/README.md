@@ -54,8 +54,10 @@ E2E_WORKERS=1 docker compose exec e2e npx playwright test --project=chromium
 
 ## reCAPTCHA (local)
 
-E2E stubs `grecaptcha` in the browser. Local `api-main` uses Google's test
-reCAPTCHA secret so verification accepts the stub token.
+E2E stubs `grecaptcha` in the browser. `APP_ENV=local` still calls Google, so
+the local `RECAPTCHA_SECRET` has to be Google's public test secret or identify
+answers `Token inválido`. How to set and restore it: `~/git/olie/prompts/workflow-policy.md`
+("Temporary E2E CAPTCHA"). Do not stub the management API just to skip that.
 
 ## Feature gates (auto-skip)
 

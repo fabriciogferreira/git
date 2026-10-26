@@ -124,23 +124,20 @@ For each correction, follow this sequence:
 
 ## 7. Temporary E2E CAPTCHA Configuration
 
-Use this only when a Playwright E2E scenario must authenticate through `api-main`.
+Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
 
-The Google test secret is:
+Do not stub the management API to get past that. Do not change PHP. Use Google's public test secret in the local `.env` only. `siteverify` then accepts any token, the same window `APP_ENV=testing` already has.
 
 `RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
 
-Follow these requirements strictly:
+1. Confirm `~/git/olie/api-main/.env` is gitignored.
+2. If the value is not already the test secret, copy the file to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) before the first change. Do not put the original secret in the repo, in a comment, or in the chat.
+3. Set `RECAPTCHA_SECRET` to the test secret.
+4. Run `docker exec olie-api-main php artisan config:clear`. `POST /api/management/login/identify` with the stub token and `Origin: http://devframe.olie.localhost` must return `method: password`, not `invalid_token`.
+5. Leave the test secret in place while e2e on this VM needs a real login. Restore that backup and run `config:clear` again when that work is finished or the user asks. Delete the backup after a successful restore. If the restore fails, say the test secret may still be active.
+6. Never commit, push, or quote `.env` or the backup.
 
-1. Confirm that `~/git/olie/api-main/.env` is ignored and create a permission-restricted backup outside the repository before changing it.
-2. Replace the local `RECAPTCHA_SECRET` value with the test secret. Do not retain the original secret as a comment or in any repository file.
-3. Do not modify PHP code or application logic to bypass CAPTCHA.
-4. Run `docker exec olie-api-main php artisan config:clear` and verify the configuration change before relying on it.
-5. Restore the exact `.env` backup and run `config:clear` again immediately after the E2E run, even if the test fails.
-6. Delete the backup after restoration. If restoration fails, report that the test configuration may still be active.
-7. Never commit, push, log, or include `.env` content or secrets in a pull request.
-
-If the environment or container is unavailable, report the blocker rather than introducing a code-level CAPTCHA bypass.
+If the container or `.env` is missing, stop and report that. Do not add a code bypass.
 
 ## 8. Incremental Execution
 

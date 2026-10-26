@@ -8,8 +8,9 @@ import { expectReadableContrast, measureContrastRatio, setResolvedTheme } from '
  * The review follow-ups are the search backdrop, the sidebar padding, the
  * settings bottom space, and the removed Atividades shortcut.
  *
- * Identify, login and get-auth-user are stubbed. This VM rejects the reCAPTCHA
- * stub, and a 401 from a later call logs the session out before the toolbar renders.
+ * Identify, login and get-auth-user are stubbed so a later 401 cannot log the
+ * session out before the toolbar renders. Real login uses the temporary test
+ * RECAPTCHA_SECRET in ~/git/olie/prompts/workflow-policy.md.
  */
 
 function authPayload(url: string, method: string): 'identify' | 'login' | 'user' | 'other' {

@@ -117,6 +117,12 @@ Two env vars in `~/.config/environment.d/*.conf` (`chmod 600`). Never the same v
 
 Layout and examples: `~/git/.config/environment.d/README.md`.
 
+## Temporary E2E CAPTCHA
+
+Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
+
+Do not stub the management API to get past that. Do not change PHP. The same temporary window is Google's public test secret in the local `.env` only (`siteverify` then accepts any token). Full steps: `implementation.md`, `correction.md`, and `colleague-review.md`, section "Temporary E2E CAPTCHA".
+
 ## Payment test cards
 
 A review that charges a card has no safe number unless these are written down. Use only these numbers. Do not use a real card.
