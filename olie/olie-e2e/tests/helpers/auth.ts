@@ -107,15 +107,28 @@ export async function loginWithCredentials(
         await page.goto(authPath)
         await expect(page.getByRole('heading', { name: /Logar no gerencial|Log in/i })).toBeVisible()
 
-        await page.locator('input[name="email"]').fill(user)
-        await page.locator('input[name="password"]').fill(password)
+        // DOP-1226: e-mail first. Password (or the magic-link step) appears only after Continuar.
+        await page.locator('[data-testid="login-email"]').fill(user)
+
+        const passwordInput = page.locator('[data-testid="login-password"]')
+        if (!(await passwordInput.isVisible())) {
+            await page.locator('[data-testid="login-submit"]').click()
+            const usePassword = page.locator('[data-testid="login-use-password"]')
+            await expect(passwordInput.or(usePassword)).toBeVisible({ timeout: 20_000 })
+            if (await usePassword.isVisible()) {
+                await usePassword.click()
+            }
+            await expect(passwordInput).toBeVisible()
+        }
+
+        await passwordInput.fill(password)
 
         const [response] = await Promise.all([
             page.waitForResponse(
                 r => /\/login\b/.test(r.url()) && r.request().method() === 'POST',
                 { timeout: 30_000 }
             ),
-            page.getByRole('button', { name: /Entrar|Log in|Login/i }).click(),
+            page.locator('[data-testid="login-submit"]').click(),
         ])
 
         // `throttle:login` is 8/min per IP and E2E provisions many users; wait it out instead of
