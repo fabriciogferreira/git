@@ -383,3 +383,139 @@ export function projectContentAddAttachmentsBlock(page: Page): Locator {
 export function projectContentAddAttachmentsMultiSelect(page: Page): Locator {
     return projectContentAddAttachmentsBlock(page).locator('.p-multiselect').first()
 }
+
+/** "Onde está o formulário?" on Envia conteúdo do projeto. Shown only after a form attachment field is chosen. */
+export function projectContentAddFormLocationSelect(page: Page): Locator {
+    return page
+        .locator('.col-12')
+        .filter({ has: page.getByText('Onde está o formulário?', { exact: true }) })
+        .locator('.p-select')
+        .first()
+}
+
+export function automationSaveButton(page: Page): Locator {
+    return page.locator('.p-dialog-footer').getByRole('button', { name: /^Salvar$/ })
+}
+
+/**
+ * Create a form with one attachment field on the logged-in frame.
+ * The automation editor loads forms on the next full navigation.
+ */
+export async function createE2EAttachmentForm(
+    page: Page,
+    fieldLabel: string,
+    attempt = 1
+): Promise<number> {
+    const apiUrl = `${process.env.E2E_API_URL || 'http://api.olie.localhost'}/api/management/save-form`
+    const title = `e2e dop1132 ${fieldLabel}`
+
+    const result = await page.evaluate(
+        async ({ apiUrl, title, fieldLabel }) => {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                return { ok: false, status: 0, error: 'missing token', formId: null as number | null, waitSeconds: 0 }
+            }
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    title,
+                    edges: [
+                        { label: fieldLabel, type: 'attachment', required: false, index: 0 },
+                    ],
+                }),
+            })
+
+            const body = (await res.json().catch(() => null)) as {
+                form?: { id?: number }
+                wait_seconds?: number
+            } | null
+            return {
+                ok: res.ok && Boolean(body?.form?.id),
+                status: res.status,
+                error: body ? JSON.stringify(body).slice(0, 300) : res.statusText,
+                formId: body?.form?.id ?? null,
+                waitSeconds: Number(body?.wait_seconds ?? 0),
+            }
+        },
+        { apiUrl, title, fieldLabel }
+    )
+
+    if (result.status === 429 && attempt < 5) {
+        const waitSeconds = Number.isFinite(result.waitSeconds) && result.waitSeconds > 0
+            ? Math.min(60, result.waitSeconds)
+            : 5
+        await page.waitForTimeout((waitSeconds + 1) * 1000)
+        return createE2EAttachmentForm(page, fieldLabel, attempt + 1)
+    }
+
+    if (!result.ok || result.formId == null) {
+        throw new Error(`save-form failed (status=${result.status}): ${result.error ?? 'unknown'}`)
+    }
+
+    return result.formId
+}
+
+export async function deleteE2EForm(page: Page, formId: number) {
+    const apiUrl = `${process.env.E2E_API_URL || 'http://api.olie.localhost'}/api/management/delete-form`
+    await page.evaluate(
+        async ({ apiUrl, formId }) => {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ form_id: formId }),
+            })
+        },
+        { apiUrl, formId }
+    )
+}
+
+/** Open the attachments MultiSelect. The combobox input is covered by the label, so the click goes there. */
+export async function openProjectContentAddAttachments(page: Page): Promise<Locator> {
+    const root = projectContentAddAttachmentsBlock(page).locator('.p-multiselect')
+    const combobox = root.getByRole('combobox')
+    await expect(root).toBeVisible()
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+        if ((await combobox.getAttribute('aria-expanded')) === 'true') break
+        await root.locator('.p-multiselect-label-container').click()
+        const opened = await expect(combobox)
+            .toHaveAttribute('aria-expanded', 'true', { timeout: 2_000 })
+            .then(() => true)
+            .catch(() => false)
+        if (opened) break
+        if (attempt === 2) {
+            await expect(combobox).toHaveAttribute('aria-expanded', 'true')
+        }
+    }
+
+    const panel = page.locator('.p-multiselect-overlay').last()
+    await expect(panel).toBeVisible({ timeout: 10_000 })
+    return panel
+}
+
+/** Choose one form attachment field in the content-add MultiSelect and close the panel. */
+export async function pickProjectContentAddFormField(page: Page, fieldLabel: string) {
+    const panel = await openProjectContentAddAttachments(page)
+
+    const filter = panel.locator('input[type="text"]').first()
+    await expect(filter).toBeVisible()
+    await filter.fill(fieldLabel)
+
+    const option = panel.getByRole('option', { name: fieldLabel, exact: true })
+    await expect(option).toBeVisible({ timeout: 10_000 })
+    await option.click()
+    await page.keyboard.press('Escape')
+    await expect(panel).toBeHidden({ timeout: 5_000 })
+}
