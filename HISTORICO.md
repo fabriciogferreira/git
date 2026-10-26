@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## A VM da Olie não clona o repositório docs
+
+- **problema:** `project.conf` não listava `olie-ai/docs`. O `project-setup.sh` não criava `olie/docs`
+- **por que é um problema:** card que altera o guia (ex. DOP-1233, PR 9) não tem o clone nesta VM
+- **resolvido como:** `CLONE_REPOS` ganha `git@github.com:olie-ai/docs.git` em `olie/docs`, branch `main`. O workspace abre essa pasta junto com os outros clones
+
 ## `vm-setup` pede um pacote que o mirror já apagou
 
 - **problema:** `pacman -S docker-buildx` baixava `docker-buildx-0.38.0-1` e os mirrors respondiam 404. O arquivo no mirror era `0.38.1-1`

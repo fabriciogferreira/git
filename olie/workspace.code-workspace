@@ -29,6 +29,10 @@
       "path": "websocket"
     },
     {
+      "name": "docs",
+      "path": "docs"
+    },
+    {
       "name": "olie-e2e",
       "path": "olie-e2e"
     }
