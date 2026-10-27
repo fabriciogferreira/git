@@ -9,6 +9,9 @@ import { stubRecaptchaForPage } from '../helpers/auth'
  * Identify, login, and get-auth-user are stubbed. The local API rejects the
  * reCAPTCHA stub ("Token inválido"), and a 401 from get-auth-user logs the user out
  * before the URL can be asserted.
+ *
+ * Also covers permission-denied and feature-flagged redirects (prior review), so the
+ * user lands on the dashboard instead of staying on /auth/login.
  */
 
 const INTERNAL_TARGET = '/overview/my-assignee?from=dop-1242'
@@ -22,8 +25,20 @@ function authPayload(url: string, method: string): 'identify' | 'login' | 'user'
     return 'other'
 }
 
-async function stubLoginSession(page: Page) {
+async function stubLoginSession(
+    page: Page,
+    authUser: {
+        permissions?: Array<string | { name: string }>
+        features?: Record<string, boolean>
+    } = {},
+) {
     await stubRecaptchaForPage(page)
+
+    // get-auth-user stores objects with `name`; CheckUserPermission maps `p.name`
+    const permissions = (authUser.permissions ?? []).map(p =>
+        typeof p === 'string' ? { name: p } : p,
+    )
+    const features = authUser.features ?? {}
 
     await page.route(/api\.olie\.localhost/, async route => {
         const request = route.request()
@@ -59,8 +74,8 @@ async function stubLoginSession(page: Page) {
                 body: JSON.stringify({
                     response: true,
                     user_id: '00000000-0000-4000-8000-000000000124',
-                    permissions: [],
-                    features: {},
+                    permissions,
+                    features,
                     current_relationship: {},
                 }),
             })
@@ -133,5 +148,46 @@ test.describe('DOP-1242 login redirect', () => {
 
         await expect(page).toHaveURL(/\/overview\/?$/, { timeout: 20_000 })
         await expect(page).not.toHaveURL(/redirect=/)
+    })
+
+    test('without redirect goes to the dashboard', async ({ page }) => {
+        await stubLoginSession(page)
+        await page.goto('/auth/login')
+        await signIn(page)
+
+        await expect(page).toHaveURL(/\/overview\/?$/, { timeout: 20_000 })
+        await expect(page).not.toHaveURL(/\/auth/)
+    })
+
+    test('discards a backslash-prefixed redirect', async ({ page }) => {
+        await stubLoginSession(page)
+        await page.goto('/auth/login?redirect=/%5Cevil.com')
+        await signIn(page)
+
+        await expect(page).toHaveURL(/\/overview\/?$/, { timeout: 20_000 })
+        expect(new URL(page.url()).host).toBe('devframe.olie.localhost')
+    })
+
+    test('discards a route the user cannot open and does not stay on login', async ({ page }) => {
+        await stubLoginSession(page)
+        await page.goto('/auth/login?redirect=/customers/index')
+        await signIn(page)
+
+        await expect(page).toHaveURL(/\/overview\/?$/, { timeout: 20_000 })
+        await expect(page).not.toHaveURL(/\/auth/)
+        await expect(page).not.toHaveURL(/\/customers/)
+    })
+
+    test('discards a feature-flagged route the frame does not have', async ({ page }) => {
+        await stubLoginSession(page, {
+            permissions: ['studio.access'],
+            features: {},
+        })
+        await page.goto('/auth/login?redirect=/studio')
+        await signIn(page)
+
+        await expect(page).toHaveURL(/\/overview\/?$/, { timeout: 20_000 })
+        await expect(page).not.toHaveURL(/\/auth/)
+        await expect(page).not.toHaveURL(/\/studio/)
     })
 })
