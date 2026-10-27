@@ -66,9 +66,16 @@ For each affected repository:
 6. Tell the user the rebase has been started on that branch and repository, and that they can resolve the conflicts now.
 7. Stop. Do not create a correction plan, change application code, or continue the TDD workflow for that repository until the user finishes the rebase and asks to continue.
 
-If the return also lists non-conflict findings, still stop after starting the rebase(s). Those findings wait until the user resumes after resolving conflicts.
+When the user reports that the conflicts are resolved (or asks to continue after resolving them):
 
-If the rebase starts and completes with no conflicts, report that outcome and wait for instructions before continuing other correction work.
+1. Verify the rebase is finished in each affected repository (`git status` shows a clean working tree on the card/PR branch, with no rebase in progress). If the rebase is still paused on conflicts or the working tree is dirty for an unrelated reason, stop and report the blocker.
+2. Force-push that branch to its existing remote tracking branch (`git push --force-with-lease`). The rebase rewrites history, so a normal push is refused; `--force-with-lease` updates the PR branch without a blind `--force` if someone else pushed in the meantime.
+3. Confirm the remote branch and open PR reflect the rebased tip. Do not open a new PR or rename the branch.
+4. Only then resume the rest of this workflow (correction plan / non-conflict findings) if the user asked to continue beyond the conflict return.
+
+If the return also lists non-conflict findings, still stop after starting the rebase(s). Those findings wait until the user resumes after resolving conflicts (and after the force-push above).
+
+If the rebase starts and completes with no conflicts, force-push the rebased branch with `--force-with-lease` as above, report that outcome, and wait for instructions before continuing other correction work.
 
 ## 5. Repository and Branch Preparation
 
@@ -198,7 +205,7 @@ Do not silently dismiss review findings or mark unresolved problems as completed
 
 ## 11. Completion Criteria
 
-When the return was only for merge conflicts, this pass is complete when the rebase onto `develop` has been started in each affected repository, conflicts were left unresolved for the user, and the user was told they can resolve them now. Do not claim conflict resolution as done.
+When the return was only for merge conflicts, the first stop is complete when the rebase onto `develop` has been started in each affected repository, conflicts were left unresolved for the user, and the user was told they can resolve them now. Do not claim conflict resolution as done at that stop. After the user resolves the conflicts, this pass is complete when the rebase is finished and each rebased card/PR branch has been force-pushed with `--force-with-lease`.
 
 Otherwise, the correction work is complete only when:
 

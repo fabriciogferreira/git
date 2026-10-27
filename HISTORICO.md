@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Correção com conflito parava sem force-push da branch
+
+- **problema:** `olie/prompts/correction.md` mandava iniciar o rebase, deixar o conflito com o usuário e parar. Depois da resolução, o agente não tinha ordem de atualizar o remoto
+- **por que é um problema:** o PR ficava no tip antigo; o `git push` normal falha após rebase e o revisor continua vendo conflito
+- **resolvido como:** o prompt manda, após o usuário resolver, confirmar o rebase limpo e fazer `git push --force-with-lease` na branch do card/PR antes de seguir o resto da correção
+
 ## Meta-repo só fazia fetch no login
 
 - **problema:** `workvm-git-pull.service` rodava `git fetch` em `~/git`; o working tree ficava velho até um pull manual
