@@ -14,8 +14,8 @@ Onde escrever:
 - Overlay em `files/` ou `.config/`: um comentário ou README curto quando o arquivo sozinho não revela o motivo.
 
 ```bash
-# git fetch do meta-repo no login gráfico.
-# Só na branch de origin (main). Falha de rede não derruba a sessão.
+# git pull --ff-only do meta-repo no login gráfico.
+# Só na branch de origin (main). Falha de rede/divergência não derruba a sessão.
 ```
 
 Não comente linha a linha o que o código já diz. Não reescreva comentários antigos só para este formato. Não duplique o mapa de `layout.mdc` dentro do arquivo: o cabeçalho cobre este arquivo; a rule cobre o repo.

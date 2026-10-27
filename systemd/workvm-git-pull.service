@@ -1,8 +1,8 @@
-# git fetch do meta-repo no login do usuário.
-# Só na branch de origin (main). Falha de rede não derruba a sessão.
+# git pull --ff-only do meta-repo no login do usuário.
+# Só na branch de origin (main). Falha de rede/divergência não derruba a sessão.
 # Mesmo WantedBy que workvm.service — ver comentário lá sobre graphical-session.
 [Unit]
-Description=WorkVM meta-repo git fetch (~/git, branch main)
+Description=WorkVM meta-repo git pull --ff-only (~/git, branch main)
 Documentation=file://%h/git/vm-setup.sh
 
 [Service]

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# git fetch the workvm meta-repo (~/git) on graphical login.
-# Only when on the origin branch (default: main). Never fails the session.
+# git pull --ff-only do meta-repo (~/git) no login gráfico.
+# Só na branch de origin (default: main). Falha de rede/divergência não derruba a sessão.
 set -u
 
 # shellcheck source=/dev/null
@@ -16,5 +16,5 @@ if [ ! -d "$GIT_ROOT/.git" ]; then
     exit 0
 fi
 
-workvm_fetch_repo "$GIT_ROOT" "$BRANCH"
+workvm_pull_repo "$GIT_ROOT" "$BRANCH"
 exit 0

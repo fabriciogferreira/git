@@ -211,11 +211,17 @@ workvm_fetch_project_repos() {
     done
 }
 
-# Fast-forward only when HEAD already matches the CLONE_REPOS branch (no checkout).
+# Fast-forward only when HEAD already matches the expected branch (no checkout).
+# Never fails the caller: missing repo / wrong branch / network / diverged only warn.
 workvm_pull_repo() {
     local destination="$1"
     local branch="${2:-}"
     local current origin_ref
+
+    if [ ! -d "$destination/.git" ]; then
+        echo "→ Pull pulado: $destination (não é um repositório git)"
+        return 0
+    fi
 
     current="$(git -C "$destination" branch --show-current 2>/dev/null || true)"
 
@@ -225,17 +231,26 @@ workvm_pull_repo() {
     fi
 
     echo "→ Pull: $destination${branch:+ ($branch)}"
-    git -C "$destination" fetch --prune origin
+    if ! git -C "$destination" fetch --prune origin; then
+        echo "aviso: fetch falhou: $destination (rede?)" >&2
+        return 0
+    fi
 
     if [ -n "$branch" ]; then
         origin_ref="origin/${branch}"
         if ! git -C "$destination" rev-parse --verify "$origin_ref" >/dev/null 2>&1; then
-            echo "error: $destination não tem $origin_ref após fetch" >&2
-            return 1
+            echo "aviso: $destination não tem $origin_ref após fetch" >&2
+            return 0
         fi
-        git -C "$destination" merge --ff-only "$origin_ref"
+        if ! git -C "$destination" merge --ff-only "$origin_ref"; then
+            echo "aviso: pull --ff-only falhou: $destination (divergiu? mudanças locais?)" >&2
+            return 0
+        fi
     else
-        git -C "$destination" pull --ff-only
+        if ! git -C "$destination" pull --ff-only; then
+            echo "aviso: pull --ff-only falhou: $destination (divergiu? mudanças locais?)" >&2
+            return 0
+        fi
     fi
 }
 

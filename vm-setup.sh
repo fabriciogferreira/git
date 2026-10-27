@@ -313,7 +313,7 @@ setup_docker() {
 }
 
 setup_meta_repo_pull() {
-    step "Auto git fetch do meta-repo (~/git) no login gráfico"
+    step "Auto git pull --ff-only do meta-repo (~/git) no login gráfico"
 
     local unit_src="$GIT_ROOT/systemd/workvm-git-pull.service"
     local unit_dst="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/workvm-git-pull.service"
@@ -335,7 +335,7 @@ setup_meta_repo_pull() {
     # Don't abort the whole bootstrap if the user bus isn't up yet.
     if systemctl --user daemon-reload 2>/dev/null \
         && systemctl --user enable workvm-git-pull.service 2>/dev/null; then
-        ok "workvm-git-pull.service habilitado (fetch origin se branch=main em $GIT_ROOT)"
+        ok "workvm-git-pull.service habilitado (pull --ff-only se branch=main em $GIT_ROOT)"
     else
         log "aviso: systemctl --user falhou; unit linkada em $unit_dst — enable após o 1º login gráfico"
     fi
@@ -474,7 +474,7 @@ main() {
     log "  $GIT_ROOT/project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
     log "Reinicie para testar: GRUB sem menu → SDDM autologin → Hyprland"
-    log "Nos próximos logins: workvm-git-pull.service faz git fetch em $GIT_ROOT (se branch=main)"
+    log "Nos próximos logins: workvm-git-pull.service faz git pull --ff-only em $GIT_ROOT (se branch=main)"
     log "Com projeto: project-start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
 }
 

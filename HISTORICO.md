@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Meta-repo só fazia fetch no login
+
+- **problema:** `workvm-git-pull.service` rodava `git fetch` em `~/git`; o working tree ficava velho até um pull manual
+- **por que é um problema:** overlays, prompts e scripts do meta-repo não entravam na VM no login
+- **resolvido como:** `bin/pull-meta.sh` chama `workvm_pull_repo` (`fetch` + `merge --ff-only`). Divergência ou rede só avisam; a sessão sobe igual
+
 ## Revisão de produção resolvia o reCAPTCHA sozinha
 
 - **problema:** no login de `gui1.olie.ai` o desafio de imagens aparecia e o agente clicava nos quadros até passar
