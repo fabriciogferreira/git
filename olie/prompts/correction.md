@@ -52,7 +52,25 @@ Do not assume that a reviewer's finding is correct without verifying it. If the 
 
 Do not silently ignore any finding. Every finding must be addressed in the plan as a correction, a verified non-issue with supporting evidence, or an item requiring clarification.
 
-## 4. Repository and Branch Preparation
+## 4. Merge Conflicts Returned from Review
+
+When the card was returned because of merge/rebase conflicts (or a reviewer finding is specifically about conflicts with the base branch), do **not** resolve the conflicts yourself.
+
+For each affected repository:
+
+1. Inspect Git status. If uncommitted changes block a safe rebase, stop and report the blocker.
+2. Fetch the latest `develop` from origin and update the local `develop` branch (fast-forward only).
+3. Check out the existing card/PR branch that has the conflict. Do not invent a new branch name.
+4. Start a rebase of that branch onto the updated `develop` (`git rebase develop` after `develop` is current, or equivalent onto `origin/develop`).
+5. Do **not** resolve conflict markers, edit conflicted files to finish the rebase, stage conflicted paths, run `git rebase --continue`, `git rebase --abort`, or `git rebase --skip`. Leave the rebase in progress for the user.
+6. Tell the user the rebase has been started on that branch and repository, and that they can resolve the conflicts now.
+7. Stop. Do not create a correction plan, change application code, or continue the TDD workflow for that repository until the user finishes the rebase and asks to continue.
+
+If the return also lists non-conflict findings, still stop after starting the rebase(s). Those findings wait until the user resumes after resolving conflicts.
+
+If the rebase starts and completes with no conflicts, report that outcome and wait for instructions before continuing other correction work.
+
+## 5. Repository and Branch Preparation
 
 Identify every repository involved in the card, including:
 
@@ -74,7 +92,7 @@ Do not create alternative branch names merely because they are more convenient. 
 
 Verify the active branch before any code modification. Never apply a correction to the wrong branch.
 
-## 5. Create the Correction Plan
+## 6. Create the Correction Plan
 
 Before implementing any fix, create the plan in the agent's native planning mechanism. If unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
@@ -97,7 +115,7 @@ Each item should describe one concrete task and have a clear completion conditio
 
 Present the plan to the user before implementing any corrections.
 
-## 6. TDD Workflow
+## 7. TDD Workflow
 
 Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/olie/olie-e2e` and `~/git/olie/api-main`, as well as tests in any other affected repositories.
 
@@ -122,7 +140,7 @@ For each correction, follow this sequence:
 - Do not modify production code before writing the relevant regression test, unless a documented technical limitation makes the test-first sequence impossible. If that happens, explain the limitation and request authorization before deviating from TDD.
 - Do not edit `en.json` while correcting. English translations are resolved later. Fix or add user-facing keys in `pt-br.json` only.
 
-## 7. Temporary E2E CAPTCHA Configuration
+## 8. Temporary E2E CAPTCHA Configuration
 
 Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
 
@@ -139,7 +157,7 @@ Do not stub the management API to get past that. Do not change PHP. Use Google's
 
 If the container or `.env` is missing, stop and report that. Do not add a code bypass.
 
-## 8. Incremental Execution
+## 9. Incremental Execution
 
 After presenting the plan, use controlled mode only when the user requests step-by-step approval or the correction spans multiple repositories or high-risk changes.
 
@@ -161,7 +179,7 @@ If an issue reveals a new dependency, a different root cause, or a necessary cha
 
 If a blocker requires a decision, additional permissions, or a potentially destructive action, stop and request instructions.
 
-## 9. Development Issue Tracking
+## 10. Development Issue Tracking
 
 Maintain the section titled 'Issues encountered during development' in the plan document throughout the correction process.
 
@@ -178,9 +196,11 @@ For each issue, describe the evidence, impact, status, and resolution or next ac
 
 Do not silently dismiss review findings or mark unresolved problems as completed.
 
-## 10. Completion Criteria
+## 11. Completion Criteria
 
-The correction work is complete only when:
+When the return was only for merge conflicts, this pass is complete when the rebase onto `develop` has been started in each affected repository, conflicts were left unresolved for the user, and the user was told they can resolve them now. Do not claim conflict resolution as done.
+
+Otherwise, the correction work is complete only when:
 
 - Every reviewer finding has been addressed or explicitly resolved with supporting evidence.
 - All applicable checklist items have been completed and verified.
