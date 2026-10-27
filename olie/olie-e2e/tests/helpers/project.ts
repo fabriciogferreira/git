@@ -17,6 +17,58 @@ function isProjectLimitExceeded(status: number, error: string | null | undefined
 }
 
 /**
+ * Merge projects via `POST /projects/merge`.
+ * Returns the survivor project id (clone of majority with other sources folded in).
+ */
+export async function mergeE2EProjects(
+    page: Page,
+    args: { majorityId: string; projectIds: string[] }
+): Promise<string> {
+    const apiUrl = `${apiBaseUrl()}/api/management/projects/merge`
+
+    const result = await page.evaluate(
+        async ({ apiUrl, majority, projects }) => {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                return { ok: false as const, status: 0, error: 'missing token', projectId: null as string | null }
+            }
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ majority, projects }),
+            })
+
+            const data = (await res.json().catch(() => null)) as {
+                response?: boolean
+                project?: { id?: string }
+                message?: string
+            } | null
+
+            return {
+                ok: res.ok && Boolean(data?.response && data?.project?.id),
+                status: res.status,
+                error: data?.message ?? null,
+                projectId: data?.project?.id ?? null,
+            }
+        },
+        { apiUrl, majority: args.majorityId, projects: args.projectIds }
+    )
+
+    if (!result.ok || !result.projectId) {
+        throw new Error(
+            `projects/merge failed (status=${result.status}): ${result.error ?? 'unknown'}`
+        )
+    }
+
+    return result.projectId
+}
+
+/**
  * Soft-delete disposable e2e projects (name contains `e2e-`) to free plan slots.
  * Local frames fill up quickly after stress suites.
  */
