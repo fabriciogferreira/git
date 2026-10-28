@@ -145,7 +145,7 @@ Follow the project's existing architecture, conventions, and established pattern
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
 
-**Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/locav/prompts/workflow-policy.md` when it applies.
+**Do not run 'php-cs-fixer' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/locav/prompts/workflow-policy.md` when it applies.
 
 ## 8. Completion Criteria
 

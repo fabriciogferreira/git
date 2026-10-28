@@ -40,8 +40,8 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 - [ ] Run the tests this card touched: `docker exec -w /var/www/html locav-backend php artisan test --compact` with those paths. New or edited `LocavApi` tests are Pest 4. A PHPUnit file this card edited was converted with Drift (`vendor/bin/pest --drift <that-file>`) in the same change. Untouched PHPUnit files stay as they are.
 - [ ] Review test results and investigate any failures instead of assuming they are unrelated to the changes.
-- [ ] Run Pint to format affected PHP changes (`docker exec locav-backend ./vendor/bin/pint` or the project equivalent).
-- [ ] If Pint changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.
+- [ ] Run PHP CS Fixer to format affected PHP changes.
+- [ ] If PHP CS Fixer changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.
 
 #### `locav-front`
 
@@ -97,7 +97,7 @@ Before renaming or deleting a remote branch, verify that it is the incorrect bra
 - [ ] Verify that all commits follow the commit convention adopted by each repository.
 - [ ] Ensure commit messages are written in English.
 - [ ] Ensure no commit lists Cursor as a co-author.
-- [ ] Verify that the dedicated Pint formatting commit contains only formatting changes.
+- [ ] Verify that the dedicated PHP CS Fixer formatting commit contains only formatting changes.
 - [ ] Ensure functional changes, test changes, and formatting changes are separated appropriately for review.
 - [ ] Review the final commit history and verify that no unrelated changes, secrets, environment files, or accidental generated files are included.
 
@@ -188,8 +188,8 @@ If an action requires additional permissions, involves a potentially destructive
 After completing the applicable workflow, provide a concise report containing:
 
 - The repositories checked (product clones and meta-repo).
-- The results of PHPStan, tests, lint, and Pint, as applicable.
-- The identifier of the dedicated Pint commit.
+- The results of PHPStan, tests, lint, and PHP CS Fixer, as applicable.
+- The identifier of the dedicated PHP CS Fixer commit.
 - The commit convention and branch-name validation results.
 - Meta-repo: commit hash(es) on `main`, whether `origin/main` was updated, or that there was nothing to commit.
 - The pull request URLs and their verified configuration, including the filled template body and the **Pull Request (front)** and **Pull Request (back)** values read back from the card.

@@ -157,8 +157,8 @@ The title stays English. `gh pr view` must still show the template headings, the
 
 ## Formatting
 
-- During implementation, do not run Pint unless the user explicitly asks for it or the task is the pre-QA workflow.
-- During pre-QA, run Pint for affected `LocavApi` PHP changes (`docker exec locav-backend`). If Pint changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
+- During implementation, do not run PHP CS Fixer unless the user explicitly asks for it or the task is the pre-QA workflow.
+- During pre-QA, run PHP CS Fixer for affected `LocavApi` PHP changes. If PHP CS Fixer changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
 
 ## MCP auth
 
