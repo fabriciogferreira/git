@@ -2,6 +2,16 @@
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
+### Chat commands
+
+Recognize these user messages in this develop flow (shared table: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**). Distinct from checklist `next` in §5.
+
+| Command | Do this |
+| --- | --- |
+| `next prompt` | Run the next recommended prompt file (after this paste finishes: `~/git/locav/prompts/implementation-validation.md`). Open that file and execute it; do not wait for another paste. |
+| `try again` | Resume or re-run **this** implementation prompt after a stop or a manual fix. Continue from the blocked checklist item when safe. |
+| `to correct` | Only after implementation-validation reported **Needs code fixes**: implement those listed failures, then recommend re-running validation. If validation has not failed yet, say so and do not invent a correction list. |
+
 ## 1. Context and Objective
 
 Implement the card identified by `{{ code }}`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
@@ -155,4 +165,4 @@ When all checklist items are complete, provide a concise final report covering t
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable restrictions above.
 
-When implementation work on this paste is done, the next paste is `~/git/locav/prompts/implementation-validation.md` (code-only). Do not run `~/git/locav/prompts/pre-qa.md` or board `~/git/locav/prompts/validation.md` yet.
+When implementation work on this paste is done, the next recommended prompt is `~/git/locav/prompts/implementation-validation.md` (code-only). The user may send `next prompt` to run it without pasting. Do not run `~/git/locav/prompts/pre-qa.md` or board `~/git/locav/prompts/validation.md` yet.

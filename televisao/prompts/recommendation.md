@@ -139,4 +139,4 @@ End with one of the following conclusions:
 - Keep the analysis actionable, evidence-based, and proportional to the task.
 - If the available context is insufficient to assess a potential improvement, explicitly state the limitation instead of presenting speculation as a finding.
 
-When this analysis is done, the next paste is `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.
+When this analysis is done, the next recommended prompt is `~/git/televisao/prompts/implementation-validation.md` (code-only). The user may send `next prompt` to run it without pasting. Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**. Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.

@@ -1,12 +1,27 @@
 # Implementation Validation
 
-Use this **after** `~/git/televisao/prompts/recommendation.md`. That paste follows `~/git/televisao/prompts/implementation.md` (or `~/git/televisao/prompts/correction.md` when that pass changed code). Run this **before** `~/git/televisao/prompts/pre-qa.md`. This is a **code-only** pass while the card is still in `in-progress`. It is not board 'Validação', not colleague 'QA/CR', not pre-QA, and not production review.
+Use this **after** `~/git/televisao/prompts/recommendation.md`. That paste follows `~/git/televisao/prompts/implementation.md` (or `~/git/televisao/prompts/correction.md` when that pass changed code). Run this **before** handoff. This is a **code-only** pass while the card is still in `in-progress`. It is not board 'Validação', not colleague 'QA/CR', not pre-QA, and not production review.
+
+**Next paste after a pass** depends on whether the card changed the backend (`~/git/televisao/televisao-api`):
+
+1. Backend touched → `~/git/televisao/prompts/mutation-testing.md`, then `~/git/televisao/prompts/pre-qa.md`.
+2. Backend not touched → `~/git/televisao/prompts/pre-qa.md` (same as before).
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
+### Chat commands
+
+Same phrases as in `~/git/televisao/prompts/workflow-policy.md` (**Chat commands**) and `implementation.md`:
+
+| Command | Do this |
+| --- | --- |
+| `next prompt` | After **Ready for handoff**, run the next recommended file (`mutation-testing.md` or `pre-qa.md`) without waiting for a paste. |
+| `try again` | Re-run **this** validation pass (e.g. after a manual env fix or after `to correct`). |
+| `to correct` | Leave validation mode: implement every **Needs code fixes** item from this pass’s report, then stop and recommend `try again` (re-run this validation). Do not implement fixes during the scoring pass itself unless the user already sent `to correct`. |
+
 ## 1. Objective
 
-Decide whether the **local implementation** for card `{{ code }}` is ready for pre-QA (commits, PRs, forms). Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass unless the user asks.
+Decide whether the **local implementation** for card `{{ code }}` is ready for handoff. Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass unless the user sends `to correct` (or otherwise asks to fix).
 
 A card passes this pass only when it clears the five code criteria below and no reviewer raises a blocker.
 
@@ -77,12 +92,17 @@ Without an attached spec or PRD as card media, the Requirements criterion has no
 
 Only two outcomes. Always justify item by item. Never answer with a bare pass or fail.
 
-**Ready for pre-QA**  
-All five criteria passed and no reviewer raised a blocker. Next paste: `~/git/televisao/prompts/pre-qa.md`.
+**Ready for handoff**  
+All five criteria passed and no reviewer raised a blocker. Decide the next paste from the **local** branches/working trees already reviewed in §3:
+
+- **Backend changed** — any added/modified path under `~/git/televisao/televisao-api` (including `app/`, `tests/`, migrations, etc.): next paste is `~/git/televisao/prompts/mutation-testing.md`. Say that after that personal stack finishes (or the user stops it), the following paste is `~/git/televisao/prompts/pre-qa.md`. Do not run pre-QA in this same paste.
+- **Backend not changed** — no `televisao-api` paths in the card's local change set: next paste is `~/git/televisao/prompts/pre-qa.md` directly.
+
+State which branch you took and why (list whether `televisao-api` appears in the reviewed diffs).
 
 **Needs code fixes**  
-List every failure: which criterion, which reviewer, and where in the code — so the author can fix without guessing. Stay on implementation/correction until fixed; do not run pre-QA yet.
+List every failure: which criterion, which reviewer, and where in the code — so the author can fix without guessing. Tell the user they can send `to correct` to have those items fixed in this chat, then `try again` to re-run this validation. Do not run mutation-testing or pre-QA yet.
 
 ## Done when
 
-The report names card `{{ code }}`, the local branches/diffs reviewed, which optional reviewers ran and why, the result for each of the five criteria, the merged findings, and either Ready for pre-QA or Needs code fixes with actionable locations. Checks that did not run are named with the reason.
+The report names card `{{ code }}`, the local branches/diffs reviewed, which optional reviewers ran and why, the result for each of the five criteria, the merged findings, and either Ready for handoff (with the next paste: mutation-testing then pre-QA, or pre-QA only) or Needs code fixes with actionable locations. Checks that did not run are named with the reason.

@@ -55,7 +55,8 @@ After implementation (or correction) on the card:
 
 1. **Related improvements** — `~/git/televisao/prompts/recommendation.md` (analysis only; do not implement suggestions in that paste).
 2. **Implementation validation** — `~/git/televisao/prompts/implementation-validation.md` (code only; no PRs/forms/commits required). Run it after the recommendation paste.
-3. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
+3. **Mutation testing** (personal, only if the card changed `televisao-api`) — `~/git/televisao/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
+4. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) after implementation-validation passes, and after mutation-testing when that step applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
 
 Colleague 'QA/CR' uses `~/git/televisao/prompts/colleague-review.md`.
 

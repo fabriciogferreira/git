@@ -151,6 +151,18 @@ Production review (`production-review` / 'Revisão de Produção') checks the **
 - During implementation, do not run Pint unless the user explicitly asks for it or the task is the pre-QA workflow.
 - During pre-QA, run Pint for affected `api-main` PHP changes. If Pint changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
 
+## Chat commands (develop handoff)
+
+Exact phrases from the user in this chat (match case-insensitively after trim). Not the same as controlled-mode checklist `next` inside `implementation.md` / `correction.md`.
+
+| Command | Meaning |
+| --- | --- |
+| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. |
+| `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
+| `to correct` | Fix every item listed under **Needs code fixes** from the latest `~/git/olie/prompts/implementation-validation.md` pass in this chat. Implement those fixes only; then recommend re-running implementation-validation (`try again` on that pass, or `next prompt` if validation was already named next). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
+
+When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
+
 ## Tooling failures and stalls (prompt health)
 
 If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop.

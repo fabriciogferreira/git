@@ -191,6 +191,18 @@ curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
 
 Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. Otherwise `GET /api/management/get-available-steps` (`funnels[].steps[].id` and `name`). Match the stage by display name. Never hard-code a step id. Never paste a Bearer token.
 
+## Chat commands (develop handoff)
+
+Exact phrases from the user in this chat (match case-insensitively after trim). Not the same as controlled-mode checklist `next` inside `implementation.md` / `correction.md`.
+
+| Command | Meaning |
+| --- | --- |
+| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/locav/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. |
+| `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
+| `to correct` | Fix every item listed under **Needs code fixes** from the latest `~/git/locav/prompts/implementation-validation.md` pass in this chat. Implement those fixes only; then recommend re-running implementation-validation (`try again` on that pass, or `next prompt` if validation was already named next). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
+
+When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
+
 ## Tooling failures and stalls (prompt health)
 
 If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop.

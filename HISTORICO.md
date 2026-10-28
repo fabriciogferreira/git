@@ -2,6 +2,24 @@
 
 Problema resolvido entra aqui.
 
+## Pre-QA não subia o meta-repo em `main`
+
+- **problema:** e2e, `cards/`, ledger e prompts mudavam em `~/git` no pre-QA e ficavam só locais; o remoto `main` não recebia
+- **por que é um problema:** outra VM ou login com pull do meta-repo não via o trabalho do card; ledger e specs sumiam do remoto
+- **resolvido como:** `pre-qa.md` (olie, televisao, locav) ganha §4.3 — commit e `git push` direto em `main` do meta-repo (sem PR), só com paths do card; stubs/secrets fora
+
+## Comandos curtos no chat de develop (next prompt / try again / to correct)
+
+- **problema:** depois de um prompt, o usuário tinha que colar o próximo arquivo inteiro, ou explicar de novo para retomar ou corrigir falhas da validation
+- **por que é um problema:** atrito e resposta inconsistente entre sessões
+- **resolvido como:** `workflow-policy.md` define `next prompt`, `try again` e `to correct`; `implementation.md` e `implementation-validation.md` reconhecem os três (`next` de checklist continua separado). O mesmo fluxo (mutation após validation se backend + comandos) foi aplicado em `televisao/prompts/` e `locav/prompts/` (`televisao-api` / `LocavApi`)
+
+## Validation ia direto para pre-QA sem mutation no backend
+
+- **problema:** depois de `implementation-validation.md`, o fluxo sempre apontava para `pre-qa.md`, mesmo quando o card mudava `api-main`
+- **por que é um problema:** o mutation testing pessoal ficava fora da ordem do card e o backend ia para QA/CR sem essa passada
+- **resolvido como:** validation recomenda `mutation-testing.md` só se o diff local tocou `api-main`, e depois `pre-qa.md`; sem backend, segue direto para pre-QA. `workflow.md`, `README.md`, `pre-qa.md` e `mutation-testing.md` alinhados
+
 ## Correção com conflito parava sem force-push da branch
 
 - **problema:** `olie/prompts/correction.md` mandava iniciar o rebase, deixar o conflito com o usuário e parar. Depois da resolução, o agente não tinha ordem de atualizar o remoto

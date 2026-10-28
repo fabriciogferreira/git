@@ -1,5 +1,7 @@
 # Mutation testing (personal)
 
+Use this **after** `~/git/televisao/prompts/implementation-validation.md` passes **and** the card changed `~/git/televisao/televisao-api`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
+
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
 Personal workflow on this VM. Run it only when `televisao-backend` already has Pest and `pest-plugin-mutate`. If either is missing, stop. Do not install them and do not bump PHP to match another product.
@@ -28,7 +30,7 @@ Work only in `~/git/televisao/televisao-api`.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger. Skip a file that is a trait or helper and not a test case.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain, say the change-set stack is complete and stop.
+4. If none remain, say the change-set stack is complete, recommend `~/git/televisao/prompts/pre-qa.md` as the next paste, and stop.
 5. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /var/www/html televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/` or any other file. If Drift is missing, stop and report. Do not install it. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
 6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
 7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
@@ -91,4 +93,4 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 
 - If you added temporary `covers()` / `mutates()`, remove them before writing the ledger row.
 
-After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger.
+After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger. If none remain after this row, recommend `~/git/televisao/prompts/pre-qa.md` as the next paste; otherwise say to paste this prompt again for the next changed test file.

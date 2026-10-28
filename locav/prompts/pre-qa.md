@@ -1,6 +1,6 @@
 # Pre-QA/CR Checklist and Pull Request Workflow
 
-Run this **after** `~/git/locav/prompts/implementation-validation.md` has passed (code-only ready). This prompt prepares the handoff and, when every applicable check has passed, **moves the card to 'QA/CR'**. Do not run this while expecting a code-only review — that is implementation-validation. Do not run board 'Validação' yet — that is `~/git/locav/prompts/validation.md` after colleague QA/CR.
+Run this **after** `~/git/locav/prompts/implementation-validation.md` has passed (code-only ready). If that pass reported a backend (`LocavApi`) change, run `~/git/locav/prompts/mutation-testing.md` first (personal stack); then this prompt (`next prompt` is enough). If there was no backend change, come here directly after implementation-validation. Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**. This prompt prepares the handoff and, when every applicable check has passed, **moves the card to 'QA/CR'**. Do not run this while expecting a code-only review — that is implementation-validation. Do not run board 'Validação' yet — that is `~/git/locav/prompts/validation.md` after colleague QA/CR.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
@@ -103,6 +103,29 @@ Before renaming or deleting a remote branch, verify that it is the incorrect bra
 
 Do not rewrite or discard existing commits without evaluating their impact. If correcting the history would affect shared branches or other contributors, request confirmation first.
 
+### 4.3. Meta-repo (`~/git`) — commit and push on `main`
+
+Product clones get card branches and PRs. The **meta-repo** does not: ship its card-related changes straight to `main`.
+
+This pre-QA pass **must** commit and push meta-repo updates that belong to the card (or to prompt/workflow fixes done in the same chat), when the working tree has any:
+
+- `locav/prompts/` (including `mutation-ledger.md`)
+- `locav/cards/{CARD_CODE}/` media analyses
+- Meta-repo docs touched for the same work (`HISTORICO.md`, etc.). Locav Cypress specs live in the `locav-front` clone, not here — those follow the product branch/PR path above.
+
+Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.
+
+Checklist:
+
+- [ ] `cd ~/git` and confirm the current branch is `main` (or the meta-repo’s default). If not, stop and report.
+- [ ] `git pull --ff-only` (or fetch + ff-only merge) so local `main` matches `origin/main` before committing. On divergence or non-ff, stop and report (prompt-health).
+- [ ] Stage only paths that belong to this work. Exclude secrets, `.env`, WorkVM stubs (`mcp.workvm-user`, skip-worktree noise), and unrelated dirty files. If unrelated dirt blocks a clean commit, stop and report rather than mixing it in.
+- [ ] Create one or more English commits (no Cursor/AI co-author). Message says why (card code when applicable).
+- [ ] `git push origin HEAD` to update remote `main`. Verify with `git status` that the branch is not ahead/behind after the push.
+- [ ] If there is nothing to commit for the meta-repo, say so explicitly in the final report.
+
+If commit or push fails, stop before Phase 4 product PRs when the meta-repo change is required for the card (e.g. media analysis). Prompt-only / ledger updates should still be pushed when possible; if push fails, report and do not claim meta-repo is synced.
+
 ## 5. Phase 4 — Pull Request Creation
 
 **Proceed only after all applicable checks in Phases 1–3 have passed.**
@@ -164,10 +187,11 @@ If an action requires additional permissions, involves a potentially destructive
 
 After completing the applicable workflow, provide a concise report containing:
 
-- The repositories checked.
+- The repositories checked (product clones and meta-repo).
 - The results of PHPStan, tests, lint, and Pint, as applicable.
 - The identifier of the dedicated Pint commit.
 - The commit convention and branch-name validation results.
+- Meta-repo: commit hash(es) on `main`, whether `origin/main` was updated, or that there was nothing to commit.
 - The pull request URLs and their verified configuration, including the filled template body and the **Pull Request (front)** and **Pull Request (back)** values read back from the card.
 - Whether an API documentation update is required.
 - Whether the card was moved to 'QA/CR' and the verified stage after the move.

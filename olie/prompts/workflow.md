@@ -54,7 +54,8 @@ Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) only after implementation-validation passes. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
+2. **Mutation testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
+3. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) after implementation-validation passes, and after mutation-testing when that step applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
 
 Colleague 'QA/CR' uses `~/git/olie/prompts/colleague-review.md`.
 

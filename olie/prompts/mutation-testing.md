@@ -1,5 +1,7 @@
 # Mutation testing (personal)
 
+Use this **after** `~/git/olie/prompts/implementation-validation.md` passes **and** the card changed `~/git/olie/api-main`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.
+
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 Personal workflow on this VM. Pest mutation testing is not an Olie team practice. Do not add it to `api-main` CI, `phpunit.xml`, Dockerfiles, `docker-workspace`, or Composer. Do not commit `covers()` or `mutates()` into company tests. Do not open a pull request whose purpose is mutation testing. Assertion edits that make a mutation fail are normal test changes in `~/git/olie/api-main`; do not commit or push them unless the user asks in this chat.
@@ -26,7 +28,7 @@ Work only in `~/git/olie/api-main`.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain, say the change-set stack is complete and stop.
+4. If none remain, say the change-set stack is complete, recommend `~/git/olie/prompts/pre-qa.md` as the next paste, and stop.
 5. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
 6. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 7. Prepare, mutate those classes, close the file using the scoring rules below. Stop. Do not start the next test file in this paste.
@@ -86,4 +88,4 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 
 - If you added temporary `covers()` / `mutates()`, remove them before writing the ledger row.
 
-After the row is written, report the file, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger.
+After the row is written, report the file, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger. If none remain after this row, recommend `~/git/olie/prompts/pre-qa.md` as the next paste; otherwise say to paste this prompt again for the next changed test file.
