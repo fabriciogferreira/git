@@ -14,7 +14,7 @@ Recognize these user messages in this develop flow (shared table: `~/git/olie/pr
 
 ## 1. Context and Objective
 
-Implement the card identified by `DOP-1196`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
+Implement the card identified by `dop-1195`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
 
 Use the card's content as the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
