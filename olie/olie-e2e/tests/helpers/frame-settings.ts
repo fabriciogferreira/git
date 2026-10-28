@@ -35,9 +35,15 @@ export async function openFrameSettings(page: Page) {
         }
 
         try {
-            await expect(page.locator('#settings_overview')).toBeVisible({
-                timeout: 15_000,
-            })
+            // Overview used to be #settings_overview; the page is now a single card
+            // with company data + configuration sections (DOP-1157+).
+            await expect(
+                page
+                    .getByRole('heading', {
+                        name: /Dados da empresa|Company data|Notificações de usuários|User notifications/i,
+                    })
+                    .first()
+            ).toBeVisible({ timeout: 15_000 })
 
             const response = await configsPromise
             if (response && (await contentAddedDebounceCard(page).count()) > 0) {
@@ -62,7 +68,7 @@ export async function openFrameSettings(page: Page) {
 /** Notifications card (assignee / unassignee message configs). */
 export function notificationsCard(page: Page): Locator {
     return page
-        .locator('.card')
+        .locator('section')
         .filter({
             has: page.getByRole('heading', {
                 name: /Notificações de usuários|User notifications/i,
@@ -74,7 +80,7 @@ export function notificationsCard(page: Page): Locator {
 /** Business rules card (remove inactive users from funnels, etc.). */
 export function businessRulesCard(page: Page): Locator {
     return page
-        .locator('.card')
+        .locator('section')
         .filter({
             has: page.getByRole('heading', {
                 name: /Regras de Negócio|Business Rules/i,
@@ -85,11 +91,18 @@ export function businessRulesCard(page: Page): Locator {
 
 /** DOP-1157 content-added debounce card. */
 export function contentAddedDebounceCard(page: Page): Locator {
-    return page.locator('#content_added_debounce_settings')
+    return page
+        .locator('section')
+        .filter({
+            has: page.getByRole('heading', {
+                name: /Tempo de espera do gatilho|content.added|wait time|debounce/i,
+            }),
+        })
+        .first()
 }
 
 export function contentAddedDebounceInput(page: Page): Locator {
-    return contentAddedDebounceCard(page).locator('#content_added_debounce_seconds')
+    return page.locator('#content_added_debounce_seconds')
 }
 
 /**
@@ -115,11 +128,18 @@ export async function requireContentAddedDebounceSettings(page: Page) {
 
 /** DOP-1158 multiple-active-conversations card. */
 export function multipleActiveChannelsCard(page: Page): Locator {
-    return page.locator('#multiple_active_channels_settings')
+    return page
+        .locator('section')
+        .filter({
+            has: page.getByRole('heading', {
+                name: /Conversas ativas por contato|Active conversations|multiple conversations/i,
+            }),
+        })
+        .first()
 }
 
 export function multipleActiveChannelsSwitch(page: Page): Locator {
-    return multipleActiveChannelsCard(page).locator('#allow_multiple_active_channels')
+    return page.locator('#allow_multiple_active_channels')
 }
 
 export async function companyAllowsMultipleActiveChannels(page: Page): Promise<boolean> {
@@ -195,7 +215,7 @@ export async function setCompanyMultipleActiveChannelsViaApi(
 
 /** DOP-1214 audio transcription row inside Business Rules. */
 export function audioTranscriptionSettingsRow(page: Page): Locator {
-    return page.locator('#audio_transcription_settings')
+    return page.locator('#audio_transcription_enabled').locator('xpath=ancestor::div[contains(@class,"d-flex")][1]')
 }
 
 export function audioTranscriptionSwitch(page: Page): Locator {
