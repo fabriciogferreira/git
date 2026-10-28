@@ -79,6 +79,10 @@ test.describe('DOP-1233 company project executions', () => {
         await expect(
             menu.getByRole('link', { name: /Execuções de projetos|Project executions/i })
         ).toBeVisible()
+        // FrameUsers redirects to the first tab; the menu must still show Usuários.
+        await expect(
+            menu.getByRole('link', { name: /^Usuários$|^Users$/i })
+        ).toBeVisible()
     })
 
     test('Início filter with the date picker does not 422', async ({ page }) => {

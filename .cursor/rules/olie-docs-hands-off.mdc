@@ -1,0 +1,18 @@
+---
+description: Agente altera olie-ai/docs (clone em olie/docs) e gera PR/rebase/conflito que não é trabalho de card
+alwaysApply: true
+---
+
+# Olie docs — não tocar
+
+O clone `~/git/olie/docs` (`git@github.com:olie-ai/docs.git`, docs.olie.ai / OpenAPI) **não** é escopo de card, correção, implementação, pre-QA nem revisão.
+
+Nunca:
+
+- editar, criar ou apagar arquivos nesse repositório
+- `checkout`, `rebase`, `merge`, `commit`, `push` ou abrir/atualizar PR nele
+- incluir `docs` / `olie-ai/docs` no plano de correção ou na lista de repos do card
+
+Se o card ou um PR citar documentação pública: **reporte** e siga só em `api-main`, `olie-fronts`, `olie-e2e` (e outros clones de produto). Documentação de produto no meta-repo (`olie/prompts/`, `HISTORICO.md`, overlay) continua permitida.
+
+Se um rebase ou edição nesse clone já estiver em andamento por engano: `git rebase --abort` (ou descarte seguro) e pare; não complete o conflito.

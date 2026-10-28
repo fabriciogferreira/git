@@ -140,6 +140,14 @@ When the change needs more than one outcome, run each relevant number. A success
 
 Production review (`production-review` / 'Revisão de Produção') checks the **gui1** frame. Log in at **https://gui1.olie.ai/auth/login** with the account in `~/git/olie/prompts/production-review.md`. Local hosts (`*.olie.localhost`), `https://esolie.olie.ai`, and other frames are not production evidence.
 
+## Olie docs repository — never touch
+
+The clone `~/git/olie/docs` (`olie-ai/docs`, docs.olie.ai / public OpenAPI) is **out of scope** for every agent workflow (implementation, correction, pre-QA, colleague review, production review).
+
+Do not edit, rebase, merge, commit, push, or open/update PRs in that repository. Do not put it on a card’s repository list or correction plan. If a card or review mentions public docs, report that and continue only in product repos (`api-main`, `olie-fronts`, `olie-e2e`, …). Meta-repo docs under `~/git` (`olie/prompts/`, `HISTORICO.md`, overlay) remain allowed.
+
+If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/restore safely and stop; do not finish the conflict.
+
 ## Language
 
 - UI copy, user-facing product content, and card notes are Brazilian Portuguese.

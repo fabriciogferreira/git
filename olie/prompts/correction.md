@@ -66,9 +66,11 @@ Do not silently ignore any finding. Every finding must be addressed in the plan 
 
 ## 4. Merge Conflicts Returned from Review
 
+**Never** apply this section (or any git write) to `~/git/olie/docs` / `olie-ai/docs`. That repository is out of scope — see **Olie docs repository — never touch** in `~/git/olie/prompts/workflow-policy.md`. If the only conflict return is that docs PR, stop and tell the user; do not start a rebase there.
+
 When the card was returned because of merge/rebase conflicts (or a reviewer finding is specifically about conflicts with the base branch), do **not** resolve the conflicts yourself.
 
-For each affected repository:
+For each affected repository (excluding `olie/docs`):
 
 1. Inspect Git status. If uncommitted changes block a safe rebase, stop and report the blocker.
 2. Fetch the latest `develop` from origin and update the local `develop` branch (fast-forward only).
@@ -96,6 +98,8 @@ Identify every repository involved in the card, including:
 - `~/git/olie/olie-e2e`
 - `~/git/olie/api-main`
 - Any additional repository referenced by the card or its pull requests.
+
+Exclude `~/git/olie/docs` (`olie-ai/docs`) always — never checkout, rebase, or edit it for a card.
 
 For each repository:
 

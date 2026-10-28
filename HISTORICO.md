@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Agente mexia no repositório docs da Olie
+
+- **problema:** correção/planos tratavam `olie-ai/docs` (`~/git/olie/docs`) como repo do card (rebase, conflito OpenAPI, PR)
+- **por que é um problema:** docs.olie.ai não é entrega de card; rebase/PR ali gera conflito e atrito fora do produto
+- **resolvido como:** rule `olie-docs-hands-off.mdc` (alwaysApply), seção em `olie/prompts/workflow-policy.md`, exclusão explícita em `correction.md` §4–5, linha em `layout.mdc`; agente aborta rebase acidental nesse clone
+
 ## Correção não obrigava revisar mídia do card
 
 - **problema:** `correction.md` só dizia para ler análises já gravadas e não reanalisar; o agente podia montar o plano só com texto do retorno
