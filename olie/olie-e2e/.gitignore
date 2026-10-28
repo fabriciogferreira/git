@@ -1,5 +1,7 @@
 node_modules
 .env
+# Stub local da VM (MCP em ~/.cursor/mcp.json); não versionar
+.cursor/mcp.workvm-user
 /test-results/
 /playwright-report/
 /blob-report/

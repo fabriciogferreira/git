@@ -33,10 +33,9 @@ vm.local.conf
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
 projects/**/.env
-olie/**/.env
 # Marker do stub MCP (servidores em ~/.cursor/mcp.json); local da VM
+# olie/** re-ignore fica depois de !olie/olie-e2e/** (senão o unignore ganha).
 projects/**/.cursor/mcp.workvm-user
-olie/**/.cursor/mcp.workvm-user
 
 # Clones em olie/<repo>/ ficam de fora. Definição do projeto + e2e + overlay versionados.
 !olie/
@@ -60,6 +59,8 @@ olie/*
 !olie/prompts/
 !olie/prompts/**
 !olie/config-vm.xml
+olie/**/.env
+olie/**/.cursor/mcp.workvm-user
 
 # vid2agent-code: definição + prompts; clone em vid2agent-code/vid2agent-code/ fica fora.
 !vid2agent-code/
