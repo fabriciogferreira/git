@@ -12,8 +12,16 @@ Verify the card's acceptance criteria in production. A local or staging result i
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
-3. Do not expose credentials, tokens, personal data, or private production records in the report.
+2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/locav/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
+   1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+   2. For each image, video, or audio that defines expected production behavior:
+      - If `~/git/locav/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+      - If that file is **missing** → analyze now: `locav-project-image-analysis` / `locav-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/locav/cards/{CARD_CODE}/`.
+   3. Re-analyze **only** when the user asks to redo a specific media id.
+   4. Cite media ids in the report when they define the criterion you verified.
+   5. **Never** post analysis to project content. Commit/push new analysis files on the meta-repo when you finish this media pass (or when the user asks).
+3. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
+4. Do not expose credentials, tokens, personal data, or private production records in the report.
 
 ## Verify
 

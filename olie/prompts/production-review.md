@@ -12,9 +12,17 @@ Verify the card's acceptance criteria in production. A local or staging result i
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Production is the **gui1** frame. Open **https://gui1.olie.ai/auth/login** and sign in with email `fgoncalves@olie.ai` and password `@olie123`. Do not begin checks until that login succeeds. Identify the observable success and error paths for the card. Stop and report any missing prerequisite rather than guessing or using another account. Do not use `https://esolie.olie.ai`, `*.olie.localhost`, or other hosts as production evidence.
-3. If the login shows a reCAPTCHA challenge, stop at once. Do not select images, do not press verify, and do not wait on it. Unlock the browser if it is locked, leave that tab open on the challenge, and ask the user to solve it. Continue only after they confirm and the login has reached the app. Solving the challenge is not part of this review. The handoff is expected: it is not a tooling failure and it does not make the review blocked.
-4. Do not repeat the login password, tokens, personal data, or private production records in the report.
+2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/olie/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
+   1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+   2. For each image, video, or audio that defines expected production behavior:
+      - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+      - If that file is **missing** → analyze now: `olie-project-image-analysis` / `olie-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.
+   3. Re-analyze **only** when the user asks to redo a specific media id.
+   4. Cite media ids in the report when they define the criterion you verified.
+   5. **Never** post analysis to project content. Commit/push new analysis files on the meta-repo when you finish this media pass (or when the user asks).
+3. Production is the **gui1** frame. Open **https://gui1.olie.ai/auth/login** and sign in with email `fgoncalves@olie.ai` and password `@olie123`. Do not begin checks until that login succeeds. Identify the observable success and error paths for the card. Stop and report any missing prerequisite rather than guessing or using another account. Do not use `https://esolie.olie.ai`, `*.olie.localhost`, or other hosts as production evidence.
+4. If the login shows a reCAPTCHA challenge, stop at once. Do not select images, do not press verify, and do not wait on it. Unlock the browser if it is locked, leave that tab open on the challenge, and ask the user to solve it. Continue only after they confirm and the login has reached the app. Solving the challenge is not part of this review. The handoff is expected: it is not a tooling failure and it does not make the review blocked.
+5. Do not repeat the login password, tokens, personal data, or private production records in the report.
 
 ## Verify
 

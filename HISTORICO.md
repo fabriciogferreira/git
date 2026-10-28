@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Correção não obrigava revisar mídia do card
+
+- **problema:** `correction.md` só dizia para ler análises já gravadas e não reanalisar; o agente podia montar o plano só com texto do retorno
+- **por que é um problema:** screenshot e screencast do revisor ficavam fora do diagnóstico; faltava evidência visual no plano
+- **resolvido como:** olie/locav/televisao `correction.md` ganham § Card media review — listar mídia via MCP, analisar a que ainda não tem `.md` (skills + fallback de vídeo), citar o media id no plano; nunca postar no conteúdo do projeto. O mesmo bloco entra em `implementation.md`, `colleague-review.md` e `production-review.md` (antes do plano, do veredito QA/CR e dos checks de produção)
+
 ## Conversão de vídeo parava quando o vid2agent estava fora
 
 - **problema:** as skills `*-project-video-conversion` mandavam parar (ou só reportar blocker) quando `10.0.2.2:18080` não respondia

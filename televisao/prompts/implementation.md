@@ -18,6 +18,19 @@ Implement the card identified by `{{ code }}`. Its requirements, business rules,
 
 Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/televisao/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
+### Card media review (required before the plan)
+
+Before the planning phase, **review the card's media**. Spec screenshots, screencasts, and attachments are part of the source of truth — do not plan from text alone when media shows the intended UI or flow.
+
+1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+2. For each image, video, or audio item that belongs to this card and is part of the specification (or is cited by the description):
+   - If `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+   - If that file is **missing** → analyze now: `televisao-project-image-analysis` for images, `televisao-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
+3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
+4. Use those analyses in the plan and checklist. Cite the media id when a requirement comes from a screenshot or screencast.
+5. **Never** post image, video, or audio analysis to project content (`save-media-tool` or any MCP write of that markdown).
+6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks).
+
 ## 2. Update the Card Stage
 
 Before modifying code, load the card and its live funnel through MCP `olie-flow-ai`. Apply the stage-resolution and move procedure in `~/git/televisao/prompts/workflow-policy.md`.
@@ -137,7 +150,7 @@ Follow the project's existing architecture, conventions, and established pattern
 
 - Avoid unrelated refactoring and unnecessary changes.
 - Preserve existing behavior unless the card explicitly requires changing it.
-- Image/video/audio analysis: follow `televisao-project-image-analysis` / `televisao-project-video-conversion`. Store at `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md`; reuse if the file exists; **commit/push on meta-repo `~/git`**; never post to project content.
+- Image/video/audio analysis: follow **Card media review** in §1 (skills `televisao-project-image-analysis` / `televisao-project-video-conversion`).
 - Add or update tests to cover the intended behavior, relevant edge cases, and regressions.
 - When the change touches `televisao-front` or `televisao-meet-front`, create or edit a Playwright spec in the matching meta-repo suite. Run it with **Running Playwright** in `~/git/televisao/prompts/workflow-policy.md` when the environment permits.
 - When `vendor/bin/pest` exists, new or edited `televisao-api` tests use that Pest. Convert a PHPUnit test file with Drift (`vendor/bin/pest --drift <that-file>`) only when this card edits it and Drift is already installed.

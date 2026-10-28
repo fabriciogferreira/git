@@ -16,10 +16,22 @@ Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 - The repositories and branches involved.
 - The implementation changes that were reviewed.
 - Any attached specifications, test results, and relevant comments.
+- **Project media** (`get-project-media-tool`): every image, video, and audio on the card that supports the return (screenshots, screencasts, and description-linked attachments).
 
 Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/televisao/prompts/workflow-policy.md`. Treat the reviewer's findings, the card's requirements, and those thread texts as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
 
-Media already analyzed for this card lives under `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` (versioned on the meta-repo). **Read those files first** (after `git pull` if needed). If a file is missing, follow `televisao-project-image-analysis` or `televisao-project-video-conversion`. Do not re-analyze image/video/audio or call vid2agent again unless the user asks to redo a specific media id. Never post that analysis to project content.
+### Card media review (required before the correction plan)
+
+Before creating the correction plan, **review the card's media**. Do not plan only from text comments when the return includes images or videos.
+
+1. `git pull` the meta-repo if needed, then list media via MCP.
+2. For each image, video, or audio item that belongs to this card and is part of the return (or is cited by a finding):
+   - If `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+   - If that file is **missing** → analyze now: `televisao-project-image-analysis` for images, `televisao-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
+3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
+4. Use those analyses when diagnosing findings and when writing the correction plan. Cite the media id that shows the defect.
+5. **Never** post image, video, or audio analysis to project content (`save-media-tool` or any MCP write of that markdown).
+6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks), so a later correction reuses them.
 
 ### Hosted preview when the card has a report
 

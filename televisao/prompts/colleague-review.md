@@ -18,8 +18,22 @@ Load the card through `mcp olie-flow-ai`. Read:
 - The repositories and branches the author changed.
 - The pull requests and the commits on those branches.
 - Comments, attachments, and test notes.
+- **Project media** (`get-project-media-tool`): screenshots, screencasts, and other image/video/audio that define expected behavior or show a defect.
 
 Do not review from the card title alone.
+
+### Card media review (required before the verdict)
+
+Before deciding pass or fail, **review the card's media**. Do not judge from text alone when images or videos show the expected or broken behavior.
+
+1. `git pull` the meta-repo if needed, then list media via MCP.
+2. For each image, video, or audio item that belongs to this card and supports the requirements or a finding:
+   - If `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+   - If that file is **missing** → analyze now: `televisao-project-image-analysis` for images, `televisao-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
+3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
+4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
+5. **Never** post image, video, or audio analysis to project content.
+6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks).
 
 ## 3. What you may change
 

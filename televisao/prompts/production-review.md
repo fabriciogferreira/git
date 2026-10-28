@@ -24,8 +24,16 @@ Verify the card's acceptance criteria on the hosted preview below. A local resul
 ## Before testing
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
-2. Test on the hosts and accounts above. Observable success and error paths come from the card. Stop and report a missing prerequisite. Do not guess another host and do not use customer credentials.
-3. Do not repeat passwords, tokens, personal data, or private records in the report. Name the account as admin or superadmin when the evidence needs it.
+2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/televisao/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
+   1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+   2. For each image, video, or audio that defines expected production behavior:
+      - If `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
+      - If that file is **missing** → analyze now: `televisao-project-image-analysis` / `televisao-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
+   3. Re-analyze **only** when the user asks to redo a specific media id.
+   4. Cite media ids in the report when they define the criterion you verified.
+   5. **Never** post analysis to project content. Commit/push new analysis files on the meta-repo when you finish this media pass (or when the user asks).
+3. Test on the hosts and accounts above. Observable success and error paths come from the card. Stop and report a missing prerequisite. Do not guess another host and do not use customer credentials.
+4. Do not repeat passwords, tokens, personal data, or private records in the report. Name the account as admin or superadmin when the evidence needs it.
 
 ## Verify
 
