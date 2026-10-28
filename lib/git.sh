@@ -458,6 +458,37 @@ workvm_apply_files() {
     workvm_patch_project_clone_cursor "$clone_prefix"
 }
 
+# PHPStan (and similar) write under the clone; company .gitignore often omits
+# that path, so Source Control fills with noise. Patterns go in the clone's
+# .git/info/exclude (local only — cannot push). project.conf lists them as
+# CLONE_GIT_EXCLUDES: "<clone-relative-path> <gitignore-pattern>".
+# project-setup and project-start both call this so a new clone stays clean.
+workvm_apply_clone_git_excludes() {
+    local git_root="${GIT_ROOT:-$HOME/git}"
+    local entry dest pattern
+
+    [ "${#CLONE_GIT_EXCLUDES[@]}" -gt 0 ] || return 0
+
+    for entry in "${CLONE_GIT_EXCLUDES[@]}"; do
+        dest="${entry%% *}"
+        pattern="${entry#* }"
+        if [ -z "$dest" ] || [ -z "$pattern" ] || [ "$dest" = "$pattern" ]; then
+            echo "error: CLONE_GIT_EXCLUDES entry inválida: $entry" >&2
+            return 1
+        fi
+        case "$dest" in
+            /*) ;;
+            *) dest="${git_root}/${dest}" ;;
+        esac
+        if [ ! -d "$dest/.git" ] && [ ! -f "$dest/.git" ]; then
+            echo "  exclude pulado (clone ausente): $dest ($pattern)"
+            continue
+        fi
+        echo "  exclude: $dest ← $pattern"
+        workvm_git_exclude_add "$dest" "$pattern"
+    done
+}
+
 # Entries: "<path> <command...>". Relative paths are under GIT_ROOT (default $HOME/git).
 workvm_run_post_clone() {
     local git_root="${GIT_ROOT:-$HOME/git}"

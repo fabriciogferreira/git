@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## PHPStan sujava o Source Control do api-main
+
+- **problema:** `vendor/bin/phpstan analyse` grava em `olie/api-main/storage/phpstan/` e o `.gitignore` da empresa não cobre esse path
+- **por que é um problema:** a pasta aparece como untracked no Cursor/git status e polui o stage do card
+- **resolvido como:** `CLONE_GIT_EXCLUDES` no `olie/project.conf` + `workvm_apply_clone_git_excludes` em `project-setup` e `project-start` grava `/storage/phpstan/` em `.git/info/exclude` do clone (local; sem mudar o remoto)
+
 ## Correction não apontava para implementation-validation
 
 - **problema:** `olie/prompts/correction.md` e `locav/prompts/correction.md` terminavam sem next paste; só o `workflow.md` dizia o handoff

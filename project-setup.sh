@@ -165,6 +165,7 @@ fi
 
 CLONE_REPOS=()
 POST_CLONE=()
+CLONE_GIT_EXCLUDES=()
 # Lido pela rule do Cursor; project.conf de biblioteca não declara.
 # shellcheck disable=SC2034
 CHROMIUM_URLS=()
@@ -210,6 +211,9 @@ fi
 
 echo "==> Aplicando overlay/ → $FILES_PROJECT/"
 workvm_apply_files "$PROJECT_SRC" "$FILES_PROJECT"
+
+echo "==> Excludes locais nos clones (.git/info/exclude)"
+workvm_apply_clone_git_excludes
 
 echo "==> Gravando .cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
 workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"

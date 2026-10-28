@@ -60,6 +60,7 @@ workvm_project_start() {
     fi
 
     CLONE_REPOS=()
+    CLONE_GIT_EXCLUDES=()
     CHROMIUM_URLS=()
     E2E_COMPOSE_DIRS=()
     MCP=
@@ -85,6 +86,9 @@ workvm_project_start() {
 
     workvm_project_log "aplicando overlay/ em ${PROJECT_NAME}/"
     workvm_apply_files "$project_dir" "$PROJECT_NAME"
+
+    workvm_project_log "excludes locais nos clones (.git/info/exclude)"
+    workvm_apply_clone_git_excludes
 
     # Depois do overlay: fontes versionados (mcps/, clones, e2e) → ~/.cursor/mcp.json.
     # O proxy precisa estar de pé antes do Cursor ler a URL local do olie-flow-ai.
