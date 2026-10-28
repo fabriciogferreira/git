@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Conversão de vídeo parava quando o vid2agent estava fora
+
+- **problema:** as skills `*-project-video-conversion` mandavam parar (ou só reportar blocker) quando `10.0.2.2:18080` não respondia
+- **por que é um problema:** screencast do card ficava sem markdown reutilizável e a correção/implementação seguia sem a evidência do vídeo
+- **resolvido como:** API continua preferida; se inacessível, o agente analisa localmente (ffprobe/ffmpeg + frames), grava o mesmo `cards/{CARD}/{MEDIA}.md` no schema fixo do vid2agent, com proveniência `agent-local`, sem instalar o stack na guest nem postar no conteúdo do projeto
+
 ## Pre-QA não subia o meta-repo em `main`
 
 - **problema:** e2e, `cards/`, ledger e prompts mudavam em `~/git` no pre-QA e ficavam só locais; o remoto `main` não recebia
