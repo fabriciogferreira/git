@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test'
 import { loginAsE2EUser } from '../helpers/auth'
 import {
     createE2EAttachmentForm,
+    createE2ELinkedFunnelFile,
     deleteE2EForm,
+    deleteE2EFunnel,
     openProjectContentAddAction,
     openProjectContentAddAttachments,
     pickProjectContentAddFormField,
@@ -91,6 +93,29 @@ test.describe('DOP-1132 funnel attachment listing', () => {
         await expect.poll(() => funnelAttachmentUrls.length).toBe(1)
         expect(funnelAttachmentUrls[0]).toContain('all_linked=1')
         expect(funnelAttachmentUrls[0]).not.toContain('project_funnel_id=')
+    })
+
+    test('lists a linked funnel file under the Funil group', async ({ page }) => {
+        await loginAsE2EUser(page)
+
+        const linked = await createE2ELinkedFunnelFile(page)
+        try {
+            await openProjectContentAddAction(page)
+            const panel = await openProjectContentAddAttachments(page)
+
+            await expect(
+                panel.getByText(new RegExp(`Funil:\\s*${linked.funnelName}|Funnel:\\s*${linked.funnelName}`, 'i')),
+            ).toBeVisible({ timeout: 15_000 })
+
+            const filter = panel.locator('input[type="text"]').first()
+            await filter.fill(linked.fileName)
+            await expect(
+                panel.getByRole('option', { name: linked.fileName, exact: true }),
+            ).toBeVisible({ timeout: 10_000 })
+            await page.keyboard.press('Escape')
+        } finally {
+            await deleteE2EFunnel(page, linked.funnelId)
+        }
     })
 })
 

@@ -481,6 +481,165 @@ export async function deleteE2EForm(page: Page, formId: number) {
     )
 }
 
+/**
+ * Upload a PDF funnel file and link it to a new disposable funnel.
+ * Used so the PCA MultiSelect can assert the Funil: group from all_linked=1.
+ */
+export async function createE2ELinkedFunnelFile(
+    page: Page,
+    fileName = `e2e-funnel-${Date.now()}.pdf`,
+): Promise<{ funnelId: number, funnelName: string, attachmentId: number, fileName: string }> {
+    const apiUrl = process.env.E2E_API_URL || 'http://api.olie.localhost'
+    const funnelName = `e2e-pca-att-${Date.now()}`
+
+    const result = await page.evaluate(
+        async ({ apiUrl, funnelName, fileName }) => {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                return { ok: false as const, error: 'missing token' }
+            }
+
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            }
+
+            const createRes = await fetch(`${apiUrl}/api/management/project-funnel`, {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: funnelName,
+                    steps: [{ name: 'e2e-step', order: 1 }],
+                    attachments: [],
+                    tags: [],
+                }),
+            })
+            const createData = (await createRes.json().catch(() => null)) as {
+                response?: boolean
+                project_funnel?: { id?: number, name?: string }
+                message?: string
+            } | null
+            const funnelId = createData?.project_funnel?.id
+            if (!createRes.ok || !funnelId) {
+                return {
+                    ok: false as const,
+                    error: createData?.message ?? `create funnel status=${createRes.status}`,
+                }
+            }
+
+            const form = new FormData()
+            form.append('type', 'file')
+            form.append(
+                'file',
+                new Blob(['%PDF-1.1 e2e'], { type: 'application/pdf' }),
+                fileName,
+            )
+            const uploadRes = await fetch(`${apiUrl}/api/management/funnel-attachments`, {
+                method: 'POST',
+                headers,
+                body: form,
+            })
+            const uploadData = (await uploadRes.json().catch(() => null)) as {
+                response?: boolean
+                attachment?: { id?: number, name?: string }
+                message?: string
+            } | null
+            const attachmentId = uploadData?.attachment?.id
+            if (!uploadRes.ok || !attachmentId) {
+                return {
+                    ok: false as const,
+                    error: uploadData?.message ?? `upload status=${uploadRes.status}`,
+                }
+            }
+
+            const findRes = await fetch(`${apiUrl}/api/management/get-project-funnels`, {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_funnel_id: funnelId }),
+            })
+            const findData = (await findRes.json().catch(() => null)) as {
+                project_funnel?: Record<string, unknown> & {
+                    id?: number
+                    name?: string
+                    steps?: unknown[]
+                    attachments?: unknown[]
+                    tags?: unknown[]
+                }
+                message?: string
+            } | null
+            const funnel = findData?.project_funnel
+            if (!findRes.ok || !funnel?.id) {
+                return {
+                    ok: false as const,
+                    error: findData?.message ?? `reload funnel status=${findRes.status}`,
+                }
+            }
+
+            const saveRes = await fetch(`${apiUrl}/api/management/project-funnel`, {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...funnel,
+                    attachments: [{ id: attachmentId }],
+                    tags: funnel.tags ?? [],
+                    steps: funnel.steps ?? [],
+                }),
+            })
+            const saveData = (await saveRes.json().catch(() => null)) as {
+                response?: boolean
+                message?: string
+            } | null
+            if (!saveRes.ok || !saveData?.response) {
+                return {
+                    ok: false as const,
+                    error: saveData?.message ?? `link attachment status=${saveRes.status}`,
+                }
+            }
+
+            return {
+                ok: true as const,
+                funnelId,
+                funnelName: funnel.name ?? funnelName,
+                attachmentId,
+                fileName: uploadData.attachment?.name ?? fileName,
+            }
+        },
+        { apiUrl, funnelName, fileName },
+    )
+
+    if (!result.ok) {
+        throw new Error(`createE2ELinkedFunnelFile failed: ${result.error}`)
+    }
+
+    return {
+        funnelId: result.funnelId,
+        funnelName: result.funnelName,
+        attachmentId: result.attachmentId,
+        fileName: result.fileName,
+    }
+}
+
+/** Soft-delete a disposable e2e funnel created for attachment listing. */
+export async function deleteE2EFunnel(page: Page, funnelId: number) {
+    const apiUrl = process.env.E2E_API_URL || 'http://api.olie.localhost'
+    await page.evaluate(
+        async ({ apiUrl, funnelId }) => {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            await fetch(`${apiUrl}/api/management/delete-funnel`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ project_funnel_id: funnelId }),
+            })
+        },
+        { apiUrl, funnelId },
+    )
+}
+
 /** Open the attachments MultiSelect. The combobox input is covered by the label, so the click goes there. */
 export async function openProjectContentAddAttachments(page: Page): Promise<Locator> {
     const root = projectContentAddAttachmentsBlock(page).locator('.p-multiselect')
