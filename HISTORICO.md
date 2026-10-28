@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Correction não apontava para implementation-validation
+
+- **problema:** `olie/prompts/correction.md` e `locav/prompts/correction.md` terminavam sem next paste; só o `workflow.md` dizia o handoff
+- **por que é um problema:** depois da correção o agente parava sem recomendar `implementation-validation.md`; o usuário tinha que lembrar ou colar à mão
+- **resolvido como:** ambos os `correction.md` passam a indicar `implementation-validation.md` no completion (como o mapa do workflow); pre-QA/board validation só depois
+
 ## Agente mexia no repositório docs da Olie
 
 - **problema:** correção/planos tratavam `olie-ai/docs` (`~/git/olie/docs`) como repo do card (rebase, conflito OpenAPI, PR)
