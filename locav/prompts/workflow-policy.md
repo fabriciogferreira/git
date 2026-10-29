@@ -2,6 +2,16 @@
 
 Use this file when another Locav prompt needs a shared workflow decision. It prevents the same policy from diverging across card-development, review, and handoff prompts.
 
+## Tool preference
+
+When more than one tool can do the same job, use this order (do not skip ahead to avoid a prompt):
+
+1. **MCP** — `olie-flow-ai` for card/board/forms; GitHub MCP for PR approve/merge/read when the prompt uses those tools.
+2. **`gh`** — GitHub CLI when MCP is the wrong tool or unavailable. **Exception:** pre-QA **creates** PRs with `gh` first (GitHub MCP App form deferral / weak assignee-label support); see `pre-qa.md`.
+3. **curl** — last resort for Olie management HTTP. Forum TipTap has no MCP tool: use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) instead of inline Bearer curl.
+
+Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:
@@ -26,7 +36,7 @@ The live label wins if it differs from the examples above. Resolve the numeric s
 
 ## Resolving funnel steps and funnel statuses (MCP first)
 
-Prefer MCP `olie-flow-ai` over management HTTP for **read** discovery. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
+Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
 
 1. **Card + current step** — `get-project-details-tool` (or search then details).
 2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` for badges such as 'Revisado'.
@@ -73,35 +83,22 @@ Do not start or end a project execution. Do not POST `project-executions` and do
 
 The card from MCP is not the whole spec. Before deciding what to implement, correct, or review, also read every thread on that project and the text of the **latest version** of each thread.
 
-`CARD_PROJECT_ID` is the project UUID from MCP (the same id used in `project_ids`). Never hard-code it. Never paste a Bearer token; use `${OLIE_MANAGEMENT_TOKEN}`. Do not copy browser headers (sentry, sec-ch-ua, cookies, socket id).
-
-1. Load the forum:
+`CARD_PROJECT_ID` is the project UUID from MCP (the same id used in `project_ids`). Never hard-code it. Never paste a Bearer token. Prefer the read-only helper (loads `environment.d`, no write endpoints) so Auto-review is less likely to prompt:
 
 ```bash
-curl -sS --url 'https://api.olie.ai/api/management/get-forum' \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
-  -H 'content-type: application/json' \
-  --data-raw '{"model_class":"App\\Models\\Project","model_id":"'"${CARD_PROJECT_ID}"'"}'
+GIT_ROOT="${GIT_ROOT:-$HOME/git}"
+"$GIT_ROOT/bin/workvm-olie-management-read.sh" get-forum "${CARD_PROJECT_ID}"
+"$GIT_ROOT/bin/workvm-olie-management-read.sh" get-thread "${FORUM_ID}" "${THREAD_ID}"
+"$GIT_ROOT/bin/workvm-olie-management-read.sh" get-thread-data "${FORUM_ID}" "${THREAD_ID}" "${VERSION_ID}"
 ```
 
+Do not copy browser headers (sentry, sec-ch-ua, cookies, socket id).
+
+1. Load the forum with `get-forum` (helper above).
 2. Take `forum.id` as `FORUM_ID`. Walk `forum.threads` and every nested `children` array. Collect each thread's `id` and `name`, including the default thread. Do not stop at `default_thread_id`.
-3. For each thread, load its versions:
-
-```bash
-curl -sS --url "https://api.olie.ai/api/management/get-thread/${FORUM_ID}/${THREAD_ID}" \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
-```
-
+3. For each thread, load its versions with `get-thread`.
 4. From `thread.versions`, choose the version with the latest `created_at`. That id is `VERSION_ID`. If `versions` is empty, note the thread name and continue with the others.
-5. Load that version. The body is a TipTap document. Read its text. That text is part of what the card asks for. Walk every node, including nested `content`. A node with `type` `image` and a non-empty `attrs.src` is an image: follow `locav-project-image-analysis` (thread images). `imageUpload` without `src` is an empty editor node; skip it. Do not store the query string of `src`; it is a signed URL and expires.
-
-```bash
-curl -sS --url "https://api.olie.ai/api/management/get-thread-data/${FORUM_ID}/${THREAD_ID}?version=${VERSION_ID}" \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
-```
+5. Load that version with `get-thread-data`. The body is a TipTap document. Read its text. That text is part of what the card asks for. Walk every node, including nested `content`. A node with `type` `image` and a non-empty `attrs.src` is an image: follow `locav-project-image-analysis` (thread images). `imageUpload` without `src` is an empty editor node; skip it. Do not store the query string of `src`; it is a signed URL and expires.
 
 On non-2xx or missing env: stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the forum call failed.
 
@@ -117,15 +114,7 @@ Locav does not store the git branch in the card. Build it. Use the same name in 
 
 Example: type `feature`, code `LCV-24`, name `adicionar Botão de login na tela de L.ogin!!!!!!` → `feature/lcv-24-add-a-login-button-to-the-login-screen`.
 
-Tags come with the project. MCP project details include `tags`. If they are missing, load the project:
-
-```bash
-curl -sS --url "https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}" \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}"
-```
-
-`CARD_PROJECT_ID` is the project UUID. Never hard-code it. Never paste a Bearer token. Do not copy browser headers.
+Tags come with the project. MCP `get-project-details-tool` includes `tags`. If they are missing, call that tool again (or `index-projects-tool` then details). Prefer MCP over management HTTP. Never hard-code the project UUID. Never paste a Bearer token.
 
 ## Running Cypress
 
@@ -186,28 +175,9 @@ Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the ca
 
 On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
-If the tools are still `needsAuth`, or the call returns 401, load the card over management HTTP. If `OLIE_MANAGEMENT_TOKEN` is empty, read `~/.config/environment.d/*.conf` into the shell without printing values, then retry:
+If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` only when MCP is down — prefer restoring MCP and `index-project-funnels-tool` for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
-```bash
-set -a
-for conf in "${HOME}/.config/environment.d/"*.conf; do
-  [ -f "$conf" ] || continue
-  . "$conf"
-done
-set +a
-```
-
-Search by card code (`name_code` contains the code). Take `projects[].id` for the matching code:
-
-```bash
-curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
-  -H 'content-type: application/json' \
-  --data-raw "{\"filters\":[{\"field\":\"name_code\",\"operator\":\"contains\",\"value\":\"${CARD_CODE}\",\"logical_operator\":\"and\"}]}"
-```
-
-Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. For the full step/status catalog when MCP is down, `GET /api/management/get-available-steps` (`funnels[].steps[]` and `funnels[].funnel_status[]`). Prefer restoring MCP and using `index-project-funnels-tool` instead of this HTTP path for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
+Forum thread bodies: **Reading the project forum** (helper, not inline curl).
 
 ## Chat commands (develop handoff)
 

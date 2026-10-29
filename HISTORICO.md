@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Auto-review: leitura Olie (token + curl) sem card de permissão
+
+- **problema:** o classificador Auto-review bloqueava `source ~/.config/environment.d` + `curl` Bearer mesmo em leituras (`get-forum`, threads, project GET); o agente pedia OK a cada card. Prompts Locav/Olie ainda mandavam curl inline para fórum e search.
+- **por que é um problema:** atrito no colleague review / fórum; ordem de ferramenta divergia entre produtos.
+- **resolvido como:** `.cursor/permissions.json` + helper só de fórum; **Tool preference** (MCP → `gh` → curl) em `televisao`/`locav`/`olie` `workflow-policy.md` e nota em `meta-repo.mdc`. Locav fórum passou ao helper. pre-QA cria PR com `gh` primeiro (exceção documentada).
+
 ## Catálogo de funil: MCP `index-project-funnels-tool`, não HTTP `get-available-steps`
 
 - **problema:** para resolver 'Revisado' / etapas ao vivo, o agente caía em `curl` + `get-available-steps` e o Auto-review pedia permissão numa leitura.

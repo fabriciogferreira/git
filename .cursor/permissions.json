@@ -1,0 +1,14 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "Allow the WorkVM helper ~/git/bin/workvm-olie-management-read.sh for read-only Olie forum calls only (get-forum, get-thread, get-thread-data).",
+      "Allow shell that only sources ~/.config/environment.d for tokens and then runs read-only curl against https://api.olie.ai/api/management/get-forum, get-thread, or get-thread-data.",
+      "Allow read-only MCP and GitHub MCP methods that fetch card, PR, diff, commit, check, or file contents without approving, merging, creating, updating, or deleting."
+    ],
+    "block_instructions": [
+      "Ask before create/update/delete on Olie: edit-project, move-project-to-funnel-step, set-form-answers, project-bulk-step-move, and any other management write.",
+      "Ask before GitHub writes: approve or request changes on PRs, merge_pull_request, create/update PR, push to remotes, force push.",
+      "Ask before git push, destructive git (reset --hard, clean -fd), and docker compose down -v / volume wipes."
+    ]
+  }
+}

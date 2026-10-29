@@ -2,6 +2,16 @@
 
 Use this file when another Olie prompt needs a shared workflow decision. It prevents the same policy from diverging across card-development, review, and handoff prompts.
 
+## Tool preference
+
+When more than one tool can do the same job, use this order (do not skip ahead to avoid a prompt):
+
+1. **MCP** — `olie-flow-ai` for card/board/forms; GitHub MCP for PR approve/merge/read when the prompt uses those tools.
+2. **`gh`** — GitHub CLI when MCP is the wrong tool or unavailable. **Exception:** pre-QA **creates** PRs with `gh` first (GitHub MCP App form deferral / weak assignee-label support); see `pre-qa.md`.
+3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`). Forum TipTap (when a prompt requires it) has no MCP tool: use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) instead of inline Bearer curl.
+
+Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:
@@ -24,7 +34,7 @@ The live label wins if it differs from the examples above. `changes-requested` m
 
 ## Resolving funnel steps and funnel statuses (MCP first)
 
-Prefer MCP `olie-flow-ai` over management HTTP for **read** discovery. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
+Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
 
 1. **Card + current step** — `get-project-details-tool` (or search then details).
 2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` when a badge id is required.
@@ -101,28 +111,9 @@ Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the ca
 
 On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
-If the tools are still `needsAuth`, or the call returns 401, load the card over management HTTP. If `OLIE_MANAGEMENT_TOKEN` is empty, read `~/.config/environment.d/*.conf` into the shell without printing values, then retry:
+If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` only when MCP is down — prefer restoring MCP and `index-project-funnels-tool` for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
-```bash
-set -a
-for conf in "${HOME}/.config/environment.d/"*.conf; do
-  [ -f "$conf" ] || continue
-  . "$conf"
-done
-set +a
-```
-
-Search by card code (`name_code` contains the code). Take `projects[].id` for the matching code:
-
-```bash
-curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
-  -H 'accept: application/json' \
-  -H "authorization: Bearer ${OLIE_MANAGEMENT_TOKEN}" \
-  -H 'content-type: application/json' \
-  --data-raw "{\"filters\":[{\"field\":\"name_code\",\"operator\":\"contains\",\"value\":\"${CARD_CODE}\",\"logical_operator\":\"and\"}]}"
-```
-
-Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. For the full step/status catalog when MCP is down, `GET /api/management/get-available-steps` (`funnels[].steps[]` and `funnels[].funnel_status[]`). Prefer restoring MCP and using `index-project-funnels-tool` (steps + `funnel_status`) instead of this HTTP path for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
+Forum TipTap (when required): `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`), not inline Bearer curl.
 
 ## Tokens
 

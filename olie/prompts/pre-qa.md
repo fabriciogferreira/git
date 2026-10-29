@@ -138,7 +138,7 @@ If commit or push fails, stop before Phase 4 product PRs when the meta-repo chan
 
 **Proceed only after all applicable checks in Phases 1–3 have passed.**
 
-**Create and configure every pull request with GitHub CLI (`gh`)**. Prefer `gh` over the GitHub MCP: MCP App form deferral blocks create/update, and the MCP tools do not reliably set assignees or labels. If `gh` is missing, unauthenticated, or errors, **stop and report** (prompt-health); do not silently switch to the browser UI. GitHub MCP is optional fallback only when `gh` cannot run and the user explicitly authorizes it.
+**Create and configure every pull request with GitHub CLI (`gh`)**. This is the documented exception to **Tool preference** (MCP → `gh` → curl) in `~/git/olie/prompts/workflow-policy.md`: pre-QA create uses `gh` first (MCP App form deferral blocks create/update; weak assignee/label support). If `gh` is missing, unauthenticated, or errors, **stop and report** (prompt-health); do not silently switch to the browser UI. GitHub MCP is optional fallback only when `gh` cannot run and the user explicitly authorizes it.
 
 Push the source branch first when needed so `gh` can open the PR against a remote head.
 

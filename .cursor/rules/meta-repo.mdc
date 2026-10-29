@@ -67,8 +67,11 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   (até 180s, sem log no stderr — senão o Cursor cancela) e só então encaminha
   o stdio. Playwright usa `bin/workvm-playwright-mcp.sh` (Chromium da imagem +
   `--no-sandbox`); `@latest` sozinho pede chrome-for-testing que a e2e não tem.
-- PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`), não o MCP GitHub. Auth: `gh auth login`
-  (sessão do usuário). Pacote instalado no `vm-setup.sh`.
+- Preferência de ferramenta nos prompts Olie/Locav/Televisão: **MCP → `gh` → curl**
+  (`workflow-policy` **Tool preference**). Fórum TipTap: `bin/workvm-olie-management-read.sh`.
+- PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`) primeiro (exceção ao MCP GitHub —
+  form deferral). Auth: `gh auth login` (sessão do usuário). Pacote no `vm-setup.sh`.
+  Approve/merge no colleague review: GitHub MCP; `gh` se MCP falhar.
 - Tokens em **`~/.config/environment.d/*.conf`** (diretório, não arquivo), `chmod 600`:
   `OLIE_FLOW_AI_MCP_TOKEN` (MCP Olie), `OLIE_MANAGEMENT_TOKEN` (HTTP `/api/management/...`).
   Ex.: `~/.config/environment.d/olie.conf`. Não use PAT no `environment.d` só para GitHub

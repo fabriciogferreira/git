@@ -10,3 +10,5 @@ Contexto do agente quando o workspace é `~/git`. Uma rule por assunto.
 | `rules/shell.mdc` | Script sem cabeçalho, ou host e guest no mesmo arquivo |
 | `rules/overlays.mdc` | Commit de secret, ou overlay aplicado no remoto da empresa |
 | `rules/meta-repo.mdc` | Não saber qual projeto está ativo, nem como o MCP e o patch dos clones entram na janela |
+
+`permissions.json` (neste diretório e cópia em `~/.cursor/`) orquestra o Auto-review: liberar leituras (MCP/GitHub read + helper de fórum); pedir OK em escrita (merge, approve, edit, push). Não define `terminalAllowlist` — isso substituiria a allowlist da UI.
