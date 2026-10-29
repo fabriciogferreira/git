@@ -4,9 +4,9 @@ Problema resolvido entra aqui.
 
 ## OpenCode na guest sem MCP GitHub
 
-- **problema:** `workvm-opencode.sh` só copiava `~/.cursor/mcp.json`; o GitHub no Cursor é plugin e não aparecia no OpenCode
-- **por que é um problema:** PRs/issues no agente local sumiam; o usuário tinha que colar o server à mão e o próximo run do script apagava
-- **resolvido como:** o script injeta `mcp.servers.github` remoto (`api.githubcopilot.com/mcp/`) com `Authorization: Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}` e `oauth: false`; avisa se o env estiver vazio
+- **problema:** `workvm-opencode.sh` só copiava `~/.cursor/mcp.json`; o GitHub no Cursor é plugin e não aparecia no OpenCode. Com `{env:GITHUB_PERSONAL_ACCESS_TOKEN}`, o OpenCode substituía var ausente por `""` e o remote respondia `400 Authorization header is badly formatted`
+- **por que é um problema:** PRs/issues no agente local sumiam; o 400 parecia falha do MCP; o próximo run do script apagava config manual
+- **resolvido como:** o script grava o PAT em `~/.config/opencode/github-pat` (`gh auth token` ou o env) e injeta `mcp.servers.github` com `Authorization: Bearer {file:github-pat}` e `oauth: false`
 
 ## project-setup usava meta-repo velho (MCP Boost atrás do remoto)
 
