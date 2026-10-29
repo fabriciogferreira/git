@@ -37,7 +37,8 @@ For each colleague card in 'QA/CR', run the colleague review flow:
 1. Start the review on the card's pull requests.
 2. Run `~/git/olie/prompts/colleague-review.md`.
 3. If the review has comments about what should be fixed, update the card content with them (the card goes to 'corrigir' ou melhorar).
-4. Run `~/git/olie/prompts/mutation-testing.md` (personal, only if the change set touched `api-main`). Skip when there is no backend change. If the mutation run has comments about what should be fixed, update the card content with them.
+4. Run `~/git/olie/prompts/test-gap-analysis.md` (only if the change set touched `api-main`). Skip when there is no backend change. Write missing use cases into the card when reported.
+5. Run `~/git/olie/prompts/mutation-testing.md` (personal, only if the change set touched `api-main`). Skip when there is no backend change. If the mutation run has comments about what should be fixed, update the card content with them.
 
 Outcome: if all the card's pull requests were approved by the prompts, move the card to 'Validação'. If not all passed, move the card to 'Corrigir'.
 
@@ -65,8 +66,9 @@ Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Mutation testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/mutation-testing.md`. One changed test file per turn; continue with **`next mutation`** until the ledger covers the change set. Skip when the change set has no backend. Not a team gate; the user may explicitly stop/skip it — otherwise do not open pre-QA while files remain.
-3. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) after implementation-validation passes, and after the mutation stack is complete when that step applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
+2. **Test gap analysis** (only if the card changed `api-main`) — `~/git/olie/prompts/test-gap-analysis.md`. Skip when there is no backend.
+3. **Mutation testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/mutation-testing.md`. One changed test file per turn; continue with **`next mutation`** until the ledger covers the change set. Skip when the change set has no backend. Not a team gate; the user may explicitly stop/skip it — otherwise do not open pre-QA while files remain.
+4. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) after implementation-validation passes, and after gap analysis + mutation when those steps applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
 
 Colleague 'QA/CR' uses `~/git/olie/prompts/colleague-review.md`.
 

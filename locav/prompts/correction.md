@@ -198,4 +198,4 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
-When the full correction on this paste is done, the next paste is `~/git/locav/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/locav/prompts/pre-qa.md` or board `~/git/locav/prompts/validation.md` yet — those come after implementation-validation (and mutation-testing when `LocavApi` changed).
+When the full correction on this paste is done, the next paste is `~/git/locav/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/locav/prompts/pre-qa.md` or board `~/git/locav/prompts/validation.md` yet — those come after implementation-validation (then `test-gap-analysis.md` when `LocavApi` and/or `locav-front` changed, and `mutation-testing.md` when `LocavApi` changed).

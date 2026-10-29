@@ -71,7 +71,7 @@ For a colleague card in 'QA/CR', the colleague review closes in two paths:
 1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
 2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, move the card to the live funnel step 'Validação'.
 
-After the colleague review, if the change set touched the backend (`api-main`), recommend the personal `mutation-testing.md` before the tech lead pass.
+After the colleague review, if the change set touched the backend (`api-main`), recommend `test-gap-analysis.md` then the personal `mutation-testing.md` before the tech lead pass.
 
 ## Project execution
 

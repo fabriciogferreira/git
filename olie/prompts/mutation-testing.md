@@ -1,6 +1,6 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/olie/prompts/implementation-validation.md` passes **and** the card changed `~/git/olie/api-main`. Skip entirely when the change set has no backend.
+Use this **after** `~/git/olie/prompts/test-gap-analysis.md` (which follows implementation-validation or colleague-review when backend changed) **and** the card changed `~/git/olie/api-main`. Skip entirely when the change set has no backend.
 
 **Stack gate:** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pre-qa.md`.
 

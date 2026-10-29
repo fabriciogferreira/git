@@ -1,6 +1,6 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/locav/prompts/implementation-validation.md` passes **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
+Use this **after** `~/git/locav/prompts/test-gap-analysis.md` (which follows implementation-validation or colleague-review when backend/front apply) **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 

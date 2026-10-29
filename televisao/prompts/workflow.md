@@ -35,12 +35,13 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/televisao/
 For each colleague card in 'QA/CR', run the colleague review flow:
 
 1. Start the review on the card's pull requests.
-2. Run `~/git/televisao/prompts/colleague-review.md`. If it has comments about what should be fixed, update the card content with them. Keep the card in 'QA/CR' when mutation still applies.
-3. Run `~/git/televisao/prompts/mutation-testing.md` (personal, only if the card changed `televisao-api`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
-4. Only then apply the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
+2. Run `~/git/televisao/prompts/colleague-review.md`. If it has comments about what should be fixed, update the card content with them. Keep the card in 'QA/CR' when gap analysis or mutation still applies.
+3. Run `~/git/televisao/prompts/test-gap-analysis.md` (only if the card changed `televisao-api`). Skip when there is no backend. Write missing use cases into the card content when reported.
+4. Run `~/git/televisao/prompts/mutation-testing.md` (personal, only if the card changed `televisao-api`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
+5. Only then apply the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
 
-- Move to 'Corrigir' only after both applicable gates finished **and** at least one failed.
-- Full pass (colleague passed; mutation skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
+- Move to 'Corrigir' only after all applicable gates finished **and** at least one failed.
+- Full pass (colleague passed; gap analysis skipped or clean; mutation skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
 
 ## 2. Production review
 
@@ -62,8 +63,9 @@ After implementation (or correction) on the card:
 
 1. **Related improvements** — `~/git/televisao/prompts/recommendation.md` (analysis only; do not implement suggestions in that paste).
 2. **Implementation validation** — `~/git/televisao/prompts/implementation-validation.md` (code only; no PRs/forms/commits required). Run it after the recommendation paste.
-3. **Mutation testing** (personal, only if the card changed `televisao-api`) — `~/git/televisao/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
-4. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) after implementation-validation passes, and after mutation-testing when that step applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
+3. **Test gap analysis** (only if the card changed `televisao-api`) — `~/git/televisao/prompts/test-gap-analysis.md`. Skip when there is no backend. Analysis only; write missing use cases into the card when found.
+4. **Mutation testing** (personal, only if the card changed `televisao-api`) — `~/git/televisao/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
+5. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) after implementation-validation passes, and after test-gap-analysis + mutation-testing when those steps applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
 
 Colleague 'QA/CR' uses `~/git/televisao/prompts/colleague-review.md`.
 

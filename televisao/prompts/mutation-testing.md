@@ -4,8 +4,8 @@ Use this when the card changed `~/git/televisao/televisao-api`. Skip entirely wh
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `~/git/televisao/prompts/implementation-validation.md` passes. When this stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it).
-2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/colleague-review.md` in the same workday stack. Leave the card in 'QA/CR' until this stack finishes. Then apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`: move to 'Corrigir' only if the colleague review failed **or** this mutation run reported fixes for the author; approve / merge / 'Revisado' only if both passed. Do not move to 'Corrigir' before this stack when mutation applies.
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/test-gap-analysis.md` (which follows implementation-validation when backend changed). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it).
+2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/test-gap-analysis.md` (which follows colleague-review when backend changed). Leave the card in 'QA/CR' until this stack finishes. Then apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** this mutation run reported fixes for the author; approve / merge / 'Revisado' only if colleague passed, gap analysis was clean (or skipped), and mutation passed or was skipped. Do not move to 'Corrigir' before this stack when mutation applies.
 
 Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
 
@@ -104,5 +104,5 @@ After the row is written, report the file, whether it was converted from PHPUnit
 
 When **none** remain:
 
-- **Develop handoff** (came from implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste.
-- **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`). If mutation reported fixes, write them into the card content before the move.
+- **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste.
+- **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`), including any gaps already written by `test-gap-analysis.md`. If mutation reported fixes, write them into the card content before the move.

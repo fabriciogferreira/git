@@ -70,16 +70,19 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 ## Colleague review outcome
 
-For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **both** gates that apply have finished:
+For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **every** gate that applies has finished:
 
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
-2. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `televisao-api` (backend only). Skip when there is no backend. Write missing use cases into the card content when that run reports them.
+3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-**Do not move to 'Corrigir' after only the colleague paste** when mutation still applies. Leave the card in 'QA/CR', recommend `mutation-testing.md` as the next paste, and finish that stack first (or the user explicitly skips it).
+Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
 
-**Move to 'Corrigir'** only after both applicable gates finished **and** at least one failed (colleague fail and/or mutation reported fixes for the author).
+**Do not move to 'Corrigir' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md`, and finish that stack first (or the user explicitly skips it).
 
-**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** mutation either was skipped (no backend) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status` `{ project_funnel_id, funnel_status_id }`. Never hard-code the status id. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
+**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status` `{ project_funnel_id, funnel_status_id }`. Never hard-code the status id. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
 
 ## Project execution
 

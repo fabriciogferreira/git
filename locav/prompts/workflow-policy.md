@@ -73,7 +73,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the colleague review
 1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
 2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado': resolve with MCP `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works.
 
-After the colleague review, if the change set touched the backend (`LocavApi`), recommend the personal `mutation-testing.md` before the tech lead pass.
+After the colleague review, if the change set touched `LocavApi` and/or `locav-front`, recommend `test-gap-analysis.md` (backend + frontend gaps). If `LocavApi` also changed, follow with the personal `mutation-testing.md` before the tech lead pass.
 
 ## Project execution
 

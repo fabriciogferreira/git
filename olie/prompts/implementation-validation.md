@@ -4,7 +4,7 @@ Use this **after** `~/git/olie/prompts/implementation.md` (or a correction that 
 
 **Next paste after a pass** depends on whether the card changed the backend (`~/git/olie/api-main`):
 
-1. Backend touched → `~/git/olie/prompts/mutation-testing.md`. Finish that stack (`next mutation` per remaining test file until the ledger is complete) before `~/git/olie/prompts/pre-qa.md`. Do not skip to pre-QA via `next prompt` while mutation files remain.
+1. Backend touched → `~/git/olie/prompts/test-gap-analysis.md`, then `mutation-testing.md`. Finish the mutation stack (`next mutation` per remaining test file until the ledger is complete) before `~/git/olie/prompts/pre-qa.md`. Do not skip to pre-QA via `next prompt` while mutation files remain.
 2. Backend not touched → `~/git/olie/prompts/pre-qa.md` (same as before).
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
@@ -15,7 +15,7 @@ Same phrases as in `~/git/olie/prompts/workflow-policy.md` (**Chat commands**) a
 
 | Command | Do this |
 | --- | --- |
-| `next prompt` | After **Ready for handoff**, run the next recommended file (`mutation-testing.md` or `pre-qa.md`) without waiting for a paste. Once mutation-testing has started, use `next mutation` for remaining test files; do not use `next prompt` to open `pre-qa.md` until that stack is complete. |
+| `next prompt` | After **Ready for handoff**, run the next recommended file (`test-gap-analysis.md`, `mutation-testing.md`, or `pre-qa.md`) without waiting for a paste. Once mutation-testing has started, use `next mutation` for remaining test files; do not use `next prompt` to open `pre-qa.md` until that stack is complete. |
 | `try again` | Re-run **this** validation pass (e.g. after a manual env fix or after `to correct`). |
 | `to correct` | Leave validation mode: implement every **Needs code fixes** item from this pass’s report, then stop and recommend `try again` (re-run this validation). Do not implement fixes during the scoring pass itself unless the user already sent `to correct`. |
 
@@ -96,7 +96,7 @@ Only two outcomes. Always justify item by item. Never answer with a bare pass or
 **Ready for handoff**  
 All five criteria passed and no reviewer raised a blocker. Decide the next paste from the **local** branches/working trees already reviewed in §3:
 
-- **Backend changed** — any added/modified path under `~/git/olie/api-main` (including `app/`, `tests/`, migrations, etc.): next paste is `~/git/olie/prompts/mutation-testing.md`. Say to continue with **`next mutation`** until every changed test file is in the ledger; only then is `~/git/olie/prompts/pre-qa.md` the next paste (`next prompt`). Do not run pre-QA in this same paste.
+- **Backend changed** — any added/modified path under `~/git/olie/api-main` (including `app/`, `tests/`, migrations, etc.): next paste is `~/git/olie/prompts/test-gap-analysis.md`, then `mutation-testing.md`. Say to continue with **`next mutation`** until every changed test file is in the ledger; only then is `~/git/olie/prompts/pre-qa.md` the next paste (`next prompt`). Do not run pre-QA in this same paste.
 - **Backend not changed** — no `api-main` paths in the card's local change set: next paste is `~/git/olie/prompts/pre-qa.md` directly.
 
 State which branch you took and why (list whether `api-main` appears in the reviewed diffs).
@@ -106,4 +106,4 @@ List every failure: which criterion, which reviewer, and where in the code — s
 
 ## Done when
 
-The report names card `{{ code }}`, the local branches/diffs reviewed, which optional reviewers ran and why, the result for each of the five criteria, the merged findings, and either Ready for handoff (with the next paste: mutation-testing then pre-QA, or pre-QA only) or Needs code fixes with actionable locations. Checks that did not run are named with the reason.
+The report names card `{{ code }}`, the local branches/diffs reviewed, which optional reviewers ran and why, the result for each of the five criteria, the merged findings, and either Ready for handoff (with the next paste: test-gap-analysis then mutation-testing then pre-QA, or pre-QA only) or Needs code fixes with actionable locations. Checks that did not run are named with the reason.

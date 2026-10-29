@@ -100,10 +100,10 @@ Follow **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.
 
 1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (the author later fixes via `~/git/televisao/prompts/correction.md`). Do **not** approve or merge PRs on a fail.
 
-2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. Recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste (`next prompt`). Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that mutation stack finishes (or the user explicitly skips it).
+2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. Recommend `~/git/televisao/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md`. Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that stack finishes (or the user explicitly skips it).
 
-3. **No backend (mutation skipped)** — Apply the funnel move now:
+3. **No backend (gap analysis + mutation skipped)** — Apply the funnel move now:
    - Fail → live step 'Corrigir'.
    - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`); set funnel status 'Revisado' via MCP: `index-project-funnels-tool` (match the board funnel, then `funnel_status[]` by name) → `edit-project-tool` with `funnel_status` (`project_funnel_id`, `funnel_status_id`). Never hard-code the status id. Do not use HTTP `get-available-steps` for this when MCP works. If there is no 'Revisado' status, use the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
 
-4. **After mutation (same card)** — When mutation finishes in a later paste, that prompt applies the combined rule: move to 'Corrigir' only if the colleague review failed **or** mutation reported fixes to write; approve / merge / 'Revisado' only if both passed.
+4. **After gap analysis + mutation (same card)** — When that stack finishes in a later paste, apply the combined rule: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** mutation reported fixes to write; approve / merge / 'Revisado' only if colleague passed, gaps were clean/skipped, and mutation passed or was skipped.

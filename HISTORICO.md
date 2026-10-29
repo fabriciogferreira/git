@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Prompt `test-gap-analysis` antes da mutation (Olie / Locav / Televisão)
+
+- **problema:** mutation endurecia testes existentes, mas gaps de requisito do card (casos de uso sem teste) só apareciam por acaso; Locav ainda tinha front sem passo de análise.
+- **por que é um problema:** regressões do card passavam no mutate se ninguém escreveu o cenário; o autor não recebia lista clara do que faltava cobrir.
+- **resolvido como:** `test-gap-analysis.md` nos três produtos, **antes** de `mutation-testing.md`. Televisão/Olie: só backend. Locav: backend + frontend (Cypress). Encadeado em workflow, colleague-review, implementation-validation e READMEs; gaps vão para o conteúdo do card e contam no outcome de QA/CR.
+
 ## Auto-review: leitura Olie (token + curl) sem card de permissão
 
 - **problema:** o classificador Auto-review bloqueava `source ~/.config/environment.d` + `curl` Bearer mesmo em leituras (`get-forum`, threads, project GET); o agente pedia OK a cada card. Prompts Locav/Olie ainda mandavam curl inline para fórum e search.
