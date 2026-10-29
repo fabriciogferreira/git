@@ -174,13 +174,13 @@ When a prompt finishes and names a next paste, remember that path so `next promp
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop.
+If a request, **MCP call** (any configured server), shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop the prompt**. Do not silently work around it, swap tools to hide the break, or keep going. **Ask the user to fix the broken tool** (MCP auth/token, proxy, Docker, env, etc.) and wait before continuing. `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is the **MCP auth** case above, not this stop — do not ask the user to sign in again for that case only.
 
 Report:
 
 1. What you were doing
 2. The objective error (status, short message) or that it hung past a reasonable wait
 3. The most likely cause
-4. That this likely means **this prompt (or its assumptions) needs to be updated**
+4. That the user should fix the tooling, **or** that this prompt (or its assumptions) may need updating if the failure looks like a bad prompt instruction
 
 Then wait for the user. Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.
