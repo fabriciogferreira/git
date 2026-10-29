@@ -38,7 +38,7 @@ Work only in `~/git/televisao/televisao-api`.
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger. Skip a file that is a trait or helper and not a test case.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
 4. If none remain, say the change-set stack is complete, recommend `~/git/televisao/prompts/pre-qa.md` as the next paste, and stop.
-5. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /var/www/html televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/` or any other file. If Drift is missing, stop and report. Do not install it. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
+5. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /srv televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/` or any other file. If Drift is missing, stop and report. Do not install it. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
 6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
 7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 8. Prepare, mutate those classes, close the file using the scoring rules below. Stop. Do not start the next test file in this paste.
@@ -47,7 +47,7 @@ If the change set has test files but **no** `app/` PHP changes, stop and say the
 
 ## Prepare
 
-All PHP runs as `docker exec -w /var/www/html televisao-backend <command>`. Do not run `php` on the host.
+All PHP runs as `docker exec -w /srv televisao-backend <command>`. Do not run `php` on the host.
 
 - If `vendor/bin/pest` is missing inside the container, run `composer install` once. If it is still missing, stop. Do not install Pest.
 
@@ -56,7 +56,7 @@ All PHP runs as `docker exec -w /var/www/html televisao-backend <command>`. Do n
 
 Run the chosen file with the normal suite first:
 
-`docker exec -w /var/www/html televisao-backend php artisan test --compact <test-path>`
+`docker exec -w /srv televisao-backend php artisan test --compact <test-path>`
 
 If that fails, stop. Do not mutate a red file.
 
@@ -67,7 +67,7 @@ Pass changed production FQCNs via `--class=...`. Prefer **one `--class` per muta
 Example (escape `\` for the shell):
 
 ```bash
-docker exec -w /var/www/html televisao-backend vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
+docker exec -w /srv televisao-backend vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
   --class=App\\Services\\Example\\ExampleAction \
   <test-path>
 ```

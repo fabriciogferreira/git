@@ -9,7 +9,7 @@
                 "boost:mcp"
             ],
             "env": {
-                "WORKVM_DOCKER_MCP_WORKDIR": "/var/www/html"
+                "WORKVM_DOCKER_MCP_WORKDIR": "/srv"
             }
         }
     }

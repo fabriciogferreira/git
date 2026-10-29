@@ -588,6 +588,16 @@ def wrap_docker_mcp(cfg: dict, docker_wrapper: str, playwright_wrapper: str) -> 
         out = dict(cfg)
         out["command"] = playwright_wrapper
         return out
+    # televisao-api mounts at /srv (not Laravel's /var/www/html). Company
+    # mcp.json has no -w; overlay env is lost when stub restore reloads git.
+    def with_televisao_workdir(out: dict, container: str) -> dict:
+        if container != "televisao-backend":
+            return out
+        env = dict(out["env"]) if isinstance(out.get("env"), dict) else {}
+        env.setdefault("WORKVM_DOCKER_MCP_WORKDIR", "/srv")
+        out["env"] = env
+        return out
+
     if isinstance(cmd, str) and cmd.endswith("workvm-docker-mcp.sh"):
         # docker-mcp + npx @playwright/mcp → dedicated playwright wrapper
         if len(args) >= 2 and any("playwright/mcp" in str(a) for a in args):
@@ -597,7 +607,8 @@ def wrap_docker_mcp(cfg: dict, docker_wrapper: str, playwright_wrapper: str) -> 
             return out
         out = dict(cfg)
         out["command"] = docker_wrapper
-        return out
+        container = args[0] if args else ""
+        return with_televisao_workdir(out, container if isinstance(container, str) else "")
     if cmd != "docker":
         return cfg
     a = list(args)
@@ -632,7 +643,7 @@ def wrap_docker_mcp(cfg: dict, docker_wrapper: str, playwright_wrapper: str) -> 
         return out
     out["command"] = docker_wrapper
     out["args"] = [container, *rest]
-    return out
+    return with_televisao_workdir(out, container)
 
 dest = Path(sys.argv[1])
 used_file = Path(sys.argv[2])

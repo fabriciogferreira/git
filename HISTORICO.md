@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Televisão: workdir do backend é `/srv`, não `/var/www/html`
+
+- **problema:** prompts e o MCP Boost da Televisão usavam `docker exec -w /var/www/html televisao-backend`; nesse container `/var/www/html` está vazio e o app monta em `/srv`. No merge MCP, o restore do stub ainda trazia o `mcp.json` do git da empresa (sem `-w`/env) e apagava o env do overlay.
+- **por que é um problema:** mutation-testing (e qualquer passo PHP do prompt) falhava ao achar `vendor/bin/pest`/composer; o Boost no Cursor também rodava no workdir errado.
+- **resolvido como:** prompts `televisao/prompts/{project,mutation-testing,implementation,correction,pre-qa}.md` e overlay `televisao-api/cursor/mcp.json` usam `/srv`; `workvm_apply_mcp` / `wrap_docker_mcp` faz `setdefault` de `WORKVM_DOCKER_MCP_WORKDIR=/srv` quando o container é `televisao-backend`.
+
 ## Colleague review: e2e do revisor só na Televisão (e Olie)
 
 - **problema:** `televisao` `colleague-review.md` reprovava o card se a branch do autor não tinha Playwright; o revisor não criava os specs. Locav chegou a ser alinhado por engano ao mesmo modelo.

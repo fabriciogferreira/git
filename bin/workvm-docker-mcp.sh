@@ -48,7 +48,7 @@ while true; do
     sleep 1
 done
 
-# Optional workdir (e.g. televisao-backend → /var/www/html). Must precede the
+# Optional workdir (e.g. televisao-backend → /srv). Must precede the
 # container name on `docker exec`; keep it out of MCP args so the command stays clean.
 workdir_args=()
 if [ -n "${WORKVM_DOCKER_MCP_WORKDIR:-}" ]; then
