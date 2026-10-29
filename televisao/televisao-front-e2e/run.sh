@@ -30,10 +30,23 @@ if [[ -z "${E2E_CHECKOUT_CONSULTATION_ID:-}" ]] || [[ "${E2E_SEED_CHECKOUT:-1}" 
     echo "  consultation: ${E2E_CHECKOUT_CONSULTATION_ID}"
 fi
 
+# TV-201 join window: inside (now+5min) and outside (now+20min) for doctor1.
+if [[ -z "${E2E_JOIN_MEETING_INSIDE_ID:-}" ]] || [[ -z "${E2E_JOIN_MEETING_OUTSIDE_ID:-}" ]] || [[ "${E2E_SEED_JOIN_MEETING:-1}" == "1" ]]; then
+    echo "→ seeding join-window consultations for TV-201 E2E"
+    join_seed="$(./scripts/seed-join-meeting-window.sh)"
+    E2E_JOIN_MEETING_INSIDE_ID="${join_seed%% *}"
+    E2E_JOIN_MEETING_OUTSIDE_ID="${join_seed##* }"
+    export E2E_JOIN_MEETING_INSIDE_ID E2E_JOIN_MEETING_OUTSIDE_ID
+    echo "  inside: ${E2E_JOIN_MEETING_INSIDE_ID}"
+    echo "  outside: ${E2E_JOIN_MEETING_OUTSIDE_ID}"
+fi
+
 docker compose up -d --build
 docker compose exec -T -u pwuser \
     -e TZ=America/Sao_Paulo \
     -e E2E_CHECKOUT_CONSULTATION_ID \
+    -e E2E_JOIN_MEETING_INSIDE_ID \
+    -e E2E_JOIN_MEETING_OUTSIDE_ID \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
     -e E2E_WORKERS="${E2E_WORKERS:-1}" \

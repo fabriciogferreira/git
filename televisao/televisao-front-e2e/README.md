@@ -25,9 +25,17 @@ TV-205 checkout:
   consultation (`returnTo=checkout`) → create receita → conclude → reopen
 - `tests/tv-205-checkout.smoke.spec.ts` — lighter UI/contrast smoke
 
+TV-201 join meeting window:
+
+- `tests/tv-201-join-meeting.spec.ts` — button visible + meeting-token at the
+  five-minute boundary; hidden before the window; light/dark contrast
+
 `./run.sh` seeds a fresh ended consultation for `doctor1@doctor.test` via
 `scripts/seed-ended-consultation.sh` (override with `E2E_CHECKOUT_CONSULTATION_ID`,
-disable reseed with `E2E_SEED_CHECKOUT=0`).
+disable reseed with `E2E_SEED_CHECKOUT=0`), and TV-201 inside/outside join
+consultations via `scripts/seed-join-meeting-window.sh`
+(`E2E_JOIN_MEETING_INSIDE_ID` / `E2E_JOIN_MEETING_OUTSIDE_ID`,
+`E2E_SEED_JOIN_MEETING=0` to keep existing ids).
 
 Signing with Autentique is out of scope for local E2E (external provider).
 
