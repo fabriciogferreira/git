@@ -33,13 +33,20 @@ Before deciding pass or fail, **review the card's media**. Do not judge from tex
 3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
 4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
 5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks).
+6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks). You may also commit e2e changes as already allowed in §3.
 
 ## 3. What you may change
 
 Do not edit product repositories. That includes `televisao-api`, `televisao-front`, `televisao-meet-front`, and `televisao-meet-core`.
 
-Playwright lives in the meta-repo (`televisao-front-e2e`, `televisao-meet-front-e2e`). During this review, do **not** commit to product repos or add the missing specs yourself. If frontend coverage is missing, report the gap.
+You may change only the meta-repo Playwright suites. Those trees are not part of the company remotes and are not cloned for other developers' WorkVMs:
+
+- `~/git/televisao/televisao-front-e2e` when the author changed `televisao-front`
+- `~/git/televisao/televisao-meet-front-e2e` when the author changed `televisao-meet-front`
+
+If the author changed that front, **add** end-to-end tests there for the frontend behavior the card requested. If those tests already exist and a requested point is uncovered, add the missing tests. Do not rewrite tests that already cover the card. Do **not** fail the review because the author's company branch lacks e2e — they cannot push those suites.
+
+For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
@@ -61,14 +68,15 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 - The behavior matches the card, including the edge cases the card states.
 - The pull request contains that behavior and does not smuggle unrelated changes.
 - Light and dark theme text contrast both hold on the screens the card changes.
-If `televisao-front` or `televisao-meet-front` changed, the matching meta-repo Playwright suite must create or edit a spec for the requested frontend behavior. Missing coverage is a failed review, unless you state which case could not be automated and why. Do not add the specs yourself.
+
+If `televisao-front` or `televisao-meet-front` changed, the e2e tests in section 3 cover the requested frontend behavior, or you say which case could not be automated and why.
 
 If `televisao-api` tests were added or edited and Pest is installed, those files use that Pest. A new PHPUnit test class, or a PHPUnit file the card edited and left as PHPUnit while Pest is installed, is a failed review. Untouched PHPUnit files are not a defect. Do not convert them yourself. If Pest is not installed, do not fail the review for PHPUnit tests.
 
 ## 6. Out of scope
 
 - Do not fix the author's code.
-- The outcome moves the card: a failed review moves it to the live funnel step 'Corrigir'; a passed review marks the card's pull requests as approved, merges them when all passed, and changes the card status in the funnel to 'Revisado'. Report the result; the user (or a later workday paste) decides the next stage beyond that.
+- Do **not** move the card to 'Corrigir' or 'Revisado' in this paste when the change set touched `televisao-api` — finish mutation first (see **Outcome** and **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`).
 - Do not treat a local-only success as the production check. That check is 'Revisão de produção'.
 - Do not search for related improvements in this pass. This is a review only.
 
@@ -78,22 +86,24 @@ If `televisao-api` tests were added or edited and Pest is installed, those files
 - Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.
-- Pull request outcome: which PRs were approved, which were merged, and which were not approved (when a PR failed or had comments).
+- Pull request outcome deferred when backend mutation is still required (see Outcome); otherwise which PRs were approved, merged, or not approved.
 - Contrast result for light and dark themes.
-- If `televisao-front` or `televisao-meet-front` changed, whether the matching Playwright suite created or edited a spec for that behavior, or which case could not be automated and why.
+- E2E tests added or extended in the meta-repo suite, and the 'main' commit if one was pushed — or which case could not be automated and why.
 - If `televisao-api` tests changed and Pest is installed, whether new or edited files use that Pest, or which edited file is still PHPUnit.
 - Checks that did not run, and why.
 
-A failed requirement is a failed review. Do not call the card ready for 'Validação' while one remains open.
+A failed requirement is a failed colleague review. Do not call the card ready for 'Validação' while one remains open.
 
 ## 8. Outcome
 
-Close the review with **one of two paths**. Do not invent a third.
+Follow **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`. Do not invent a third path.
 
-1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (the author then fixes via `~/git/televisao/prompts/correction.md`). Keep the card in the live funnel step 'Corrigir'.
+1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (the author later fixes via `~/git/televisao/prompts/correction.md`). Do **not** approve or merge PRs on a fail.
 
-2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, mark the card as 'request changes'. If all the card's PRs were approved, merge all of them (`merge_pull_request`).
+2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. Recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste (`next prompt`). Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that mutation stack finishes (or the user explicitly skips it).
 
-3. **Backend follow-up** — If the change set touched the backend (`~/git/televisao/televisao-api`), after this review recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). If the mutation run reports fixes, write them into the card content and loop the colleague review after the author fixes.
+3. **No backend (mutation skipped)** — Apply the funnel move now:
+   - Fail → live step 'Corrigir'.
+   - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`); set funnel status 'Revisado' (resolve by display name via OlieFlowAi / `edit-project-tool` with `funnel_status`; never hard-code the status id). If there is no 'Revisado' status, use the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
 
-4. **Funnel status** — When the outcome is approval, change the card status in the funnel to 'Revisado' (resolve the live funnel status by display name via OlieFlowAi and update it with `edit-project-tool` with `funnel_status`; never hard-code the status id). If the live funnel has no 'Revisado' status, move the card to the live step that carries the outcome with the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
+4. **After mutation (same card)** — When mutation finishes in a later paste, that prompt applies the combined rule: move to 'Corrigir' only if the colleague review failed **or** mutation reported fixes to write; approve / merge / 'Revisado' only if both passed.

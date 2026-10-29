@@ -1,6 +1,13 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/televisao/prompts/implementation-validation.md` passes **and** the card changed `~/git/televisao/televisao-api`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
+Use this when the card changed `~/git/televisao/televisao-api`. Skip entirely when the change set has no backend.
+
+Two entry points:
+
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/implementation-validation.md` passes. When this stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it).
+2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/colleague-review.md` in the same workday stack. Leave the card in 'QA/CR' until this stack finishes. Then apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`: move to 'Corrigir' only if the colleague review failed **or** this mutation run reported fixes for the author; approve / merge / 'Revisado' only if both passed. Do not move to 'Corrigir' before this stack when mutation applies.
+
+Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
@@ -93,4 +100,9 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 
 - If you added temporary `covers()` / `mutates()`, remove them before writing the ledger row.
 
-After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger. If none remain after this row, recommend `~/git/televisao/prompts/pre-qa.md` as the next paste; otherwise say to paste this prompt again for the next changed test file.
+After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger. If changed test files remain, say to paste this prompt again (or `next mutation`) for the next file.
+
+When **none** remain:
+
+- **Develop handoff** (came from implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste.
+- **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`). If mutation reported fixes, write them into the card content before the move.

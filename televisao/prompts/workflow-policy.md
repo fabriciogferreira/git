@@ -49,12 +49,16 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 ## Colleague review outcome
 
-For a colleague card in 'QA/CR' (logical `quality-review`), the colleague review closes in two paths:
+For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **both** gates that apply have finished:
 
-1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
-2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado' (resolve the live status by display name; never hard-code the id).
+1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+2. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-After the colleague review, if the change set touched the backend (`televisao-api`), recommend the personal `mutation-testing.md` before the tech lead pass.
+**Do not move to 'Corrigir' after only the colleague paste** when mutation still applies. Leave the card in 'QA/CR', recommend `mutation-testing.md` as the next paste, and finish that stack first (or the user explicitly skips it).
+
+**Move to 'Corrigir'** only after both applicable gates finished **and** at least one failed (colleague fail and/or mutation reported fixes for the author).
+
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado' — resolve by display name; never hard-code the id): only when the colleague review passed **and** mutation either was skipped (no backend) or finished without fixes to send back.
 
 ## Project execution
 

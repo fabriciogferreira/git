@@ -39,7 +39,7 @@ Before deciding pass or fail, **review the card's media**. Do not judge from tex
 
 Do not edit product repositories. That includes `LocavApi` and `locav-front`.
 
-Cypress lives inside `locav-front` (a company remote). During this review, do **not** commit to product repos. If frontend coverage is missing, report the gap; do not open a PR on their behalf.
+Cypress lives inside `locav-front` (`cypress/e2e`) on the company remote. The **author** must create or edit those specs on their card branch. During this review, do **not** add or change Cypress (or any other product files) yourself. If frontend coverage is missing, that is a failed review — report the gap; do not open a PR on their behalf.
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
@@ -61,6 +61,7 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 - The behavior matches the card, including the edge cases the card states.
 - The pull request contains that behavior and does not smuggle unrelated changes.
 - Light and dark theme text contrast both hold on the screens the card changes.
+
 If `locav-front` changed, the author's branch must create or edit Cypress specs under `cypress/e2e` for the requested frontend behavior. Missing coverage is a failed review, unless you state which case could not be automated and why. Do not add the specs yourself; they belong on that branch.
 
 If `LocavApi` tests were added or edited, those files are Pest 4. A new PHPUnit test class, or a PHPUnit file the card edited and left as PHPUnit, is a failed review. Untouched PHPUnit files are not a defect. Do not convert them yourself.

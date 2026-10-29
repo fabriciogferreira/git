@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não Iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em andamento' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. On pass: PRs approved/merged and the card status becomes 'Revisado'; on fail: card to 'Corrigir'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Run colleague review, then mutation when the backend changed. Move to 'Corrigir' only after both applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
 | `changes-requested` (normally 'Corrigir') | The person who owns the card | The review failed. Fix it. |
 | 'Validação' | Tech lead | Approve or send it back. Use `~/git/televisao/prompts/validation.md`. |
 | 'Revisão de produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'Concluído' (pass) or 'Corrigir' (fail). |
@@ -35,16 +35,12 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/televisao/
 For each colleague card in 'QA/CR', run the colleague review flow:
 
 1. Start the review on the card's pull requests.
-2. Run `~/git/televisao/prompts/colleague-review.md`.
-3. If the review has comments about what should be fixed, update the card content with them (the card goes to 'Corrigir').
-4. Run `~/git/televisao/prompts/mutation-testing.md` (personal, only if the card changed `televisao-api`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
+2. Run `~/git/televisao/prompts/colleague-review.md`. If it has comments about what should be fixed, update the card content with them. Keep the card in 'QA/CR' when mutation still applies.
+3. Run `~/git/televisao/prompts/mutation-testing.md` (personal, only if the card changed `televisao-api`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
+4. Only then apply the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
 
-Outcome: if the pull requests were approved by the prompts, mark them as approved (GitHub MCP review `APPROVE`; only the PRs that passed); if none passed, mark the card as 'request changes'. If all approved, merge all the card's pull requests. When the colleague review passes, change the card status in the funnel to 'Revisado'.
-
-Do not move the card unless the review result says where it goes:
-
-- Failed: the card goes to 'Corrigir'.
-- Passed: the card goes to 'Validação'.
+- Move to 'Corrigir' only after both applicable gates finished **and** at least one failed.
+- Full pass (colleague passed; mutation skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
 
 ## 2. Production review
 

@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Colleague review: e2e do revisor só na Televisão (e Olie)
+
+- **problema:** `televisao` `colleague-review.md` reprovava o card se a branch do autor não tinha Playwright; o revisor não criava os specs. Locav chegou a ser alinhado por engano ao mesmo modelo.
+- **por que é um problema:** e2e da Televisão vive no meta-repo (não vai no clone da empresa); o autor não entrega isso. Locav Cypress está embutido em `locav-front` — aí quem escreve e2e é o autor na própria branch.
+- **resolvido como:** Televisão (como Olie): revisor cria/estende `televisao-*-e2e` em `main` do `~/git`; falta de e2e do autor não é fail. Locav: autor cria Cypress em `cypress/e2e`; na review só se confere — missing coverage é fail; o revisor não adiciona specs.
+
+## Colleague QA/CR: Corrigir só depois de review + mutation
+
+- **problema:** `colleague-review.md` mandava mover o card para 'Corrigir' no fail antes de rodar `mutation-testing.md` quando o backend mudava.
+- **por que é um problema:** o autor perdia a janela de mutation na branch ainda em QA/CR; o funil já pedia correção sem o segundo gate.
+- **resolvido como:** outcome em `workflow-policy.md` / `colleague-review.md` / `workflow.md` / `mutation-testing.md`: com backend, ficar em QA/CR até os dois gates; mover para 'Corrigir' só se pelo menos um reprovar; pass completo só então vira 'Revisado'.
+
 ## Revisão de card dos colegas: mutation, comentários no card e aprovação/merge
 
 - **problema:** a revisão de card do time só tinha dois caminhos (voltar para recuar ou avançar), mas o resultado não cobria a sequência completa: não havia instrução de recomendar `mutation-testing` depois que o backend é tocado, nem destino para registrar os comentários do que deve ser arrumado (ficavam no PR), nem o que fazer com aprovação/merge e status do funil.
