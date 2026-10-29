@@ -230,6 +230,11 @@ workvm_pull_repo() {
         return 0
     fi
 
+    # Stubs MCP (skip-worktree) no working tree bloqueiam ff-only; cursor.sh define.
+    if declare -F workvm_mcp_prepare_repo_pull >/dev/null; then
+        workvm_mcp_prepare_repo_pull "$destination"
+    fi
+
     echo "→ Pull: $destination${branch:+ ($branch)}"
     if ! git -C "$destination" fetch --prune origin; then
         echo "aviso: fetch falhou: $destination (rede?)" >&2

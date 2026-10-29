@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Pull do meta-repo falhava por stub MCP com skip-worktree
+
+- **problema:** `workvm_apply_mcp` deixa `.cursor/mcp.json` stub (`mcpServers: {}`) + `skip-worktree`; `git status` limpo, mas `git pull --ff-only` abortava se o remoto mudasse esses arquivos. `git checkout` ainda falhava com `Device or resource busy` com o Cursor com o arquivo aberto
+- **por que é um problema:** login (`pull-meta.sh`) e pull manual do meta-repo ficavam atrás do `origin/main` até intervenção
+- **resolvido como:** `workvm_mcp_prepare_repo_pull` restaura os stubs versionados antes do merge (escrita no mesmo inode, sem unlink); `workvm_pull_repo` chama isso; o `project-start` reaplica os stubs depois
+
 ## MCP Boost/Playwright falhava no login (compose ainda subindo)
 
 - **problema:** no login o Cursor conectava `laravel-boost` / Playwright via `docker exec` antes do `olie-api-main` (e dos e2e) estarem `running`; o MCP ficava `failed` e não reconectava sozinho

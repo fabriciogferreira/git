@@ -354,6 +354,18 @@ workvm_mcp_git_repo() {
     git -C "$dir" rev-parse --show-toplevel 2>/dev/null || true
 }
 
+# Escreve HEAD:rel no path sem unlink (Cursor com o arquivo aberto → EBUSY no checkout).
+workvm_mcp_write_head_file() {
+    local repo="$1"
+    local rel="$2"
+    local file="$3"
+
+    if git -C "$repo" show "HEAD:$rel" >"$file" 2>/dev/null; then
+        return 0
+    fi
+    git -C "$repo" checkout HEAD -- "$rel" 2>/dev/null
+}
+
 # Se o mcp.json local é stub, restaura o versionado (fetch/overlay já rodaram).
 workvm_mcp_restore_project_file() {
     local file="$1"
@@ -367,8 +379,38 @@ workvm_mcp_restore_project_file() {
     if ! git -C "$repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
         return 0
     fi
-    workvm_git_unskip_worktree "$repo" "$file"
-    git -C "$repo" checkout HEAD -- "$rel" 2>/dev/null || true
+    if workvm_mcp_write_head_file "$repo" "$rel" "$file"; then
+        workvm_git_unskip_worktree "$repo" "$file"
+    fi
+}
+
+# Antes de pull/merge: stubs skip-worktree em .cursor/mcp.json bloqueiam ff-only
+# quando o remoto mexe nesses arquivos. Restaura o versionado; apply_mcp stub de novo.
+workvm_mcp_prepare_repo_pull() {
+    local repo="$1"
+    local flag path file
+    local restored=0
+
+    [ -d "$repo/.git" ] || return 0
+
+    while read -r flag path; do
+        [ "$flag" = "S" ] || continue
+        case "$path" in
+            .cursor/mcp.json|*/.cursor/mcp.json) ;;
+            *) continue ;;
+        esac
+        file="$repo/$path"
+        if workvm_mcp_write_head_file "$repo" "$path" "$file"; then
+            workvm_git_unskip_worktree "$repo" "$file"
+            restored=$((restored + 1))
+        else
+            echo "aviso: não restaurou stub MCP (arquivo preso?): $file" >&2
+        fi
+    done < <(git -C "$repo" ls-files -v)
+
+    if [ "$restored" -gt 0 ]; then
+        echo "→ MCP stubs restaurados antes do pull ($restored): $repo"
+    fi
 }
 
 # Stub local: Cursor não registra MCP de projeto (exige opt-in e sobrescreve

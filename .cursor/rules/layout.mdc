@@ -13,7 +13,7 @@ alwaysApply: true
 | `vm.local.conf` | Usuário e e-mail do git desta máquina. Fora do git. O `.example` só mostra as chaves. |
 | `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra na pasta do projeto na raiz do meta-repo e liga `workvm.service`. |
 | `systemd/workvm.service` | No login nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. `WantedBy=default.target` (não `graphical-session`: RefuseManualStart + SDDM não ativa). |
-| `systemd/workvm-git-pull.service` | O meta-repo fica atrás do remoto. Pull `--ff-only` no login; rede/divergência não derruba a sessão. |
+| `systemd/workvm-git-pull.service` / `bin/pull-meta.sh` | O meta-repo fica atrás do remoto. Pull `--ff-only` no login; restaura stubs MCP antes do merge; rede/divergência não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
 | `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |
 | `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones, merge de JSON do Cursor e MCP → `~/.cursor/mcp.json`. |
