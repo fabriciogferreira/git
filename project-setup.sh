@@ -3,6 +3,8 @@
 # graphical login.
 # Usage: ./project-setup.sh <project>
 # O id é o diretório do projeto (olie/ ou projects/<id>/). Basename único também serve.
+# Faz pull --ff-only deste meta-repo antes do overlay/MCP: sem isso o setup usa
+# o ~/git velho e wrappers MCP (Boost/Playwright) ficam atrás do remoto.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,6 +12,11 @@ UNIT_SRC="$REPO_ROOT/systemd/workvm.service"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
+# shellcheck source=/dev/null
+source "$REPO_ROOT/lib/common.sh"
+
+echo "==> Pull --ff-only do meta-repo ($REPO_ROOT)"
+workvm_pull_repo "$REPO_ROOT" "${WORKVM_META_BRANCH:-main}"
 # shellcheck source=/dev/null
 source "$REPO_ROOT/lib/common.sh"
 

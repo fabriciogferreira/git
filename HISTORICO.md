@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## project-setup usava meta-repo velho (MCP Boost atrás do remoto)
+
+- **problema:** `./project-setup.sh` aplicava overlay/MCP do `~/git` local sem `git pull`; a VM Televisão rodava setup e ainda via `workvm-docker-mcp: waiting…` no stderr (script antigo)
+- **por que é um problema:** o usuário achava que setup = última versão; o pull só rodava no próximo login (`workvm-git-pull.service`)
+- **resolvido como:** `project-setup.sh` começa com `workvm_pull_repo` `--ff-only` na `main` do meta-repo; depois re-source de `lib/common.sh` e segue overlay/MCP
+
 ## Pull do meta-repo falhava por stub MCP com skip-worktree
 
 - **problema:** `workvm_apply_mcp` deixa `.cursor/mcp.json` stub (`mcpServers: {}`) + `skip-worktree`; `git status` limpo, mas `git pull --ff-only` abortava se o remoto mudasse esses arquivos. `git checkout` ainda falhava com `Device or resource busy` com o Cursor com o arquivo aberto
