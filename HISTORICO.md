@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Revisão de card dos colegas: mutation, comentários no card e aprovação/merge
+
+- **problema:** a revisão de card do time só tinha dois caminhos (voltar para recuar ou avançar), mas o resultado não cobria a sequência completa: não havia instrução de recomendar `mutation-testing` depois que o backend é tocado, nem destino para registrar os comentários do que deve ser arrumado (ficavam no PR), nem o que fazer com aprovação/merge e status do funil.
+- **por que é um problema:** o handoff para o tech lead e o merge final dependiam de regras informais; o autor recebia correções dispersas e o funil não refletia o resultado da revisão.
+- **resolvido como:** `olie/prompts/colleague-review.md`, `locav/prompts/colleague-review.md` e `televisao/prompts/colleague-review.md` ganham a seção **Outcome** (fechamento em dois caminhos), a recomendação de `mutation-testing.md` quando o backend mudou, gravação dos comentários de correção no conteúdo do card, menção ao responsável ('atribuído a') no report e, no aprovação, marcação do PR aprovado (`pull_request_review_write`, event `APPROVE`), merge de todos quando todos passaram e mudança do status do funil para 'Revisado' (Olie move o card para 'Validação'; senão para 'corrigir'). `workflow.md` e `workflow-policy.md` dos três projetos documentam o fluxo completo do colleague review.
+
 ## OpenCode na guest sem MCP GitHub
 
 - **problema:** `workvm-opencode.sh` só copiava `~/.cursor/mcp.json`; o GitHub no Cursor é plugin e não aparecia no OpenCode. Com `{env:GITHUB_PERSONAL_ACCESS_TOKEN}`, o OpenCode substituía var ausente por `""` e o remote respondia `400 Authorization header is badly formatted`

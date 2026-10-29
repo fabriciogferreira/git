@@ -49,6 +49,8 @@ For `~/git/`, do not create a card branch. Commit and push the e2e changes direc
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix.
+
 ## 4. Branches to test
 
 On each company repository the card touches:
@@ -90,17 +92,29 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 ## 7. Out of scope
 
 - Do not fix the author's code.
-- Do not move the card. Report the result; the user (or a later workday paste) decides the next stage.
+- The outcome moves the card: a failed review moves it to the live funnel step 'Corrigir'; a passed review marks the card's pull requests as approved, and moves the card to the live funnel step 'Validação'. Report the result; the user (or a later workday paste) decides the next stage beyond that.
 - Do not treat a local-only success as the production check. That check is 'Revisão de Produção'.
 - Do not search for related improvements in this pass. This is a review only.
 
 ## 8. Report
 
 - Card {{ code }}.
+- Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.
+- Pull request outcome: which PRs were approved, which were merged, and which were not approved (when a PR failed or had comments).
 - Contrast result for light and dark themes.
 - E2E tests added or extended, and the 'main' commit if one was pushed.
 - Checks that did not run, and why.
 
 A failed requirement is a failed review. Do not call the card ready for 'validação' while one remains open.
+
+## 9. Outcome
+
+Close the review with **one of two paths**. Do not invent a third.
+
+1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (the author then fixes via `~/git/olie/prompts/correction.md`). Move the card to the live funnel step 'Corrigir'.
+
+2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, move the card to the live funnel step 'Corrigir'. If all the card's PRs were approved, move the card to the live funnel step 'Validação' (logical `validation`).
+
+3. **Backend follow-up** — If the change set touched the backend (`api-main`), after this review recommend `~/git/olie/prompts/mutation-testing.md` as the next paste (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). If the mutation run reports fixes, write them into the card content and loop the colleague review after the author fixes.

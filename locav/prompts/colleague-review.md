@@ -43,6 +43,8 @@ Cypress lives inside `locav-front` (a company remote). During this review, do **
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix.
+
 ## 4. Branches to test
 
 On each company repository the card touches:
@@ -66,18 +68,32 @@ If `LocavApi` tests were added or edited, those files are Pest 4. A new PHPUnit 
 ## 6. Out of scope
 
 - Do not fix the author's code.
-- Do not move the card. Report the result; the user (or a later workday paste) decides the next stage.
+- The outcome moves the card: a failed review moves it to the live funnel step 'Corrigir'; a passed review marks the card's pull requests as approved, merges them when all passed, and changes the card status in the funnel to 'Revisado'. Report the result; the user (or a later workday paste) decides the next stage beyond that.
 - Do not treat a local-only success as the production check. That check is 'Revisão em Produção'.
 - Do not search for related improvements in this pass. This is a review only.
 
 ## 7. Report
 
 - Card {{ code }}.
+- Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.
+- Pull request outcome: which PRs were approved, which were merged, and which were not approved (when a PR failed or had comments).
 - Contrast result for light and dark themes.
 - If `locav-front` changed, whether the branch created or edited Cypress specs under `cypress/e2e` for that behavior, or which case could not be automated and why.
 - If `LocavApi` tests changed, whether new or edited files are Pest 4, or which edited file is still PHPUnit.
 - Checks that did not run, and why.
 
 A failed requirement is a failed review. Do not call the card ready for 'Validação' while one remains open.
+
+## 8. Outcome
+
+Close the review with **one of two paths**. Do not invent a third.
+
+1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (the author then fixes via `~/git/locav/prompts/correction.md`). Keep the card in the live funnel step 'Corrigir'.
+
+2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, mark the card as 'request changes'. If all the card's PRs were approved, merge all of them (`merge_pull_request`).
+
+3. **Backend follow-up** — If the change set touched the backend (`LocavApi`), after this review recommend `~/git/locav/prompts/mutation-testing.md` as the next paste (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). If the mutation run reports fixes, write them into the card content and loop the colleague review after the author fixes.
+
+4. **Funnel status** — When the outcome is approval, change the card status in the funnel to 'Revisado' (resolve the live funnel status by display name via OlieFlowAi and update it with `edit-project-tool` with `funnel_status`; never hard-code the status id). If the live funnel has no 'Revisado' status, move the card to the live step that carries the outcome with the move procedure in `~/git/locav/prompts/workflow-policy.md`.
