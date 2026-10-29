@@ -49,5 +49,7 @@ docker compose exec -T -u pwuser \
     -e E2E_JOIN_MEETING_OUTSIDE_ID \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
+    -e E2E_CLINIC_ADMIN_USER="${E2E_CLINIC_ADMIN_USER:-clinic-admin@clinic.com}" \
+    -e E2E_CLINIC_ADMIN_PASSWORD="${E2E_CLINIC_ADMIN_PASSWORD:-password}" \
     -e E2E_WORKERS="${E2E_WORKERS:-1}" \
     e2e npx playwright test --project=chromium "$@"
