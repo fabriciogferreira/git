@@ -44,7 +44,7 @@ alwaysApply: true
 | `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
 | `bin/hyprlauncher-virtio.sh` | Super+R chama o hyprlauncher e ele morre no virtio: o render node recusa CREATE_DUMB. O preload abre o nó primário, que aceita o buffer. |
 | `bin/workvm-install-guest-agent.sh` | VM já clonada não passa de novo pelo `vm-setup`. Uma vez dentro dela, instala o agente, o Avahi e liga o `sshd`. |
-| `bin/workvm-opencode.sh` | O plano do Cursor acaba e o chat perde modelo e MCP. Dentro da VM, instala o OpenCode 2, aponta para o Ollama da RTX (`10.0.2.2:11435`) e copia `~/.cursor/mcp.json`. |
+| `bin/workvm-opencode.sh` | O plano do Cursor acaba e o chat perde modelo e MCP. Dentro da VM, instala o OpenCode 2, aponta para o Ollama da RTX (`10.0.2.2:11435`), copia `~/.cursor/mcp.json` e injeta o MCP GitHub remoto (plugin do Cursor não vem no json). |
 | `bin/workvm-libvirt-qemu-hook.sh` | O libvirt de sessão não tinha hook. Sem ele a subida não copia o hostname e a `vid2agent-code` não publica a API nem sobe o Ollama. |
 | `bin/workvm-vid2agent-hook.sh` | Outra VM chama `10.0.2.2:18080` e `:11434` e toma connection refused. Na subida da `vid2agent-code` aplica o `hostfwd` e sobe o Ollama; na descida para o processo que este script iniciou. |
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |

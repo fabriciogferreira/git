@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## OpenCode na guest sem MCP GitHub
+
+- **problema:** `workvm-opencode.sh` só copiava `~/.cursor/mcp.json`; o GitHub no Cursor é plugin e não aparecia no OpenCode
+- **por que é um problema:** PRs/issues no agente local sumiam; o usuário tinha que colar o server à mão e o próximo run do script apagava
+- **resolvido como:** o script injeta `mcp.servers.github` remoto (`api.githubcopilot.com/mcp/`) com `Authorization: Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}` e `oauth: false`; avisa se o env estiver vazio
+
 ## project-setup usava meta-repo velho (MCP Boost atrás do remoto)
 
 - **problema:** `./project-setup.sh` aplicava overlay/MCP do `~/git` local sem `git pull`; a VM Televisão rodava setup e ainda via `workvm-docker-mcp: waiting…` no stderr (script antigo)

@@ -2,7 +2,9 @@
 # O plano do Cursor acaba e o chat deixa de chamar modelo e MCP.
 # Rode dentro da WorkVM. Instala o OpenCode 2, aponta o modelo para o
 # Ollama da RTX no host e copia os MCP de ~/.cursor/mcp.json.
-# Não sobe o Ollama, não grava token no JSON e não mexe no Cursor.
+# O GitHub do Cursor é plugin (fora do mcp.json); injeta o MCP remoto
+# oficial. Token: GITHUB_PERSONAL_ACCESS_TOKEN (não grava no JSON).
+# Não sobe o Ollama e não mexe no Cursor.
 # Uso: bin/workvm-opencode.sh
 set -euo pipefail
 
@@ -117,6 +119,19 @@ if cursor_mcp.is_file():
 else:
     print(f"→ MCP: nenhum ({cursor_mcp} ausente)")
 
+# Cursor expõe GitHub como plugin; não aparece em mcp.json.
+# Remote oficial: https://github.com/github/github-mcp-server (install-opencode.md)
+servers["github"] = {
+    "type": "remote",
+    "url": "https://api.githubcopilot.com/mcp/",
+    "enabled": True,
+    "oauth": False,
+    "headers": {
+        "Authorization": "Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}",
+    },
+}
+print("→ MCP: github (remote api.githubcopilot.com; {env:GITHUB_PERSONAL_ACCESS_TOKEN})")
+
 cfg = {}
 if dest.is_file():
     cfg = load_jsonc(dest)
@@ -155,6 +170,11 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 write_config
+
+if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+    printf '→ GITHUB_PERSONAL_ACCESS_TOKEN ausente; o MCP github precisa do PAT no ambiente\n' >&2
+    printf '  ex.: export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"\n' >&2
+fi
 
 tags_url="${base_url%/v1}/api/tags"
 if ! curl -fsS --max-time 3 "$tags_url" >/dev/null 2>&1; then
