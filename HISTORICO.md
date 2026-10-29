@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## MCP Boost/Playwright falhava no login (compose ainda subindo)
+
+- **problema:** no login o Cursor conectava `laravel-boost` / Playwright via `docker exec` antes do `olie-api-main` (e dos e2e) estarem `running`; o MCP ficava `failed` e não reconectava sozinho
+- **por que é um problema:** Boost e Playwright sumiam da sessão até reload manual, em todo boot em que o Cursor abria cedo (autostart/restauração)
+- **resolvido como:** `bin/workvm-docker-mcp.sh` espera o container (até 180s) e só então faz `docker exec -i`; `workvm_apply_mcp` reescreve qualquer server `docker exec` para esse wrapper; overlays olie (Boost + Playwright) e mcp.json dos e2e da televisão apontam para o script
+
 ## Mutation testing liberava pre-QA com stack incompleto
 
 - **problema:** depois de um arquivo no ledger, `next prompt` (ou o fechamento do paste) podia recomendar `pre-qa.md` enquanto ainda faltavam `*Test.php` do diff no `mutation-ledger.md`

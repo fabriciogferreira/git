@@ -1,11 +1,8 @@
 {
     "mcpServers": {
         "playwright": {
-            "command": "docker",
+            "command": "${env:HOME}/git/bin/workvm-docker-mcp.sh",
             "args": [
-                "container",
-                "exec",
-                "-i",
                 "olie-e2e",
                 "npx",
                 "-y",

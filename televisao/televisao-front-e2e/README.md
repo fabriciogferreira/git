@@ -34,9 +34,9 @@ Signing with Autentique is out of scope for local E2E (external provider).
 Container uses `network_mode: host` so Chromium `localhost` matches
 `NEXT_PUBLIC_API_URL` (`http://localhost:8000`) and the front on `:3000`.
 
-Cursor Playwright MCP (`docker exec televisao-front-e2e …`) needs this
-compose up (`restart: unless-stopped`). The Televisão project boot brings it up
-with the main stack; otherwise: `docker compose up -d`.
+Cursor Playwright MCP (`workvm-docker-mcp.sh televisao-front-e2e …`, waits for
+the container) needs this compose up (`restart: unless-stopped`). The Televisão
+project boot brings it up with the main stack; otherwise: `docker compose up -d`.
 
 ## Defaults
 

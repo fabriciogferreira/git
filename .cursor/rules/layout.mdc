@@ -50,6 +50,7 @@ alwaysApply: true
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
 | `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
+| `bin/workvm-docker-mcp.sh` | Cursor sobe no login antes do compose. `docker exec` do Boost/Playwright falha uma vez e o MCP fica `failed`. Espera o container e só então encaminha o stdio. |
 | `bin/workvm-olie-mcp-proxy.py` | O Cursor ignora o Bearer do `olie-flow-ai` porque `api.olie.ai` publica OAuth. O agente do prompt fica `needsAuth` com o desktop já autenticado. Em `127.0.0.1:47331` responde 404 na descoberta e encaminha o MCP com o token. |
 | `systemd/workvm-olie-mcp-proxy.service` | Sem o proxy no login o Cursor abre a URL local e o MCP não conecta. `WantedBy=default.target`, só com `MCP=olie`. |
 | `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |

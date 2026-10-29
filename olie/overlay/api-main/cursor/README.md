@@ -19,7 +19,7 @@ Companion to `.ai/` (shared Boost source of truth). Cursor-specific wiring lives
 2. Ensure `laravel-boost` is enabled
 3. Container `olie-api-main` must be running (`../docker-workspace`)
 
-Config uses `docker exec -i` because PHP is not on the host.
+Config uses `bin/workvm-docker-mcp.sh` (waits for `olie-api-main`, then `docker exec -i`) because PHP is not on the host and Cursor often starts before compose finishes.
 
 ## After pulling
 

@@ -21,8 +21,9 @@ Smoke coverage in `tests/meet.smoke.spec.ts`:
 Container uses `network_mode: host` so Chromium `localhost` matches
 `VITE_API_BACKEND` / core URLs and the meet front on `:3001`.
 
-Cursor Playwright MCP (`docker exec televisao-meet-front-e2e …`) needs this
-compose up (`restart: unless-stopped`). The Televisão project boot brings it up
-with the main stack; otherwise: `docker compose up -d`.
+Cursor Playwright MCP (`workvm-docker-mcp.sh televisao-meet-front-e2e …`, waits
+for the container) needs this compose up (`restart: unless-stopped`). The
+Televisão project boot brings it up with the main stack; otherwise:
+`docker compose up -d`.
 
 Optional overrides: copy `.env.example` → `.env`.

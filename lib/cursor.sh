@@ -518,7 +518,8 @@ EOF
 
     local used_file path
     used_file="$(mktemp)"
-    if ! python3 - "$dest" "$used_file" "${sources[@]}" <<'PY'
+    local docker_mcp_wrapper="$repo_root/bin/workvm-docker-mcp.sh"
+    if ! python3 - "$dest" "$used_file" "$docker_mcp_wrapper" "${sources[@]}" <<'PY'
 import json, re, sys
 from pathlib import Path
 
@@ -530,11 +531,57 @@ def load_jsonc(path: Path):
     text = re.sub(r",\s*([}\]])", r"\1", text)
     return json.loads(text)
 
+# Cursor connects MCP before compose finishes. Plain `docker exec` fails once
+# and stays failed. Route those servers through bin/workvm-docker-mcp.sh.
+def wrap_docker_exec(cfg: dict, wrapper: str) -> dict:
+    if not isinstance(cfg, dict):
+        return cfg
+    cmd = cfg.get("command")
+    args = cfg.get("args")
+    if not isinstance(args, list) or not args:
+        return cfg
+    if isinstance(cmd, str) and cmd.endswith("workvm-docker-mcp.sh"):
+        out = dict(cfg)
+        out["command"] = wrapper
+        return out
+    if cmd != "docker":
+        return cfg
+    a = list(args)
+    i = 0
+    if a[0] == "container":
+        i = 1
+    if i >= len(a) or a[i] != "exec":
+        return cfg
+    i += 1
+    while i < len(a) and a[i].startswith("-"):
+        flag = a[i]
+        if flag in ("-i", "-t", "-it", "-ti", "-d", "-tty", "--tty", "--interactive", "--detach"):
+            i += 1
+            continue
+        if flag in ("-u", "--user", "-w", "--workdir", "-e", "--env") and i + 1 < len(a):
+            i += 2
+            continue
+        if flag.startswith("--") and "=" in flag:
+            i += 1
+            continue
+        break
+    if i >= len(a):
+        return cfg
+    container = a[i]
+    rest = a[i + 1 :]
+    if not rest:
+        return cfg
+    out = dict(cfg)
+    out["command"] = wrapper
+    out["args"] = [container, *rest]
+    return out
+
 dest = Path(sys.argv[1])
 used_file = Path(sys.argv[2])
+wrapper = sys.argv[3]
 merged = {}
 used = []
-for raw in sys.argv[3:]:
+for raw in sys.argv[4:]:
     path = Path(raw)
     if not path.is_file():
         continue
@@ -556,6 +603,10 @@ if isinstance(olie, dict):
     olie["url"] = "http://127.0.0.1:47331/mcp/management"
     olie.pop("headers", None)
     merged["olie-flow-ai"] = olie
+
+for name, cfg in list(merged.items()):
+    if isinstance(cfg, dict):
+        merged[name] = wrap_docker_exec(cfg, wrapper)
 
 dest.write_text(
     json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",

@@ -1,10 +1,8 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "docker",
+            "command": "${env:HOME}/git/bin/workvm-docker-mcp.sh",
             "args": [
-                "exec",
-                "-i",
                 "olie-api-main",
                 "php",
                 "artisan",
