@@ -1,12 +1,9 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "${env:HOME}/git/bin/workvm-docker-mcp.sh",
+      "command": "${env:HOME}/git/bin/workvm-playwright-mcp.sh",
       "args": [
-        "televisao-meet-front-e2e",
-        "npx",
-        "-y",
-        "@playwright/mcp@latest"
+        "televisao-meet-front-e2e"
       ]
     }
   }

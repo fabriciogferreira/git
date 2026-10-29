@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "${env:HOME}/git/bin/workvm-docker-mcp.sh",
+            "args": [
+                "televisao-backend",
+                "php",
+                "artisan",
+                "boost:mcp"
+            ],
+            "env": {
+                "WORKVM_DOCKER_MCP_WORKDIR": "/var/www/html"
+            }
+        }
+    }
+}

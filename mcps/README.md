@@ -8,6 +8,6 @@ No `project-start` (login / setup), o merge vai para `~/.cursor/mcp.json` (user-
 
 `olie-flow-ai` no arquivo versionado aponta para `https://api.olie.ai/mcp/management`. O merge grava `http://127.0.0.1:47331/mcp/management` sem header: esse host publica descoberta OAuth e o Cursor não manda o Bearer. O `workvm-olie-mcp-proxy` responde 404 nisso e encaminha com `OLIE_FLOW_AI_MCP_TOKEN`.
 
-Servers que usam `docker exec` (Boost, Playwright) são reescritos no merge para `bin/workvm-docker-mcp.sh`: o Cursor sobe no login antes do compose e um exec seco deixa o MCP em `failed`. O wrapper espera o container e encaminha o stdio.
+Servers que usam `docker exec` (Boost, Playwright) são reescritos no merge para `bin/workvm-docker-mcp.sh` (espera silenciosa do container) ou `bin/workvm-playwright-mcp.sh` (Chromium de `/ms-playwright` + `--no-sandbox`).
 
 PRs (pre-QA) usam **GitHub CLI** (`gh` / pacote `github-cli` no `vm-setup`), não um MCP GitHub nesta pasta. Auth: `gh auth login`.

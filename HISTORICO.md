@@ -12,7 +12,7 @@ Problema resolvido entra aqui.
 
 - **problema:** no login o Cursor conectava `laravel-boost` / Playwright via `docker exec` antes do `olie-api-main` (e dos e2e) estarem `running`; o MCP ficava `failed` e não reconectava sozinho
 - **por que é um problema:** Boost e Playwright sumiam da sessão até reload manual, em todo boot em que o Cursor abria cedo (autostart/restauração)
-- **resolvido como:** `bin/workvm-docker-mcp.sh` espera o container (até 180s) e só então faz `docker exec -i`; `workvm_apply_mcp` reescreve qualquer server `docker exec` para esse wrapper; overlays olie (Boost + Playwright) e mcp.json dos e2e da televisão apontam para o script
+- **resolvido como:** `bin/workvm-docker-mcp.sh` espera o container (até 180s) e só então faz `docker exec -i`; `workvm_apply_mcp` reescreve qualquer server `docker exec` para esse wrapper; overlays olie (Boost + Playwright) e mcp.json dos e2e da televisão apontam para o script. O wait é silencioso no stderr — um `echo` de “waiting” fazia o Cursor marcar `[error]` e cancelar (`Client closed`) no meio da espera. Playwright ainda quebrava depois: `@latest` exige chrome-for-testing e sandbox; `bin/workvm-playwright-mcp.sh` usa o Chromium de `/ms-playwright` com `--headless --no-sandbox`. Televisão: overlay `televisao-api/cursor/mcp.json` + `WORKVM_DOCKER_MCP_WORKDIR=/var/www/html` no Boost (`televisao-backend`)
 
 ## Mutation testing liberava pre-QA com stack incompleto
 

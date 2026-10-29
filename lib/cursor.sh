@@ -561,7 +561,8 @@ EOF
     local used_file path
     used_file="$(mktemp)"
     local docker_mcp_wrapper="$repo_root/bin/workvm-docker-mcp.sh"
-    if ! python3 - "$dest" "$used_file" "$docker_mcp_wrapper" "${sources[@]}" <<'PY'
+    local playwright_mcp_wrapper="$repo_root/bin/workvm-playwright-mcp.sh"
+    if ! python3 - "$dest" "$used_file" "$docker_mcp_wrapper" "$playwright_mcp_wrapper" "${sources[@]}" <<'PY'
 import json, re, sys
 from pathlib import Path
 
@@ -575,16 +576,27 @@ def load_jsonc(path: Path):
 
 # Cursor connects MCP before compose finishes. Plain `docker exec` fails once
 # and stays failed. Route those servers through bin/workvm-docker-mcp.sh.
-def wrap_docker_exec(cfg: dict, wrapper: str) -> dict:
+# Playwright also needs the image Chromium + --no-sandbox (not chrome-for-testing).
+def wrap_docker_mcp(cfg: dict, docker_wrapper: str, playwright_wrapper: str) -> dict:
     if not isinstance(cfg, dict):
         return cfg
     cmd = cfg.get("command")
     args = cfg.get("args")
     if not isinstance(args, list) or not args:
         return cfg
-    if isinstance(cmd, str) and cmd.endswith("workvm-docker-mcp.sh"):
+    if isinstance(cmd, str) and cmd.endswith("workvm-playwright-mcp.sh"):
         out = dict(cfg)
-        out["command"] = wrapper
+        out["command"] = playwright_wrapper
+        return out
+    if isinstance(cmd, str) and cmd.endswith("workvm-docker-mcp.sh"):
+        # docker-mcp + npx @playwright/mcp → dedicated playwright wrapper
+        if len(args) >= 2 and any("playwright/mcp" in str(a) for a in args):
+            out = dict(cfg)
+            out["command"] = playwright_wrapper
+            out["args"] = [args[0]]
+            return out
+        out = dict(cfg)
+        out["command"] = docker_wrapper
         return out
     if cmd != "docker":
         return cfg
@@ -614,16 +626,21 @@ def wrap_docker_exec(cfg: dict, wrapper: str) -> dict:
     if not rest:
         return cfg
     out = dict(cfg)
-    out["command"] = wrapper
+    if any("playwright/mcp" in str(x) for x in rest):
+        out["command"] = playwright_wrapper
+        out["args"] = [container]
+        return out
+    out["command"] = docker_wrapper
     out["args"] = [container, *rest]
     return out
 
 dest = Path(sys.argv[1])
 used_file = Path(sys.argv[2])
-wrapper = sys.argv[3]
+docker_wrapper = sys.argv[3]
+playwright_wrapper = sys.argv[4]
 merged = {}
 used = []
-for raw in sys.argv[4:]:
+for raw in sys.argv[5:]:
     path = Path(raw)
     if not path.is_file():
         continue
@@ -648,7 +665,7 @@ if isinstance(olie, dict):
 
 for name, cfg in list(merged.items()):
     if isinstance(cfg, dict):
-        merged[name] = wrap_docker_exec(cfg, wrapper)
+        merged[name] = wrap_docker_mcp(cfg, docker_wrapper, playwright_wrapper)
 
 dest.write_text(
     json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",

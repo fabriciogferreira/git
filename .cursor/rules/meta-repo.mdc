@@ -64,7 +64,9 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 - MCP via `docker exec` (Laravel Boost, Playwright e2e) passa por
   `bin/workvm-docker-mcp.sh` no merge: o Cursor conecta no login antes do
   compose e um `docker exec` seco falha de vez. O wrapper espera o container
-  (até 180s) e só então encaminha o stdio.
+  (até 180s, sem log no stderr — senão o Cursor cancela) e só então encaminha
+  o stdio. Playwright usa `bin/workvm-playwright-mcp.sh` (Chromium da imagem +
+  `--no-sandbox`); `@latest` sozinho pede chrome-for-testing que a e2e não tem.
 - PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`), não o MCP GitHub. Auth: `gh auth login`
   (sessão do usuário). Pacote instalado no `vm-setup.sh`.
 - Tokens em **`~/.config/environment.d/*.conf`** (diretório, não arquivo), `chmod 600`:
