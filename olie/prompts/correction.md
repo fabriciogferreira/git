@@ -244,4 +244,4 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
-When the full correction on this paste is done (not the conflict-only first stop in §4), the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet — those come after implementation-validation (and mutation-testing when `api-main` changed).
+When the full correction on this paste is done (not the conflict-only first stop in §4), the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet — those come after implementation-validation (and after the mutation stack when `api-main` changed: finish with `next mutation`, then `pre-qa.md`).

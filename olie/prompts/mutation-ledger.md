@@ -2,6 +2,8 @@
 
 Personal stack for `~/git/olie/prompts/mutation-testing.md`. One row per test file in `~/git/olie/api-main/tests` after that file has been mutation-tested on this VM. Not part of the Olie test suite.
 
+While any changed `*Test.php` from the card’s `api-main` diff is missing here (or lacks `100%` / `equivalent`), the stack is incomplete: use **`next mutation`** for the next file; do not run `pre-qa.md` via `next prompt`.
+
 | Test file | Result | Notes |
 | --- | --- | --- |
 | `tests/Feature/Automation/ProjectContentAddActionAttachmentsTest.php` | `100%` / `equivalent` | CreateMediaFromFrameAttachment `100%`. ProjectContentAddAction in-scope `equivalent` (Pest raw 92%): `5e6a812a` (destination `channel_id` fallback unused — text media always has channel_id), `d3e85ce4` (`(string)` cast; model_type already string), `7db7fb25` (`loadMissing` — Eloquent lazy-loads). ComponentValidator: 0 mutations under this file. |

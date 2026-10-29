@@ -165,11 +165,12 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 
 | Command | Meaning |
 | --- | --- |
-| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. |
+| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** if `~/git/olie/prompts/mutation-testing.md` is in progress and any changed `api-main` `*Test.php` is still missing a `100%` / `equivalent` ledger row, **refuse** `next prompt` (do not open `pre-qa.md`). List what remains and tell the user to send `next mutation`. |
+| `next mutation` | Only during the personal mutation stack (`~/git/olie/prompts/mutation-testing.md`): open that prompt and process the **next** changed test file not yet done in `~/git/olie/prompts/mutation-ledger.md` (one file per turn). Same as re-pasting mutation-testing. Do not jump to `pre-qa.md`. If the stack is already complete, say so and point at `next prompt` → `pre-qa.md`. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix every item listed under **Needs code fixes** from the latest `~/git/olie/prompts/implementation-validation.md` pass in this chat. Implement those fixes only; then recommend re-running implementation-validation (`try again` on that pass, or `next prompt` if validation was already named next). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
 
-When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
+When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” command for the stack is `next mutation`, not `next prompt`.
 
 ## Tooling failures and stalls (prompt health)
 

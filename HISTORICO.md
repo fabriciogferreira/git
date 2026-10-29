@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation testing liberava pre-QA com stack incompleto
+
+- **problema:** depois de um arquivo no ledger, `next prompt` (ou o fechamento do paste) podia recomendar `pre-qa.md` enquanto ainda faltavam `*Test.php` do diff no `mutation-ledger.md`
+- **por que é um problema:** o gate pessoal de mutação era pulado; o handoff seguia sem fechar o stack
+- **resolvido como:** `mutation-testing.md` bloqueia `next prompt` → pre-QA até o ledger cobrir o change set; comando `next mutation` documentado em `workflow-policy.md` / README / pre-qa / validation para o próximo arquivo
+
 ## PHPStan sujava o Source Control do api-main
 
 - **problema:** `vendor/bin/phpstan analyse` grava em `olie/api-main/storage/phpstan/` e o `.gitignore` da empresa não cobre esse path
