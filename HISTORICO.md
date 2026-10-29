@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Catálogo de funil: MCP `index-project-funnels-tool`, não HTTP `get-available-steps`
+
+- **problema:** para resolver 'Revisado' / etapas ao vivo, o agente caía em `curl` + `get-available-steps` e o Auto-review pedia permissão numa leitura.
+- **por que é um problema:** atrito no colleague review / mutation outcome; o MCP já expõe steps e `funnel_status`.
+- **resolvido como:** `workflow-policy` (Televisão, Locav, Olie) e `colleague-review` (TV/Locav) mandam `index-project-funnels-tool` primeiro; HTTP só se MCP estiver `needsAuth`/401.
+
 ## Televisão: workdir do backend é `/srv`, não `/var/www/html`
 
 - **problema:** prompts e o MCP Boost da Televisão usavam `docker exec -w /var/www/html televisao-backend`; nesse container `/var/www/html` está vazio e o app monta em `/srv`. No merge MCP, o restore do stub ainda trazia o `mcp.json` do git da empresa (sem `-w`/env) e apagava o env do overlay.

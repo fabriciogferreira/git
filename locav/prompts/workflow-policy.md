@@ -24,13 +24,22 @@ Earlier board stages ('Backlog', 'Planejamento') and terminal 'Cancelado/Duplica
 
 The live label wins if it differs from the examples above. Resolve the numeric step id from MCP / the live funnel at move time — never from memory.
 
+## Resolving funnel steps and funnel statuses (MCP first)
+
+Prefer MCP `olie-flow-ai` over management HTTP for **read** discovery. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
+
+1. **Card + current step** — `get-project-details-tool` (or search then details).
+2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` for badges such as 'Revisado'.
+3. Match display names case-insensitively after trim. Never hard-code step or status ids.
+4. **Do not** call `GET /api/management/get-available-steps` when `index-project-funnels-tool` works. Use management HTTP only under **MCP auth** (MCP down) or when a write has no working MCP tool.
+
 ## Moving a card on the board
 
 Resolve **card id** and **funnel steps** through MCP `olie-flow-ai` (search by card code). Never hard-code `step_id`. Never paste a Bearer token into a prompt, chat, or repo file.
 
-1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board.
+1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board (`get-project-details-tool` and/or `index-project-funnels-tool` — see above).
 2. Match the target logical stage to a live step by display name (`workflow-policy` board stages above).
-3. Prefer an MCP tool that moves the card when one exists and works.
+3. Prefer an MCP tool that moves the card when one exists and works (`move-project-to-funnel-step-tool`).
 4. If you must call the management HTTP API directly:
 
 ```bash
@@ -52,7 +61,7 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 For a colleague card in 'QA/CR' (logical `quality-review`), the colleague review closes in two paths:
 
 1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
-2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado' (resolve the live status by display name; never hard-code the id).
+2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado': resolve with MCP `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works.
 
 After the colleague review, if the change set touched the backend (`LocavApi`), recommend the personal `mutation-testing.md` before the tech lead pass.
 
@@ -198,7 +207,7 @@ curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
   --data-raw "{\"filters\":[{\"field\":\"name_code\",\"operator\":\"contains\",\"value\":\"${CARD_CODE}\",\"logical_operator\":\"and\"}]}"
 ```
 
-Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. Otherwise `GET /api/management/get-available-steps` (`funnels[].steps[].id` and `name`). Match the stage by display name. Never hard-code a step id. Never paste a Bearer token.
+Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. For the full step/status catalog when MCP is down, `GET /api/management/get-available-steps` (`funnels[].steps[]` and `funnels[].funnel_status[]`). Prefer restoring MCP and using `index-project-funnels-tool` instead of this HTTP path for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
 ## Chat commands (develop handoff)
 

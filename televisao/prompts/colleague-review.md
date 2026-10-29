@@ -104,6 +104,6 @@ Follow **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.
 
 3. **No backend (mutation skipped)** — Apply the funnel move now:
    - Fail → live step 'Corrigir'.
-   - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`); set funnel status 'Revisado' (resolve by display name via OlieFlowAi / `edit-project-tool` with `funnel_status`; never hard-code the status id). If there is no 'Revisado' status, use the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
+   - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`); set funnel status 'Revisado' via MCP: `index-project-funnels-tool` (match the board funnel, then `funnel_status[]` by name) → `edit-project-tool` with `funnel_status` (`project_funnel_id`, `funnel_status_id`). Never hard-code the status id. Do not use HTTP `get-available-steps` for this when MCP works. If there is no 'Revisado' status, use the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
 
 4. **After mutation (same card)** — When mutation finishes in a later paste, that prompt applies the combined rule: move to 'Corrigir' only if the colleague review failed **or** mutation reported fixes to write; approve / merge / 'Revisado' only if both passed.

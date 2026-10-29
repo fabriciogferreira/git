@@ -22,13 +22,22 @@ The logical lifecycle is:
 
 The live label wins if it differs from the examples above. `changes-requested` may appear as 'corrigir' or 'corrigir ou melhorar'.
 
+## Resolving funnel steps and funnel statuses (MCP first)
+
+Prefer MCP `olie-flow-ai` over management HTTP for **read** discovery. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
+
+1. **Card + current step** — `get-project-details-tool` (or search then details).
+2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` when a badge id is required.
+3. Match display names case-insensitively after trim. Never hard-code step or status ids.
+4. **Do not** call `GET /api/management/get-available-steps` when `index-project-funnels-tool` works. Use management HTTP only under **MCP auth** (MCP down) or when a write has no working MCP tool.
+
 ## Moving a card on the board
 
 Resolve **card id** and **funnel steps** through MCP `olie-flow-ai` (search by card code). Never hard-code `step_id`. Never paste a Bearer token into a prompt, chat, or repo file.
 
-1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board.
+1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board (`get-project-details-tool` and/or `index-project-funnels-tool` — see above).
 2. Match the target logical stage to a live step by display name (`workflow-policy` board stages above).
-3. Prefer an MCP tool that moves the card when one exists and works.
+3. Prefer an MCP tool that moves the card when one exists and works (`move-project-to-funnel-step-tool`).
 4. If you must call the management HTTP API directly:
 
 ```bash
@@ -113,7 +122,7 @@ curl -sS --url 'https://api.olie.ai/api/management/projects/search?perPage=20' \
   --data-raw "{\"filters\":[{\"field\":\"name_code\",\"operator\":\"contains\",\"value\":\"${CARD_CODE}\",\"logical_operator\":\"and\"}]}"
 ```
 
-Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. Otherwise `GET /api/management/get-available-steps` (`funnels[].steps[].id` and `name`). Match the stage by display name. Never hard-code a step id. Never paste a Bearer token.
+Load `GET /api/management/projects/${CARD_PROJECT_ID}`. Live step names come from that payload when it includes them. For the full step/status catalog when MCP is down, `GET /api/management/get-available-steps` (`funnels[].steps[]` and `funnels[].funnel_status[]`). Prefer restoring MCP and using `index-project-funnels-tool` (steps + `funnel_status`) instead of this HTTP path for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
 ## Tokens
 

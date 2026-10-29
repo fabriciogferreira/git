@@ -4,3 +4,4 @@ Personal stack for `~/git/televisao/prompts/mutation-testing.md`. One row per te
 
 | Test file | Result | Notes |
 | --- | --- | --- |
+| `tests/Service/Consultation/ConsultationServiceMeetingTokenTest.php` | `100%` | `--class` `ConsultationService` + `ConsultationResource`; in-scope only (Service: no mutations on hunks 32/270-271/332; Resource 78–81 tested). Pest raw Resource 50% (legacy whenLoaded). +1 legacy: Resource L76 `RemoveArrayItem` `ad6ea79b1e12e2ac` via `id` key assert. |
