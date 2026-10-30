@@ -147,7 +147,7 @@ When the change needs more than one outcome, run each relevant number. A success
 
 ## Production verification URL
 
-Production review (`production-review` / 'Revisão de Produção') checks the **gui1** frame. Log in at **https://gui1.olie.ai/auth/login** with the account in `~/git/olie/prompts/production-review.md`. Local hosts (`*.olie.localhost`), `https://esolie.olie.ai`, and other frames are not production evidence.
+Production review (`production-review` / 'Revisão de Produção') checks the **gui1** frame. Log in at **https://gui1.olie.ai/auth/login** with the accounts in `~/git/olie/prompts/production-review.md` (primary admin, plus the disposable second collaborator when a two-session check is required). Local hosts (`*.olie.localhost`), `https://esolie.olie.ai`, and other frames are not production evidence.
 
 ## Olie docs repository — never touch
 
