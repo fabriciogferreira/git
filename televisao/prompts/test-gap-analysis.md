@@ -5,7 +5,7 @@ Review card {{ code }}. Compare the card’s requirements with the tests already
 This prompt has **exactly two exits**:
 
 1. **No tests to add** — every card-related use case already has automated coverage in the change set.
-2. **Tests to add** — a list of missing tests, each with a **title** and a **description**. Write that list into the card content (Brazilian Portuguese) through OlieFlowAi.
+2. **Tests to add** — a list of missing tests, each with a **title** and a **description**. Write that list into the card content (Brazilian Portuguese) through OlieFlowAi. Titles and descriptions only — no prompt paths (**Card content vs chat** in `~/git/televisao/prompts/workflow-policy.md`).
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
@@ -66,7 +66,7 @@ For every **missing** test, draft one list item:
 
 ## 5. Outcome (two exits only)
 
-1. **No tests to add** — Say so. Recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste when backend mutation still applies; otherwise follow the handoff already in progress (`pre-qa.md` on own card, or **Colleague review outcome** when mutation was skipped).
-2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese). Do **not** approve/merge and do **not** move the funnel in this paste on the colleague stack — leave 'QA/CR' and continue to `mutation-testing.md` if it still applies; the combined outcome after that stack treats these items like mutation-reported fixes (Corrigir if tests-to-add or mutation fixes remain; Revisado only if colleague passed **and** no tests-to-add **and** mutation clean/skipped). On own-card handoff, still recommend mutation next when backend applies; do not open `pre-qa.md` from this prompt.
+1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste when backend mutation still applies; otherwise follow the handoff already in progress (`pre-qa.md` on own card, or **Colleague review outcome** when mutation was skipped).
+2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese; no prompt paths). Do **not** approve/merge and do **not** move the funnel in this paste on the colleague stack — leave 'QA/CR' and continue to `mutation-testing.md` if it still applies; the combined outcome after that stack treats these items like mutation-reported fixes (Corrigir if tests-to-add or mutation fixes remain; Revisado only if colleague passed **and** no tests-to-add **and** mutation clean/skipped). On own-card handoff, still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/televisao/prompts/workflow-policy.md`.

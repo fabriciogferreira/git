@@ -5,7 +5,7 @@ Review card {{ code }}. Compare the card’s requirements with the tests already
 This prompt has **exactly two exits**:
 
 1. **No tests to add** — every card-related use case already has automated coverage in the change set.
-2. **Tests to add** — a list of missing tests, each with a **title** and a **description**. Write that list into the card content (Brazilian Portuguese) through OlieFlowAi.
+2. **Tests to add** — a list of missing tests, each with a **title** and a **description**. Write that list into the card content (Brazilian Portuguese) through OlieFlowAi. Titles and descriptions only — no prompt paths (**Card content vs chat** in `~/git/olie/prompts/workflow-policy.md`).
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
@@ -65,7 +65,7 @@ For every **missing** test, draft one list item:
 
 ## 5. Outcome (two exits only)
 
-1. **No tests to add** — Say so. Recommend `~/git/olie/prompts/mutation-testing.md` when backend mutation still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
-2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese). On the colleague stack, leave 'QA/CR' and continue to `mutation-testing.md` when it applies; treat these items like mutation-reported fixes in the follow-up / Corrigir loop. On own-card handoff, still recommend mutation next when backend applies; do not open `pre-qa.md` from this prompt.
+1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/olie/prompts/mutation-testing.md` when backend mutation still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
+2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese; no prompt paths). On the colleague stack, leave 'QA/CR' and continue to `mutation-testing.md` when it applies; treat these items like mutation-reported fixes in the follow-up / Corrigir loop. On own-card handoff, still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/olie/prompts/workflow-policy.md`.

@@ -50,7 +50,7 @@ For `~/git/`, do not create a card branch. Commit and push the e2e changes direc
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix.
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/televisao/prompts/workflow-policy.md` — never recommend prompt paths there.
 
 ## 4. Branches to test
 
@@ -98,9 +98,9 @@ A failed requirement is a failed colleague review. Do not call the card ready fo
 
 Follow **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`. Do not invent a third path.
 
-1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (the author later fixes via `~/git/televisao/prompts/correction.md`). Do **not** approve or merge PRs on a fail.
+1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author later fixes via `~/git/televisao/prompts/correction.md`. Do **not** approve or merge PRs on a fail.
 
-2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. Recommend `~/git/televisao/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md`. Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that stack finishes (or the user explicitly skips it).
+2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. In the **Cursor chat** only, recommend `~/git/televisao/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md`. Do **not** put those paths on the card. Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that stack finishes (or the user explicitly skips it).
 
 3. **No backend (gap analysis + mutation skipped)** — Apply the funnel move now:
    - Fail → live step 'Corrigir'.

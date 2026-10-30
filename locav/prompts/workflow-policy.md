@@ -73,7 +73,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the colleague review
 1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
 2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado': resolve with MCP `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works.
 
-After the colleague review, if the change set touched `LocavApi` and/or `locav-front`, recommend `test-gap-analysis.md` (backend + frontend gaps). If `LocavApi` also changed, follow with the personal `mutation-testing.md` before the tech lead pass.
+After the colleague review, if the change set touched `LocavApi` and/or `locav-front`, recommend `test-gap-analysis.md` (backend + frontend gaps) **in the Cursor chat only**. If `LocavApi` also changed, follow with the personal `mutation-testing.md` before the tech lead pass (never put prompt paths on the card — **Card content vs chat**).
 
 ## Project execution
 
@@ -155,6 +155,18 @@ The body of each pull request is `.github/pull_request_template.md` in that repo
 - Check a checklist box only when that item was done for this change. Leave it unchecked when it does not apply.
 
 The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists.
+
+## Card content vs chat (private prompts)
+
+Files under `~/git/locav/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
+
+When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
+
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
+- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** tell the author which local prompt to run next.
+
+Recommend the next prompt **only in the Cursor chat** report.
 
 ## Language
 

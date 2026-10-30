@@ -105,4 +105,4 @@ After the row is written, report the file, whether it was converted from PHPUnit
 When **none** remain:
 
 - **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste.
-- **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`), including any gaps already written by `test-gap-analysis.md`. If mutation reported fixes, write them into the card content before the move.
+- **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`), including any gaps already written by `test-gap-analysis.md`. If mutation reported fixes, write them into the card content before the move (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths).

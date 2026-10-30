@@ -14,6 +14,8 @@ In the develop chat, short commands (defined in `workflow-policy.md` / `implemen
 
 Referencing another markdown/prompt is fine when the file exists in this meta-repo or in a clone you are working on — prefer an absolute path the agent can open (e.g. `~/git/olie/prompts/workflow-policy.md`, or a path under `~/git/olie/<clone>/`). Do not leave maintainer-only notes (“do not repeat X.md”); the paste is the instruction, not a style guide for editing prompts.
 
+These prompt paths are private to this WorkVM. Never recommend them in Olie card content — only in the Cursor chat. See **Card content vs chat (private prompts)** in `workflow-policy.md`.
+
 Shared policy: `~/git/olie/prompts/workflow-policy.md` (not usually pasted alone).
 
 Typical develop handoff: `implementation.md` → `implementation-validation.md` (code only) → if the card changed `api-main`, `test-gap-analysis.md` then `mutation-testing.md` (repeat with `next mutation` until the ledger covers every changed test file) → `pre-qa.md` (product PRs + meta-repo commit/push on `main`; moves to 'QA/CR' when checks pass) → colleague 'QA/CR' → later board `validation.md`. When there is no backend change, skip gap analysis and mutation-testing and go straight to `pre-qa.md`.

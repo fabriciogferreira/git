@@ -71,7 +71,7 @@ For a colleague card in 'QA/CR', the colleague review closes in two paths:
 1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
 2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, move the card to the live funnel step 'Validação'.
 
-After the colleague review, if the change set touched the backend (`api-main`), recommend `test-gap-analysis.md` then the personal `mutation-testing.md` before the tech lead pass.
+After the colleague review, if the change set touched the backend (`api-main`), recommend `test-gap-analysis.md` then the personal `mutation-testing.md` **in the Cursor chat only** before the tech lead pass (never on the card — **Card content vs chat**).
 
 ## Project execution
 
@@ -156,6 +156,18 @@ The clone `~/git/olie/docs` (`olie-ai/docs`, docs.olie.ai / public OpenAPI) is *
 Do not edit, rebase, merge, commit, push, or open/update PRs in that repository. Do not put it on a card’s repository list or correction plan. If a card or review mentions public docs, report that and continue only in product repos (`api-main`, `olie-fronts`, `olie-e2e`, …). Meta-repo docs under `~/git` (`olie/prompts/`, `HISTORICO.md`, overlay) remain allowed.
 
 If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/restore safely and stop; do not finish the conflict.
+
+## Card content vs chat (private prompts)
+
+Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
+
+When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
+
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
+- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** tell the author which local prompt to run next.
+
+Recommend the next prompt **only in the Cursor chat** report.
 
 ## Language
 

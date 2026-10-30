@@ -49,7 +49,7 @@ For `~/git/`, do not create a card branch. Commit and push the e2e changes direc
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix.
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/olie/prompts/workflow-policy.md` — never recommend prompt paths there.
 
 ## 4. Branches to test
 
@@ -113,8 +113,8 @@ A failed requirement is a failed review. Do not call the card ready for 'valida�
 
 Close the review with **one of two paths**. Do not invent a third.
 
-1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (the author then fixes via `~/git/olie/prompts/correction.md`). Move the card to the live funnel step 'Corrigir'.
+1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author then fixes via `~/git/olie/prompts/correction.md`. Move the card to the live funnel step 'Corrigir'.
 
 2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, move the card to the live funnel step 'Corrigir'. If all the card's PRs were approved, move the card to the live funnel step 'Validação' (logical `validation`).
 
-3. **Backend follow-up** — If the change set touched the backend (`api-main`), after this review recommend `~/git/olie/prompts/test-gap-analysis.md` as the next paste, then `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). Write gap findings and mutation fixes into the card content; loop the colleague review after the author fixes when either reports work for the author.
+3. **Backend follow-up** — If the change set touched the backend (`api-main`), after this review recommend in the **Cursor chat** only `~/git/olie/prompts/test-gap-analysis.md` as the next paste, then `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). Do **not** put those paths on the card. Write gap findings and mutation fixes into the card content (findings only); loop the colleague review after the author fixes when either reports work for the author.

@@ -78,7 +78,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
 
-**Do not move to 'Corrigir' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md`, and finish that stack first (or the user explicitly skips it).
+**Do not move to 'Corrigir' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it).
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
 
@@ -165,6 +165,18 @@ The body of each pull request is `.github/pull_request_template.md` in that repo
 - Check a checklist box only when that item was done for this change. Leave it unchecked when it does not apply.
 
 The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists.
+
+## Card content vs chat (private prompts)
+
+Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
+
+When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
+
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
+- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** tell the author which local prompt to run next.
+
+Recommend the next prompt **only in the Cursor chat** report.
 
 ## Language
 
