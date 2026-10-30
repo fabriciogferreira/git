@@ -41,12 +41,25 @@ if [[ -z "${E2E_JOIN_MEETING_INSIDE_ID:-}" ]] || [[ -z "${E2E_JOIN_MEETING_OUTSI
     echo "  outside: ${E2E_JOIN_MEETING_OUTSIDE_ID}"
 fi
 
+# TV-190 Autentique signed-document link on consultation view.
+if [[ -z "${E2E_AUTENTIQUE_LINK_CONSULTATION_ID:-}" ]] || [[ -z "${E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID:-}" ]] || [[ "${E2E_SEED_AUTENTIQUE_LINK:-1}" == "1" ]]; then
+    echo "→ seeding signed prescription for TV-190 Autentique link E2E"
+    autentique_seed="$(./scripts/seed-signed-prescription-autentique.sh)"
+    E2E_AUTENTIQUE_LINK_CONSULTATION_ID="${autentique_seed%% *}"
+    E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID="${autentique_seed##* }"
+    export E2E_AUTENTIQUE_LINK_CONSULTATION_ID E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID
+    echo "  consultation: ${E2E_AUTENTIQUE_LINK_CONSULTATION_ID}"
+    echo "  prescription: ${E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID}"
+fi
+
 docker compose up -d --build
 docker compose exec -T -u pwuser \
     -e TZ=America/Sao_Paulo \
     -e E2E_CHECKOUT_CONSULTATION_ID \
     -e E2E_JOIN_MEETING_INSIDE_ID \
     -e E2E_JOIN_MEETING_OUTSIDE_ID \
+    -e E2E_AUTENTIQUE_LINK_CONSULTATION_ID \
+    -e E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
     -e E2E_CLINIC_ADMIN_USER="${E2E_CLINIC_ADMIN_USER:-clinic-admin@clinic.com}" \
