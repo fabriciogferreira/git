@@ -386,11 +386,11 @@ Problema resolvido entra aqui.
 - **por que é um problema:** a VM fica sem hjkl para grupos e sem picker de workspace; o `vm-setup` copia esse `hyprland.lua`
 - **resolvido como:** submaps no `.config/hypr/hyprland.lua` (grupos em SUPER+G, fechar workspace, mover janelas do workspace, picker 01–99 em SUPER+P). O pseudo de exemplo saiu do SUPER+P
 
-## vm-setup troca o hyprland-git pelo pacote oficial
+## vm-setup usa hyprland do extra (não hyprland-git)
 
-- **problema:** `setup_apps` pedia `hyprland` do extra numa VM que já tinha `hyprland-git`
-- **por que é um problema:** os pacotes conflitam; com `--noconfirm` o pacman recusa remover o git e o setup morre antes do Docker e do overlay
-- **resolvido como:** o compositor é o `hyprland-git` (AUR). Se `pacman -Q hyprland-git` já acha o pacote, o setup segue sem reinstalar
+- **problema:** `setup_apps` instalava `hyprland-git` (AUR); numa VM com `hyprland` do extra (ou o contrário) o pacman conflita e o setup morre
+- **por que é um problema:** bootstrap da VM para no compositor; AUR demora e quebra com `--noconfirm` no conflito
+- **resolvido como:** `setup_apps` instala `hyprland` do extra. Se ainda houver `hyprland-git`, remove antes e segue com `pacman -S --needed hyprland`
 
 ## Super+R ainda instala fuzzel
 

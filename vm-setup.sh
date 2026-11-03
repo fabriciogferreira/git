@@ -248,20 +248,19 @@ setup_apps() {
     # Super+R is hyprlauncher via bin/hyprlauncher-virtio.sh. The render node
     # on virtio rejects CREATE_DUMB; the wrapper opens the primary node.
     # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
-    # hyprland (extra) conflicts with hyprland-git. Re-running setup must not
-    # try to replace the compositor that is already installed.
+    # hyprland do extra (não hyprland-git). Os dois conflitam; se a VM ainda
+    # tem o AUR, remove antes para o --noconfirm não abortar o setup.
     if pacman -Q hyprland-git >/dev/null 2>&1; then
-        ok "hyprland-git já instalado"
-    else
-        log "AUR: hyprland-git"
-        aur_install hyprland-git
+        log "removendo hyprland-git (conflito com hyprland)"
+        sudo pacman -R --noconfirm hyprland-git
     fi
 
     # Flameshot 14 no Wayland usa o portal. O portal 1.22 não exporta
     # Screenshot sem um impl de Access; o hyprland não tem, o gtk tem.
     # hyprland-portals.conf já pede default=hyprland;gtk.
-    log "oficial: kitty hyprlauncher dbeaver github-cli flameshot portais"
+    log "oficial: hyprland kitty hyprlauncher dbeaver github-cli flameshot portais"
     sudo pacman -S --needed --noconfirm \
+        hyprland \
         kitty \
         hyprlauncher \
         dbeaver \
@@ -434,7 +433,7 @@ setup_autologin() {
     sudo pacman -S --needed --noconfirm sddm
 
     if [ ! -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland-git)" >&2
+        log "error: hyprland.desktop ausente; rode setup_apps antes (pacote hyprland)" >&2
         exit 1
     fi
 
