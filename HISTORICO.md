@@ -410,6 +410,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** bootstrap da VM para no compositor; AUR demora e quebra com `--noconfirm` no conflito
 - **resolvido como:** `setup_apps` instala `hyprland` do extra. Se ainda houver `hyprland-git`, remove antes e segue com `pacman -S --needed hyprland`
 
+## vm-setup reinicia só na primeira execução
+
+- **problema:** depois do `vm-setup` o SDDM autologin e o Hyprland só valem no próximo boot, e o operador esquecia de reiniciar
+- **por que é um problema:** a VM “pronta” ainda estava no TTY sem sessão gráfica; o próximo passo (`project-setup`) ficava confuso
+- **resolvido como:** ao terminar com sucesso, se não existir `~/.config/workvm/vm-setup-booted`, grava o marker e chama `sudo reboot` (não `systemctl reboot` — polkit nega sem askpass). Reexecuções do script não reiniciam
+
 ## Super+R ainda instala fuzzel
 
 - **problema:** o bind do menu já era `hyprlauncher`, mas o `setup_apps` ainda instalava `fuzzel` e o comentário dizia que o Super+R era ele

@@ -5,6 +5,8 @@
 # SDDM autologin (no login prompt), optional LUKS auto-unlock,
 # qemu-guest-agent so the host can copy the libvirt name into the hostname,
 # apply $GIT_ROOT/.config → ~/.config.
+# Na primeira execução bem-sucedida reinicia (SDDM autologin → Hyprland);
+# as seguintes não, enquanto existir o marker em ~/.config/workvm/.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,6 +27,8 @@ LUKS_PARTUUID="${LUKS_PARTUUID:-}"
 KEYFILE="${KEYFILE:-/crypto_keyfile.bin}"
 WAYLAND_VDAGENT_URL="${WAYLAND_VDAGENT_URL:-https://github.com/v-dermichev/wayland-vdagent/releases/download/v0.3.3/wayland-vdagent-x86_64-linux}"
 YAY_TMP="${YAY_TMP:-/tmp/yay-bootstrap}"
+# Existe = setup já rodou e pediu reboot (ou o usuário apagou para forçar de novo).
+VM_SETUP_BOOTED_MARKER="${VM_SETUP_BOOTED_MARKER:-${XDG_CONFIG_HOME:-$HOME/.config}/workvm/vm-setup-booted}"
 
 log() { printf '%s\n' "$*"; }
 ok() { log "✓ $*"; }
@@ -476,9 +480,20 @@ main() {
     log "VM base pronta. Próximo passo em uma VM clonada:"
     log "  $GIT_ROOT/project-setup.sh <projeto>"
     log "Se o grupo docker ainda não valer nesta sessão: newgrp docker"
-    log "Reinicie para testar: GRUB sem menu → SDDM autologin → Hyprland"
     log "Nos próximos logins: workvm-git-pull.service faz git pull --ff-only em $GIT_ROOT (se branch=main)"
     log "Com projeto: project-start.sh faz git fetch nos CLONE_REPOS (se na branch de origem)"
+
+    if [ ! -f "$VM_SETUP_BOOTED_MARKER" ]; then
+        mkdir -p "$(dirname "$VM_SETUP_BOOTED_MARKER")"
+        touch "$VM_SETUP_BOOTED_MARKER"
+        log ""
+        log "Primeira execução: reiniciando em 3s (GRUB → SDDM autologin → Hyprland)."
+        log "Para forçar reboot de novo no próximo setup: rm $VM_SETUP_BOOTED_MARKER"
+        sleep 3
+        # systemctl reboot via polkit do usuário falha com "Access denied" sem
+        # askpass; com NOPASSWD o binário reboot eleva sem prompt.
+        sudo reboot
+    fi
 }
 
 main "$@"
