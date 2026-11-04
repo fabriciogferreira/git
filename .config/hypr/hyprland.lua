@@ -43,7 +43,9 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
--- Direct hyprlauncher dies on virtio: the render node rejects CREATE_DUMB.
+-- Direct hyprlauncher dies on virtio: render node rejects CREATE_DUMB.
+-- Wrapper opens the primary node. Without virgl the compositor also advertises
+-- FP16 dmabuf (AB4H) that GBM cannot allocate — pin SDR + KMS-scannable formats.
 local menu        = "$HOME/git/bin/hyprlauncher-virtio.sh"
 
 
@@ -259,6 +261,17 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,  -- no anime/default wallpaper asset
         disable_hyprland_logo   = true,
+    },
+})
+
+-- virtio_gpu without virgl: EGL lists FP16 formats hyprtoolkit picks first (AB4H)
+-- and CREATE_DUMB returns EINVAL. SDR + KMS-only dmabuf keeps AR24/XR24.
+hl.config({
+    render = {
+        use_fp16 = 0,
+    },
+    quirks = {
+        skip_non_kms_dmabuf_formats = true,
     },
 })
 

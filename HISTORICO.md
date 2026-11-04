@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Super+R: hyprlauncher some de novo no virtio (sem virgl)
+
+- **problema:** Super+R chamava `hyprlauncher-virtio.sh`; o processo abria e segfaultava. Sem UI.
+- **por que é um problema:** a WorkVM fica sem menu de apps depois do `vm-setup`.
+- **resolvido como:** a GPU do guest está `virtio_gpu` com `-virgl`. O compositor anunciava dmabuf FP16 (`AB4H`) e o hyprtoolkit escolhia esse formato; `CREATE_DUMB` no card falha com EINVAL. Mantém o preload render→card e no `hyprland.lua` liga `render.use_fp16 = 0` + `quirks.skip_non_kms_dmabuf_formats = true` para o menu ficar em XR24/AR24.
+
 ## Prompt `test-gap-analysis` antes da mutation (Olie / Locav / Televisão)
 
 - **problema:** mutation endurecia testes existentes, mas gaps de requisito do card (casos de uso sem teste) só apareciam por acaso; Locav ainda tinha front sem passo de análise.

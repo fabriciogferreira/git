@@ -247,6 +247,8 @@ setup_apps() {
 
     # Super+R is hyprlauncher via bin/hyprlauncher-virtio.sh. The render node
     # on virtio rejects CREATE_DUMB; the wrapper opens the primary node.
+    # hyprland.lua also sets render.use_fp16=0 and skip_non_kms_dmabuf_formats
+    # so hyprtoolkit does not pick AB4H (EINVAL without virgl).
     # github-cli: pre-QA cria PR com assignee/reviewers/labels (sem MCP form deferral).
     # hyprland do extra (não hyprland-git). Os dois conflitam; se a VM ainda
     # tem o AUR, remove antes para o --noconfirm não abortar o setup.
