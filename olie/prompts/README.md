@@ -8,7 +8,7 @@ Card / workday prompts for Olie. Paste into the agent when working this project.
 | `~/git/olie/cards/` | Media analyses per card |
 | `~/git/.cursor/rules/` | Meta-repo Cursor rules (automatic) |
 
-Paste-ready: copy one file, replace `{{ code }}`, paste.
+Paste-ready: copy one file, replace `{{ code }}`, paste. Do that only in the chat paste — never commit or push a prompt where `{{ code }}` was replaced by a real card code (see **Prompt templates** in `workflow-policy.md`).
 
 In the develop chat, short commands (defined in `workflow-policy.md` / `implementation.md`): `next prompt` runs the recommended next file; `next mutation` continues the personal mutation stack one test file at a time; `try again` resumes or re-runs the current prompt; `to correct` fixes items that failed `implementation-validation.md`.
 

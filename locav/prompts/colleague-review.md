@@ -43,6 +43,8 @@ Cypress lives inside `locav-front` (`cypress/e2e`) on the company remote. The **
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
+Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before any meta-repo commit — see **Prompt templates** in `workflow-policy.md`.
+
 You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/locav/prompts/workflow-policy.md` — never recommend prompt paths there.
 
 ## 4. Branches to test

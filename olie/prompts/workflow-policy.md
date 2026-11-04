@@ -164,6 +164,16 @@ Do not edit, rebase, merge, commit, push, or open/update PRs in that repository.
 
 If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/restore safely and stop; do not finish the conflict.
 
+## Prompt templates (`{{ code }}`)
+
+Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal placeholders (`{{ code }}`, and any other `{{ … }}` the file uses). Replacing them with a real card code happens only in the chat paste, never in the versioned file.
+
+When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prompt edits, or any other path):
+
+- Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. `DOP-1262` instead of `{{ code }}`).
+- If a prompt is dirty that way, restore it (`git checkout -- path`) before the commit.
+- Intentional prompt wording changes are fine; leave `{{ code }}` (and the other placeholders) intact.
+
 ## Card content vs chat (private prompts)
 
 Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.

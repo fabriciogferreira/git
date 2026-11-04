@@ -166,6 +166,16 @@ The body of each pull request is `.github/pull_request_template.md` in that repo
 
 The title stays English. `gh pr view` must still show the template headings, the card link, and the related pull request URL when one exists.
 
+## Prompt templates (`{{ code }}`)
+
+Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal placeholders (`{{ code }}`, and any other `{{ … }}` the file uses). Replacing them with a real card code happens only in the chat paste, never in the versioned file.
+
+When committing or pushing the meta-repo `~/git` (e2e or any other path):
+
+- Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. a real card code instead of `{{ code }}`).
+- If a prompt is dirty that way, restore it (`git checkout -- path`) before the commit.
+- Intentional prompt wording changes are fine; leave `{{ code }}` (and the other placeholders) intact.
+
 ## Card content vs chat (private prompts)
 
 Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.

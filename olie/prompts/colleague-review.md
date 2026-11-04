@@ -1,6 +1,6 @@
 # Colleague Card Review
 
-Review card DOP-1267 while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
+Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
 
 If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and **ask the user to fix the broken tool** before continuing. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
@@ -45,7 +45,9 @@ You may change only `~/git/olie/olie-e2e`. That tree is not part of the company 
 - If those tests already exist and a requested point is uncovered, add the missing tests.
 - Do not rewrite tests that already cover the card.
 
-For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
+For `~/git/`, do not create a card branch. Commit and push the e2e changes (and new card media analyses under `olie/cards/`) directly to 'main'.
+
+Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push.
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
@@ -98,7 +100,7 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 
 ## 8. Report
 
-- Card DOP-1267.
+- Card {{ code }}.
 - Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.

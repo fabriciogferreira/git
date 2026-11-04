@@ -48,6 +48,8 @@ If the author changed that front, **add** end-to-end tests there for the fronten
 
 For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
 
+Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy.md`.
+
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
 You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/televisao/prompts/workflow-policy.md` — never recommend prompt paths there.

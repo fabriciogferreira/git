@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Prompt `{{ code }}` não vai no commit do meta-repo
+
+- **problema:** o agente substituía `{{ code }}` pelo código do card (ex. `DOP-1262`) dentro de `*/prompts/*.md` e podia subir isso no `git push` do meta-repo.
+- **por que é um problema:** o arquivo versionado deixa de ser template paste-ready; o próximo card herda um código errado.
+- **resolvido como:** regra em `workflow-policy.md` (**Prompt templates**), `colleague-review.md` §3 e READMEs dos prompts (Olie/Locav/Televisão): placeholder fica no repo; substituição só no paste do chat; dirty com código real → `git checkout --` antes do commit.
+
 ## Colleague QA/CR: Validação/Revisado só depois de gap + mutation (Olie / Locav / Televisão)
 
 - **problema:** na Olie (e Locav) o colleague paste aprovava PRs e avançava o funil, só *recomendando* `test-gap-analysis` + `mutation-testing` depois. A Televisão já tinha o gate; Olie/Locav divergiam.
