@@ -66,12 +66,19 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 ## Colleague review outcome
 
-For a colleague card in 'QA/CR', the colleague review closes in two paths:
+For a colleague card in 'QA/CR', the board move waits until **every** gate that applies has finished:
 
-1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
-2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, move the card to the live funnel step 'Validação'.
+1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. Write missing use cases into the card content when that run reports them.
+3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-After the colleague review, if the change set touched the backend (`api-main`), recommend `test-gap-analysis.md` then the personal `mutation-testing.md` **in the Cursor chat only** before the tech lead pass (never on the card — **Card content vs chat**).
+Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
+
+**Do not move to 'Corrigir' or 'Validação' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve PRs until the combined outcome below.
+
+**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back.
 
 ## Project execution
 

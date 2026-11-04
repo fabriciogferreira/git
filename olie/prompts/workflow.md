@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em progresso' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. On pass: PRs approved/merged and the card moves to 'Validação'; on fail: card to 'Corrigir'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. With `api-main` changes: stay here through test-gap-analysis and mutation-testing. Combined pass: PRs approved and the card moves to 'Validação'; combined fail: card to 'Corrigir'. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. Use `~/git/olie/prompts/validation.md`. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'concluído' (pass) or 'corrigir' (fail). |
@@ -36,16 +36,11 @@ For each colleague card in 'QA/CR', run the colleague review flow:
 
 1. Start the review on the card's pull requests.
 2. Run `~/git/olie/prompts/colleague-review.md`.
-3. If the review has comments about what should be fixed, update the card content with them (the card goes to 'corrigir' ou melhorar).
-4. Run `~/git/olie/prompts/test-gap-analysis.md` (only if the change set touched `api-main`). Skip when there is no backend change. Write missing use cases into the card when reported.
+3. If the review has comments about what should be fixed, update the card content with them. When `api-main` changed, do **not** move the card yet.
+4. Run `~/git/olie/prompts/test-gap-analysis.md` (only if the change set touched `api-main`). Skip when there is no backend change. Write missing use cases into the card when reported. Keep the card in 'QA/CR'.
 5. Run `~/git/olie/prompts/mutation-testing.md` (personal, only if the change set touched `api-main`). Skip when there is no backend change. If the mutation run has comments about what should be fixed, update the card content with them.
 
-Outcome: if all the card's pull requests were approved by the prompts, move the card to 'Validação'. If not all passed, move the card to 'Corrigir'.
-
-Do not move the card unless the review result says where it goes:
-
-- Failed: the card goes to 'Corrigir'.
-- Passed: the card goes to 'Validação'.
+Combined outcome (see **Colleague review outcome** in `workflow-policy.md`): approve PRs and move to 'Validação' only when every applicable gate passed. Move to 'Corrigir' only after those gates finished and at least one failed. Do not move after the colleague paste alone when the backend stack still applies.
 
 ## 2. Production review
 

@@ -76,7 +76,7 @@ If `televisao-api` tests were added or edited and Pest is installed, those files
 ## 6. Out of scope
 
 - Do not fix the author's code.
-- Do **not** move the card to 'Corrigir' or 'Revisado' in this paste when the change set touched `televisao-api` — finish mutation first (see **Outcome** and **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`).
+- Do **not** move the card to 'Corrigir' or 'Revisado' / approve / merge in this paste when the change set touched `televisao-api` — finish `test-gap-analysis.md` then `mutation-testing.md` first (see **Outcome** and **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`).
 - Do not treat a local-only success as the production check. That check is 'Revisão de produção'.
 - Do not search for related improvements in this pass. This is a review only.
 

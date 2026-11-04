@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Colleague QA/CR: Validação/Revisado só depois de gap + mutation (Olie / Locav / Televisão)
+
+- **problema:** na Olie (e Locav) o colleague paste aprovava PRs e avançava o funil, só *recomendando* `test-gap-analysis` + `mutation-testing` depois. A Televisão já tinha o gate; Olie/Locav divergiam.
+- **por que é um problema:** o card saía de QA/CR sem os gates de teste; findings de gap/mutation chegavam tarde e o loop de correção quebrava.
+- **resolvido como:** nos três produtos, com backend (Locav: também front no gap), ficar em QA/CR; aprovar/mover ('Validação' Olie; 'Revisado' Locav/TV) ou 'Corrigir' só depois do stack (ou skip explícito). `mutation-testing.md` no fim do stack colleague aplica o outcome combinado, não `pre-qa.md`.
+
 ## Clone dos CLONE_REPOS via gh (sem chave SSH)
 
 - **problema:** `project-setup` clonava com `git clone` nas URLs `git@github.com:…` do `project.conf`. VM nova precisava de chave SSH só para baixar os repos.

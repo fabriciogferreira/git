@@ -68,12 +68,19 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 ## Colleague review outcome
 
-For a colleague card in 'QA/CR' (logical `quality-review`), the colleague review closes in two paths:
+For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **every** gate that applies has finished:
 
-1. Failed / findings to fix — write the findings into the card content (OlieFlowAi); the card moves to the live funnel step 'Corrigir'.
-2. Passed — mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`). When the outcome is approval, change the card status in the funnel to 'Revisado': resolve with MCP `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works.
+1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. Write missing use cases into the card content when that run reports them.
+3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-After the colleague review, if the change set touched `LocavApi` and/or `locav-front`, recommend `test-gap-analysis.md` (backend + frontend gaps) **in the Cursor chat only**. If `LocavApi` also changed, follow with the personal `mutation-testing.md` before the tech lead pass (never put prompt paths on the card — **Card content vs chat**).
+Order when the stack applies: colleague-review → test-gap-analysis → mutation-testing (mutation only if `LocavApi`).
+
+**Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` when backend applies **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
+
+**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no `LocavApi`) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
 
 ## Project execution
 

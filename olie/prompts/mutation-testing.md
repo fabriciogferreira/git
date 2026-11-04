@@ -1,8 +1,13 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/olie/prompts/test-gap-analysis.md` (which follows implementation-validation or colleague-review when backend changed) **and** the card changed `~/git/olie/api-main`. Skip entirely when the change set has no backend.
+Use this **after** `~/git/olie/prompts/test-gap-analysis.md` **and** the card changed `~/git/olie/api-main`. Skip entirely when the change set has no backend.
 
-**Stack gate:** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pre-qa.md`.
+Two entry points:
+
+1. **Own card (develop handoff)** — after `test-gap-analysis.md` (which follows implementation-validation when backend changed). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/pre-qa.md` (`next prompt` runs it).
+2. **Colleague card in 'QA/CR'** — after `test-gap-analysis.md` (which follows colleague-review when backend changed). Leave the card in 'QA/CR' until this stack finishes. Then apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** this mutation run reported fixes for the author; approve PRs and move to 'Validação' only if colleague passed, gap analysis was clean (or skipped), and mutation passed or was skipped. Do not move the card before this stack when mutation applies.
+
+**Stack gate (develop handoff):** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pre-qa.md`.
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands** (includes `next mutation`).
 
@@ -104,5 +109,7 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 
 Report the file, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger.
 
-- **Files remain:** list the remaining paths (or at least the next one and the count). Tell the user to send **`next mutation`** (or re-paste this prompt). Do **not** recommend `pre-qa.md`. Do **not** say the stack is ready for `next prompt`.
-- **None remain:** say the change-set stack is complete and recommend `~/git/olie/prompts/pre-qa.md` (`next prompt` runs it).
+- **Files remain:** list the remaining paths (or at least the next one and the count). Tell the user to send **`next mutation`** (or re-paste this prompt). Do **not** recommend `pre-qa.md`. Do **not** say the stack is ready for `next prompt`. Do **not** move a colleague card out of 'QA/CR'.
+- **None remain:**
+  - **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/olie/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
+  - **Colleague QA/CR stack**: apply the combined funnel outcome now (**Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`), including any gaps already written by `test-gap-analysis.md`. If mutation reported fixes, write them into the card content before the move (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths).

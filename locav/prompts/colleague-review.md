@@ -69,7 +69,7 @@ If `LocavApi` tests were added or edited, those files are Pest 4. A new PHPUnit 
 ## 6. Out of scope
 
 - Do not fix the author's code.
-- The outcome moves the card: a failed review moves it to the live funnel step 'Corrigir'; a passed review marks the card's pull requests as approved, merges them when all passed, and changes the card status in the funnel to 'Revisado'. Report the result; the user (or a later workday paste) decides the next stage beyond that.
+- The board move follows **Outcome** and **Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`. When the change set touched `LocavApi` and/or `locav-front`, do **not** approve/merge PRs or set 'Revisado' / move to 'Corrigir' in this paste — leave the card in 'QA/CR' until `test-gap-analysis.md` finishes and, if `LocavApi` changed, `mutation-testing.md` finishes (or the user explicitly skips that stack).
 - Do not treat a local-only success as the production check. That check is 'Revisão em Produção'.
 - Do not search for related improvements in this pass. This is a review only.
 
@@ -89,12 +89,14 @@ A failed requirement is a failed review. Do not call the card ready for 'Valida�
 
 ## 8. Outcome
 
-Close the review with **one of two paths**. Do not invent a third.
+Follow **Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`. Do not invent a third path.
 
-1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author then fixes via `~/git/locav/prompts/correction.md`. Keep the card in the live funnel step 'Corrigir'.
+1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author later fixes via `~/git/locav/prompts/correction.md`. Do **not** approve or merge PRs on a fail.
 
-2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, mark the card as 'request changes'. If all the card's PRs were approved, merge all of them (`merge_pull_request`).
+2. **Gap / mutation stack still required** — If the change set touched `LocavApi` and/or `locav-front`, leave the card in 'QA/CR'. In the **Cursor chat** only, recommend `~/git/locav/prompts/test-gap-analysis.md` as the next paste (`next prompt`). If `LocavApi` also changed, follow with `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left). Do **not** put those paths on the card. Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel outcome happens only after that stack finishes (or the user explicitly skips it).
 
-3. **Test / backend follow-up** — If the change set touched `LocavApi` and/or `locav-front`, after this review recommend in the **Cursor chat** only `~/git/locav/prompts/test-gap-analysis.md` as the next paste. If `LocavApi` also changed, follow with `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). Do **not** put those paths on the card. Write gap findings and mutation fixes into the card content (findings only); loop the colleague review after the author fixes when either reports work for the author.
+3. **No gap/mutation stack** — When neither `LocavApi` nor `locav-front` changed, apply the funnel move now:
+   - Fail → live step 'Corrigir'.
+   - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if only some passed, mark only those; if none passed, mark 'request changes'; if all approved, merge them (`merge_pull_request`); set funnel status 'Revisado' via MCP: `index-project-funnels-tool` → `funnel_status[]` by name → `edit-project-tool` with `funnel_status`. Never hard-code the status id. If there is no 'Revisado' status, use the move procedure in `~/git/locav/prompts/workflow-policy.md`.
 
-4. **Funnel status** — When the outcome is approval, change the card status in the funnel to 'Revisado': MCP `index-project-funnels-tool` (board funnel → `funnel_status[]` by name) then `edit-project-tool` with `funnel_status`; never hard-code the status id. Do not use HTTP `get-available-steps` when MCP works. If the live funnel has no 'Revisado' status, move the card to the live step that carries the outcome with the move procedure in `~/git/locav/prompts/workflow-policy.md`.
+4. **After gap analysis (+ mutation when LocavApi)** — When that stack finishes in a later paste, apply the combined rule: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** mutation reported fixes to write; approve / merge / 'Revisado' only if colleague passed, gaps were clean/skipped, and mutation passed or was skipped (no `LocavApi`).

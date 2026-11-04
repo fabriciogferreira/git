@@ -78,7 +78,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
 
-**Do not move to 'Corrigir' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it).
+**Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
 

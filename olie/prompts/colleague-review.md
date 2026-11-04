@@ -1,6 +1,6 @@
 # Colleague Card Review
 
-Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
+Review card DOP-1267 while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
 
 If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and **ask the user to fix the broken tool** before continuing. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
@@ -92,13 +92,13 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 ## 7. Out of scope
 
 - Do not fix the author's code.
-- The outcome moves the card: a failed review moves it to the live funnel step 'Corrigir'; a passed review marks the card's pull requests as approved, and moves the card to the live funnel step 'Validação'. Report the result; the user (or a later workday paste) decides the next stage beyond that.
+- The board move follows **Outcome** and **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`. When the change set touched `api-main`, do **not** approve PRs or move to 'Validação' / 'Corrigir' in this paste — leave the card in 'QA/CR' until `test-gap-analysis.md` and `mutation-testing.md` finish (or the user explicitly skips that stack).
 - Do not treat a local-only success as the production check. That check is 'Revisão de Produção'.
 - Do not search for related improvements in this pass. This is a review only.
 
 ## 8. Report
 
-- Card {{ code }}.
+- Card DOP-1267.
 - Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - Whether the implementation matches the card, with the requirement that failed or passed.
@@ -111,10 +111,10 @@ A failed requirement is a failed review. Do not call the card ready for 'valida�
 
 ## 9. Outcome
 
-Close the review with **one of two paths**. Do not invent a third.
+Follow **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`. Do not invent a third path.
 
-1. **Failed / findings to fix** — If the review has comments about what should be fixed, write them into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author then fixes via `~/git/olie/prompts/correction.md`. Move the card to the live funnel step 'Corrigir'.
+1. **Failed / findings to fix (no backend stack)** — If the review has comments about what should be fixed **and** the change set did **not** touch `api-main`, write them into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author then fixes via `~/git/olie/prompts/correction.md`. Move the card to the live funnel step 'Corrigir'.
 
-2. **Passed** — Mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, move the card to the live funnel step 'Corrigir'. If all the card's PRs were approved, move the card to the live funnel step 'Validação' (logical `validation`).
+2. **Passed (no backend stack)** — When the change set did **not** touch `api-main`: mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, move the card to 'Corrigir'. If all the card's PRs were approved, move the card to the live funnel step 'Validação' (logical `validation`).
 
-3. **Backend follow-up** — If the change set touched the backend (`api-main`), after this review recommend in the **Cursor chat** only `~/git/olie/prompts/test-gap-analysis.md` as the next paste, then `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left, then `next prompt` → `pre-qa.md`). Do **not** put those paths on the card. Write gap findings and mutation fixes into the card content (findings only); loop the colleague review after the author fixes when either reports work for the author.
+3. **Backend still required** — If the change set touched `~/git/olie/api-main`, leave the card in 'QA/CR'. In the **Cursor chat** only, recommend `~/git/olie/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left). Do **not** put those paths on the card. Do **not** move to 'Corrigir' or 'Validação' and do **not** approve PRs yet. Write review findings into the card content now if the colleague review already failed; gap findings and mutation fixes go into the card when those prompts run. The combined funnel move (and PR approvals) happens only after that stack finishes — see **Colleague review outcome** in `workflow-policy.md` (or when the user explicitly skips the stack).

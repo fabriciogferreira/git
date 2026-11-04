@@ -1,6 +1,13 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/locav/prompts/test-gap-analysis.md` (which follows implementation-validation or colleague-review when backend/front apply) **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend. When this stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pre-qa.md` (`next prompt` runs it). Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
+Use this **after** `~/git/locav/prompts/test-gap-analysis.md` **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend.
+
+Two entry points:
+
+1. **Own card (develop handoff)** — after `test-gap-analysis.md` (which follows implementation-validation when backend/front apply). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pre-qa.md` (`next prompt` runs it).
+2. **Colleague card in 'QA/CR'** — after `test-gap-analysis.md` (which follows colleague-review when `LocavApi` changed). Leave the card in 'QA/CR' until this stack finishes. Then apply **Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** this mutation run reported fixes for the author; approve / merge / 'Revisado' only if colleague passed, gap analysis was clean (or skipped), and mutation passed or was skipped. Do not move the card before this stack when mutation applies.
+
+Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
@@ -93,4 +100,9 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 
 - If you added temporary `covers()` / `mutates()`, remove them before writing the ledger row.
 
-After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger. If none remain after this row, recommend `~/git/locav/prompts/pre-qa.md` as the next paste; otherwise say to paste this prompt again for the next changed test file.
+After the row is written, report the file, whether it was converted from PHPUnit in this paste, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger.
+
+- **Files remain:** say to paste this prompt again (or send `next mutation`) for the next changed test file. Do **not** recommend `pre-qa.md`. Do **not** move a colleague card out of 'QA/CR'.
+- **None remain:**
+  - **Develop handoff:** recommend `~/git/locav/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
+  - **Colleague QA/CR stack:** apply the combined funnel outcome now (**Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`), including any gaps already written by `test-gap-analysis.md`. If mutation reported fixes, write them into the card content before the move (findings only — **Card content vs chat**; no prompt paths).
