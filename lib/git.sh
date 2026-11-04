@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Clone, fetch, overlay e identidade desta VM.
 # Problema: isso estava no meio de common.sh e achar uma função exigia ler o arquivo inteiro.
+# GitHub: com gh autenticado, clone/fetch usam HTTPS (sem chave SSH na VM).
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
 
 # Walk up until the meta-repo root (lib/common.sh next to project-setup.sh).
@@ -181,9 +182,13 @@ workvm_fetch_repo() {
 }
 
 # Entries: "<git-url> <path> [branch]" (same format as CLONE_REPOS).
+# Com gh autenticado, origin SSH vira HTTPS antes do fetch (mesmo critério do clone).
 workvm_fetch_project_repos() {
     local git_root="${GIT_ROOT:-$HOME/git}"
     local entry dest branch rest
+
+    WORKVM_GH_GIT_PREPARED=0
+    workvm_gh_prepare_git || true
 
     for entry in "$@"; do
         rest="${entry#* }"
@@ -207,6 +212,7 @@ workvm_fetch_project_repos() {
             echo "→ Fetch pulado: $dest (sem branch de origem no CLONE_REPOS)"
             continue
         fi
+        workvm_github_prefer_https_remote "$dest"
         workvm_fetch_repo "$dest" "$branch"
     done
 }
@@ -259,25 +265,123 @@ workvm_pull_repo() {
     fi
 }
 
+# owner/repo a partir de URL GitHub (SSH ou HTTPS). stdout = slug; return 1 se não for.
+# Problema: CLONE_REPOS guarda git@github.com:…; o gh repo clone quer OWNER/REPO.
+workvm_github_slug_from_url() {
+    local url="${1:-}"
+    local slug
+
+    [ -n "$url" ] || return 1
+    case "$url" in
+        git@github.com:*)
+            slug="${url#git@github.com:}"
+            ;;
+        https://github.com/* | http://github.com/*)
+            slug="${url#*github.com/}"
+            ;;
+        ssh://git@github.com/*)
+            slug="${url#ssh://git@github.com/}"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    slug="${slug%.git}"
+    slug="${slug%%/}"
+    slug="${slug%%\?*}"
+    case "$slug" in
+        */*)
+            # Só owner/repo (sem path extra).
+            case "${slug#*/}" in
+                */*) return 1 ;;
+            esac
+            printf '%s\n' "$slug"
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# True se gh existe e a sessão está válida (clone/fetch HTTPS sem chave SSH).
+workvm_gh_ready() {
+    command -v gh >/dev/null 2>&1 || return 1
+    gh auth status >/dev/null 2>&1
+}
+
+# HTTPS + credential helper do gh.
+# Problema: project-setup clonava via SSH; VM nova precisa de chave só para
+# git clone, enquanto o pre-QA já pede gh auth login.
+# Uma vez por chamada a workvm_clone_project_repos (flag em memória).
+workvm_gh_prepare_git() {
+    if [ "${WORKVM_GH_GIT_PREPARED:-0}" = "1" ]; then
+        workvm_gh_ready
+        return $?
+    fi
+    if ! workvm_gh_ready; then
+        return 1
+    fi
+    # Prefer HTTPS so clone/fetch don't need SSH keys on the VM.
+    gh config set git_protocol https >/dev/null 2>&1 || true
+    gh auth setup-git >/dev/null 2>&1 || true
+    WORKVM_GH_GIT_PREPARED=1
+    return 0
+}
+
+# Se origin for git@github.com e o gh estiver ok, troca para HTTPS (fetch no login).
+workvm_github_prefer_https_remote() {
+    local dest="${1:-}"
+    local url slug new_url
+
+    [ -n "$dest" ] && [ -d "$dest/.git" ] || return 0
+    workvm_gh_prepare_git || return 0
+    url="$(git -C "$dest" remote get-url origin 2>/dev/null)" || return 0
+    case "$url" in
+        https://github.com/*) return 0 ;;
+    esac
+    slug="$(workvm_github_slug_from_url "$url")" || return 0
+    new_url="https://github.com/${slug}.git"
+    if [ "$url" = "$new_url" ]; then
+        return 0
+    fi
+    echo "→ origin HTTPS: $dest"
+    git -C "$dest" remote set-url origin "$new_url"
+}
+
 workvm_clone_repo() {
     local repo="$1"
     local destination="$2"
     local branch="${3:-}"
+    local slug=""
 
     mkdir -p "$(dirname "$destination")"
 
     if [ ! -d "$destination/.git" ]; then
-        if [ -n "$branch" ]; then
-            echo "→ Clonando: $repo ($branch) → $destination"
+        if slug="$(workvm_github_slug_from_url "$repo")" && workvm_gh_prepare_git; then
+            echo "→ Clonando via gh: $slug${branch:+ ($branch)} → $destination"
             # Keep --branch for initial checkout, but fetch all remote heads
             # (not --single-branch) so teammates' feature branches are visible.
-            git clone --branch "$branch" "$repo" "$destination"
+            if [ -n "$branch" ]; then
+                gh repo clone "$slug" "$destination" -- --branch "$branch"
+            else
+                gh repo clone "$slug" "$destination"
+            fi
         else
-            echo "→ Clonando: $repo → $destination"
-            git clone "$repo" "$destination"
+            if workvm_github_slug_from_url "$repo" >/dev/null 2>&1; then
+                echo "aviso: gh não autenticado; clone via git (SSH/HTTPS). Rode: gh auth login && gh auth setup-git" >&2
+            fi
+            if [ -n "$branch" ]; then
+                echo "→ Clonando: $repo ($branch) → $destination"
+                git clone --branch "$branch" "$repo" "$destination"
+            else
+                echo "→ Clonando: $repo → $destination"
+                git clone "$repo" "$destination"
+            fi
         fi
     else
         echo "✓ Já existe: $destination"
+        workvm_github_prefer_https_remote "$destination"
     fi
 
     workvm_pull_repo "$destination" "$branch"
@@ -312,11 +416,16 @@ workvm_wait_for_github_dns() {
 }
 
 # Entries: "<git-url> <path> [branch]". Relative paths are under GIT_ROOT (default $HOME/git).
+# GitHub: prefer gh repo clone (HTTPS) quando gh auth status ok; senão git clone na URL.
 workvm_clone_project_repos() {
     local git_root="${GIT_ROOT:-$HOME/git}"
     local entry repo dest branch rest
 
     workvm_wait_for_github_dns
+    WORKVM_GH_GIT_PREPARED=0
+    if workvm_gh_prepare_git; then
+        echo "==> Clone GitHub via gh (HTTPS; sem chave SSH)"
+    fi
 
     mkdir -p "$git_root"
 

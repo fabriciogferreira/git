@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Clone dos CLONE_REPOS via gh (sem chave SSH)
+
+- **problema:** `project-setup` clonava com `git clone` nas URLs `git@github.com:…` do `project.conf`. VM nova precisava de chave SSH só para baixar os repos.
+- **por que é um problema:** o pre-QA já exige `gh auth login`; configurar SSH era atrito extra na WorkVM.
+- **resolvido como:** `workvm_clone_repo` usa `gh repo clone` (HTTPS + `gh auth setup-git`) quando `gh auth status` ok; senão cai no `git clone` antigo. Clones já existentes com origin SSH passam para HTTPS no setup/login. `CLONE_REPOS` continua com URL SSH (slug é derivado).
+
 ## Super+E não abre o gerenciador de arquivos
 
 - **problema:** Super+E chamava `dolphin`, mas o `vm-setup` não instalava o pacote. O bind falhava em silêncio.

@@ -15,7 +15,7 @@ alwaysApply: true
 | `systemd/workvm.service` | No login nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. `WantedBy=default.target` (não `graphical-session`: RefuseManualStart + SDDM não ativa). |
 | `systemd/workvm-git-pull.service` / `bin/pull-meta.sh` | O meta-repo fica atrás do remoto. Pull `--ff-only` no login; restaura stubs MCP antes do merge; rede/divergência não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
-| `lib/git.sh` | Clone, fetch, overlay e identidade desta VM. |
+| `lib/git.sh` | Clone (via `gh` HTTPS quando autenticado), fetch, overlay e identidade desta VM. |
 | `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones, merge de JSON do Cursor e MCP → `~/.cursor/mcp.json`. |
 | `lib/session.sh` | Wayland, Docker, sshd da VM (o chat do card entra por SSH) e abertura do Cursor e do Brave na instalação do projeto. |
 | `lib/workvm_ed25519.pub` | O site guarda a chave privada. Sem esta pública no `authorized_keys` do guest, o SSH recusa o login. |

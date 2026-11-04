@@ -25,14 +25,17 @@ chmod 600 ~/.config/environment.d/olie.conf
 - **`OLIE_FLOW_AI_MCP_TOKEN`** — o proxy local do MCP `olie-flow-ai` (`127.0.0.1:47331`). O Cursor não usa o header direto: `api.olie.ai` publica OAuth e o agente fica `needsAuth`.
 - **`OLIE_MANAGEMENT_TOKEN`** — Bearer das requests `https://api.olie.ai/api/management/...` nos prompts (`workflow-policy.md`). Precisa da ability `management:access` (ex.: sessão/PAT do app, não o token do MCP). O site, ao criar um card com código Olie, lê o story point com este token e com o do MCP.
 
-### GitHub (PRs)
+### GitHub (clone + PRs)
 
 Use **GitHub CLI** (`gh`), instalado pelo `vm-setup.sh` (`github-cli`):
 
 ```bash
-gh auth login
+gh auth login          # escolha HTTPS
+gh auth setup-git      # credential helper para fetch/push
 gh auth status
 ```
+
+O `project-setup` / `project-start` clona os `CLONE_REPOS` via `gh repo clone` (HTTPS) quando a sessão do `gh` está ok — sem chave SSH na VM. Sem `gh auth login`, cai no `git clone` da URL do `project.conf` (ainda SSH).
 
 Não coloque PAT do GitHub no `environment.d` só para o agente: o pre-QA usa `gh pr create` / `gh pr edit` com a sessão do `gh`. Se ainda existir `GITHUB_PERSONAL_ACCESS_TOKEN` no `olie.conf` de tentativas antigas com MCP, pode remover.
 
