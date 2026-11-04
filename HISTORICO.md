@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Super+E não abre o gerenciador de arquivos
+
+- **problema:** Super+E chamava `dolphin`, mas o `vm-setup` não instalava o pacote. O bind falhava em silêncio.
+- **por que é um problema:** a WorkVM fica sem explorador de arquivos pelo atalho do Hyprland.
+- **resolvido como:** `setup_apps` instala `dolphin` (já era o `fileManager` no `hyprland.lua`).
+
 ## Super+R: hyprlauncher some de novo no virtio (sem virgl)
 
 - **problema:** Super+R chamava `hyprlauncher-virtio.sh`; o processo abria e segfaultava. Sem UI.

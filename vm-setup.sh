@@ -260,11 +260,13 @@ setup_apps() {
     # Flameshot 14 no Wayland usa o portal. O portal 1.22 não exporta
     # Screenshot sem um impl de Access; o hyprland não tem, o gtk tem.
     # hyprland-portals.conf já pede default=hyprland;gtk.
-    log "oficial: hyprland kitty hyprlauncher dbeaver github-cli flameshot portais"
+    # dolphin: Super+E no hyprland.lua; sem o pacote o bind não abre nada.
+    log "oficial: hyprland kitty hyprlauncher dolphin dbeaver github-cli flameshot portais"
     sudo pacman -S --needed --noconfirm \
         hyprland \
         kitty \
         hyprlauncher \
+        dolphin \
         dbeaver \
         github-cli \
         flameshot \
