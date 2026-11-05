@@ -9,6 +9,8 @@ Two entry points:
 
 Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
 
+**Today:** one changed `*Test.php` per paste (`next mutation`). **Target:** the same files sharded across sandboxes inside `televisao-{code}` so wall-clock drops without changing scoring rules — `~/git/televisao/sandbox/ORCHESTRATION.md`. Until the orchestrator ships, keep this one-file-per-paste procedure.
+
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
 Personal workflow on this VM. Run it only when `televisao-backend` already has Pest and `pest-plugin-mutate`. If either is missing, stop. Do not install them and do not bump PHP to match another product.

@@ -4,9 +4,9 @@ Problema resolvido entra aqui.
 
 ## Sandbox Manager (piloto Televisão)
 
-- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros.
-- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB).
-- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim sem `container_name`, e2e em bridge, GUI via override de portas). Estado em `~/.local/share/workvm/sandboxes/`. Selftest: `bin/workvm-sandbox-selftest.sh`. Smoke com Docker real: `bin/workvm-sandbox-smoke.sh` na guest (usuário no grupo `docker`).
+- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exige pastes sequenciais (`colleague-review` → `test-gap-analysis` → `mutation-testing` → N× `next mutation`), o que alonga o wall-clock.
+- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiça a guest ociosa.
+- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim, e2e em bridge, GUI sob demanda). Contrato de orquestração (compatible vs exclusive; fan-out do colleague review; shard mutation 1 arquivo/sandbox): `televisao/sandbox/ORCHESTRATION.md`. Selftest: `bin/workvm-sandbox-selftest.sh`. Orquestrador automático a partir do colleague-review ainda não liga os pastes — documentação primeiro para medir economia num card real.
 
 ## Modelo genérica `archlinux` → `base-dev`
 

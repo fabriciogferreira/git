@@ -78,6 +78,10 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
 
+**Today (manual pastes):** that order is still one Cursor paste after another, and `mutation-testing.md` is one changed test file per paste (`next mutation`). That wall-clock cost is the problem sandboxes target.
+
+**Target (Card VM + sandboxes):** keep the same gates and outcome rules, but run exclusive work inside the Card WorkVM (`televisao-{code}`) via `~/git/bin/workvm-sandbox` — shard mutation one file per sandbox (queue when over `WORKVM_SANDBOX_MAX`), and run backend suite / front e2e / front unit in sibling sandboxes when applicable. Compatible work (colleague miolo, gap analysis) stays on the Card VM. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Until that orchestrator ships, keep using sequential pastes.
+
 **Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
