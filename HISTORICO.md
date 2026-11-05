@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## UFW no host: forward libvirt preso em NIC antiga (`enp7s0`)
+
+- **problema:** na VM `televisao`, `vm-setup.sh` / `pacman -Sy` dava timeout em todos os mirrors BR (`core.db` / `extra.db`). Ping para a internet na guest funcionava; TCP 443 não.
+- **por que é um problema:** o sintoma parece mirror morto ou rede da guest. `televisao` é clone da modelo `archlinux`, então a primeira hipótese era disco/imagem da modelo. Não era: o bloqueio estava no **host**. Qualquer WorkVM na `default` (NAT/`virbr0`) quebrava igual — `olie`, cards, etc.
+- **resolvido como:** no host, UFW tinha `DEFAULT_FORWARD_POLICY=DROP` e a rota `ufw route allow in on virbr0 out on enp7s0`. A NIC viva passou a ser `enp6s0`; `enp7s0` sumiu. ICMP still passava (`ufw-before-forward` libera echo-request); TCP ia para a policy DROP. Ajuste: `ufw route delete … enp7s0` + `ufw route allow in on virbr0 out on enp6s0` (v4 e v6). Detalhe operacional em `host-setup.md`.
+
 ## Prompt `{{ code }}` não vai no commit do meta-repo
 
 - **problema:** o agente substituía `{{ code }}` pelo código do card (ex. `DOP-1262`) dentro de `*/prompts/*.md` e podia subir isso no `git push` do meta-repo.

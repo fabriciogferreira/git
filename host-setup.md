@@ -4,6 +4,25 @@ O host (Hyprland, fone no Fifine, monitor DP-1) ficou sem screenshot e com volum
 
 O que vale em toda VM nova está no `vm-setup.sh` e no `.config/`. O áudio do Fifine fica só nesta máquina (`~/.config/easyeffects/`).
 
+## Rede das WorkVMs (UFW + libvirt)
+
+**Problema.** `pacman` / HTTPS na guest timeout; ping para `1.1.1.1` ok. Parecia mirror ou clone da modelo `archlinux` — não era. O UFW do host (`DEFAULT_FORWARD_POLICY=DROP`) só liberava forward `virbr0` → NIC de saída. A regra ficou em `enp7s0` depois que a interface real passou a ser `enp6s0`. ICMP ainda passava; TCP (mirrors, git, gh) não. Afeta **todas** as VMs na rede `default`, não o disco da modelo.
+
+**Como ficou.** Rotas no UFW apontam para a NIC atual:
+
+```bash
+# conferir a NIC de uplink
+ip -br link
+
+# trocar se a regra ainda citar o nome antigo
+sudo ufw route delete allow in on virbr0 out on enp7s0
+sudo ufw route allow in on virbr0 out on enp6s0
+sudo ufw reload
+sudo ufw status verbose
+```
+
+Vale o mesmo em IPv6 (`user6.rules`). Depois de trocar placa/PCI (nome `enp*` muda), rever essas rotas antes de culpar mirror ou a imagem `archlinux`.
+
 ## Máquina
 
 | Peça | O que é |
