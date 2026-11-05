@@ -9,12 +9,11 @@ This prompt has **exactly two exits**:
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
-Run this **before** `~/git/televisao/prompts/mutation-testing.md` when that step applies.
+Three entry points:
 
-Two entry points:
-
-1. **Own card (develop handoff)** — after `~/git/televisao/prompts/implementation-validation.md` passes and the change set touched `~/git/televisao/televisao-api`. Next paste: `mutation-testing.md` (then `pre-qa.md`). If there is no backend change, skip this prompt.
-2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/colleague-review.md`, when the change set touched `televisao-api`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack (this prompt + mutation when applicable) finishes. Gaps reported here count as “fixes for the author” in **Colleague review outcome** (`~/git/televisao/prompts/workflow-policy.md`).
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/implementation-validation.md` passes and the change set touched `~/git/televisao/televisao-api`. Next paste: `mutation-testing.md` (then `pre-qa.md`). If there is no backend change, skip this prompt. On this path, run **before** `mutation-testing.md` when that step applies (sequential).
+2. **Colleague card in 'QA/CR' via dispatcher** — launched **in parallel** by `~/git/televisao/prompts/colleague-review.md` together with `colleague-review-core.md` and `mutation-testing.md` when the change set touched `televisao-api`. **Dispatcher mode:** do not recommend a next paste; return the exit result to the dispatcher; leave funnel moves to it. Gaps reported here still count as “fixes for the author” in **Colleague review outcome** (`~/git/televisao/prompts/workflow-policy.md`).
+3. **Colleague card pasted alone** — if the user pastes this file without the dispatcher, behave as before for the analysis body, then tell them to use `colleague-review.md` so the combined outcome runs.
 
 Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
 
@@ -66,7 +65,12 @@ For every **missing** test, draft one list item:
 
 ## 5. Outcome (two exits only)
 
-1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste when backend mutation still applies; otherwise follow the handoff already in progress (`pre-qa.md` on own card, or **Colleague review outcome** when mutation was skipped).
-2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese; no prompt paths). Do **not** approve/merge and do **not** move the funnel in this paste on the colleague stack — leave 'QA/CR' and continue to `mutation-testing.md` if it still applies; the combined outcome after that stack treats these items like mutation-reported fixes (Corrigir if tests-to-add or mutation fixes remain; Revisado only if colleague passed **and** no tests-to-add **and** mutation clean/skipped). On own-card handoff, still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt.
+1. **No tests to add** — Say so.
+   - **Dispatcher mode (colleague):** return this exit to `colleague-review.md`; do **not** recommend `mutation-testing.md` or move the funnel (mutation is already parallel; the dispatcher applies **Colleague review outcome**).
+   - **Own-card / alone:** in the **Cursor chat** only, recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste when backend mutation still applies; otherwise follow the handoff already in progress (`pre-qa.md` on own card, or tell the user to paste `colleague-review.md` when this was a lone colleague paste).
+2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. **Also write that same list into the card content** through OlieFlowAi (Brazilian Portuguese; no prompt paths). Do **not** approve/merge and do **not** move the funnel in this paste.
+   - **Dispatcher mode:** return the list to the dispatcher; the combined outcome treats these items like mutation-reported fixes.
+   - **Own-card:** still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt.
+   - **Alone on colleague stack:** tell the user to paste `colleague-review.md` for the combined outcome.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/televisao/prompts/workflow-policy.md`.

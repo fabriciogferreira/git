@@ -1,15 +1,20 @@
 # Orquestração de Sandboxes — Televisão (colleague review)
 
-Problema: o stack de revisão de colegas é **sequencial e manual** — paste
-`colleague-review.md` → paste `test-gap-analysis.md` → paste
-`mutation-testing.md` → vários `next mutation` (um arquivo por vez). Cada
-passo espera o anterior; mutation sozinha pode ser dezenas de minutos.
+Problema: o stack de revisão de colegas era **sequencial e manual** — paste
+`colleague-review` → paste `test-gap-analysis` → paste `mutation-testing` →
+vários `next mutation`. Cada passo esperava o anterior.
 
 Objetivo: manter os **gates** (veredito + gap + mutation + testes), mas
+disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e
 rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM
 do Card (`televisao-{code}`), sem clonar outra VM.
 
 CLI / estado: `~/git/bin/workvm-sandbox`, `~/git/televisao/sandbox/README.md`.
+
+Prompts: `colleague-review.md` (disparador) → paralelo
+`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md`
+(quando há backend). Scoreboard + **Colleague review outcome** no fim do
+dispatcher.
 
 ---
 
@@ -22,7 +27,7 @@ ou no **mesmo** sandbox.
 
 Exemplos:
 
-- Miolo do `colleague-review.md` (card, PRs, mídia, contraste, veredito)
+- Miolo `colleague-review-core.md` (card, PRs, mídia, contraste, veredito)
 - `test-gap-analysis.md` (leitura de requisitos × testes; escreve no card)
 - Análise de front + análise de back (só leitura de código)
 - Escrita de specs e2e no meta-repo (`televisao-*-e2e`) sem destruir o DB do app
@@ -44,27 +49,30 @@ Regra prática: **escreve** no mesmo recurso mutável → exclusive; **read-only
 
 ---
 
-## Hoje (dor) vs alvo (economia de tempo)
+## Hoje (dispatcher) vs alvo (sandboxes)
 
-### Hoje — sequencial na Card VM
+### Hoje — um paste, gates em paralelo
 
 ```text
-paste colleague-review.md
-  → paste test-gap-analysis.md
-    → paste mutation-testing.md   # 1 arquivo
-      → next mutation             # 1 arquivo
-        → next mutation           # …
+paste colleague-review.md          # dispatcher
+  bootstrap (card, branches, backend?)
+  ├── Task: colleague-review-core.md
+  ├── Task: test-gap-analysis.md   # se backend
+  └── Task: mutation-testing.md    # se backend; drena todos os *Test.php
+  wait → scoreboard → Colleague review outcome
 ```
 
-Custo: espera humana entre pastes + mutation serializada por arquivo.
+Mutation em modo dispatcher processa **todos** os arquivos restantes do
+change-set nesta corrida (não um `next mutation` por paste). Own-card
+develop handoff continua um arquivo por paste.
 
-### Alvo — um Card VM, fan-out de sandboxes
+### Alvo — fan-out de sandboxes no mesmo Card VM
 
 ```text
 televisao-{code}                         # WorkVM do Card
 │
-├── (na VM — compatible)
-│   ├── colleague-review (miolo: card, PRs, mídia, veredito)
+├── (na VM — compatible; disparados pelo colleague-review.md)
+│   ├── colleague-review-core
 │   └── test-gap-analysis
 │
 ├── mutation-testing (exclusive; 1 arquivo → 1 sandbox)
@@ -87,17 +95,12 @@ aplicáveis não terminarem. O que muda é **como** mutation/testes correm
 
 ## Mutation: shard por arquivo
 
-`mutation-testing.md` hoje processa **um** `*Test.php` por paste (`next mutation`).
-
-No alvo, o orquestrador:
+No dispatcher colleague, o prompt manda drenar o change-set. Com sandbox:
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
 2. Cria até `WORKVM_SANDBOX_MAX` sandboxes `profile=mutation` (padrão Televisão: 2).
 3. Atribui **um arquivo por sandbox**; quando um termina, pega o próximo da fila.
-4. Agrega ledger / findings; só então libera o outcome combinado.
-
-Assim some a espera de `next mutation` entre arquivos — o teto de RAM da
-guest limita só o paralelismo instantâneo, não a cobertura.
+4. Agrega ledger / findings; o dispatcher só então libera o outcome combinado.
 
 N sandboxes de mutation (arquivos distintos) **podem** rodar juntos.
 Mutation × `artisan test` no **mesmo** sandbox **não**.
@@ -125,7 +128,7 @@ com shards de mutation (desde que o teto de sandboxes comporte — senão fila).
 | Camada | Papel |
 | --- | --- |
 | Host libvirt | Uma domain `televisao-{code}` por Card |
-| Card VM | Compatible + orquestração + desktop/agente |
+| Card VM | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
 | Sandbox (Docker na guest) | Exclusive: mutation shard, pest, e2e, … |
 
 Sandboxes **não** são VMs novas.
@@ -136,9 +139,9 @@ Sandboxes **não** são VMs novas.
 
 Antes: tempo de wall-clock do stack sequencial (colleague + gap + N× mutation paste).
 
-Depois: mesmo card com fan-out; comparar wall-clock e pico de RAM guest
+Depois: um paste dispatcher + fan-out; comparar wall-clock e pico de RAM guest
 (`free`, `docker stats`, RSS do QEMU no host).
 
 Piloto CLI já exercitado em `televisao-tv-190` (ver `HISTORICO.md`).
-Orquestração automática a partir do `colleague-review.md` ainda é o
-próximo passo de implementação — este arquivo é o contrato.
+O paste `colleague-review.md` já é o disparador; ligar shards
+`workvm-sandbox` automaticamente a partir dele é o próximo passo de infra.

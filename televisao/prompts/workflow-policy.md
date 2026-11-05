@@ -39,11 +39,11 @@ The live label wins if it differs from the examples above. Resolve the numeric s
 Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
 
 1. **Card + current step** — `get-project-details-tool` (or search then details). Use the card UUID and the linked `funnel_steps` / funnel pivot.
-2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool`. Optional `search` (e.g. `Tele.Visão` or `Revisado`) or `id` of a known step/tag/status. From the matching funnel (`Dev - Tele.Visão` for this product):
+2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` only. Optional `search` (e.g. `Tele.Visão` or `Revisado`) or `id` of a known step/tag/status. From the matching funnel (`Dev - Tele.Visão` for this product):
    - `steps[]` — board columns (`id`, `name`) for moves like 'Corrigir' / 'QA/CR'
    - `funnel_status[]` — status badges (`id`, `name`) such as 'Revisado' (not a step)
 3. Match display names case-insensitively after trim. Never hard-code step or status ids.
-4. **Do not** call `GET /api/management/get-available-steps` when `index-project-funnels-tool` works. Use management HTTP only under **MCP auth** below (MCP `needsAuth` / 401), or when a write has no working MCP tool.
+4. **Hard ban while MCP works:** do **not** call `GET /api/management/get-available-steps`, and do **not** open a shell/`curl` “fallback” for the step/status catalog, when `index-project-funnels-tool` has already returned successfully in this chat (including an empty `funnels: []` for a narrow `search`/`id`). Empty filter result ≠ MCP down. Retry: call again with **no** `search`/`id`, or a broader `search` (board name, `Revisado`, prefix `TV`), then pick the product funnel by display name. Management HTTP for this catalog is allowed **only** under **MCP auth** below (`needsAuth` / 401 on the tool itself), or when a write has no working MCP tool.
 
 ## Moving a card on the board
 
@@ -72,21 +72,17 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **every** gate that applies has finished:
 
-1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+1. **Colleague core** (`colleague-review-core.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `televisao-api` (backend only). Skip when there is no backend. Write missing use cases into the card content when that run reports them.
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation **in parallel** (gap/mutation skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation after that dispatcher. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Prefer `~/git/bin/workvm-sandbox` to shard exclusive mutation (one changed test file per sandbox; queue when over `WORKVM_SANDBOX_MAX`). Compatible work (core + gap) stays on the Card VM. Own-card develop handoff still runs gap then mutation sequentially (mutation one file per paste / `next mutation`).
 
-**Today (manual pastes):** that order is still one Cursor paste after another, and `mutation-testing.md` is one changed test file per paste (`next mutation`). That wall-clock cost is the problem sandboxes target.
-
-**Target (Card VM + sandboxes):** keep the same gates and outcome rules, but run exclusive work inside the Card WorkVM (`televisao-{code}`) via `~/git/bin/workvm-sandbox` — shard mutation one file per sandbox (queue when over `WORKVM_SANDBOX_MAX`), and run backend suite / front e2e / front unit in sibling sandboxes when applicable. Compatible work (colleague miolo, gap analysis) stays on the Card VM. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Until that orchestrator ships, keep using sequential pastes.
-
-**Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
+**Do not move to 'Corrigir' or set 'Revisado' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve or merge PRs until the combined outcome below. Workers never move the funnel themselves.
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
 
-**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status` `{ project_funnel_id, funnel_status_id }`. Never hard-code the status id. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status` `{ project_funnel_id, funnel_status_id }`. Never hard-code the status id. Never resolve that id via `get-available-steps` / curl when the index tool works (see **Resolving funnel steps**). If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
 
 ## Project execution
 
@@ -187,7 +183,7 @@ Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 
 Recommend the next prompt **only in the Cursor chat** report.
@@ -211,7 +207,7 @@ Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the ca
 
 On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
-If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` only when MCP is down — prefer restoring MCP and `index-project-funnels-tool` for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
+If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` **only** when `index-project-funnels-tool` itself is `needsAuth` / 401 (MCP auth), not when a filtered call returned `[]` or when another MCP read already succeeded. Prefer restoring MCP and calling `index-project-funnels-tool` again (unfiltered if needed). Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
 Forum thread bodies: **Reading the project forum** (helper, not inline curl).
 

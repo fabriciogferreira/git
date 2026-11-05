@@ -2,11 +2,23 @@
 
 Problema resolvido entra aqui.
 
+## Funnel catalog: não cair em `get-available-steps` com MCP ok
+
+- **problema:** o agente já tinha `index-project-funnels-tool` (ou um `[]` de `search` estreito) e ainda abria `curl`/`get-available-steps` “por precaução”, gerando prompt de token e violando a preferência MCP.
+- **por que é um problema:** leitura coberta pelo MCP vira HTTP autenticado; `[]` no filtro é tratado como MCP morto.
+- **resolvido como:** `workflow-policy` (Televisão / Locav / Olie) e `televisao/prompts/colleague-review.md` reforçam hard ban: empty filter ≠ down; retry unfiltered; HTTP só com `needsAuth`/401 no próprio index.
+
+## Colleague review: um paste dispara core + gap + mutation em paralelo
+
+- **problema:** `colleague-review.md` era o miolo da review e, com backend, ainda pedia pastes seguintes (`test-gap-analysis` → `mutation-testing` → N× `next mutation`). O wall-clock e a espera humana entre pastes dominavam o QA/CR.
+- **por que é um problema:** o revisor colava três (ou mais) prompts; o funil ficava em QA/CR entre pastes; a economia prevista em `ORCHESTRATION.md` não existia no texto que o agente executa.
+- **resolvido como:** `colleague-review.md` virou **dispatcher** (bootstrap → Task paralelo → scoreboard → **Colleague review outcome**). O miolo foi para `colleague-review-core.md`. Gap e mutation ganharam **dispatcher mode** (sem `next prompt`; mutation drena todos os `*Test.php` restantes). `workflow-policy` / `workflow` / README / `ORCHESTRATION.md` alinhados. Shard `workvm-sandbox` automático continua o próximo passo de infra.
+
 ## Sandbox Manager (piloto Televisão)
 
-- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exige pastes sequenciais (`colleague-review` → `test-gap-analysis` → `mutation-testing` → N× `next mutation`), o que alonga o wall-clock.
-- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiça a guest ociosa.
-- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim, e2e em bridge, GUI sob demanda). Contrato de orquestração (compatible vs exclusive; fan-out do colleague review; shard mutation 1 arquivo/sandbox): `televisao/sandbox/ORCHESTRATION.md`. Selftest: `bin/workvm-sandbox-selftest.sh`. Orquestrador automático a partir do colleague-review ainda não liga os pastes — documentação primeiro para medir economia num card real.
+- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exigia pastes sequenciais (`colleague-review` → `test-gap-analysis` → `mutation-testing` → N× `next mutation`), o que alongava o wall-clock.
+- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiçava a guest ociosa.
+- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim, e2e em bridge, GUI sob demanda). Contrato de orquestração (compatible vs exclusive; fan-out do colleague review; shard mutation 1 arquivo/sandbox): `televisao/sandbox/ORCHESTRATION.md`. Selftest: `bin/workvm-sandbox-selftest.sh`. O paste `colleague-review.md` já dispara os gates em paralelo; ligar os shards Docker a partir dele é o próximo passo.
 
 ## Modelo genérica `archlinux` → `base-dev`
 
