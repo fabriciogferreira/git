@@ -2,10 +2,22 @@
 
 Problema resolvido entra aqui.
 
+## Sandbox Manager (piloto Televisão)
+
+- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros.
+- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB).
+- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim sem `container_name`, e2e em bridge, GUI via override de portas). Estado em `~/.local/share/workvm/sandboxes/`. Selftest: `bin/workvm-sandbox-selftest.sh`. Smoke com Docker real: `bin/workvm-sandbox-smoke.sh` na guest (usuário no grupo `docker`).
+
+## Modelo genérica `archlinux` → `base-dev`
+
+- **problema:** a domain genérica (Arch + Hyprland + Docker) se chamava `archlinux`, nome de distro, não de papel.
+- **por que é um problema:** scripts/docs e o hábito mental misturam “é Arch” com “é a modelo de onde nascem olie/televisao”.
+- **resolvido como:** `virsh domrename archlinux base-dev` (`qemu:///system`). Disco pode continuar `archlinux.qcow2` até `sudo -E bin/workvm-rename-base-dev-disk.sh`. Projetos/cards já clonados não mudam de nome.
+
 ## UFW no host: forward libvirt preso em NIC antiga (`enp7s0`)
 
 - **problema:** na VM `televisao`, `vm-setup.sh` / `pacman -Sy` dava timeout em todos os mirrors BR (`core.db` / `extra.db`). Ping para a internet na guest funcionava; TCP 443 não.
-- **por que é um problema:** o sintoma parece mirror morto ou rede da guest. `televisao` é clone da modelo `archlinux`, então a primeira hipótese era disco/imagem da modelo. Não era: o bloqueio estava no **host**. Qualquer WorkVM na `default` (NAT/`virbr0`) quebrava igual — `olie`, cards, etc.
+- **por que é um problema:** o sintoma parece mirror morto ou rede da guest. `televisao` é clone da modelo `base-dev` (na época `archlinux`), então a primeira hipótese era disco/imagem da modelo. Não era: o bloqueio estava no **host**. Qualquer WorkVM na `default` (NAT/`virbr0`) quebrava igual — `olie`, cards, etc.
 - **resolvido como:** no host, UFW tinha `DEFAULT_FORWARD_POLICY=DROP` e a rota `ufw route allow in on virbr0 out on enp7s0`. A NIC viva passou a ser `enp6s0`; `enp7s0` sumiu. ICMP still passava (`ufw-before-forward` libera echo-request); TCP ia para a policy DROP. Ajuste: `ufw route delete … enp7s0` + `ufw route allow in on virbr0 out on enp6s0` (v4 e v6). Detalhe operacional em `host-setup.md`.
 
 ## Prompt `{{ code }}` não vai no commit do meta-repo

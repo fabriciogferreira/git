@@ -1,0 +1,116 @@
+# Stack slim do sandbox Televisão (piloto).
+# Problema: o compose do clone usa container_name/portas fixas e e2e em
+# network_mode:host — impede N sandboxes. Este arquivo é autônomo, sem
+# container_name; rede/volumes vêm do COMPOSE_PROJECT_NAME.
+#
+# Profiles: tests | mutation | e2e | slim
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE (dir montado em /work)
+
+services:
+  mysql:
+    image: mysql:8.4
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    environment:
+      MYSQL_ROOT_PASSWORD: sandbox
+      MYSQL_DATABASE: televisao_sandbox
+      MYSQL_USER: sandbox
+      MYSQL_PASSWORD: sandbox
+    volumes:
+      - sb_mysql:/var/lib/mysql
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-psandbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    # Instância dedicada — FLUSHALL aqui não afeta outros sandboxes.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - sb_redis:/data
+    networks: [sb_net]
+    mem_limit: 256m
+    cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    image: php:8.3-cli
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /work
+    volumes:
+      - ${SB_WORKTREE}:/work
+      - sb_artifacts:/artifacts
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: televisao_sandbox
+      DB_USERNAME: sandbox
+      DB_PASSWORD: sandbox
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["sleep", "infinity"]
+
+  # HTTP só na rede do sandbox (sem publish). GUI attach usa compose.gui.yml.
+  http:
+    image: php:8.3-cli
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /work
+    volumes:
+      - ${SB_WORKTREE}:/work
+    networks: [sb_net]
+    mem_limit: 256m
+    cpus: "0.25"
+    depends_on:
+      - app
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "/work"]
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.49.0-jammy
+    profiles: ["e2e"]
+    working_dir: /e2e
+    ipc: host
+    environment:
+      E2E_BASE_URL: http://http:8000
+      E2E_API_URL: http://http:8000
+    volumes:
+      - ${SB_WORKTREE}/e2e:/e2e
+      - sb_artifacts:/artifacts
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    depends_on:
+      - http
+      - mysql
+      - redis
+    # Bridge — NÃO usar network_mode: host.
+    command: ["sleep", "infinity"]
+
+networks:
+  sb_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_sb_net
+
+volumes:
+  sb_mysql:
+    name: ${COMPOSE_PROJECT_NAME}_mysql
+  sb_redis:
+    name: ${COMPOSE_PROJECT_NAME}_redis
+  sb_artifacts:
+    name: ${COMPOSE_PROJECT_NAME}_artifacts

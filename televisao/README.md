@@ -10,3 +10,5 @@
 | Clones | `televisao-api/`, `televisao-front/`, `televisao-meet-*` | **Não** |
 
 Compose fica no api (`televisao-api`). Setup: `./project-setup.sh televisao`.
+
+Sandboxes isolados (testes/mutation/e2e em paralelo no mesmo Card): `sandbox/README.md` e `~/git/bin/workvm-sandbox`.

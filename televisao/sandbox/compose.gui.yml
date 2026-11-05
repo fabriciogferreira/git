@@ -1,0 +1,5 @@
+# Override: publica API/front na guest quando `gui attach` (sem derrubar o stack).
+services:
+  http:
+    ports:
+      - "${SB_PORT_API}:8000"

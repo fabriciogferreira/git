@@ -99,8 +99,11 @@ televisao/*
 !televisao/televisao-front-e2e/**
 !televisao/televisao-meet-front-e2e/
 !televisao/televisao-meet-front-e2e/**
+!televisao/sandbox/
+!televisao/sandbox/**
 televisao/**/.env
 televisao/**/.cursor/mcp.workvm-user
+televisao/.sandboxes/
 
 # da-o-play: definição; clone em da-o-play/da-o-play-api/ fica fora.
 !da-o-play/

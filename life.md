@@ -222,12 +222,12 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | Onde | Papel |
 | --- | --- |
 | **Host** (`jarvis`) | Desktop Hyprland, libvirt `qemu:///session`, Ollama (VLM), Cursor às vezes, browser |
-| **WorkVM** (uma por card/projeto) | Clone(s) + Docker + Cursor multi-root (`~/git` + repos) + browser |
+| **WorkVM** (uma por card/projeto) | Clone(s) + Docker + Cursor multi-root (`~/git` + repos) + browser; sandboxes headless via `bin/workvm-sandbox` (piloto Televisão) |
 | **Meta-repo** `~/git` | Provisiona VM, projeto ativo, overlays, prompts, skills locais |
 
 Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `boilerplate-next/`, `vid2agent-code/`, `use-url-query/`.
 
-VMs libvirt (nomes típicos): `olie-dop-*`, `olie-os-*`, `vid2agent-code`, `opbed`, `televisao`, `da-o-play`, …
+VMs libvirt (nomes típicos): `base-dev` (modelo genérica; antes `archlinux`), `olie` / `televisao` (projetos clonados da base), `olie-dop-*` / cards, `vid2agent-code`, `opbed`, `da-o-play`, …
 
 ### WorkVMs: recursos por projeto (não clone genérico)
 
