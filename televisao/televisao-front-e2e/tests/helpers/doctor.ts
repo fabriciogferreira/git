@@ -24,6 +24,21 @@ export function checkoutConsultationId(): string {
     return id
 }
 
+/**
+ * In-progress consultation (ended_at null) for doctor1 — TV-232 locked create action.
+ * Seed: scripts/seed-open-consultation.sh (wired in run.sh).
+ * Override with E2E_OPEN_CONSULTATION_ID.
+ */
+export function openConsultationId(): string {
+    const id = process.env.E2E_OPEN_CONSULTATION_ID
+    if (!id) {
+        throw new Error(
+            'E2E_OPEN_CONSULTATION_ID is required (open consultation for doctor1@doctor.test)'
+        )
+    }
+    return id
+}
+
 export async function loginAsDoctor(page: Page) {
     const { user, password } = doctorCredentials()
     await page.goto('/login')

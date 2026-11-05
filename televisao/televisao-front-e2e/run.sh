@@ -30,6 +30,14 @@ if [[ -z "${E2E_CHECKOUT_CONSULTATION_ID:-}" ]] || [[ "${E2E_SEED_CHECKOUT:-1}" 
     echo "  consultation: ${E2E_CHECKOUT_CONSULTATION_ID}"
 fi
 
+# TV-232: in-progress consultation so "Nova receita" stays locked until ended_at is set.
+if [[ -z "${E2E_OPEN_CONSULTATION_ID:-}" ]] || [[ "${E2E_SEED_OPEN_CONSULTATION:-1}" == "1" ]]; then
+    echo "→ seeding open consultation for TV-232 locked prescription E2E"
+    E2E_OPEN_CONSULTATION_ID="$(./scripts/seed-open-consultation.sh)"
+    export E2E_OPEN_CONSULTATION_ID
+    echo "  consultation: ${E2E_OPEN_CONSULTATION_ID}"
+fi
+
 # TV-201 join window: inside (now+5min) and outside (now+20min) for doctor1.
 if [[ -z "${E2E_JOIN_MEETING_INSIDE_ID:-}" ]] || [[ -z "${E2E_JOIN_MEETING_OUTSIDE_ID:-}" ]] || [[ "${E2E_SEED_JOIN_MEETING:-1}" == "1" ]]; then
     echo "→ seeding join-window consultations for TV-201 E2E"
@@ -56,6 +64,7 @@ docker compose up -d --build
 docker compose exec -T -u pwuser \
     -e TZ=America/Sao_Paulo \
     -e E2E_CHECKOUT_CONSULTATION_ID \
+    -e E2E_OPEN_CONSULTATION_ID \
     -e E2E_JOIN_MEETING_INSIDE_ID \
     -e E2E_JOIN_MEETING_OUTSIDE_ID \
     -e E2E_AUTENTIQUE_LINK_CONSULTATION_ID \
