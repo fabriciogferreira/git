@@ -1,0 +1,6 @@
+# Override: publica API HTTP na guest quando `gui attach` (sem derrubar o stack).
+# Problema: o slim sobe sem publish; o agente precisa de porta só sob demanda.
+services:
+  http:
+    ports:
+      - "${SB_PORT_API}:8080"

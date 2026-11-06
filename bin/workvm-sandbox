@@ -16,7 +16,7 @@ usage() {
     cat <<'EOF'
 workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
 
-  create --name <id> [--project televisao] [--profile tests|mutation|e2e]
+  create --name <id> [--project olie|televisao] [--profile tests|mutation|e2e]
          [--from-commit SHA] [--backend container|vm] [--mem 1g] [--cpus 1.0]
   list
   status <id>
@@ -31,7 +31,7 @@ workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
   gui detach <id>
 
 Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/sandboxes/
-Piloto: televisao/sandbox/
+Projetos: olie/sandbox/ | televisao/sandbox/
 EOF
 }
 

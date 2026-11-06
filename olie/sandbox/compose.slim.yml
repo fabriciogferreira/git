@@ -1,0 +1,171 @@
+# Stack slim do sandbox Olie.
+# Problema: o compose da Card VM usa container_name/portas fixas e um único
+# MySQL `testing` — mutation × Pest × colleague core corrompiam api_main.
+# Este arquivo é autônomo (sem container_name); rede/volumes vêm do
+# COMPOSE_PROJECT_NAME. Requer imagem olie/api-main-sandbox (ver Dockerfile.app).
+#
+# Profiles: tests | mutation | e2e | slim
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE (dir com api-main/, e2e/)
+
+services:
+  mysql:
+    image: mysql:8.4
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    environment:
+      MYSQL_ROOT_PASSWORD: sandbox
+      MYSQL_DATABASE: api_main
+      MYSQL_USER: sandbox
+      MYSQL_PASSWORD: sandbox
+    command: --log_bin_trust_function_creators=1
+    volumes:
+      - sb_mysql:/var/lib/mysql
+      - ${SB_MYSQL_INIT}:/docker-entrypoint-initdb.d:ro
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-psandbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - sb_redis:/data
+    networks: [sb_net]
+    mem_limit: 256m
+    cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:5
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: sandbox
+      MONGO_INITDB_ROOT_PASSWORD: sandbox
+      MONGO_INITDB_DATABASE: api_main
+    volumes:
+      - sb_mongo:/data/db
+    networks: [sb_net]
+    mem_limit: 512m
+    cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    image: olie/api-main-sandbox:latest
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /var/www/html
+    # Sem /init do serversideup — só CLI para Pest/mutation.
+    entrypoint: []
+    command: ["sleep", "infinity"]
+    user: "1000:1000"
+    volumes:
+      # Worktree do card + vendor da Card VM (symlink absoluto no host não resolve no container).
+      - ${SB_WORKTREE}/api-main:/var/www/html
+      # RW: pest --mutate grava vendor/pestphp/pest/.temp (coverage cache).
+      - ${SB_API_VENDOR}:/var/www/html/vendor
+      - sb_artifacts:/artifacts
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: api_main
+      DB_USERNAME: sandbox
+      DB_PASSWORD: sandbox
+      MONGODB_HOST: mongo
+      MONGODB_PORT: "27017"
+      MONGODB_DATABASE: api_main
+      MONGODB_USERNAME: sandbox
+      MONGODB_PASSWORD: sandbox
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "null"
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      TELESCOPE_ENABLED: "false"
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  # HTTP só na rede do sandbox (sem publish). GUI attach usa compose.gui.yml.
+  http:
+    image: olie/api-main-sandbox:latest
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /var/www/html
+    entrypoint: []
+    command: ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+    user: "1000:1000"
+    volumes:
+      - ${SB_WORKTREE}/api-main:/var/www/html
+      - ${SB_API_VENDOR}:/var/www/html/vendor
+    environment:
+      APP_ENV: local
+      DB_HOST: mysql
+      DB_DATABASE: api_main
+      DB_USERNAME: sandbox
+      DB_PASSWORD: sandbox
+      MONGODB_HOST: mongo
+      MONGODB_USERNAME: sandbox
+      MONGODB_PASSWORD: sandbox
+      REDIS_HOST: redis
+    networks: [sb_net]
+    mem_limit: 512m
+    cpus: "0.5"
+    depends_on:
+      - app
+      - mysql
+
+  e2e:
+    image: olie/e2e:latest
+    profiles: ["e2e"]
+    working_dir: /e2e
+    ipc: host
+    environment:
+      E2E_BASE_URL: http://http:8080
+      E2E_API_URL: http://http:8080
+    volumes:
+      - ${SB_WORKTREE}/e2e:/e2e
+      - sb_artifacts:/artifacts
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1536m}
+    cpus: ${SB_CPUS:-1.5}
+    depends_on:
+      - http
+      - mysql
+      - redis
+    # Bridge — NÃO usar network_mode: host.
+    command: ["sleep", "infinity"]
+
+networks:
+  sb_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_sb_net
+
+volumes:
+  sb_mysql:
+    name: ${COMPOSE_PROJECT_NAME}_mysql
+  sb_redis:
+    name: ${COMPOSE_PROJECT_NAME}_redis
+  sb_mongo:
+    name: ${COMPOSE_PROJECT_NAME}_mongo
+  sb_artifacts:
+    name: ${COMPOSE_PROJECT_NAME}_artifacts

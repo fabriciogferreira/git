@@ -13,6 +13,7 @@ workvm_sandbox_default_max() {
     local project="$1"
     case "$project" in
         televisao) printf '2\n' ;;
+        olie) printf '3\n' ;;
         *) printf '%s\n' "${WORKVM_SANDBOX_MAX:-3}" ;;
     esac
 }
@@ -38,7 +39,7 @@ workvm_sandbox_create() {
     done
 
     if [ -z "$id" ]; then
-        workvm_sandbox_log "uso: create --name <id> [--project televisao] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
+        workvm_sandbox_log "uso: create --name <id> [--project olie|televisao] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
         return 2
     fi
     if ! workvm_sandbox_id_ok "$id"; then

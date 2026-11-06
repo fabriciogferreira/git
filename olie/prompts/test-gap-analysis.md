@@ -41,7 +41,7 @@ On `~/git/olie/api-main` (checked-out card branch):
 
 1. List added/modified `*Test.php` under `tests/` in the diff vs the repository base (`develop` in `~/git/olie/prompts/project.md`), including uncommitted local edits.
 2. Skim those files for scenarios covered.
-3. Optionally run touched files: `docker exec olie-api-main php artisan test --compact <paths>`. If they fail, stop and report.
+3. Optionally run touched files **only when this paste is alone** (own-card / gap pasted without a parallel mutation gate): prefer `~/git/bin/workvm-sandbox` `--project olie --profile tests`, or `docker exec olie-api-main php artisan test --compact <paths>` if no sandbox. If they fail, stop and report. **Dispatcher mode (parallel with mutation):** do **not** run Pest on the Card VM — coverage judgment is static from the change-set tests + card requirements only.
 
 ## 3. Gap analysis
 

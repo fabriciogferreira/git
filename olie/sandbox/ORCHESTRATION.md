@@ -2,16 +2,16 @@
 
 Problema: o stack de revisão de colegas era **sequencial e manual** — paste
 `colleague-review` → paste `test-gap-analysis` → paste `mutation-testing` →
-vários `next mutation`. Cada passo esperava o anterior.
+vários `next mutation`. Cada passo esperava o anterior. Em paralelo na mesma
+Card VM, Pest/mutation corrompiam o MySQL `testing` e até o `api_main`.
 
-Objetivo: manter os **gates** (veredito + gap + mutation + testes), mas
-disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e
-rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM
-do Card (`olie-{code}`, ex. `olie-DOP-1262`), sem clonar outra VM.
+Objetivo: manter os **gates** (veredito + gap + mutation + testes), disparar
+tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e rodar o
+que for **exclusive** em sandboxes paralelos **dentro** da WorkVM do Card
+(`olie-{code}`), sem clonar outra VM.
 
-Mesmo contrato da Televisão (`~/git/televisao/sandbox/ORCHESTRATION.md`),
-adaptado aos paths Olie. CLI: `~/git/bin/workvm-sandbox`. Profiles /
-compose slim Olie ainda não existem — o piloto de containers foi a Televisão.
+CLI: `~/git/bin/workvm-sandbox`. Compose slim: `olie/sandbox/` (mesmo contrato
+da Televisão em `televisao/sandbox/`).
 
 Prompts: `colleague-review.md` (disparador) → paralelo
 `colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md`
@@ -30,9 +30,9 @@ ou no **mesmo** sandbox.
 Exemplos:
 
 - Miolo `colleague-review-core.md` (card, PRs, mídia, contraste, veredito)
-- `test-gap-analysis.md` (requisitos × testes backend; escreve no card)
+- `test-gap-analysis.md` (requisitos × testes backend; **só leitura** — sem
+  `php artisan test` na Card VM quando mutation está em paralelo)
 - Análise de front + análise de back (só leitura)
-- Specs em `~/git/olie/olie-e2e` sem destruir o DB do app
 
 ### Exclusive (não podem compartilhar o mesmo ambiente mutável)
 
@@ -41,7 +41,7 @@ Se dois jobs escrevem no mesmo código, DB, Redis ou cobertura, usam
 
 Exemplos:
 
-- `mutation-testing` × `php artisan test` / Pest no mesmo sandbox
+- `mutation-testing` × `php artisan test` / Pest
 - Dois mutations no **mesmo** arquivo / mesma árvore suja
 - E2E que muda dados × suite que assume DB limpo **no mesmo** DB
 - Migrate/seed destrutivo × qualquer leitor do mesmo banco
@@ -49,61 +49,50 @@ Exemplos:
 Regra prática: **escreve** no mesmo recurso mutável → exclusive; **read-only**
 (ou artefato próprio, ex. `cards/{CODE}/{MEDIA}.md`) → compatible.
 
+**Obrigatório:** com `olie/sandbox/project.sh` presente, o gate de mutation
+(e qualquer Pest baseline) **não** usa `docker exec olie-api-main`. Usa
+`workvm-sandbox create --project olie --profile mutation|tests`.
+
 ---
 
-## Hoje (dispatcher) vs alvo (sandboxes)
-
-### Hoje — um paste, gates em paralelo
+## Dispatcher + fan-out
 
 ```text
 paste colleague-review.md          # dispatcher
   bootstrap (card, branches, backend?)
-  ├── Task: colleague-review-core.md
-  ├── Task: test-gap-analysis.md   # se backend (api-main)
-  └── Task: mutation-testing.md    # se backend; drena todos os *Test.php
+  ├── Task: colleague-review-core.md     # Card VM (compatible)
+  ├── Task: test-gap-analysis.md         # Card VM, sem Pest runtime
+  └── Task: mutation-testing.md          # exclusive → sandboxes
+        ├── sb-mut-<file1>
+        ├── sb-mut-<file2>
+        └── sb-mut-<fileN>               # fila se N > WORKVM_SANDBOX_MAX
   wait → scoreboard → Colleague review outcome
 ```
 
 Mutation em modo dispatcher processa **todos** os arquivos restantes do
 change-set nesta corrida (não um `next mutation` por paste). Own-card
-develop handoff continua um arquivo por paste.
-
-### Alvo — fan-out de sandboxes no mesmo Card VM
-
-```text
-olie-{code}                              # WorkVM do Card
-│
-├── (na VM — compatible; disparados pelo colleague-review.md)
-│   ├── colleague-review-core
-│   └── test-gap-analysis
-│
-├── mutation-testing (exclusive; 1 *Test.php → 1 sandbox)
-│   ├── sb-mut-<file1>
-│   ├── sb-mut-<file2>
-│   └── sb-mut-<fileN>                   # fila se N > WORKVM_SANDBOX_MAX
-│
-└── verificação em paralelo (cada um exclusive no próprio sandbox)
-    ├── sb-backend-tests                 # Pest / artisan test em api-main
-    ├── sb-front-e2e                     # Playwright em olie/olie-e2e
-    └── sb-front-unit                    # se houver suite e o card tocar front
-```
-
-Gates do funil (**Colleague review outcome** em `workflow-policy.md`)
-continuam válidos: não marcar 'Validação' / aprovar PRs enquanto
-gap+mutation aplicáveis não terminarem. O que muda é **como**
-mutation/testes correm (paralelo em sandboxes), não a regra de outcome.
+develop handoff continua um arquivo por paste — também preferir sandbox
+`profile=mutation` para não tocar o `testing` da Card VM.
 
 ---
 
 ## Mutation: shard por arquivo
 
-No dispatcher colleague, o prompt manda drenar o change-set. Com sandbox:
-
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria até `WORKVM_SANDBOX_MAX` sandboxes `profile=mutation` (Olie guest
-   costuma ser 12 GiB — teto inicial sugerido: 3; calibrar na medição).
+2. Cria até `WORKVM_SANDBOX_MAX` sandboxes `profile=mutation` (default Olie: 3).
 3. Atribui **um arquivo por sandbox**; quando um termina, pega o próximo da fila.
-4. Agrega `mutation-ledger.md` / findings; o dispatcher só então libera o outcome combinado.
+4. Em cada sandbox:
+
+```bash
+~/git/bin/workvm-sandbox create --name "mut-$(basename "$file" .php | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | cut -c1-40)" \
+  --project olie --profile mutation
+~/git/bin/workvm-sandbox job run "$id" -- php artisan test --compact "$file"
+~/git/bin/workvm-sandbox job run "$id" -- vendor/bin/pest --mutate --covered-only --min=100 \
+  --ignore-min-score-on-zero-mutations --class=App\\... "$file"
+~/git/bin/workvm-sandbox destroy "$id"
+```
+
+5. Agrega `mutation-ledger.md` / findings; o dispatcher só então libera o outcome.
 
 N sandboxes de mutation (arquivos distintos) **podem** rodar juntos.
 Mutation × suite Pest no **mesmo** sandbox **não**.
@@ -131,17 +120,14 @@ com shards de mutation (fila se passar do teto).
 | Card VM | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
 | Sandbox (Docker na guest) | Exclusive: mutation shard, pest, e2e, … |
 
-Sandboxes **não** são VMs novas. Piloto de containers foi a Televisão;
-Olie reusa a mesma CLI quando o profile/`olie/sandbox` slim existir.
+Sandboxes **não** são VMs novas.
 
 ---
 
 ## Medição de economia
 
-Antes: wall-clock do stack sequencial (colleague + gap + N× mutation paste).
+Antes: wall-clock do stack sequencial (colleague + gap + N× mutation paste),
+ou paralelo na Card VM com DB compartilhado (incidente DOP-1165).
 
-Depois: um paste dispatcher + fan-out; comparar wall-clock e pico de RAM guest
-(`free`, `docker stats`, RSS do QEMU no host).
-
-O paste `colleague-review.md` já é o disparador; ligar shards
-`workvm-sandbox` automaticamente a partir dele é o próximo passo de infra.
+Depois: um paste dispatcher + fan-out em sandboxes; comparar wall-clock e pico
+de RAM guest (`free`, `docker stats`, RSS do QEMU no host).

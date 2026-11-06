@@ -125,6 +125,7 @@ PY
         local cand
         for cand in \
             "$wt/televisao-api/storage/logs" \
+            "$wt/api-main/storage/logs" \
             "$wt/../televisao-front-e2e/test-results" \
             "$wt/e2e/test-results" \
             "$wt/e2e/playwright-report"
@@ -179,9 +180,10 @@ workvm_sandbox_job_logs() {
         stdout) cat "$dir/stdout.log" ;;
         stderr) cat "$dir/stderr.log" ;;
         both|*)
-            printf '--- stdout ---\n'
+            # printf treats leading - as flags — use --
+            printf -- '--- stdout ---\n'
             cat "$dir/stdout.log" 2>/dev/null || true
-            printf '--- stderr ---\n'
+            printf -- '--- stderr ---\n'
             cat "$dir/stderr.log" 2>/dev/null || true
             ;;
     esac

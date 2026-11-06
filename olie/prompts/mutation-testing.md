@@ -5,14 +5,14 @@ Use this when the card changed `~/git/olie/api-main`. Skip entirely when the cha
 Three entry points:
 
 1. **Own card (develop handoff)** — after `~/git/olie/prompts/test-gap-analysis.md` (which follows implementation-validation when backend changed). **One changed `*Test.php` per paste** (`next mutation`). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/pre-qa.md` (`next prompt` runs it).
-2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with `colleague-review-core.md` and `test-gap-analysis.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run (loop § “One changed test file” until the ledger has a row for each, or shard via `~/git/bin/workvm-sandbox` per `ORCHESTRATION.md`). Do **not** stop after one file. Do **not** recommend `next mutation` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
+2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with `colleague-review-core.md` and `test-gap-analysis.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run. **Must** shard via `~/git/bin/workvm-sandbox create --project olie --profile mutation` (one file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — see `~/git/olie/sandbox/ORCHESTRATION.md`. Do **not** run baseline Pest or `pest --mutate` with `docker exec olie-api-main` (that is the Card VM DB). Do **not** stop after one file. Do **not** recommend `next mutation` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
 3. **Colleague card pasted alone** — one file per paste as in develop handoff; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Validação' yourself when the dispatcher owns the card.
 
 **Stack gate (develop handoff / alone):** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pre-qa.md`.
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands** (includes `next mutation`).
 
-**Own-card / alone today:** one changed `api-main` `*Test.php` per paste (`next mutation`). **Colleague dispatcher:** all remaining files in this run (sandbox shard when available — `~/git/olie/sandbox/ORCHESTRATION.md`).
+**Own-card / alone today:** one changed `api-main` `*Test.php` per paste (`next mutation`); prefer a `workvm-sandbox` `--project olie --profile mutation` so Card VM `testing` stays untouched. **Colleague dispatcher:** all remaining files in this run, **required** sandbox shards (`~/git/olie/sandbox/ORCHESTRATION.md`).
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
@@ -57,14 +57,23 @@ If the change set has test files but **no** `app/` PHP changes, stop and say the
 
 ## Prepare
 
-All PHP runs as `docker exec -w /var/www/html olie-api-main <command>`. Do not run `php` on the host.
+**Dispatcher / exclusive:** run PHP inside the sandbox app container via
+`~/git/bin/workvm-sandbox job run <id> -- <command>` (working dir is already
+`/var/www/html`). Create the sandbox first (`--project olie --profile mutation`).
+Destroy it when the file’s ledger row is done (or reuse until the shard finishes).
+
+**Own-card fallback only** (no sandbox create possible): `docker exec -w /var/www/html olie-api-main <command>`. Do not use that path while colleague gates run in parallel on the Card VM.
+
+Do not run `php` on the host.
 
 - If `vendor/pest-plugins.json` is missing inside the container: `composer pest:dump-plugins`. (Pest 4 writes this under `vendor/`, not `vendor/bin/`.)
 - If `php -m` does not list `pcov`: install it in the running container only (`pecl install pcov` and `docker-php-ext-enable pcov` as root). Say that a recreated image drops PCOV. Do not change the image or compose files.
 
-Run the chosen file with the normal suite first:
+Run the chosen file with the normal suite first (sandbox job, or own-card fallback):
 
-`docker exec -w /var/www/html olie-api-main php artisan test --compact <test-path>`
+```bash
+~/git/bin/workvm-sandbox job run <sandbox-id> -- php artisan test --compact <test-path>
+```
 
 If that fails, stop. Do not mutate a red file.
 
@@ -75,7 +84,8 @@ Pass changed production FQCNs via `--class=...`. Prefer **one `--class` per muta
 Example (escape `\` for the shell):
 
 ```bash
-docker exec -w /var/www/html olie-api-main vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
+~/git/bin/workvm-sandbox job run <sandbox-id> -- \
+  vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
   --class=App\\Services\\Media\\CreateMediaFromFrameAttachment \
   <test-path>
 ```
