@@ -68,13 +68,13 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 For a colleague card in 'QA/CR', the board move waits until **every** gate that applies has finished:
 
-1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+1. **Colleague review core** (`colleague-review-core.md`, launched by `colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. Write missing use cases into the card content when that run reports them.
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation **in parallel** (gap/mutation skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. Prefer `~/git/bin/workvm-sandbox` to shard exclusive mutation (one changed test file per sandbox; queue when over `WORKVM_SANDBOX_MAX`). Compatible work (core + gap) stays on the Card VM. Own-card develop handoff still runs gap then mutation sequentially (mutation one file per paste / `next mutation`).
 
-**Do not move to 'Corrigir' or 'Validação' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve PRs until the combined outcome below.
+**Do not move to 'Corrigir' or 'Validação' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve PRs until the combined outcome below. Workers never move the funnel themselves.
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
 
@@ -137,7 +137,7 @@ Layout and examples: `~/git/.config/environment.d/README.md`.
 
 Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
 
-Do not stub the management API to get past that. Do not change PHP. The same temporary window is Google's public test secret in the local `.env` only (`siteverify` then accepts any token). Full steps: `implementation.md`, `correction.md`, and `colleague-review.md`, section "Temporary E2E CAPTCHA".
+Do not stub the management API to get past that. Do not change PHP. The same temporary window is Google's public test secret in the local `.env` only (`siteverify` then accepts any token). Full steps: `implementation.md`, `correction.md`, and `colleague-review-core.md`, section "Temporary E2E CAPTCHA".
 
 ## Payment test cards
 
@@ -181,7 +181,7 @@ Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on th
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 
 Recommend the next prompt **only in the Cursor chat** report.

@@ -58,9 +58,12 @@ olie/*
 !olie/cards/*/*.md
 !olie/prompts/
 !olie/prompts/**
+!olie/sandbox/
+!olie/sandbox/**
 !olie/config-vm.xml
 olie/**/.env
 olie/**/.cursor/mcp.workvm-user
+olie/.sandboxes/
 
 # vid2agent-code: definição + prompts; clone em vid2agent-code/vid2agent-code/ fica fora.
 !vid2agent-code/

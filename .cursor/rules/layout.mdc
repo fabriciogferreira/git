@@ -52,6 +52,7 @@ alwaysApply: true
 | `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
 | `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
 | `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
+| `olie/sandbox/` | Mesmo contrato de orquestração da Televisão, paths Olie (`api-main`, `olie-e2e`); compose slim Olie ainda não. |
 | `bin/workvm-rename-base-dev-disk.sh` | Domain já é `base-dev`; o qcow2 ainda se chama `archlinux.qcow2` (root). Renomeia disco + XML com a VM shut off. |
 | `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
 | `bin/workvm-docker-mcp.sh` | Cursor sobe no login antes do compose. `docker exec` do Boost/Playwright falha uma vez e o MCP fica `failed`. Espera o container (stderr silencioso) e só então encaminha o stdio. |

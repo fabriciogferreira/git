@@ -10,15 +10,16 @@ Problema resolvido entra aqui.
 
 ## Colleague review: um paste dispara core + gap + mutation em paralelo
 
-- **problema:** `colleague-review.md` era o miolo da review e, com backend, ainda pedia pastes seguintes (`test-gap-analysis` → `mutation-testing` → N× `next mutation`). O wall-clock e a espera humana entre pastes dominavam o QA/CR.
+- **problema:** `colleague-review.md` era o miolo da review e, com backend, ainda pedia pastes seguintes (`test-gap-analysis` → `mutation-testing` → N× `next mutation`). O wall-clock e a espera humana entre pastes dominavam o QA/CR (Televisão e Olie).
 - **por que é um problema:** o revisor colava três (ou mais) prompts; o funil ficava em QA/CR entre pastes; a economia prevista em `ORCHESTRATION.md` não existia no texto que o agente executa.
-- **resolvido como:** `colleague-review.md` virou **dispatcher** (bootstrap → Task paralelo → scoreboard → **Colleague review outcome**). O miolo foi para `colleague-review-core.md`. Gap e mutation ganharam **dispatcher mode** (sem `next prompt`; mutation drena todos os `*Test.php` restantes). `workflow-policy` / `workflow` / README / `ORCHESTRATION.md` alinhados. Shard `workvm-sandbox` automático continua o próximo passo de infra.
+- **resolvido como:** nos dois produtos, `colleague-review.md` virou **dispatcher** (bootstrap → Task paralelo → scoreboard → **Colleague review outcome**). O miolo foi para `colleague-review-core.md`. Gap e mutation ganharam **dispatcher mode** (sem `next prompt`; mutation drena todos os `*Test.php` restantes). `workflow-policy` / `workflow` / README / `ORCHESTRATION.md` alinhados (`televisao/sandbox/`, `olie/sandbox/`). Shard `workvm-sandbox` automático continua o próximo passo de infra.
 
-## Sandbox Manager (piloto Televisão)
+## Sandbox Manager (piloto Televisão + contrato Olie)
 
-- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exigia pastes sequenciais (`colleague-review` → `test-gap-analysis` → `mutation-testing` → N× `next mutation`), o que alongava o wall-clock.
+- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exigia pastes sequenciais, o que alongava o wall-clock.
 - **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiçava a guest ociosa.
-- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto em `televisao/sandbox/` (compose slim, e2e em bridge, GUI sob demanda). Contrato de orquestração (compatible vs exclusive; fan-out do colleague review; shard mutation 1 arquivo/sandbox): `televisao/sandbox/ORCHESTRATION.md`. Selftest: `bin/workvm-sandbox-selftest.sh`. O paste `colleague-review.md` já dispara os gates em paralelo; ligar os shards Docker a partir dele é o próximo passo.
+- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto de containers em `televisao/sandbox/`. Contrato de orquestração (compatible vs exclusive; fan-out; shard mutation): `televisao/sandbox/ORCHESTRATION.md` e espelho Olie em `olie/sandbox/ORCHESTRATION.md` (paths `api-main` / `olie-e2e`; compose slim Olie ainda não). Selftest: `bin/workvm-sandbox-selftest.sh`. O paste `colleague-review.md` (TV e Olie) já dispara os gates em paralelo; ligar os shards Docker a partir dele é o próximo passo.
+
 
 ## Modelo genérica `archlinux` → `base-dev`
 
