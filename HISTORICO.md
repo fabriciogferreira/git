@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Pre-QA: commitlint / CaptainHook antes do PR (OS-556)
+
+- **problema:** o card OS-556 voltou de Validação para Corrigir porque o CI do `olie-fronts` falhou em **Lint commit messages** (`subject-full-stop`: subject com `.` no fim). O lint de produto estava verde; a §4.2 do `pre-qa.md` só pedia “seguir a convenção” sem rodar o validador.
+- **por que é um problema:** o card já tinha sido aprovado e avançado; o retorno automático por CI de mensagem gasta sprint e mascara entrega pronta.
+- **resolvido como:** `olie/prompts/pre-qa.md` §4.2 exige `yarn commitlint` (front, espelhando `.github/workflows/ci.yml` + husky) e CaptainHook `hook:commit-msg` (api-main, espelhando `conventional-commits.yml` + `captainhook.json` com `descriptionEndMark: ""`) no range do PR **antes** da Phase 4, e confirma o check verde no GitHub depois do push.
+
 ## UFW no host: forward libvirt preso em NIC antiga (`enp7s0`)
 
 - **problema:** na VM `televisao`, `vm-setup.sh` / `pacman -Sy` dava timeout em todos os mirrors BR (`core.db` / `extra.db`). Ping para a internet na guest funcionava; TCP 443 não.

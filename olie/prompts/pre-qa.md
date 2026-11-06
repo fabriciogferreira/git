@@ -101,7 +101,54 @@ Before renaming or deleting a remote branch, verify that it is the incorrect bra
 
 ### 4.2. Commit Validation
 
-- [ ] Verify that all commits follow the commit convention adopted by each repository.
+Vague “follows convention” is not enough. OS-556 returned from Validação because CI failed **Lint commit messages** while product lint was green. Every commit on the card branch that will land in a PR must pass the **same** local validator the repository’s GitHub Action runs. Do this **before** Phase 4 (`gh pr create` / push that updates an open PR).
+
+#### Hard rules (all product repos)
+
+- Header shape: `<type>(<optional-scope>): <description>` (Conventional Commits).
+- Types in English lowercase (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `style`, `revert`, … — match that repo’s allow-list).
+- Description in English; **subject must not end with a full stop / period** (`.`). This is `subject-full-stop` in olie-fronts commitlint and `descriptionEndMark: ""` in api-main CaptainHook.
+- No Cursor / AI co-author trailers (`Co-Authored-By`, “Generated with”, session links, or variants).
+- Merge commits may be skipped by CI; do not invent merge commits to bypass lint.
+- Dedicated Pint formatting commit (api-main): formatting only; no empty formatting commit.
+- Separate functional, test, and formatting commits when that helps review.
+- No secrets, `.env`, or accidental generated files in the history.
+
+#### Run the repo’s CI-equivalent linter on the PR range
+
+Identify `BASE` (usually `origin/develop`) and `HEAD` of the card branch. Lint **every** non-merge commit in `BASE..HEAD` (or the PR base/head SHAs once the PR exists).
+
+**`olie-fronts`** — CI job **Lint commit messages** in `.github/workflows/ci.yml` (`yarn commitlint --from <base> --to <head> --verbose`). Local hook: `.husky/commit-msg` → `yarn commitlint --edit`. Config: `commitlint.config.js` extends `@commitlint/config-conventional` (body/footer line length disabled; header rules still apply — including **no trailing `.` on the subject**).
+
+- [ ] From the monorepo root inside the front container (same pattern as Phase 1 lint):
+
+  ```bash
+  docker container exec -i olie-front-management yarn commitlint \
+    --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+  ```
+
+  If git history is missing in the container, run the equivalent on the host: `./node_modules/.bin/commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose` from `~/git/olie/olie-fronts`.
+
+- [ ] Exit code must be **0**. On failure: fix the message (amend only when safe / authorized; otherwise `git rebase` and reword — request confirmation if the branch is shared), then re-run until green. Do **not** open or update the PR as “ready” while this fails.
+
+**`api-main`** — CI workflow `.github/workflows/conventional-commits.yml` runs `vendor/bin/captainhook hook:commit-msg` per commit (same as local commit-msg via `captainhook.json` → `Ramsey\CaptainHook\ValidateConventionalCommit`, including empty `descriptionEndMark` — subject must not end with `.`).
+
+- [ ] From `~/git/olie/api-main`, for each non-merge SHA in `$BASE_SHA..$HEAD_SHA` (mirror the workflow loop):
+
+  ```bash
+  msg=$(mktemp)
+  git log -1 --format='%B' "$SHA" > "$msg"
+  docker exec -i olie-api-main bash -c 'cat > /tmp/commit-msg && vendor/bin/captainhook hook:commit-msg /tmp/commit-msg' < "$msg"
+  rm -f "$msg"
+  ```
+
+- [ ] Exit code must be **0** for every SHA. Fix and re-validate before Phase 4.
+
+**Other product repos** with a commit-msg CI job or husky/CaptainHook config: run that tool the same way. If a repo has no commit linter, still apply the hard rules above and say so in the report.
+
+#### After push / open PR
+
+- [ ] Confirm the GitHub check that lints commits is **success** for the PR head (olie-fronts: **Lint commit messages**; api-main: **Conventional Commits** / `lint-commits`). Product **Lint** / PHPStan green is not a substitute.
 - [ ] Ensure commit messages are written in English.
 - [ ] Ensure no commit lists Cursor as a co-author.
 - [ ] Verify that the dedicated Pint formatting commit contains only formatting changes.
@@ -109,6 +156,8 @@ Before renaming or deleting a remote branch, verify that it is the incorrect bra
 - [ ] Review the final commit history and verify that no unrelated changes, secrets, environment files, or accidental generated files are included.
 
 Do not rewrite or discard existing commits without evaluating their impact. If correcting the history would affect shared branches or other contributors, request confirmation first.
+
+Do not mark Phase 3 complete if local commitlint/CaptainHook failed or the PR’s commit-lint check is red/pending with a known message violation. Stop, fix, re-verify.
 
 ### 4.3. Meta-repo (`~/git`) — commit and push on `main`
 
@@ -212,7 +261,7 @@ After completing the applicable workflow, provide a concise report containing:
 - The repositories checked (product clones and meta-repo).
 - The results of PHPStan, tests, lint, and Pint, as applicable.
 - The identifier of the dedicated Pint commit.
-- The commit convention and branch-name validation results.
+- The commit convention and branch-name validation results (include the local commitlint / CaptainHook command exit codes and the PR commit-lint check conclusion).
 - Meta-repo: commit hash(es) on `main`, whether `origin/main` was updated, or that there was nothing to commit.
 - The pull request URLs and their verified configuration.
 - Whether an API documentation update is required.
