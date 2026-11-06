@@ -5,7 +5,8 @@ import { requireFeature } from '../helpers/feature'
 /**
  * OS-551 — mark funnels as favorites in the kanban selector.
  *
- * Favoritos sits above Geral; order follows most recent selection click.
+ * Favoritos sits above non-favorites (grouped by business area since OS-570);
+ * order follows most recent selection click.
  * Preference key: ui_favorite_project_funnels (LocalStorageSetItem).
  *
  * Auth and funnel APIs are stubbed so the selector can be exercised without a
@@ -204,8 +205,9 @@ test.describe('OS-551 favorite funnels', () => {
 
         await requireFavoriteStar(page, overlay)
 
-        // Empty Favoritos: only Geral until something is starred.
-        await expect(overlay.getByText('Geral', { exact: true })).toBeVisible()
+        // Empty Favoritos: non-favorites under business-area headers until something is starred.
+        await expect(overlay.getByText('Área Dev', { exact: true })).toBeVisible()
+        await expect(overlay.getByText('Geral', { exact: true })).toHaveCount(0)
         await expect(overlay.getByText('Favoritos', { exact: true })).toHaveCount(0)
 
         const betaOption = overlay.getByRole('option').filter({ hasText: 'Funil Beta' }).first()
@@ -260,7 +262,7 @@ test.describe('OS-551 favorite funnels', () => {
         }).toEqual([101, 102])
     })
 
-    test('business-area filter narrows Favoritos and Geral', async ({ page }) => {
+    test('business-area filter narrows Favoritos and area groups', async ({ page }) => {
         await page.goto('/projects/funnels')
 
         const { overlay } = await openFunnelSelect(page)
@@ -282,10 +284,11 @@ test.describe('OS-551 favorite funnels', () => {
         await expect(filteredOverlay.getByRole('option').filter({ hasText: 'Funil Gamma' })).toHaveCount(0)
         // Gamma is favorited but outside the selected BA → Favoritos stays empty.
         await expect(filteredOverlay.getByText('Favoritos', { exact: true })).toHaveCount(0)
-        await expect(filteredOverlay.getByText('Geral', { exact: true })).toBeVisible()
+        await expect(filteredOverlay.getByText('Área Dev', { exact: true })).toBeVisible()
+        await expect(filteredOverlay.getByText('Geral', { exact: true })).toHaveCount(0)
     })
 
-    test('Select filter finds a funnel across Favoritos and Geral', async ({ page }) => {
+    test('Select filter finds a funnel across Favoritos and business-area groups', async ({ page }) => {
         await page.goto('/projects/funnels')
         const { overlay } = await openFunnelSelect(page)
         await requireFavoriteStar(page, overlay)
@@ -305,9 +308,10 @@ test.describe('OS-551 favorite funnels', () => {
         await page.keyboard.press('Escape')
         await openFunnelSelect(page)
 
-        // Non-favorite still found under Geral.
+        // Non-favorite still found under its business-area group.
         await overlayFilter().fill('Gam')
         await expect(page.locator('.p-select-overlay').last().getByRole('option').filter({ hasText: 'Funil Gamma' })).toBeVisible()
+        await expect(page.locator('.p-select-overlay').last().getByText('Área Comercial', { exact: true })).toBeVisible()
         await expect(page.locator('.p-select-overlay').last().getByRole('option').filter({ hasText: 'Funil Alpha' })).toHaveCount(0)
     })
 })
