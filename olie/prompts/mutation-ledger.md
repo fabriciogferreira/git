@@ -39,3 +39,13 @@ While any changed `*Test.php` from the card’s `api-main` diff is missing here 
 | `tests/Unit/Services/RichText/TiptapToMarkdownConverterTest.php` | `100%` | DOP-1262. `--class` TiptapToMarkdownConverter; in-scope only = task `contentIndent: $indent+2` (L171) + coalesce (L192) + ordered-list escape split (L650/L652). All in-scope tested (PlusToMinus/±1 on +2, CoalesceRemoveLeft, escape coalesce). Pest raw 79.60% (436/549 + 1 timeout) — fat pre-existing class; L173 EmptyStringToNotEmpty out-of-scope. No +1 legacy. |
 | `tests/Feature/FeatureFlag/RemoveAudioTranscriptionFeatureFlagMigrationTest.php` | `100%` | DOP-1258. Migration-only; no App\\ `--class` targets → `no mutations`. Sandbox mut-wave1. |
 | `tests/Feature/FeatureFlag/RemoveChannelsFeatureFlagMigrationTest.php` | `100%` | DOP-1258. Migration-only; no App\\ `--class` targets → `no mutations`. Sandbox mut-wave1. |
+| `tests/Feature/Webhooks/WebhookPolicyTest.php` | `100%` | DOP-1258 colleague. WebhookPolicy 7/7 tested (sandbox). |
+| `tests/Feature/Webhooks/WebhookAutoDisableTest.php` | open | DOP-1258 colleague: RecordWebhookDeliveryOutcome 100%; DeliverWebhookJob ~25%; NotifyWebhookManagersJob ~21% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookCrossFrameTest.php` | open | DOP-1258 colleague: PublishWebhookEvent ~44% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookPublishTest.php` | open | DOP-1258 colleague: PublishWebhookEvent ~78%; ActiveWebhooksForFrame ~67% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookDeliveryJobTest.php` | open | DOP-1258 colleague: DeliverWebhookJob ~51% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookEndpointTest.php` | open | DOP-1258 colleague: WebhookController ~78% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookEventCatalogTest.php` | open | DOP-1258 colleague: WebhookEventCatalog ~84% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookFunnelEventTest.php` | open | DOP-1258 colleague: SignWebhookPayload 0% under this file — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookRetentionTest.php` | open | DOP-1258 colleague: WebhookDelivery ~29% — author assert fixes. |
+| `tests/Feature/Webhooks/WebhookSecretScrubTest.php` | open | DOP-1258 colleague: Webhook ~21% — author assert fixes. |
