@@ -20,6 +20,11 @@ Problema resolvido entra aqui.
 - **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiçava a guest ociosa.
 - **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto de containers em `televisao/sandbox/`. Contrato de orquestração (compatible vs exclusive; fan-out; shard mutation): `televisao/sandbox/ORCHESTRATION.md` e espelho Olie em `olie/sandbox/ORCHESTRATION.md` (paths `api-main` / `olie-e2e`; compose slim Olie ainda não). Selftest: `bin/workvm-sandbox-selftest.sh`. O paste `colleague-review.md` (TV e Olie) já dispara os gates em paralelo; ligar os shards Docker a partir dele é o próximo passo.
 
+## Pre-QA: commitlint / CaptainHook antes do PR (OS-556)
+
+- **problema:** o card OS-556 voltou de Validação para Corrigir porque o CI do `olie-fronts` falhou em **Lint commit messages** (`subject-full-stop`: subject com `.` no fim). O lint de produto estava verde; a §4.2 do `pre-qa.md` só pedia “seguir a convenção” sem rodar o validador.
+- **por que é um problema:** o card já tinha sido aprovado e avançado; o retorno automático por CI de mensagem gasta sprint e mascara entrega pronta.
+- **resolvido como:** `olie/prompts/pre-qa.md` §4.2 exige `yarn commitlint` (front, espelhando `.github/workflows/ci.yml` + husky) e CaptainHook `hook:commit-msg` (api-main, espelhando `conventional-commits.yml` + `captainhook.json` com `descriptionEndMark: ""`) no range do PR **antes** da Phase 4, e confirma o check verde no GitHub depois do push.
 
 ## Modelo genérica `archlinux` → `base-dev`
 
