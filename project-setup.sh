@@ -225,6 +225,9 @@ workvm_apply_clone_git_excludes
 echo "==> Gravando .cursor/rules/workvm-project.mdc (projeto ativo para o agente)"
 workvm_write_cursor_project_rule "$REPO_ROOT" "$PROJECT"
 
+echo "==> Auto-review: .cursor/permissions.json → ~/.cursor/permissions.json"
+workvm_apply_cursor_permissions "$REPO_ROOT"
+
 systemctl --user daemon-reload
 systemctl --user enable workvm.service
 

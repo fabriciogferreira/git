@@ -2,16 +2,52 @@
 
 Problema resolvido entra aqui.
 
+## Auto-review: `permissions.json` no fluxo pull → vm-setup → project-setup
+
+- **problema:** o Auto-review lia `~/.cursor/permissions.json`, mas o fonte versionado em `~/git/.cursor/permissions.json` não era copiado no `pull-meta` / `vm-setup` / `project-setup` (só o MCP ia para user-level). VM nova ou após pull ficava com Auto-review velho ou ausente.
+- **por que é um problema:** rules/prompts novos do meta-repo entravam no workspace, mas leituras GitHub/MCP/fórum/checklist continuavam pedindo OK; o fluxo documentado de “baixar e rodar setup” não bastava.
+- **resolvido como:** `workvm_apply_cursor_permissions` em `lib/cursor.sh`; chamado em `bin/pull-meta.sh`, `vm-setup.sh`, `project-setup.sh` e `lib/project-start.sh`. Fonte canônico permanece `~/git/.cursor/permissions.json` (inclui GitHub MCP read + checklist GET + docker local do projeto).
+
+## Olie sandbox slim (isolamento mutation/Pest)
+
+- **problema:** o dispatcher do colleague-review Olie rodava core + gap + mutation em paralelo na Card VM; Pest/mutation compartilhavam MySQL `testing` e chegaram a deixar `api_main` sem schema (`frames` missing) — review DOP-1165 Blocked.
+- **por que é um problema:** a orquestração já dizia exclusive → sandbox, mas `olie/sandbox/` só tinha o contrato; sem compose slim o agente caía no `docker exec olie-api-main`.
+- **resolvido como:** `olie/sandbox/project.sh` + `compose.slim.yml` + `Dockerfile.app` (PCOV) + `mysql-init`; prompts (`colleague-review`, `mutation-testing`, `test-gap-analysis`, `workflow-policy`) **obrigam** `workvm-sandbox --project olie` para Pest/mutation em paralelo; gap no dispatcher fica só leitura. Mesma CLI da Televisão. `vendor` via bind-mount `SB_API_VENDOR` (symlink absoluto no host não resolve no container).
+
+## Funnel catalog: não cair em `get-available-steps` com MCP ok
+
+- **problema:** o agente já tinha `index-project-funnels-tool` (ou um `[]` de `search` estreito) e ainda abria `curl`/`get-available-steps` “por precaução”, gerando prompt de token e violando a preferência MCP.
+- **por que é um problema:** leitura coberta pelo MCP vira HTTP autenticado; `[]` no filtro é tratado como MCP morto.
+- **resolvido como:** `workflow-policy` (Televisão / Locav / Olie) e `televisao/prompts/colleague-review.md` reforçam hard ban: empty filter ≠ down; retry unfiltered; HTTP só com `needsAuth`/401 no próprio index.
+
+## Colleague review: um paste dispara core + gap + mutation em paralelo
+
+- **problema:** `colleague-review.md` era o miolo da review e, com backend, ainda pedia pastes seguintes (`test-gap-analysis` → `mutation-testing` → N× `next mutation`). O wall-clock e a espera humana entre pastes dominavam o QA/CR (Televisão e Olie).
+- **por que é um problema:** o revisor colava três (ou mais) prompts; o funil ficava em QA/CR entre pastes; a economia prevista em `ORCHESTRATION.md` não existia no texto que o agente executa.
+- **resolvido como:** nos dois produtos, `colleague-review.md` virou **dispatcher** (bootstrap → Task paralelo → scoreboard → **Colleague review outcome**). O miolo foi para `colleague-review-core.md`. Gap e mutation ganharam **dispatcher mode** (sem `next prompt`; mutation drena todos os `*Test.php` restantes). `workflow-policy` / `workflow` / README / `ORCHESTRATION.md` alinhados (`televisao/sandbox/`, `olie/sandbox/`). Shard Docker Olie: ver entrada **Olie sandbox slim** acima.
+
+## Sandbox Manager (piloto Televisão + contrato Olie)
+
+- **problema:** no mesmo Card, testes / mutation / e2e compartilhavam um compose, DB, Redis e worktree; operação destrutiva em um passo afetava os outros. O colleague stack ainda exigia pastes sequenciais, o que alongava o wall-clock.
+- **por que é um problema:** não dava para rodar mutation e e2e em paralelo com isolamento real sem clonar outra WorkVM (cara em RAM no host de 32 GiB); mutation serializada por arquivo desperdiçava a guest ociosa.
+- **resolvido como:** `bin/workvm-sandbox` + `lib/sandbox/` (backend container; VM stub). Piloto Televisão em `televisao/sandbox/`; Olie em `olie/sandbox/` (compose slim + `project.sh` + PCOV). Contrato: `*/sandbox/ORCHESTRATION.md`. Selftest: `bin/workvm-sandbox-selftest.sh`. Dispatcher colleague já paralelo; exclusive Pest/mutation Olie **deve** usar sandbox (não `olie-api-main` na Card VM).
+
 ## Pre-QA: commitlint / CaptainHook antes do PR (OS-556)
 
 - **problema:** o card OS-556 voltou de Validação para Corrigir porque o CI do `olie-fronts` falhou em **Lint commit messages** (`subject-full-stop`: subject com `.` no fim). O lint de produto estava verde; a §4.2 do `pre-qa.md` só pedia “seguir a convenção” sem rodar o validador.
 - **por que é um problema:** o card já tinha sido aprovado e avançado; o retorno automático por CI de mensagem gasta sprint e mascara entrega pronta.
 - **resolvido como:** `olie/prompts/pre-qa.md` §4.2 exige `yarn commitlint` (front, espelhando `.github/workflows/ci.yml` + husky) e CaptainHook `hook:commit-msg` (api-main, espelhando `conventional-commits.yml` + `captainhook.json` com `descriptionEndMark: ""`) no range do PR **antes** da Phase 4, e confirma o check verde no GitHub depois do push.
 
+## Modelo genérica `archlinux` → `base-dev`
+
+- **problema:** a domain genérica (Arch + Hyprland + Docker) se chamava `archlinux`, nome de distro, não de papel.
+- **por que é um problema:** scripts/docs e o hábito mental misturam “é Arch” com “é a modelo de onde nascem olie/televisao”.
+- **resolvido como:** `virsh domrename archlinux base-dev` (`qemu:///system`). Disco pode continuar `archlinux.qcow2` até `sudo -E bin/workvm-rename-base-dev-disk.sh`. Projetos/cards já clonados não mudam de nome.
+
 ## UFW no host: forward libvirt preso em NIC antiga (`enp7s0`)
 
 - **problema:** na VM `televisao`, `vm-setup.sh` / `pacman -Sy` dava timeout em todos os mirrors BR (`core.db` / `extra.db`). Ping para a internet na guest funcionava; TCP 443 não.
-- **por que é um problema:** o sintoma parece mirror morto ou rede da guest. `televisao` é clone da modelo `archlinux`, então a primeira hipótese era disco/imagem da modelo. Não era: o bloqueio estava no **host**. Qualquer WorkVM na `default` (NAT/`virbr0`) quebrava igual — `olie`, cards, etc.
+- **por que é um problema:** o sintoma parece mirror morto ou rede da guest. `televisao` é clone da modelo `base-dev` (na época `archlinux`), então a primeira hipótese era disco/imagem da modelo. Não era: o bloqueio estava no **host**. Qualquer WorkVM na `default` (NAT/`virbr0`) quebrava igual — `olie`, cards, etc.
 - **resolvido como:** no host, UFW tinha `DEFAULT_FORWARD_POLICY=DROP` e a rota `ufw route allow in on virbr0 out on enp7s0`. A NIC viva passou a ser `enp6s0`; `enp7s0` sumiu. ICMP still passava (`ufw-before-forward` libera echo-request); TCP ia para a policy DROP. Ajuste: `ufw route delete … enp7s0` + `ufw route allow in on virbr0 out on enp6s0` (v4 e v6). Detalhe operacional em `host-setup.md`.
 
 ## Prompt `{{ code }}` não vai no commit do meta-repo
@@ -873,3 +909,9 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** ao iniciar a VM os repos não abrem no Cursor e o browser não abre
 - **por que é um problema:** o dia começa montando o ambiente na mão
 - **resolvido como:** `project-setup.sh` aponta `~/.config/workvm/current` para o projeto e liga `workvm.service`. No login gráfico o service roda `current/start.sh`, que abre o workspace e o Chromium. O service espera a sessão gráfica porque, sem Wayland, o Cursor abre no vazio
+
+## Local reCAPTCHA (browser + e2e)
+
+- **problema:** em `APP_ENV=local` o secret real rejeita o token fake do Playwright (`Token inválido`), e a site key de development ainda abre desafio do Google no browser do agente — comentar PHP/`getToken()` era tentador e arriscava commit
+- **por que é um problema:** e2e e login no Cursor param no captcha; bypass em código suja o diff e foge do prompt
+- **resolvido como:** par de teste público do Google só em env — `RECAPTCHA_SECRET` no `.env` do `api-main` (backup em `~/.config/workvm/`) e, para UI, `VITE_APP_RECAPTCHA_SITE_KEY` em `packages/management/.env.development.local` (exclude local); documentado em `olie/prompts/implementation.md` §7; proibido comentar validação

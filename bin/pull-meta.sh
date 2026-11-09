@@ -2,6 +2,7 @@
 # git pull --ff-only do meta-repo (~/git) no login gráfico.
 # Problema: stubs MCP (skip-worktree) em .cursor/mcp.json bloqueavam o ff-only
 # quando o remoto mudava esses arquivos; workvm_pull_repo restaura antes do merge.
+# Depois do pull, promove .cursor/permissions.json → ~/.cursor/ (Auto-review).
 # Só na branch de origin (default: main). Falha de rede/divergência não derruba a sessão.
 set -u
 
@@ -19,4 +20,5 @@ if [ ! -d "$GIT_ROOT/.git" ]; then
 fi
 
 workvm_pull_repo "$GIT_ROOT" "$BRANCH"
+workvm_apply_cursor_permissions "$GIT_ROOT" || true
 exit 0

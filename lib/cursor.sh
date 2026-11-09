@@ -1,8 +1,33 @@
 #!/usr/bin/env bash
-# Rule do projeto ativo, patch de alwaysApply nos clones, merge de JSON do Cursor
-# e promoção dos MCP versionados para ~/.cursor/mcp.json.
+# Rule do projeto ativo, patch de alwaysApply nos clones, merge de JSON do Cursor,
+# promoção dos MCP versionados e do permissions.json para ~/.cursor/.
 # Problema: o patch local (skip-worktree) estava misturado com git, Docker e Wayland.
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
+
+# Copia o Auto-review versionado (~/git/.cursor/permissions.json) para
+# ~/.cursor/permissions.json (user-level). O classificador não lê só o workspace;
+# sem esta promoção, pull + vm-setup + project-setup deixavam Auto-review velho.
+# Idempotente. Uso: workvm_apply_cursor_permissions [repo-root]
+workvm_apply_cursor_permissions() {
+    local repo_root="${1:-${GIT_ROOT:-$HOME/git}}"
+    local src="$repo_root/.cursor/permissions.json"
+    local dest="${HOME}/.cursor/permissions.json"
+
+    if [ ! -f "$src" ]; then
+        echo "aviso: $src ausente; pulando permissions Auto-review" >&2
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+        echo "→ Cursor permissions: $dest (já igual ao meta-repo)"
+        return 0
+    fi
+
+    cp -a "$src" "$dest"
+    chmod 600 "$dest" 2>/dev/null || chmod u+rw "$dest" || true
+    echo "→ Cursor permissions: $src → $dest"
+}
 
 # Write ~/git/.cursor/rules/workvm-project.mdc (alwaysApply) so Cursor agents
 # know which project this machine is bound to and where the clones live.

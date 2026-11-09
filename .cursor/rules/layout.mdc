@@ -49,12 +49,17 @@ alwaysApply: true
 | `bin/workvm-vid2agent-hook.sh` | Outra VM chama `10.0.2.2:18080` e `:11434` e toma connection refused. Na subida da `vid2agent-code` aplica o `hostfwd` e sobe o Ollama; na descida para o processo que este script iniciou. |
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
+| `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
+| `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
+| `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
+| `olie/sandbox/` | Isolamento exclusive (mutation/Pest/e2e) na Card VM Olie: `project.sh` + compose slim + PCOV; contrato em `ORCHESTRATION.md`. |
+| `bin/workvm-rename-base-dev-disk.sh` | Domain já é `base-dev`; o qcow2 ainda se chama `archlinux.qcow2` (root). Renomeia disco + XML com a VM shut off. |
 | `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
 | `bin/workvm-docker-mcp.sh` | Cursor sobe no login antes do compose. `docker exec` do Boost/Playwright falha uma vez e o MCP fica `failed`. Espera o container (stderr silencioso) e só então encaminha o stdio. |
 | `bin/workvm-playwright-mcp.sh` | `@playwright/mcp@latest` pede chrome-for-testing e sandbox; a imagem e2e só tem Chromium em `/ms-playwright`. Espera o container e sobe o MCP headless com esse binário e `--no-sandbox`. |
 | `bin/workvm-olie-mcp-proxy.py` | O Cursor ignora o Bearer do `olie-flow-ai` porque `api.olie.ai` publica OAuth. O agente do prompt fica `needsAuth` com o desktop já autenticado. Em `127.0.0.1:47331` responde 404 na descoberta e encaminha o MCP com o token. |
 | `bin/workvm-olie-management-read.sh` | Fórum TipTap não está no MCP. Auto-review pede OK em token+curl; wrapper só `get-forum` / `get-thread` / `get-thread-data`. Card/funil: MCP. |
-| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. `autoRun` libera leituras (fórum helper + MCP/GitHub read) e pede OK em approve/merge/edit/push. |
+| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado; `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start`. |
 | `systemd/workvm-olie-mcp-proxy.service` | Sem o proxy no login o Cursor abre a URL local e o MCP não conecta. `WantedBy=default.target`, só com `MCP=olie`. |
 | `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |
 | `bin/workvm-open-project-vm.sh` | Projeto sem card não tem clone. Liga a domain que já tem o nome do projeto e publica o SSH do chat. Não clona. |
