@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginAsE2EUser } from '../helpers/auth'
-import { measureContrastRatio, setResolvedTheme } from '../helpers/theme'
+import { expectReadableContrast, setResolvedTheme } from '../helpers/theme'
 import {
     e2eWebhookTargetUrl,
     openFrameWebhooks,
@@ -125,40 +125,22 @@ test.describe('DOP-1258 native event webhooks', () => {
         }, webhookId)
     })
 
-    test('measures subtitle and helper copy contrast in light and dark', async ({ page }) => {
-        const subtitle = page.locator('.card-subtitle.text-muted').first()
-        await expect(subtitle).toBeVisible()
-
-        const samples: Array<{ theme: string; label: string; ratio: number }> = []
+    test('helper copy meets WCAG AA contrast in light and dark', async ({ page }) => {
+        // After the contrast fix, helper copy uses text-gray-700 (theme-aware), not text-muted.
+        const subtitle = page.locator('small.card-subtitle.text-gray-700').first()
+        const emptyCopy = page.locator('.webhook-empty-copy.text-gray-700').first()
 
         for (const theme of ['light', 'dark'] as const) {
             await setResolvedTheme(page, theme)
-            const { ratio: subtitleRatio } = await measureContrastRatio(subtitle)
-            samples.push({ theme, label: 'card subtitle', ratio: Number(subtitleRatio.toFixed(2)) })
+            await page.reload()
+            await openFrameWebhooks(page)
 
-            const muted = page.locator('.card-body .text-muted').filter({ hasText: /\S/ }).first()
-            if (await muted.isVisible().catch(() => false)) {
-                const { ratio } = await measureContrastRatio(muted)
-                samples.push({
-                    theme,
-                    label: 'body muted',
-                    ratio: Number(ratio.toFixed(2)),
-                })
+            await expect(subtitle).toBeVisible()
+            await expectReadableContrast(subtitle, `webhook subtitle (${theme})`)
+
+            if (await emptyCopy.isVisible().catch(() => false)) {
+                await expectReadableContrast(emptyCopy, `webhook empty copy (${theme})`)
             }
-        }
-
-        console.log('DOP-1258 contrast samples:', JSON.stringify(samples, null, 2))
-        for (const sample of samples) {
-            expect(sample.ratio, `${sample.theme} ${sample.label}`).toBeGreaterThan(1)
-        }
-
-        // WCAG AA for normal text is 4.5:1 — soft-fail surface for the review report.
-        const belowAa = samples.filter(s => s.ratio < 4.5)
-        if (belowAa.length) {
-            console.warn(
-                'DOP-1258 contrast below WCAG AA 4.5:1:',
-                JSON.stringify(belowAa, null, 2)
-            )
         }
     })
 })
