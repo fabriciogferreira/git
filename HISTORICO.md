@@ -903,3 +903,9 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** ao iniciar a VM os repos não abrem no Cursor e o browser não abre
 - **por que é um problema:** o dia começa montando o ambiente na mão
 - **resolvido como:** `project-setup.sh` aponta `~/.config/workvm/current` para o projeto e liga `workvm.service`. No login gráfico o service roda `current/start.sh`, que abre o workspace e o Chromium. O service espera a sessão gráfica porque, sem Wayland, o Cursor abre no vazio
+
+## Local reCAPTCHA (browser + e2e)
+
+- **problema:** em `APP_ENV=local` o secret real rejeita o token fake do Playwright (`Token inválido`), e a site key de development ainda abre desafio do Google no browser do agente — comentar PHP/`getToken()` era tentador e arriscava commit
+- **por que é um problema:** e2e e login no Cursor param no captcha; bypass em código suja o diff e foge do prompt
+- **resolvido como:** par de teste público do Google só em env — `RECAPTCHA_SECRET` no `.env` do `api-main` (backup em `~/.config/workvm/`) e, para UI, `VITE_APP_RECAPTCHA_SITE_KEY` em `packages/management/.env.development.local` (exclude local); documentado em `olie/prompts/implementation.md` §7; proibido comentar validação

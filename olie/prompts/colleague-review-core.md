@@ -68,20 +68,7 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 
 ## 5. Temporary E2E CAPTCHA
 
-Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
-
-Do not stub the management API to get past that. Do not change PHP. Use Google's public test secret in the local `.env` only. `siteverify` then accepts any token, the same window `APP_ENV=testing` already has.
-
-`RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
-
-1. Confirm `~/git/olie/api-main/.env` is gitignored.
-2. If the value is not already the test secret, copy the file to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) before the first change. Do not put the original secret in the repo, in a comment, or in the chat.
-3. Set `RECAPTCHA_SECRET` to the test secret.
-4. Run `docker exec olie-api-main php artisan config:clear`. `POST /api/management/login/identify` with the stub token and `Origin: http://devframe.olie.localhost` must return `method: password`, not `invalid_token`.
-5. Leave the test secret in place while e2e on this VM needs a real login. Restore that backup and run `config:clear` again when that work is finished or the user asks. Delete the backup after a successful restore. If the restore fails, say the test secret may still be active.
-6. Never commit, push, or quote `.env` or the backup.
-
-If the container or `.env` is missing, stop and report that. Do not add a code bypass.
+Follow **Temporary E2E CAPTCHA** in `~/git/olie/prompts/implementation.md` §7. Short form: Google's public **test secret** in local `api-main` `.env` + optional **test site key** in `packages/management/.env.development.local` for browser login. Do not stub the management API. Do not comment out or delete `RecaptchaValidate` / front `getToken()` code. Never commit those env overrides.
 
 ## 6. What to verify
 

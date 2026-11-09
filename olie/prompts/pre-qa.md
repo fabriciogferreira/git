@@ -187,12 +187,17 @@ If commit or push fails, stop before Phase 4 product PRs when the meta-repo chan
 
 **Proceed only after all applicable checks in Phases 1–3 have passed.**
 
-**Create and configure every pull request with GitHub CLI (`gh`)**. This is the documented exception to **Tool preference** (MCP → `gh` → curl) in `~/git/olie/prompts/workflow-policy.md`: pre-QA create uses `gh` first (MCP App form deferral blocks create/update; weak assignee/label support). If `gh` is missing, unauthenticated, or errors, **stop and report** (prompt-health); do not silently switch to the browser UI. GitHub MCP is optional fallback only when `gh` cannot run and the user explicitly authorizes it.
+**Create and configure every pull request with GitHub CLI (`gh`)**. This is the documented exception to **Tool preference** (MCP → `gh` → curl) in `~/git/olie/prompts/workflow-policy.md`: pre-QA **create/edit** uses `gh` first (MCP App form deferral blocks create/update; weak assignee/label support on write). If `gh` is missing, unauthenticated, or errors, **stop and report** (prompt-health); do not silently switch to the browser UI. GitHub MCP is optional fallback for **writes** only when `gh` cannot run and the user explicitly authorizes it.
+
+**Read vs write on GitHub in this phase** (same rule as **GitHub reads vs writes** in `workflow-policy.md`):
+
+- **Before create — discovery via GitHub MCP only:** who is logged in (`get_me`), recent PRs / label patterns (`list_pull_requests` / `search_pull_requests` / `get_label`), collaborator or user lookups to map card 'Assigned to' → GitHub login. Do **not** run shell `gh auth status`, `gh pr list`, or `gh api user` just to gather that information (Auto-review will prompt; MCP reads are the allowed path).
+- **`gh` for the write:** `git push` (when the branch must land remotely) and `gh pr create` / `gh pr edit` for assignee, reviewers, and label. An Auto-review approval on those writes is expected and correct.
+- After create, prefer GitHub MCP to **verify** the PR (`pull_request_read` / equivalent). Use `gh pr view` only if MCP cannot confirm existence/base/head.
 
 Push the source branch first when needed so `gh` can open the PR against a remote head.
 
 ```bash
-gh auth status   # must be logged in (gh auth login)
 gh pr create --repo <owner>/<repo> --base <base> --head <branch> \
   --title "<English title>" --body "$(cat <<'EOF'
 ...
@@ -207,6 +212,7 @@ For an already-open PR: `gh pr edit <n> --add-assignee … --add-reviewer … --
 
 For every required pull request:
 
+- [ ] Resolve assignee GitHub login(s), reviewer logins, and the label name via **GitHub MCP** (and the card's 'Assigned to' field) before calling `gh`.
 - [ ] Create the PR via `gh pr create` with title and body in English, as required by `~/git/olie/prompts/workflow-policy.md`.
 - [ ] Use the correct source branch and target branch for the repository.
 - [ ] Verify that the source branch uses exactly the branch name specified in the card.
@@ -218,9 +224,9 @@ Example: for `feature/teste-123`, select the label closest to `feature`.
 
 - [ ] Provide a clear title and description summarizing the purpose of the changes, the relevant card, and the verification performed.
 - [ ] Link the pull request to the card when supported by the repository workflow.
-- [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, and contains the intended commits.
+- [ ] Verify that the pull request exists (prefer GitHub MCP; else `gh pr view`), targets the correct base branch, and contains the intended commits.
 
-Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through `gh pr view` (JSON or web URL).
+Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through MCP or `gh pr view` (JSON or web URL).
 
 If a required reviewer, assignee, label, or other setting is unavailable, report the limitation rather than silently omitting the requirement.
 
@@ -229,7 +235,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 **Proceed only after the required pull request or pull requests have been created and verified, and all applicable checks in Phases 1–4 have passed.**
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
-- [ ] Check off the funnel checklist item 'Pull request created' via management HTTP `toggle-funnel-checklist` (see **Toggling a funnel-step checklist item** in `~/git/olie/prompts/workflow-policy.md`). Use `${OLIE_MANAGEMENT_TOKEN}`, the card UUID, and the live `step_checklist_id` for that item — never paste a Bearer token. Confirm `{"response":true}`.
+- [ ] Check off the funnel checklist item **Pull Request criado** / **Pull request created** via management HTTP `toggle-funnel-checklist`. Resolve `step_checklist_id` from the project payload (`get-project-details-tool` → `funnels[].steps[].checklists[]` on the QA/CR step; if MCP omits that array, one `GET /api/management/projects/{uuid}` — see **Toggling a funnel-step checklist item** in `~/git/olie/prompts/workflow-policy.md`). Use `${OLIE_MANAGEMENT_TOKEN}`, the card UUID, and that id — never paste a Bearer token. Confirm `{"response":true}`.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
 - [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using the stage-resolution and move procedure in `~/git/olie/prompts/workflow-policy.md` (prefer MCP `move-project-to-funnel-step-tool`; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.

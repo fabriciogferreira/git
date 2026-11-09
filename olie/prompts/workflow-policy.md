@@ -10,6 +10,14 @@ When more than one tool can do the same job, use this order (do not skip ahead t
 2. **`gh`** — GitHub CLI when MCP is the wrong tool or unavailable. **Exception:** pre-QA **creates** PRs with `gh` first (GitHub MCP App form deferral / weak assignee-label support); see `pre-qa.md`.
 3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`). Forum TipTap (when a prompt requires it) has no MCP tool: use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) instead of inline Bearer curl.
 
+### GitHub reads vs writes (Auto-review)
+
+Cursor Auto-review often prompts on `gh` in the shell (network + session credentials) even for GET-only commands. Prefer **GitHub MCP** for read-only discovery so the user is not asked to approve informational calls:
+
+- **MCP (read):** current user (`get_me`), list/search PRs, PR details, reviewers/assignees already on a PR, labels, checks, commits, file contents, org/collaborator lookups needed to map card assignees → GitHub logins.
+- **`gh` (write / pre-QA create):** `gh pr create`, `gh pr edit` (assignee/reviewer/label), `git push` that updates a PR head. An Auto-review OK on those is expected.
+- Do **not** use shell `gh pr list` / `gh api user` / `gh auth status` only to discover login, assignees, reviewers, or labels when GitHub MCP can answer. Use `gh auth status` only immediately before a `gh` write if create fails with an auth error (then stop and report).
+
 Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
 
 ## Board stages
@@ -94,7 +102,21 @@ The user works every listed card in parallel on the VMs.
 
 ## Toggling a funnel-step checklist item
 
-Board checklists on a funnel step (e.g. QA/CR item **Pull request created**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. MCP `get-project-details` may return empty `project_checklists` even when the UI shows items.
+Board checklists on a funnel step (e.g. QA/CR item **Pull Request criado**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. Do **not** probe random management routes to find the id.
+
+### Resolve `step_checklist_id` from the project payload
+
+1. Load the card with MCP `get-project-details-tool` (by code or UUID).
+2. Find the live funnel step (e.g. display name **QA/CR**).
+3. Read `project.funnels[].steps[]` for that step and take `checklists[]`. Match the item by display name (case-insensitive trim). Live labels may be **Pull Request criado** or **Pull request created** — match either; do not hard-code the numeric id across funnels.
+4. The checklist object's `id` is `STEP_CHECKLIST_ID` for the toggle (example shape: `{ "id": 956, "name": "Pull Request criado", "funnel_step_id": 1452 }`).
+
+**MCP gap:** today’s `get-project-details-tool` often omits `steps[].checklists` and returns empty `project_checklists` / `checklists`, even when the board has items. When those arrays are missing or empty after MCP:
+
+- One fallback only: `GET https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}` with `${OLIE_MANAGEMENT_TOKEN}` (same project body; `funnels[].steps[].checklists` is present there).
+- Do **not** try alternate invent-the-path endpoints (`project-funnel-checklists`, `get-project-checklists`, etc.).
+
+### Toggle
 
 ```bash
 curl -sS --url 'https://api.olie.ai/api/management/toggle-funnel-checklist' \
@@ -104,8 +126,8 @@ curl -sS --url 'https://api.olie.ai/api/management/toggle-funnel-checklist' \
   --data-raw "{\"project_id\":\"${CARD_PROJECT_ID}\",\"step_checklist_id\":${STEP_CHECKLIST_ID}}"
 ```
 
-- `CARD_PROJECT_ID` — project UUID from MCP.
-- `STEP_CHECKLIST_ID` — numeric id of the checklist row to toggle (resolve from the live board / network for that step; do not invent or hard-code across funnels). Match by the item's display label when discovering (e.g. 'Pull request created').
+- `CARD_PROJECT_ID` — project UUID from the project payload.
+- `STEP_CHECKLIST_ID` — checklist `id` from step 3–4 above.
 - Expect `{"response":true}` and HTTP 2xx. On failure: stop and report (prompt-health).
 
 Never paste a Bearer token into a prompt, chat, or repo file — only `${OLIE_MANAGEMENT_TOKEN}` from `environment.d`.
@@ -135,9 +157,9 @@ Layout and examples: `~/git/.config/environment.d/README.md`.
 
 ## Temporary E2E CAPTCHA
 
-Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
+Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so use Google's public **test key pair** via env only: `RECAPTCHA_SECRET` in `api-main` `.env`, and when browser login must avoid Google challenges, `VITE_APP_RECAPTCHA_SITE_KEY` in `olie-fronts` `packages/management/.env.development.local` (not the tracked `.env.development`).
 
-Do not stub the management API to get past that. Do not change PHP. The same temporary window is Google's public test secret in the local `.env` only (`siteverify` then accepts any token). Full steps: `implementation.md`, `correction.md`, and `colleague-review-core.md`, section "Temporary E2E CAPTCHA".
+Do not stub the management API. Do not comment out or delete PHP/`getToken()` captcha code. Full steps: `~/git/olie/prompts/implementation.md` §7 (correction and colleague-review-core point there).
 
 ## Payment test cards
 

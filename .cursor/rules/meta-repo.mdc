@@ -69,9 +69,12 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   `--no-sandbox`); `@latest` sozinho pede chrome-for-testing que a e2e não tem.
 - Preferência de ferramenta nos prompts Olie/Locav/Televisão: **MCP → `gh` → curl**
   (`workflow-policy` **Tool preference**). Fórum TipTap: `bin/workvm-olie-management-read.sh`.
-- PRs no pre-QA: **GitHub CLI** (`github-cli` / `gh`) primeiro (exceção ao MCP GitHub —
-  form deferral). Auth: `gh auth login` (sessão do usuário). Pacote no `vm-setup.sh`.
-  Approve/merge no colleague review: GitHub MCP; `gh` se MCP falhar.
+- PRs no pre-QA: **criar/editar** com **GitHub CLI** (`gh`) primeiro (exceção ao MCP
+  GitHub — form deferral). **Leituras** (login, assignees, labels, PRs recentes):
+  GitHub MCP — não `gh` no shell só para descobrir (Auto-review pede OK). Auth do
+  CLI: `gh auth login`. Pacote no `vm-setup.sh`. Approve/merge no colleague review:
+  GitHub MCP; `gh` se MCP falhar. Detalhe: `olie/prompts/workflow-policy.md`
+  (**GitHub reads vs writes**) e `pre-qa.md` Phase 4.
 - Clone dos `CLONE_REPOS`: com `gh` autenticado, `workvm_clone_repo` usa `gh repo clone`
   (HTTPS + `gh auth setup-git`) — sem chave SSH. Sem sessão, cai no `git clone` da URL
   do `project.conf`.
