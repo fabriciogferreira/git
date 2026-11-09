@@ -49,6 +49,11 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 ## MCP / env de sessão (Cursor)
 
+- Auto-review: fonte `~/git/.cursor/permissions.json`. `workvm_apply_cursor_permissions`
+  promove para **`~/.cursor/permissions.json`** (user-level) em `bin/pull-meta.sh`,
+  `vm-setup.sh`, `project-setup.sh` e `lib/project-start.sh`. Sem essa cópia o
+  classificador fica velho depois do pull. Rules/prompts do meta-repo entram pelo
+  próprio `git pull` (workspace `~/git`); permissions precisa do user-level.
 - No login (`project-start.sh`, depois do overlay), `workvm_apply_mcp` junta
   **só** `mcps/<MCP>.json` quando o `project.conf` declara `MCP=`, mais os
   `.cursor/mcp.json` dos clones e dos e2e, em **`~/.cursor/mcp.json`**

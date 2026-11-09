@@ -11,4 +11,4 @@ Contexto do agente quando o workspace é `~/git`. Uma rule por assunto.
 | `rules/overlays.mdc` | Commit de secret, ou overlay aplicado no remoto da empresa |
 | `rules/meta-repo.mdc` | Não saber qual projeto está ativo, nem como o MCP e o patch dos clones entram na janela |
 
-`permissions.json` (neste diretório e cópia em `~/.cursor/`) orquestra o Auto-review: liberar leituras (MCP/GitHub read + helper de fórum); pedir OK em escrita (merge, approve, edit, push). Não define `terminalAllowlist` — isso substituiria a allowlist da UI.
+`permissions.json` (neste diretório) é a fonte versionada. `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start` — o classificador Auto-review usa o user-level. Libera leituras (MCP/GitHub read + helper de fórum + docker local do projeto); pede OK em escrita (merge, approve, edit, push). Não define `terminalAllowlist` — isso substituiria a allowlist da UI.

@@ -466,6 +466,8 @@ main() {
     setup_guest_hostname
     setup_git_identity
     setup_git_no_cursor_attribution
+    # Auto-review user-level: mesmo fonte que pull-meta / project-setup / project-start.
+    workvm_apply_cursor_permissions "$GIT_ROOT" || true
     setup_yay
     setup_apps
     setup_docker

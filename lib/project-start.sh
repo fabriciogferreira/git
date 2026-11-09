@@ -90,7 +90,8 @@ workvm_project_start() {
     workvm_project_log "excludes locais nos clones (.git/info/exclude)"
     workvm_apply_clone_git_excludes
 
-    # Depois do overlay: fontes versionados (mcps/, clones, e2e) → ~/.cursor/mcp.json.
+    # Depois do overlay: fontes versionados (mcps/, clones, e2e) → ~/.cursor/mcp.json
+    # e permissions.json → ~/.cursor/permissions.json (Auto-review user-level).
     # O proxy precisa estar de pé antes do Cursor ler a URL local do olie-flow-ai.
     workvm_project_log "proxy Olie MCP (só MCP=olie)"
     workvm_sync_olie_mcp_proxy "$repo_root" \
@@ -98,6 +99,9 @@ workvm_project_start() {
     workvm_project_log "MCP do projeto → ~/.cursor/mcp.json"
     workvm_apply_mcp "$repo_root" "${MCP:-}" "$project_dir" \
         || workvm_project_log "MCP não aplicado"
+    workvm_project_log "Auto-review permissions → ~/.cursor/permissions.json"
+    workvm_apply_cursor_permissions "$repo_root" \
+        || workvm_project_log "permissions Auto-review não aplicados"
 
     if [ -n "${COMPOSE_DIR:-}" ]; then
         workvm_project_log "docker compose up -d ($COMPOSE_DIR${COMPOSE_FILE:+ -f $COMPOSE_FILE})"

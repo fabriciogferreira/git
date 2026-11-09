@@ -3,7 +3,8 @@
     "allow_instructions": [
       "Allow the WorkVM helper ~/git/bin/workvm-olie-management-read.sh for read-only Olie forum calls only (get-forum, get-thread, get-thread-data).",
       "Allow shell that only sources ~/.config/environment.d for tokens and then runs read-only curl against https://api.olie.ai/api/management/get-forum, get-thread, get-thread-data, or GET /api/management/projects/{uuid} when resolving funnel-step checklist ids omitted by MCP get-project-details.",
-      "Allow read-only MCP and GitHub MCP methods that fetch card, PR, diff, commit, check, file contents, the authenticated GitHub user (get_me), labels, collaborators, or search results without approving, merging, creating, updating, or deleting. Prefer GitHub MCP over shell gh for those reads (Auto-review prompts on gh even for GET)."
+      "Allow read-only MCP and GitHub MCP methods that fetch card, PR, diff, commit, check, file contents, the authenticated GitHub user (get_me), labels, collaborators, or search results without approving, merging, creating, updating, or deleting. Prefer GitHub MCP over shell gh for those reads (Auto-review prompts on gh even for GET).",
+      "Allow docker compose and docker exec for the active WorkVM project (compose under ~/git/<project>/, containers such as olie-api-main, olie-front-*, workvm-sandbox*, televisao-backend, LocavApi). In-container project ops (artisan migrate/tinker/test, pest, config:clear, composer, yarn, etc.) write only to this guest's Docker volumes/DB — expected local development, not an external or production write. Do not treat migrate --force inside the project container as destructive."
     ],
     "block_instructions": [
       "Ask before create/update/delete on Olie: edit-project, move-project-to-funnel-step, set-form-answers, project-bulk-step-move, and any other management write.",
