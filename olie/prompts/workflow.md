@@ -61,7 +61,7 @@ Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Test gap analysis** (only if the card changed `api-main`) — `~/git/olie/prompts/test-gap-analysis.md`. Skip when there is no backend.
+2. **Test gap analysis** (only if the card changed `api-main`) — `~/git/olie/prompts/test-gap-analysis.md`. Skip when there is no backend. List missing use cases in chat only (do not write them into the card — close them before pre-QA / PRs).
 3. **Mutation testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/mutation-testing.md`. One changed test file per turn; continue with **`next mutation`** until the ledger covers the change set. Skip when the change set has no backend. Not a team gate; the user may explicitly stop/skip it — otherwise do not open pre-QA while files remain.
 4. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` (commits, PRs, forms, checklist) after implementation-validation passes, and after gap analysis + mutation when those steps applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
 

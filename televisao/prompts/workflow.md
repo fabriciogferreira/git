@@ -63,7 +63,7 @@ After implementation (or correction) on the card:
 
 1. **Related improvements** — `~/git/televisao/prompts/recommendation.md` (analysis only; do not implement suggestions in that paste).
 2. **Implementation validation** — `~/git/televisao/prompts/implementation-validation.md` (code only; no PRs/forms/commits required). Run it after the recommendation paste.
-3. **Test gap analysis** (only if the card changed `televisao-api`) — `~/git/televisao/prompts/test-gap-analysis.md`. Skip when there is no backend. Analysis only; write missing use cases into the card when found.
+3. **Test gap analysis** (only if the card changed `televisao-api`) — `~/git/televisao/prompts/test-gap-analysis.md`. Skip when there is no backend. Analysis only; list missing use cases in chat (do not write them into the card — close them before pre-QA / PRs).
 4. **Mutation testing** (personal, only if the card changed `televisao-api`) — `~/git/televisao/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
 5. **Pre-QA** — `~/git/televisao/prompts/pre-qa.md` (commits, PRs, and forms) after implementation-validation passes, and after test-gap-analysis + mutation-testing when those steps applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Televisão funnel has no step checklists; do not mark 'Pull request created'.
 

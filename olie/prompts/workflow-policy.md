@@ -69,7 +69,7 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 For a colleague card in 'QA/CR', the board move waits until **every** gate that applies has finished:
 
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
-2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. Write missing use cases into the card content when that run reports them.
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
 Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.

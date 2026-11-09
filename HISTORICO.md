@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Gap analysis no handoff próprio: lista só no chat
+
+- **problema:** `test-gap-analysis` no fluxo de implementação (após `implementation.md` / validation) gravava lacunas no conteúdo do card Olie; o autor ainda ia fechar os testes antes do pre-QA/PR, e o card ficava com lista provisória.
+- **por que é um problema:** ruído no board e no conteúdo do projeto; a lacuna já seria resolvida no mesmo handoff.
+- **resolvido como:** em Olie, Televisão e Locav, handoff próprio lista título+descrição só no chat Cursor; colleague review continua gravando no conteúdo do card. Prompts: `test-gap-analysis.md`, `workflow.md`, `workflow-policy.md`, `README.md`.
+
 ## Auto-review: `permissions.json` no fluxo pull → vm-setup → project-setup
 
 - **problema:** o Auto-review lia `~/.cursor/permissions.json`, mas o fonte versionado em `~/git/.cursor/permissions.json` não era copiado no `pull-meta` / `vm-setup` / `project-setup` (só o MCP ia para user-level). VM nova ou após pull ficava com Auto-review velho ou ausente. No sandbox do agente Cursor, `~/git/.cursor` ainda pode ficar bind-montado RO e o worktree stale.
