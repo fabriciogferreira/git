@@ -4,29 +4,49 @@
 # Problema: o patch local (skip-worktree) estava misturado com git, Docker e Wayland.
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
 
-# Copia o Auto-review versionado (~/git/.cursor/permissions.json) para
-# ~/.cursor/permissions.json (user-level). O classificador não lê só o workspace;
-# sem esta promoção, pull + vm-setup + project-setup deixavam Auto-review velho.
+# Copia o Auto-review versionado para ~/.cursor/permissions.json (user-level).
+# Problema: o classificador não lê só o workspace; sem promoção, pull/setup
+# deixavam Auto-review velho. Lê o blob git (HEAD) — o worktree em
+# ~/git/.cursor pode estar RO/stale no sandbox do agente Cursor.
 # Idempotente. Uso: workvm_apply_cursor_permissions [repo-root]
 workvm_apply_cursor_permissions() {
     local repo_root="${1:-${GIT_ROOT:-$HOME/git}}"
     local src="$repo_root/.cursor/permissions.json"
     local dest="${HOME}/.cursor/permissions.json"
+    local tmp
 
-    if [ ! -f "$src" ]; then
+    mkdir -p "$(dirname "$dest")"
+    tmp="$(mktemp)"
+
+    if [ -d "$repo_root/.git" ] \
+        && git -C "$repo_root" cat-file -e "HEAD:.cursor/permissions.json" 2>/dev/null; then
+        if ! git -C "$repo_root" show "HEAD:.cursor/permissions.json" >"$tmp"; then
+            rm -f "$tmp"
+            echo "aviso: falha ao ler HEAD:.cursor/permissions.json; pulando" >&2
+            return 0
+        fi
+    elif [ -f "$src" ]; then
+        cp -a "$src" "$tmp"
+    else
+        rm -f "$tmp"
         echo "aviso: $src ausente; pulando permissions Auto-review" >&2
         return 0
     fi
 
-    mkdir -p "$(dirname "$dest")"
-    if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+    if [ -f "$dest" ] && cmp -s "$tmp" "$dest"; then
+        rm -f "$tmp"
         echo "→ Cursor permissions: $dest (já igual ao meta-repo)"
         return 0
     fi
 
-    cp -a "$src" "$dest"
+    if ! cp -a "$tmp" "$dest"; then
+        rm -f "$tmp"
+        echo "aviso: não foi possível escrever $dest" >&2
+        return 1
+    fi
+    rm -f "$tmp"
     chmod 600 "$dest" 2>/dev/null || chmod u+rw "$dest" || true
-    echo "→ Cursor permissions: $src → $dest"
+    echo "→ Cursor permissions: meta-repo → $dest"
 }
 
 # Write ~/git/.cursor/rules/workvm-project.mdc (alwaysApply) so Cursor agents

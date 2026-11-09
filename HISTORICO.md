@@ -4,9 +4,10 @@ Problema resolvido entra aqui.
 
 ## Auto-review: `permissions.json` no fluxo pull → vm-setup → project-setup
 
-- **problema:** o Auto-review lia `~/.cursor/permissions.json`, mas o fonte versionado em `~/git/.cursor/permissions.json` não era copiado no `pull-meta` / `vm-setup` / `project-setup` (só o MCP ia para user-level). VM nova ou após pull ficava com Auto-review velho ou ausente.
-- **por que é um problema:** rules/prompts novos do meta-repo entravam no workspace, mas leituras GitHub/MCP/fórum/checklist continuavam pedindo OK; o fluxo documentado de “baixar e rodar setup” não bastava.
-- **resolvido como:** `workvm_apply_cursor_permissions` em `lib/cursor.sh`; chamado em `bin/pull-meta.sh`, `vm-setup.sh`, `project-setup.sh` e `lib/project-start.sh`. Fonte canônico permanece `~/git/.cursor/permissions.json` (inclui GitHub MCP read + checklist GET + docker local do projeto).
+- **problema:** o Auto-review lia `~/.cursor/permissions.json`, mas o fonte versionado em `~/git/.cursor/permissions.json` não era copiado no `pull-meta` / `vm-setup` / `project-setup` (só o MCP ia para user-level). VM nova ou após pull ficava com Auto-review velho ou ausente. No sandbox do agente Cursor, `~/git/.cursor` ainda pode ficar bind-montado RO e o worktree stale.
+- **por que é um problema:** rules/prompts novos do meta-repo entravam no workspace, mas leituras GitHub/MCP/fórum/checklist continuavam pedindo OK; o fluxo documentado de “baixar e rodar setup” não bastava; `git status` sujava com diff falso.
+- **resolvido como:** `workvm_apply_cursor_permissions` em `lib/cursor.sh` lê o blob `HEAD:.cursor/permissions.json` (não o disco RO) e escreve `~/.cursor/permissions.json`; chamado em `bin/pull-meta.sh`, `vm-setup.sh`, `project-setup.sh` e `lib/project-start.sh`. Fonte canônico permanece no meta-repo.
+
 
 ## Olie sandbox slim (isolamento mutation/Pest)
 
