@@ -13,26 +13,22 @@ export async function openFrameWebhooks(page: Page) {
     await requireFeature(page, {
         id: 'DOP-1258',
         probe: async () => {
-            const comingSoon = page.getByText(/Em breve|Coming soon/i).first()
+            // Prefer the create CTA — other Settings stubs also say "Em breve", so a
+            // page-wide coming-soon match false-skips when the flag is already on.
             const createBtn = page.getByRole('button', {
                 name: /Novo webhook|New webhook/i,
             })
             try {
-                await Promise.race([
-                    createBtn.waitFor({ state: 'visible', timeout: 12_000 }),
-                    comingSoon.waitFor({ state: 'visible', timeout: 12_000 }),
-                ])
+                await createBtn.first().waitFor({ state: 'visible', timeout: 12_000 })
+                return true
             } catch {
+                // Flag off (or no permission): gated card / missing CTA — skip.
                 return false
             }
-            if (await comingSoon.isVisible().catch(() => false)) {
-                return false
-            }
-            return createBtn.isVisible().catch(() => false)
         },
     })
     await expect(
-        page.getByRole('button', { name: /Novo webhook|New webhook/i })
+        page.getByRole('button', { name: /Novo webhook|New webhook/i }).first()
     ).toBeVisible()
 }
 
