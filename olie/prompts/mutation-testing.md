@@ -127,6 +127,6 @@ Report the file, in-scope result, Pest raw score if different, any +1 legacy fix
 
 When **none** remain:
 
-- **Dispatcher mode:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths). Return the aggregate result to `colleague-review.md`. Do **not** apply the funnel move yourself.
+- **Dispatcher mode:** if mutation reported fixes **for the author** (product gaps), write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths, no VM/sandbox/dispatcher/ledger jargon). If the gate is clean or only local test asserts were tightened, **do not** post a process wrap-up to the card — return Clean to `colleague-review.md` in chat only. Do **not** apply the funnel move yourself.
 - **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/olie/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
 - **Alone on colleague stack:** write mutation fixes to the card if any; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel here).

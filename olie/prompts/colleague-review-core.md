@@ -53,7 +53,7 @@ Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ co
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** and **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md` — never recommend prompt paths there, and never cite `olie-e2e` / meta-repo Playwright on the card or Caderno (describe missing product behavior only).
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** and **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md` — never recommend prompt paths there; never cite `olie-e2e` / meta-repo Playwright; never mention WorkVM / Card VM / sandboxes / dispatcher / ledger (describe missing product behavior only).
 
 ## 4. Branches to test
 
