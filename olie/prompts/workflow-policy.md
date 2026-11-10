@@ -205,7 +205,7 @@ Production review (`production-review` / 'Revisão de Produção') checks the **
 
 The clone `~/git/olie/docs` (`olie-ai/docs`, docs.olie.ai / public OpenAPI) is **out of scope** for every agent workflow (implementation, correction, pre-QA, colleague review, production review).
 
-Do not edit, rebase, merge, commit, push, or open/update PRs in that repository. Do not put it on a card’s repository list or correction plan. If a card or review mentions public docs, report that and continue only in product repos (`api-main`, `olie-fronts`, `olie-e2e`, …). Meta-repo docs under `~/git` (`olie/prompts/`, `HISTORICO.md`, overlay) remain allowed.
+Do not edit, rebase, merge, commit, push, or open/update PRs in that repository. Do not put it on a card’s repository list or correction plan. If a card or review mentions public docs, report that and continue only in company product repos (`api-main`, `olie-fronts`, …). Private Playwright stays in meta-repo `olie/olie-e2e` and must not be cited publicly (**Private E2E suites**). Meta-repo docs under `~/git` (`olie/prompts/`, `HISTORICO.md`, overlay) remain allowed.
 
 If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/restore safely and stop; do not finish the conflict.
 
@@ -223,13 +223,29 @@ When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prom
 
 Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
 
-When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
+When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
 - Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
+- Do **not** cite private meta-repo E2E (see **Private E2E suites** below).
 
 Recommend the next prompt **only in the Cursor chat** report.
+
+## Private E2E suites (olie-e2e — owner only)
+
+`~/git/olie/olie-e2e` is **personal WorkVM tooling**. It is not on the company remotes and other developers do not have those specs. Locav is the exception among EnterScience products: Cypress lives **inside** `locav-front` on the company branch, so Locav may cite its e2e in repos, PRs, and card content.
+
+For **Olie** (and any product whose Playwright suite lives only under the meta-repo):
+
+- Agents **may** add/run/commit Playwright under `~/git/olie/olie-e2e` on meta-repo `main` and mention results **only in Cursor chat**.
+- Do **not** cite `olie-e2e`, Playwright meta specs, `~/git/olie/olie-e2e/...`, or “e2e coverage added in the meta-repo” in:
+  - Olie project/card content (`save-media-tool`, description, form answers, tags notes)
+  - Caderno / notebook pages
+  - Company repository files (comments, README, changelog)
+  - Pull request titles or bodies on `olie-ai/*`
+- PR verification text may say the behavior was checked (manual or “verified locally”) without naming the private suite.
+- Colleague-review fail notes on the card must describe the missing **product** behavior, not “add a test in olie-e2e”.
 
 ## Language
 

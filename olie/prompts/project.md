@@ -22,9 +22,10 @@ Workday order: `~/git/olie/prompts/workflow.md`.
 - Do not post image, video, or audio analysis (or transcriptions) into project content. Save under `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md`, **commit/push on the meta-repo** `~/git`, and reuse on correction; see `olie-project-image-analysis` and `olie-project-video-conversion`.
 - PHP, Artisan, Composer, Pint, and `api-main` tests: `docker exec olie-api-main <command>`. Do not run `php` on the host.
 - Frontend: Yarn 1 in `olie-fronts`. Do not use npm or `package-lock.json`.
+- Playwright under `~/git/olie/olie-e2e` is **private** (owner-only meta-repo suite). Use it in the WorkVM; never cite it in card content, Caderno, company repos, or PR bodies — **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md`. (Locav may cite Cypress because it ships in `locav-front`.)
 - A rule that exists in only one repository (tenant, permissions, an internal package) is not copied here.
 - If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## Out of scope
 
-Do not change the `~/git` meta-repo to finish a task for this product (except `olie/cards/` media analyses when the media skills require it).
+Do not change the `~/git` meta-repo to finish a task for this product (except `olie/cards/` media analyses when the media skills require it, and private `olie/olie-e2e` when the card needs Playwright — without citing that suite publicly).

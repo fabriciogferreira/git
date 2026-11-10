@@ -167,7 +167,7 @@ This pre-QA pass **must** commit and push meta-repo updates that belong to the c
 
 - `olie/prompts/` (including `mutation-ledger.md`)
 - `olie/cards/{CARD_CODE}/` media analyses
-- `olie/olie-e2e/` specs or helpers added for the card
+- `olie/olie-e2e/` specs or helpers added for the card (commit them here; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
 - `HISTORICO.md` / other meta-repo docs touched for the same work
 
 Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.
@@ -223,6 +223,7 @@ For every required pull request:
 Example: for `feature/teste-123`, select the label closest to `feature`.
 
 - [ ] Provide a clear title and description summarizing the purpose of the changes, the relevant card, and the verification performed.
+- [ ] Do **not** mention `olie-e2e`, meta-repo Playwright paths, or “e2e added in the meta-repo” in the PR title/body (private suite — **Private E2E suites** in `workflow-policy.md`). Verification may say the behavior was checked locally without naming that suite.
 - [ ] Link the pull request to the card when supported by the repository workflow.
 - [ ] Verify that the pull request exists (prefer GitHub MCP; else `gh pr view`), targets the correct base branch, and contains the intended commits.
 

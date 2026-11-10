@@ -140,7 +140,7 @@ Present the plan to the user before implementing any corrections.
 
 ## 7. TDD Workflow
 
-Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/olie/olie-e2e` and `~/git/olie/api-main`, as well as tests in any other affected repositories.
+Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/olie/olie-e2e` and `~/git/olie/api-main`, as well as tests in any other affected repositories. Keep `olie-e2e` private: use it in the WorkVM, never cite paths or “meta-repo e2e” in card content, Caderno, company repos, or PR bodies (**Private E2E suites** in `workflow-policy.md`).
 
 For each correction, follow this sequence:
 

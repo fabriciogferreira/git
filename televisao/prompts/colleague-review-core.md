@@ -46,7 +46,7 @@ You may change only the meta-repo Playwright suites. Those trees are not part of
 - `~/git/televisao/televisao-front-e2e` when the author changed `televisao-front`
 - `~/git/televisao/televisao-meet-front-e2e` when the author changed `televisao-meet-front`
 
-If the author changed that front, **add** end-to-end tests there for the frontend behavior the card requested. If those tests already exist and a requested point is uncovered, add the missing tests. Do not rewrite tests that already cover the card. Do **not** fail the review because the author's company branch lacks e2e — they cannot push those suites.
+If the author changed that front, **add** end-to-end tests there for the frontend behavior the card requested. If those tests already exist and a requested point is uncovered, add the missing tests. Do not rewrite tests that already cover the card. Do **not** fail the review because the author's company branch lacks e2e — they cannot push those suites. Do **not** cite these suites on the card, Caderno, company repos, or PR bodies (**Running Playwright** / private E2E in `workflow-policy.md`); fail notes describe missing product behavior only.
 
 For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
 

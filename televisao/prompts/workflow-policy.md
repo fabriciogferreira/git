@@ -129,6 +129,8 @@ Tags come with the project. MCP `get-project-details-tool` includes `tags`. If t
 
 E2E lives in the meta-repo, not in the company clones. `televisao-front` uses `~/git/televisao/televisao-front-e2e` (`http://localhost:3000`). `televisao-meet-front` uses `~/git/televisao/televisao-meet-front-e2e` (`http://localhost:3001`). The API stack must already be up (`~/git/televisao/televisao-api`, `docker compose up -d`). Do not run Playwright inside a company front image. Specs stay in those directories; they do not ship on the company branch.
 
+These suites are **private** (owner-only WorkVM tooling). Agents may add/run/commit them on meta-repo `main` and mention results **only in Cursor chat**. Do **not** cite `televisao-*-e2e`, Playwright meta paths, or “e2e coverage in the meta-repo” in card content, Caderno/notebook, company repos, or PR titles/bodies. Locav may cite Cypress because it ships inside `locav-front`; Televisão may not. Verification text may say the behavior was checked locally without naming the private suite.
+
 ```bash
 cd ~/git/televisao/televisao-front-e2e
 ./run.sh
@@ -180,11 +182,12 @@ When committing or pushing the meta-repo `~/git` (e2e or any other path):
 
 Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
 
-When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
+When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
 - Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
+- Do **not** cite private meta-repo Playwright (`televisao-front-e2e` / `televisao-meet-front-e2e`) — see **Running Playwright**.
 
 Recommend the next prompt **only in the Cursor chat** report.
 

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## E2E privado: não citar no card, repo ou Caderno
+
+- **problema:** agentes citavam `olie-e2e` / Playwright do meta-repo (e o equivalente da Televisão) em conteúdo do projeto Olie, PR de empresa e Caderno; esses specs são só do dono da WorkVM.
+- **por que é um problema:** o board e os remotes da empresa apontam para uma suite que outros desenvolvedores não têm; ruído e expectativa falsa de cobertura compartilhada.
+- **resolvido como:** política **Private E2E suites** em `olie/prompts/workflow-policy.md` (+ `project` / `implementation` / `pre-qa` / `correction` / `colleague-review-core`); Televisão alinhada em `Running Playwright`; Locav documentado como exceção (Cypress nativo em `locav-front`). Uso local e commit no meta-repo continuam; citação pública não.
+
 ## Gap analysis no handoff próprio: lista só no chat
 
 - **problema:** `test-gap-analysis` no fluxo de implementação (após `implementation.md` / validation) gravava lacunas no conteúdo do card Olie; o autor ainda ia fechar os testes antes do pre-QA/PR, e o card ficava com lista provisória.

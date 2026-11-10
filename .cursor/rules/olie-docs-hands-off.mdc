@@ -13,6 +13,6 @@ Nunca:
 - `checkout`, `rebase`, `merge`, `commit`, `push` ou abrir/atualizar PR nele
 - incluir `docs` / `olie-ai/docs` no plano de correção ou na lista de repos do card
 
-Se o card ou um PR citar documentação pública: **reporte** e siga só em `api-main`, `olie-fronts`, `olie-e2e` (e outros clones de produto). Documentação de produto no meta-repo (`olie/prompts/`, `HISTORICO.md`, overlay) continua permitida.
+Se o card ou um PR citar documentação pública: **reporte** e siga só em clones de produto da empresa (`api-main`, `olie-fronts`, …). Não cite `olie-e2e` (suite privada do meta-repo). Documentação de produto no meta-repo (`olie/prompts/`, `HISTORICO.md`, overlay) continua permitida.
 
 Se um rebase ou edição nesse clone já estiver em andamento por engano: `git rebase --abort` (ou descarte seguro) e pare; não complete o conflito.

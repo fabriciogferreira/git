@@ -151,6 +151,7 @@ For every required pull request:
 Example: for `feature/teste-123`, select the label closest to `feature`.
 
 - [ ] Fill every section of that template: card link, related PRs, technical description, open points, and the checklists. Check a box only when that item was done.
+- [ ] Do **not** mention `televisao-*-e2e`, meta-repo Playwright paths, or “e2e added in the meta-repo” in the PR title/body (private suite — **Running Playwright** in `workflow-policy.md`).
 - [ ] After every required PR exists, `gh pr edit` each body so **PR(s) relacionados** has the other PR URL. If this card changes only one repository, mark **Não se aplica**.
 - [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, contains the intended commits, and the body still has the template headings, the card link, and the related PR URL when one exists.
 - [ ] After those PRs are verified, write **Pull Request (front)** and **Pull Request (back)** with `set-form-answers-tool`, using **Code review form** in `~/git/televisao/prompts/workflow-policy.md`. Read the fields back and confirm the stored URLs.

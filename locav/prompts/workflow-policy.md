@@ -125,6 +125,8 @@ Tags come with the project. MCP `get-project-details-tool` includes `tags`. If t
 
 ## Running Cypress
 
+Cypress lives **inside** `locav-front` on the company branch. Locav is the EnterScience exception: agents **may** cite Cypress specs, coverage, and paths in company repos, pull requests, card content, and Caderno. (Olie/Televisão Playwright suites are private meta-repo tooling and must not be cited the same way.)
+
 Do not run Cypress inside `locav-frontend`. That image is Alpine (musl). The Cypress binary is glibc. `apk add xvfb` installs, then the smoke test still exits with `premature close` and `Error relocating ... __memcpy_chk`. More Alpine packages do not fix that.
 
 The dev server stays in `locav-frontend` (`http://localhost:3000`). Run Cypress on the host, from `~/git/locav/locav-front`, with the Node binary. The graphical session already has `DISPLAY`. Do not add `package-lock.json`.

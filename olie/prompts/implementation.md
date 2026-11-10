@@ -84,6 +84,8 @@ If tests are missing or coverage is insufficient, add `create tests for the beha
 
 Do not assume that the absence of an obvious test means no relevant tests exist. Search the existing test suite and inspect related scenarios before identifying gaps.
 
+Those Playwright specs are **private** (meta-repo only). Keep checklist/plan/chat references local to the WorkVM. Do **not** put `olie-e2e` paths or “e2e coverage” into card content, Caderno, company repos, or PR bodies — **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md`.
+
 ### 4.3. Plan Documentation
 
 Create the implementation plan in the agent's native planning mechanism. If that mechanism is unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
