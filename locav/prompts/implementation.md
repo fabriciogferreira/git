@@ -16,7 +16,7 @@ Recognize these user messages in this develop flow (shared table: `~/git/locav/p
 
 Implement the card identified by `{{ code }}`. Its requirements, business rules, dependencies, and implementation context are available through the MCP OlieFlowAi.
 
-Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
+Also read every project thread and the latest version of each one, using **Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
 ### Card media review (required before the plan)
 

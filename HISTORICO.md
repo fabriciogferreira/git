@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Caderno/forum: MCP notebook no lugar do helper HTTP
+
+- **problema:** `workflow-policy` mandava ler fórum via `workvm-olie-management-read.sh` (`get-forum` / threads TipTap) e dizia que não havia tool MCP; o agente parava no proxy sandbox ou pedía OK de token. As tools MCP já existiam com o nome **notebook** (Caderno).
+- **por que é um problema:** preferência MCP→HTTP quebrava; a listagem de “todos os fóruns/subfóruns” parecia ausente porque o nome mudou (`get-notebook-tool` = árvore `pages` + `children`).
+- **resolvido como:** `workflow-policy` (Televisão / Locav / Olie), cross-refs dos prompts, `meta-repo` / `layout` e cabeçalho do helper: Caderno via `get-notebook-tool` + `read-notebook-page-tool`; helper HTTP só sob MCP auth.
+
 ## Auto-review: `permissions.json` no fluxo pull → vm-setup → project-setup
 
 - **problema:** o Auto-review lia `~/.cursor/permissions.json`, mas o fonte versionado em `~/git/.cursor/permissions.json` não era copiado no `pull-meta` / `vm-setup` / `project-setup` (só o MCP ia para user-level). VM nova ou após pull ficava com Auto-review velho ou ausente. No sandbox do agente Cursor, `~/git/.cursor` ainda pode ficar bind-montado RO e o worktree stale.

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Forum thread bodies are not on MCP olie-flow-ai (only forum stub on
-# get-project-details). Auto-review treats inline `source environment.d` +
-# Bearer curl as high risk even for these reads. This helper loads
-# OLIE_MANAGEMENT_TOKEN without printing it and only allows forum GETs.
+# Fallback only: Caderno/forum when MCP notebook tools are needsAuth/401.
+# Prefer olie-flow-ai get-notebook-tool + read-notebook-page-tool (pages tree =
+# forums/subforums). This helper loads OLIE_MANAGEMENT_TOKEN without printing
+# it and only allows legacy get-forum / get-thread / get-thread-data.
 # Card/funnel/project reads: MCP first. Writes: MCP or direct curl (prompt).
 #
 # Preference: MCP → gh (GitHub only) → this helper / curl.

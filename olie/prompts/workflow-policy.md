@@ -8,7 +8,7 @@ When more than one tool can do the same job, use this order (do not skip ahead t
 
 1. **MCP** — `olie-flow-ai` for card/board/forms; GitHub MCP for PR approve/merge/read when the prompt uses those tools.
 2. **`gh`** — GitHub CLI when MCP is the wrong tool or unavailable. **Exception:** pre-QA **creates** PRs with `gh` first (GitHub MCP App form deferral / weak assignee-label support); see `pre-qa.md`.
-3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`). Forum TipTap (when a prompt requires it) has no MCP tool: use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) instead of inline Bearer curl.
+3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`) when MCP itself is `needsAuth` / 401. Never prefer HTTP over a working MCP tool. Project Caderno/forum: MCP `get-notebook-tool` + `read-notebook-page-tool` first; `~/git/bin/workvm-olie-management-read.sh` only under **MCP auth**.
 
 ### GitHub reads vs writes (Auto-review)
 
@@ -92,6 +92,29 @@ For a colleague card in 'QA/CR', the board move waits until **every** gate that 
 
 Do not start or end a project execution. Do not POST `project-executions` and do not call an MCP tool that starts one. The Opbed Job page (`/job`) owns that request. Continue the card work without waiting for an execution to start.
 
+## Reading the project notebook (Caderno)
+
+The card from MCP is not the whole spec. When a prompt requires the project Caderno (older name: forum / threads), read **every page** and the Markdown of each page via MCP — not management HTTP.
+
+| Older (management HTTP / UI habit) | MCP `olie-flow-ai` |
+| --- | --- |
+| forum | notebook (Caderno) |
+| thread / sub-thread | page / nested page (`pages[].children`) |
+| `get-forum` (list) | `get-notebook-tool` (full page tree) |
+| `get-thread-data` (latest TipTap) | `read-notebook-page-tool` |
+
+There is **one notebook per project**. **`get-notebook-tool` is the list-all tool**: it returns `pages` plus nested `children`. There is no separate "list forums" MCP tool — walk that tree. Do not stop at `default_page_id`.
+
+1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID.
+2. If `notebook` is `null`, the project has no Caderno yet — note that and continue from card media/description only (not a tooling failure).
+3. Walk every entry in `pages` and every nested `children` array. Collect each page's `id` and `name`, including the default page.
+4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). Empty `blocks` means an empty page — note the name and continue.
+5. A block with `type` `image` (or an image URL in markdown): follow the project's image-analysis skill when the prompt requires it. Do not store signed URL query strings; they expire.
+
+Do **not** use `~/git/bin/workvm-olie-management-read.sh` while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth**. Never inline Bearer curl for Caderno.
+
+On MCP error (other than `notebook: null`): stop and report (prompt-health rules).
+
 ## Several cards at once
 
 The board shows one project execution. VMs can run several cards at the same time.
@@ -142,7 +165,7 @@ On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:
 
 If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` **only** when `index-project-funnels-tool` itself is `needsAuth` / 401 (MCP auth), not when a filtered call returned `[]` or when another MCP read already succeeded. Prefer restoring MCP and calling `index-project-funnels-tool` again (unfiltered if needed). Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
-Forum TipTap (when required): `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`), not inline Bearer curl.
+Project notebook (Caderno) bodies: **Reading the project notebook** (MCP `get-notebook-tool` + `read-notebook-page-tool` first).
 
 ## Tokens
 
@@ -228,7 +251,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** if `~/git/olie/prompts/mutation-testing.md` is in progress and any changed `api-main` `*Test.php` is still missing a `100%` / `equivalent` ledger row, **refuse** `next prompt` (do not open `pre-qa.md`). List what remains and tell the user to send `next mutation`. |
 | `next mutation` | Only during the personal mutation stack (`~/git/olie/prompts/mutation-testing.md`): open that prompt and process the **next** changed test file not yet done in `~/git/olie/prompts/mutation-ledger.md` (one file per turn). Same as re-pasting mutation-testing. Do not jump to `pre-qa.md`. If the stack is already complete, say so and point at `next prompt` → `pre-qa.md`. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
-| `to correct` | Fix every item listed under **Needs code fixes** from the latest `~/git/olie/prompts/implementation-validation.md` pass in this chat. Implement those fixes only; then recommend re-running implementation-validation (`try again` on that pass, or `next prompt` if validation was already named next). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
+| `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” command for the stack is `next mutation`, not `next prompt`.
 
