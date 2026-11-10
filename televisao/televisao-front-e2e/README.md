@@ -19,6 +19,12 @@ Auth coverage in `tests/auth.smoke.spec.ts`:
 - Clinic / doctor signup links and forgot-password link
 - Logout back to `/login`
 
+Support chat (super) in `tests/support-chat.smoke.spec.ts`:
+
+- Breadcrumb `Home > Suporte` and headset nav icon
+- Accent-insensitive clinic search (`cli` finds `Clínica…`)
+- Long unbroken message wraps inside the bubble width
+
 TV-205 checkout:
 
 - `tests/tv-205-checkout.flow.spec.ts` — end-to-end: land on checkout → edit
