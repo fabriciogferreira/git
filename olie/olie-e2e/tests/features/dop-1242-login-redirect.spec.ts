@@ -179,9 +179,11 @@ test.describe('DOP-1242 login redirect', () => {
     })
 
     test('discards a feature-flagged route the frame does not have', async ({ page }) => {
+        // DOP-1279: `studio` is a released flag — only an explicit `false` hides it.
+        // An absent key means billing mode (available); cover that in dop-1279 specs.
         await stubLoginSession(page, {
             permissions: ['studio.access'],
-            features: {},
+            features: { studio: false },
         })
         await page.goto('/auth/login?redirect=/studio')
         await signIn(page)
