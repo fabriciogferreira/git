@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Pre-QA: restrições do step antes de mover para QA/CR
+
+- **problema:** o agente tentava `move-project-to-funnel-step` para QA/CR e tomava `incoming_restrictions` (ex.: rádio Postman do form do step ainda vazio), depois preenchia e movia de novo.
+- **por que é um problema:** falha evitável no handoff; parece prompt-health / tooling quebrado quando é só gate de formulário do destino.
+- **resolvido como:** `workflow-policy` (**Moving a card**) e `pre-qa.md` Phase 5 exigem responder as restrições / forms do step de destino **antes** da move; só então mover e verificar o estágio.
+
 ## E2E privado: não citar no card, repo ou Caderno
 
 - **problema:** agentes citavam `olie-e2e` / Playwright do meta-repo (e o equivalente da Televisão) em conteúdo do projeto Olie, PR de empresa e Caderno; esses specs são só do dono da WorkVM.

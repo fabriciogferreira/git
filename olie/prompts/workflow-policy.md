@@ -53,10 +53,13 @@ Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unne
 
 Resolve **card id** and **funnel steps** through MCP `olie-flow-ai` (search by card code). Never hard-code `step_id`. Never paste a Bearer token into a prompt, chat, or repo file.
 
+**Resolve incoming restrictions before the move.** Target steps often require form answers (or other step gates) before the link is allowed. A move that returns `incoming_restrictions` (or equivalent) is not a tooling failure — it means a required field on the destination step is unanswered. Do **not** retry the move until those answers are written (`get-model-dynamic-forms-tool` → `get-form-tool` / `get-form-answers-tool` → `set-form-answers-tool` as needed). Only then call the move and verify the stage.
+
 1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board (`get-project-details-tool` and/or `index-project-funnels-tool` — see above).
 2. Match the target logical stage to a live step by display name (`workflow-policy` board stages above).
-3. Prefer an MCP tool that moves the card when one exists and works (`move-project-to-funnel-step-tool`).
-4. If you must call the management HTTP API directly:
+3. Answer every required form / restriction for that **destination** step (and any other documented gate for the handoff) **before** attempting the move.
+4. Prefer an MCP tool that moves the card when one exists and works (`move-project-to-funnel-step-tool`).
+5. If you must call the management HTTP API directly:
 
 ```bash
 curl -sS --url 'https://api.olie.ai/api/management/project-bulk-step-move' \

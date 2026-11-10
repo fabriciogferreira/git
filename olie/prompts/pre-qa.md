@@ -237,6 +237,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
 - [ ] Check off the funnel checklist item **Pull Request criado** / **Pull request created** via management HTTP `toggle-funnel-checklist`. Resolve `step_checklist_id` from the project payload (`get-project-details-tool` → `funnels[].steps[].checklists[]` on the QA/CR step; if MCP omits that array, one `GET /api/management/projects/{uuid}` — see **Toggling a funnel-step checklist item** in `~/git/olie/prompts/workflow-policy.md`). Use `${OLIE_MANAGEMENT_TOKEN}`, the card UUID, and that id — never paste a Bearer token. Confirm `{"response":true}`.
+- [ ] Resolve **incoming restrictions** for the destination 'QA/CR' step **before** moving. In particular, answer the step form that asks whether api-main Postman documentation must be updated (`Sim` / `Não`) from the Phase 2 determination — use `get-model-dynamic-forms-tool` / `get-form-answers-tool` then `set-form-answers-tool` (see **Moving a card on the board** in `~/git/olie/prompts/workflow-policy.md`). Do not call the move while a required destination-step field is still empty.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
 - [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using the stage-resolution and move procedure in `~/git/olie/prompts/workflow-policy.md` (prefer MCP `move-project-to-funnel-step-tool`; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.
@@ -244,7 +245,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 
 Do not mark 'Pull request created' as complete before the relevant pull request has been verified.
 
-Do not move to 'QA/CR' if any mandatory check from Phases 1–4 (or earlier items in this phase) failed, was skipped, or remains unresolved. If the move fails, stop and report (prompt-health); do not claim the handoff is complete.
+Do not move to 'QA/CR' if any mandatory check from Phases 1–4 (or earlier items in this phase) failed, was skipped, or remains unresolved. If the move fails with `incoming_restrictions` (or equivalent), fill the required destination-step answers and retry once; if it still fails for another reason, stop and report (prompt-health). Do not claim the handoff is complete until the verified stage is 'QA/CR'.
 
 ## 7. Failure Handling and Reporting
 
