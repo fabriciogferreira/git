@@ -1,122 +1,79 @@
-# Colleague Card Review
+# Colleague Card Review — dispatcher
 
-Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
+Review card {{ code }} while it sits in 'QA/CR'. This paste is **only a dispatcher**: bootstrap shared context, launch the gate prompts **in parallel**, wait for every applicable gate, apply **Colleague review outcome**, then print one scoreboard.
+
+This is a review of someone else's card, not preparation of your own (pre-QA). Do not implement the card in this paste.
 
 If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and **ask the user to fix the broken tool** before continuing. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
-## 1. Objective
+Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcome rules: **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`.
 
-Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
+## 1. Bootstrap (serial, once)
 
-The card's requirements and acceptance criteria are the source of truth. A change that works but does not match the card is not a pass.
+1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
+2. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits). That flag decides whether gap + mutation run.
+3. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
+4. Record `started_at` (UTC) for the scoreboard.
+5. Do **not** write the colleague verdict, gap list, or mutation fixes yet — workers do that. Do **not** move the funnel or approve until §4.
 
-## 2. Context
+## 2. Dispatch (parallel)
 
-Load the card through `mcp olie-flow-ai`. Read:
+Open and **run** these prompts **at the same time** (Task / subagents / parallel tool batches). Pass the same card code `{{ code }}` and the shared bootstrap (project id, branches, backend yes/no). Do not wait for one gate to finish before starting another.
 
-- The description, requirements, and acceptance criteria.
-- The repositories and branches the author changed.
-- The pull requests and the commits on those branches.
-- Comments, attachments, and test notes.
-- **Project media** (`get-project-media-tool`): screenshots, screencasts, and other image/video/audio that define expected behavior or show a defect.
+| Gate | Prompt | When |
+| --- | --- | --- |
+| Colleague core | `~/git/olie/prompts/colleague-review-core.md` | Always |
+| Test gap analysis | `~/git/olie/prompts/test-gap-analysis.md` | Only if backend touched; else mark **skipped** |
+| Mutation testing | `~/git/olie/prompts/mutation-testing.md` | Only if backend touched; else mark **skipped** |
 
-Do not review from the card title alone.
+Rules for workers:
 
-### Card media review (required before the verdict)
+- **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste.
+- **Exclusive work (mutation / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation on the Card VM while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the Card VM.
+- Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve.
 
-Before deciding pass or fail, **review the card's media**. Do not judge from text alone when images or videos show the expected or broken behavior.
+If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.
 
-1. `git pull` the meta-repo if needed, then list media via MCP.
-2. For each image, video, or audio item that belongs to this card and supports the requirements or a finding:
-   - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
-   - If that file is **missing** → analyze now: `olie-project-image-analysis` for images, `olie-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.
-3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
-4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
-5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks). You may also commit e2e changes as already allowed in §3.
+## 3. Wait and collect
 
-## 3. What you may change
+Wait until every dispatched gate has finished (or is skipped). Collect:
 
-Do not edit product repositories. That includes `olie-fronts`, `api-main`, `backoffice`, `landing`, `docker-workspace`, and `websocket`.
+- Colleague core: Pass / Fail (+ findings posted or not)
+- Gap: No tests to add / Tests to add / Skipped / Blocked
+- Mutation: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
 
-You may change only `~/git/olie/olie-e2e`. That tree is not part of the company remotes.
+## 4. Combined outcome
 
-- If the author changed `olie-fronts`, add end-to-end tests there for the frontend behavior the card requested.
-- If those tests already exist and a requested point is uncovered, add the missing tests.
-- Do not rewrite tests that already cover the card.
+Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **once**, after all applicable gates finished (or the user explicitly skips a remaining gate in chat).
 
-For `~/git/`, do not create a card branch. Commit and push the e2e changes (and new card media analyses under `olie/cards/`) directly to 'main'.
+- Move to 'Corrigir' only if at least one applicable gate failed (colleague fail **or** gap reported tests to add **or** mutation reported fixes for the author).
+- Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean.
+- Do **not** invent a third path.
 
-Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push.
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card).
 
-Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
+## 5. Scoreboard (required final report)
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/olie/prompts/workflow-policy.md` — never recommend prompt paths there.
+Print one table (or equivalent bullets) covering **everything that ran**. Include timing when you have it.
 
-## 4. Branches to test
+| Field | Content |
+| --- | --- |
+| Card | {{ code }} |
+| Owner(s) | 'atribuído a' |
+| Started / ended (UTC) | timestamps |
+| Duration | wall-clock |
+| Backend touched | yes / no |
+| Gates run | core + gap? + mutation? |
+| Colleague core | Pass / Fail — short reason |
+| Gap analysis | No tests to add / N titles / Skipped / Blocked |
+| Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
+| Contrast | light/dark result (from core) |
+| E2E | added/extended commit, or N/A / blocked |
+| Payment / CAPTCHA | ok / N/A / blocked (from core when relevant) |
+| PRs | approved / not approved / deferred reason |
+| Funnel | stayed 'QA/CR' / moved 'Corrigir' / moved 'Validação' |
+| Incidents | tooling failures, restarts, skips |
 
-On each company repository the card touches:
+Also list checks that did **not** run and why.
 
-1. Find the branch the author created.
-2. Check it out so you can run the feature.
-3. If that branch does not exist yet, create it from the repository's base (`develop` or `master`, as that repository uses).
-4. Do not rename their branch and do not commit on it.
-
-Leave unrelated local changes untouched. If a checkout would overwrite them, stop and report the blocker.
-
-## 5. Temporary E2E CAPTCHA
-
-Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
-
-Do not stub the management API to get past that. Do not change PHP. Use Google's public test secret in the local `.env` only. `siteverify` then accepts any token, the same window `APP_ENV=testing` already has.
-
-`RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
-
-1. Confirm `~/git/olie/api-main/.env` is gitignored.
-2. If the value is not already the test secret, copy the file to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) before the first change. Do not put the original secret in the repo, in a comment, or in the chat.
-3. Set `RECAPTCHA_SECRET` to the test secret.
-4. Run `docker exec olie-api-main php artisan config:clear`. `POST /api/management/login/identify` with the stub token and `Origin: http://devframe.olie.localhost` must return `method: password`, not `invalid_token`.
-5. Leave the test secret in place while e2e on this VM needs a real login. Restore that backup and run `config:clear` again when that work is finished or the user asks. Delete the backup after a successful restore. If the restore fails, say the test secret may still be active.
-6. Never commit, push, or quote `.env` or the backup.
-
-If the container or `.env` is missing, stop and report that. Do not add a code bypass.
-
-## 6. What to verify
-
-- The behavior matches the card, including the edge cases the card states.
-- When the change charges a card or depends on payment authorization, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Cover the outcomes the card requires (success, unauthorized, processing then success, processing then failure).
-- The pull request contains that behavior and does not smuggle unrelated changes.
-- Light and dark theme text contrast both hold on the screens the card changes.
-- Do not edit `en.json`, and do not fail the review for missing or outdated English strings there. English translations are resolved later. A new key in 'pt-br.json' without a matching 'en.json' entry is not a defect.
-
-If `olie-fronts` changed, the e2e tests in section 3 cover the requested frontend behavior, or you say which case could not be automated and why.
-
-## 7. Out of scope
-
-- Do not fix the author's code.
-- The board move follows **Outcome** and **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`. When the change set touched `api-main`, do **not** approve PRs or move to 'Validação' / 'Corrigir' in this paste — leave the card in 'QA/CR' until `test-gap-analysis.md` and `mutation-testing.md` finish (or the user explicitly skips that stack).
-- Do not treat a local-only success as the production check. That check is 'Revisão de Produção'.
-- Do not search for related improvements in this pass. This is a review only.
-
-## 8. Report
-
-- Card {{ code }}.
-- Assigned owner(s) from the card ('atribuído a').
-- Repositories and branches reviewed.
-- Whether the implementation matches the card, with the requirement that failed or passed.
-- Pull request outcome: which PRs were approved, which were merged, and which were not approved (when a PR failed or had comments).
-- Contrast result for light and dark themes.
-- E2E tests added or extended, and the 'main' commit if one was pushed.
-- Checks that did not run, and why.
-
-A failed requirement is a failed review. Do not call the card ready for 'validação' while one remains open.
-
-## 9. Outcome
-
-Follow **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`. Do not invent a third path.
-
-1. **Failed / findings to fix (no backend stack)** — If the review has comments about what should be fixed **and** the change set did **not** touch `api-main`, write them into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author then fixes via `~/git/olie/prompts/correction.md`. Move the card to the live funnel step 'Corrigir'.
-
-2. **Passed (no backend stack)** — When the change set did **not** touch `api-main`: mark the card's pull requests as approved through GitHub MCP (`pull_request_review_write`, event `APPROVE`) for each PR that passed. If only some PRs passed, mark only those approved; if none passed, move the card to 'Corrigir'. If all the card's PRs were approved, move the card to the live funnel step 'Validação' (logical `validation`).
-
-3. **Backend still required** — If the change set touched `~/git/olie/api-main`, leave the card in 'QA/CR'. In the **Cursor chat** only, recommend `~/git/olie/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md` (personal stack: one changed test file per paste, `next mutation` while the ledger has files left). Do **not** put those paths on the card. Do **not** move to 'Corrigir' or 'Validação' and do **not** approve PRs yet. Write review findings into the card content now if the colleague review already failed; gap findings and mutation fixes go into the card when those prompts run. The combined funnel move (and PR approvals) happens only after that stack finishes — see **Colleague review outcome** in `workflow-policy.md` (or when the user explicitly skips the stack).
+Do not call the card ready for 'Validação' while any failed gate remains open.

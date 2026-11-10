@@ -73,7 +73,7 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
   o stdio. Playwright usa `bin/workvm-playwright-mcp.sh` (Chromium da imagem +
   `--no-sandbox`); `@latest` sozinho pede chrome-for-testing que a e2e não tem.
 - Preferência de ferramenta nos prompts Olie/Locav/Televisão: **MCP → `gh` → curl**
-  (`workflow-policy` **Tool preference**). Fórum TipTap: `bin/workvm-olie-management-read.sh`.
+  (`workflow-policy` **Tool preference**). Caderno/forum: MCP `get-notebook-tool` + `read-notebook-page-tool`; `bin/workvm-olie-management-read.sh` só sob MCP auth.
 - PRs no pre-QA: **criar/editar** com **GitHub CLI** (`gh`) primeiro (exceção ao MCP
   GitHub — form deferral). **Leituras** (login, assignees, labels, PRs recentes):
   GitHub MCP — não `gh` no shell só para descobrir (Auto-review pede OK). Auth do

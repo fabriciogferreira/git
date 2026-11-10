@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em progresso' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. With `api-main` changes: stay here through test-gap-analysis and mutation-testing. Combined pass: PRs approved and the card moves to 'Validação'; combined fail: card to 'Corrigir'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved and the card moves to 'Validação'. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. Use `~/git/olie/prompts/validation.md`. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'concluído' (pass) or 'corrigir' (fail). |
@@ -32,15 +32,16 @@ Do not start development while a card is waiting in step 1 or step 2.
 
 Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/olie/prompts/colleague-review.md`. Do not open a pull request on a company repository for them.
 
-For each colleague card in 'QA/CR', run the colleague review flow:
+For each colleague card in 'QA/CR', paste **once** `~/git/olie/prompts/colleague-review.md`. That dispatcher:
 
-1. Start the review on the card's pull requests.
-2. Run `~/git/olie/prompts/colleague-review.md`.
-3. If the review has comments about what should be fixed, update the card content with them. When `api-main` changed, do **not** move the card yet.
-4. Run `~/git/olie/prompts/test-gap-analysis.md` (only if the change set touched `api-main`). Skip when there is no backend change. Write missing use cases into the card when reported. Keep the card in 'QA/CR'.
-5. Run `~/git/olie/prompts/mutation-testing.md` (personal, only if the change set touched `api-main`). Skip when there is no backend change. If the mutation run has comments about what should be fixed, update the card content with them.
+1. Bootstraps the card (MCP, branches, whether `api-main` was touched).
+2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md` and `mutation-testing.md` when the card changed `api-main` (skip those when there is no backend).
+3. Waits for every applicable gate, then prints one scoreboard.
+4. Applies the funnel outcome (**Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`):
+   - Move to 'Corrigir' only if at least one applicable gate failed.
+   - Approve PRs and move to 'Validação' only on full pass (colleague + gap clean/skipped + mutation clean/skipped).
 
-Combined outcome (see **Colleague review outcome** in `workflow-policy.md`): approve PRs and move to 'Validação' only when every applicable gate passed. Move to 'Corrigir' only after those gates finished and at least one failed. Do not move after the colleague paste alone when the backend stack still applies.
+Do not paste gap or mutation separately after the dispatcher unless a gate was blocked and the user asks to retry that gate.
 
 ## 2. Production review
 

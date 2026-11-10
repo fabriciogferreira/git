@@ -18,7 +18,7 @@ Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 - Any attached specifications, test results, and relevant comments.
 - **Project media** (`get-project-media-tool`): every image, video, and audio on the card that supports the return (screenshots, screencasts, and description-linked attachments).
 
-Also read every project thread and the latest version of each one, using **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. Treat the reviewer's findings, the card's requirements, and those thread texts as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
+Also read every project thread and the latest version of each one, using **Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`. Treat the reviewer's findings, the card's requirements, and those thread texts as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
 
 ### Card media review (required before the correction plan)
 

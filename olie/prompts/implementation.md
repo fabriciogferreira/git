@@ -141,20 +141,37 @@ Do not silently omit failed checks or describe an issue as resolved without veri
 
 ## 7. Temporary E2E CAPTCHA Configuration
 
-Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
+reCAPTCHA has two sides: the **site key** (front widget) and the **secret** (`api-main` `siteverify`). Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real secret answers `Token inválido` and a real development site key can still show Google challenges in the browser.
 
-Do not stub the management API to get past that. Do not change PHP. Use Google's public test secret in the local `.env` only. `siteverify` then accepts any token, the same window `APP_ENV=testing` already has.
+**Allowed local bypass (env only — Google's public test key pair):**
 
-`RECAPTCHA_SECRET=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
+| Side | Where | Test value |
+| --- | --- | --- |
+| Secret | `~/git/olie/api-main/.env` → `RECAPTCHA_SECRET` | `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe` |
+| Site key | `~/git/olie/olie-fronts/packages/management/.env.development.local` → `VITE_APP_RECAPTCHA_SITE_KEY` | `6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI` |
+
+With that pair, `siteverify` accepts any token (same window as `APP_ENV=testing`) and the browser widget does not force a real challenge. Use the secret for e2e/API; add the site-key `.local` file when the agent or a human must log in through the real management UI.
+
+**Forbidden:** stubbing the management API; commenting out or deleting `RecaptchaValidate` / `getToken()` / related PHP or front code; editing tracked `packages/management/.env.development` for this; committing any of these local env overrides.
+
+### Server secret
 
 1. Confirm `~/git/olie/api-main/.env` is gitignored.
-2. If the value is not already the test secret, copy the file to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) before the first change. Do not put the original secret in the repo, in a comment, or in the chat.
+2. If `RECAPTCHA_SECRET` is not already the test secret, copy `.env` to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) before the first change. Do not put the original secret in the repo, in a comment, or in the chat.
 3. Set `RECAPTCHA_SECRET` to the test secret.
-4. Run `docker exec olie-api-main php artisan config:clear`. `POST /api/management/login/identify` with the stub token and `Origin: http://devframe.olie.localhost` must return `method: password`, not `invalid_token`.
-5. Leave the test secret in place while e2e on this VM needs a real login. Restore that backup and run `config:clear` again when that work is finished or the user asks. Delete the backup after a successful restore. If the restore fails, say the test secret may still be active.
+4. Run `docker exec olie-api-main php artisan config:clear`. Smoke: `POST /api/management/login/identify` with JSON `{"email":"…","token":"test-token-…"}` and `Origin: http://devframe.olie.localhost` must return `method: password` (HTTP 200), not `invalid_token` / `required_token`.
+5. Leave the test secret in place while e2e or browser login on this VM needs it. Restore the backup and run `config:clear` again when that work is finished or the user asks. Delete the backup after a successful restore. If the restore fails, say the test secret may still be active.
 6. Never commit, push, or quote `.env` or the backup.
 
-If the container or `.env` is missing, stop and report that. Do not add a code bypass.
+### Browser site key (when UI login must avoid Google challenges)
+
+1. Write `packages/management/.env.development.local` with only `VITE_APP_RECAPTCHA_SITE_KEY=` plus the test site key above (Vite loads `*.local` over `.env.development`).
+2. Keep that path in `olie-fronts/.git/info/exclude` (local exclude — do not change the committed `.gitignore` only for this).
+3. Backup the previous development site key from tracked `.env.development` to `~/.config/workvm/management.recaptcha-site-key.backup` (`chmod 600`) before the first override.
+4. `docker restart olie-front-management` so Vite reloads env.
+5. Never commit `.env.development.local`. Restore by deleting that file and restarting the front (and restore the secret backup when asked).
+
+If the API container or `api-main` `.env` is missing, stop and report that. Do not add a code bypass.
 
 ## 8. Code Quality and Validation
 

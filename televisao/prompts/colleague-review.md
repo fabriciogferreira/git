@@ -1,111 +1,80 @@
-# Colleague Card Review
+# Colleague Card Review — dispatcher
 
-Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone else's card, not preparation of your own (pre-QA).
+Review card {{ code }} while it sits in 'QA/CR'. This paste is **only a dispatcher**: bootstrap shared context, launch the gate prompts **in parallel**, wait for every applicable gate, apply **Colleague review outcome**, then print one scoreboard.
+
+This is a review of someone else's card, not preparation of your own (pre-QA). Do not implement the card in this paste.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
-## 1. Objective
+Contract for parallel work: `~/git/televisao/sandbox/ORCHESTRATION.md`. Shared outcome rules: **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`.
 
-Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
+## 1. Bootstrap (serial, once)
 
-The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project forum** in `~/git/televisao/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
+1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
+2. Detect whether the change set touched `~/git/televisao/televisao-api` (open PRs, form links, branch commits). That flag decides whether gap + mutation run.
+3. On each company repository the card touches: find the author's branch, check it out (create the name from **Card branch name** in `workflow-policy.md` + base `preview` in `project.md` only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
+4. Record `started_at` (UTC) for the scoreboard.
+5. Do **not** write the colleague verdict, gap list, or mutation fixes yet — workers do that. Do **not** move the funnel or approve/merge until §4.
 
-## 2. Context
+## 2. Dispatch (parallel)
 
-Load the card through `mcp olie-flow-ai`. Read:
+Open and **run** these prompts **at the same time** (Task / subagents / parallel tool batches). Pass the same card code `{{ code }}` and the shared bootstrap (project id, branches, backend yes/no). Do not wait for one gate to finish before starting another.
 
-- The description, requirements, and acceptance criteria.
-- The repositories and branches the author changed.
-- The pull requests and the commits on those branches.
-- Comments, attachments, and test notes.
-- **Project media** (`get-project-media-tool`): screenshots, screencasts, and other image/video/audio that define expected behavior or show a defect.
+| Gate | Prompt | When |
+| --- | --- | --- |
+| Colleague core | `~/git/televisao/prompts/colleague-review-core.md` | Always |
+| Test gap analysis | `~/git/televisao/prompts/test-gap-analysis.md` | Only if backend touched; else mark **skipped** |
+| Mutation testing | `~/git/televisao/prompts/mutation-testing.md` | Only if backend touched; else mark **skipped** |
 
-Do not review from the card title alone.
+Rules for workers:
 
-### Card media review (required before the verdict)
+- **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `*Test.php` files in this run (ledger rows), not one file per paste.
+- Prefer sandboxes (`~/git/bin/workvm-sandbox`) for exclusive mutation shards when available — see `ORCHESTRATION.md`. Compatible work (core + gap) may stay on the Card VM.
+- Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve / merge.
 
-Before deciding pass or fail, **review the card's media**. Do not judge from text alone when images or videos show the expected or broken behavior.
+If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.
 
-1. `git pull` the meta-repo if needed, then list media via MCP.
-2. For each image, video, or audio item that belongs to this card and supports the requirements or a finding:
-   - If `~/git/televisao/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
-   - If that file is **missing** → analyze now: `televisao-project-image-analysis` for images, `televisao-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
-3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
-4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
-5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks). You may also commit e2e changes as already allowed in §3.
+## 3. Wait and collect
 
-## 3. What you may change
+Wait until every dispatched gate has finished (or is skipped). Collect:
 
-Do not edit product repositories. That includes `televisao-api`, `televisao-front`, `televisao-meet-front`, and `televisao-meet-core`.
+- Colleague core: Pass / Fail (+ findings posted or not)
+- Gap: No tests to add / Tests to add / Skipped / Blocked
+- Mutation: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
 
-You may change only the meta-repo Playwright suites. Those trees are not part of the company remotes and are not cloned for other developers' WorkVMs:
+## 4. Combined outcome
 
-- `~/git/televisao/televisao-front-e2e` when the author changed `televisao-front`
-- `~/git/televisao/televisao-meet-front-e2e` when the author changed `televisao-meet-front`
+Apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md` **once**, after all applicable gates finished (or the user explicitly skips a remaining gate in chat).
 
-If the author changed that front, **add** end-to-end tests there for the frontend behavior the card requested. If those tests already exist and a requested point is uncovered, add the missing tests. Do not rewrite tests that already cover the card. Do **not** fail the review because the author's company branch lacks e2e — they cannot push those suites.
+- Move to 'Corrigir' only if at least one applicable gate failed (colleague fail **or** gap reported tests to add **or** mutation reported fixes for the author).
+- Pass path (approve / merge / 'Revisado') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean.
+- Resolve 'Revisado' (and any step id) only via MCP `index-project-funnels-tool` → that board's `funnel_status[]` / `steps[]` by display name, then `edit-project-tool` / move tools. **Do not** call `get-available-steps` or curl the management catalog while that MCP tool works — empty `search`/`id` result means retry unfiltered, not HTTP. See **Resolving funnel steps** in `workflow-policy.md`.
+- Do **not** invent a third path.
 
-For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card).
 
-Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy.md`.
+## 5. Scoreboard (required final report)
 
-Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
+Print one table (or equivalent bullets) covering **everything that ran**. Include timing when you have it.
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** in `~/git/televisao/prompts/workflow-policy.md` — never recommend prompt paths there.
+| Field | Content |
+| --- | --- |
+| Card | {{ code }} |
+| Owner(s) | 'atribuído a' |
+| Started / ended (UTC) | timestamps |
+| Duration | wall-clock |
+| Backend touched | yes / no |
+| Gates run | core + gap? + mutation? |
+| Colleague core | Pass / Fail — short reason |
+| Gap analysis | No tests to add / N titles / Skipped / Blocked |
+| Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
+| Contrast | light/dark result (from core) |
+| E2E | added/extended commit, or N/A / blocked |
+| Pest on edited API tests | ok / fail file / N/A |
+| PRs | approved+merged / not approved / deferred reason |
+| Funnel | stayed 'QA/CR' / moved 'Corrigir' / status 'Revisado' |
+| Incidents | tooling failures, restarts, skips |
 
-## 4. Branches to test
+Also list checks that did **not** run and why.
 
-On each company repository the card touches:
-
-1. Find the branch the author created.
-2. Check it out so you can run the feature.
-3. If that branch does not exist yet, create the name from **Card branch name** in `~/git/televisao/prompts/workflow-policy.md`, from the repository base in `~/git/televisao/prompts/project.md` (`preview`).
-4. Do not rename their branch and do not commit on it.
-
-Leave unrelated local changes untouched. If a checkout would overwrite them, stop and report the blocker.
-
-## 5. What to verify
-
-- The behavior matches the card, including the edge cases the card states.
-- The pull request contains that behavior and does not smuggle unrelated changes.
-- Light and dark theme text contrast both hold on the screens the card changes.
-
-If `televisao-front` or `televisao-meet-front` changed, the e2e tests in section 3 cover the requested frontend behavior, or you say which case could not be automated and why.
-
-If `televisao-api` tests were added or edited and Pest is installed, those files use that Pest. A new PHPUnit test class, or a PHPUnit file the card edited and left as PHPUnit while Pest is installed, is a failed review. Untouched PHPUnit files are not a defect. Do not convert them yourself. If Pest is not installed, do not fail the review for PHPUnit tests.
-
-## 6. Out of scope
-
-- Do not fix the author's code.
-- Do **not** move the card to 'Corrigir' or 'Revisado' / approve / merge in this paste when the change set touched `televisao-api` — finish `test-gap-analysis.md` then `mutation-testing.md` first (see **Outcome** and **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`).
-- Do not treat a local-only success as the production check. That check is 'Revisão de produção'.
-- Do not search for related improvements in this pass. This is a review only.
-
-## 7. Report
-
-- Card {{ code }}.
-- Assigned owner(s) from the card ('atribuído a').
-- Repositories and branches reviewed.
-- Whether the implementation matches the card, with the requirement that failed or passed.
-- Pull request outcome deferred when backend mutation is still required (see Outcome); otherwise which PRs were approved, merged, or not approved.
-- Contrast result for light and dark themes.
-- E2E tests added or extended in the meta-repo suite, and the 'main' commit if one was pushed — or which case could not be automated and why.
-- If `televisao-api` tests changed and Pest is installed, whether new or edited files use that Pest, or which edited file is still PHPUnit.
-- Checks that did not run, and why.
-
-A failed requirement is a failed colleague review. Do not call the card ready for 'Validação' while one remains open.
-
-## 8. Outcome
-
-Follow **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`. Do not invent a third path.
-
-1. **Record the colleague verdict** — Pass or fail. If fail, write the findings into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). In chat, the author later fixes via `~/git/televisao/prompts/correction.md`. Do **not** approve or merge PRs on a fail.
-
-2. **Backend still required** — If the change set touched `~/git/televisao/televisao-api`, leave the card in 'QA/CR'. In the **Cursor chat** only, recommend `~/git/televisao/prompts/test-gap-analysis.md` as the next paste (`next prompt`), then `mutation-testing.md`. Do **not** put those paths on the card. Do **not** move to 'Corrigir' and do **not** mark 'Revisado' / approve / merge yet. The combined funnel move happens only after that stack finishes (or the user explicitly skips it).
-
-3. **No backend (gap analysis + mutation skipped)** — Apply the funnel move now:
-   - Fail → live step 'Corrigir'.
-   - Pass → approve each passed PR (`pull_request_review_write`, event `APPROVE`); if all the card's PRs were approved, merge them (`merge_pull_request`); set funnel status 'Revisado' via MCP: `index-project-funnels-tool` (match the board funnel, then `funnel_status[]` by name) → `edit-project-tool` with `funnel_status` (`project_funnel_id`, `funnel_status_id`). Never hard-code the status id. Do not use HTTP `get-available-steps` for this when MCP works. If there is no 'Revisado' status, use the move procedure in `~/git/televisao/prompts/workflow-policy.md`.
-
-4. **After gap analysis + mutation (same card)** — When that stack finishes in a later paste, apply the combined rule: move to 'Corrigir' only if the colleague review failed **or** test-gap-analysis reported missing cases **or** mutation reported fixes to write; approve / merge / 'Revisado' only if colleague passed, gaps were clean/skipped, and mutation passed or was skipped.
+Do not call the card ready for 'Validação' while any failed gate remains open.

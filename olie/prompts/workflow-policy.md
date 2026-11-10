@@ -8,7 +8,15 @@ When more than one tool can do the same job, use this order (do not skip ahead t
 
 1. **MCP** — `olie-flow-ai` for card/board/forms; GitHub MCP for PR approve/merge/read when the prompt uses those tools.
 2. **`gh`** — GitHub CLI when MCP is the wrong tool or unavailable. **Exception:** pre-QA **creates** PRs with `gh` first (GitHub MCP App form deferral / weak assignee-label support); see `pre-qa.md`.
-3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`). Forum TipTap (when a prompt requires it) has no MCP tool: use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) instead of inline Bearer curl.
+3. **curl** — last resort for Olie management HTTP (`OLIE_MANAGEMENT_TOKEN`) when MCP itself is `needsAuth` / 401. Never prefer HTTP over a working MCP tool. Project Caderno/forum: MCP `get-notebook-tool` + `read-notebook-page-tool` first; `~/git/bin/workvm-olie-management-read.sh` only under **MCP auth**.
+
+### GitHub reads vs writes (Auto-review)
+
+Cursor Auto-review often prompts on `gh` in the shell (network + session credentials) even for GET-only commands. Prefer **GitHub MCP** for read-only discovery so the user is not asked to approve informational calls:
+
+- **MCP (read):** current user (`get_me`), list/search PRs, PR details, reviewers/assignees already on a PR, labels, checks, commits, file contents, org/collaborator lookups needed to map card assignees → GitHub logins.
+- **`gh` (write / pre-QA create):** `gh pr create`, `gh pr edit` (assignee/reviewer/label), `git push` that updates a PR head. An Auto-review OK on those is expected.
+- Do **not** use shell `gh pr list` / `gh api user` / `gh auth status` only to discover login, assignees, reviewers, or labels when GitHub MCP can answer. Use `gh auth status` only immediately before a `gh` write if create fails with an auth error (then stop and report).
 
 Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
 
@@ -37,9 +45,9 @@ The live label wins if it differs from the examples above. `changes-requested` m
 Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unnecessary permission prompt for a read that MCP already covers.
 
 1. **Card + current step** — `get-project-details-tool` (or search then details).
-2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` when a badge id is required.
+2. **Board catalog (steps, tags, funnel statuses)** — `index-project-funnels-tool` only (optional `search` / `id`). Use `steps[]` for columns and `funnel_status[]` when a badge id is required.
 3. Match display names case-insensitively after trim. Never hard-code step or status ids.
-4. **Do not** call `GET /api/management/get-available-steps` when `index-project-funnels-tool` works. Use management HTTP only under **MCP auth** (MCP down) or when a write has no working MCP tool.
+4. **Hard ban while MCP works:** do **not** call `GET /api/management/get-available-steps`, and do **not** open a shell/`curl` “fallback” for the step/status catalog, when `index-project-funnels-tool` has already returned successfully in this chat (including an empty `funnels: []` for a narrow `search`/`id`). Empty filter result ≠ MCP down. Retry unfiltered or with a broader `search`, then match by display name. Management HTTP for this catalog only under **MCP auth** (`needsAuth` / 401 on the tool itself), or when a write has no working MCP tool.
 
 ## Moving a card on the board
 
@@ -68,13 +76,13 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 
 For a colleague card in 'QA/CR', the board move waits until **every** gate that applies has finished:
 
-1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
+1. **Colleague review core** (`colleague-review-core.md`, launched by `colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-Order when backend applies: colleague-review → test-gap-analysis → mutation-testing.
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation **in parallel** (gap/mutation skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. **Require** `~/git/bin/workvm-sandbox` (`--project olie`) to shard exclusive mutation / Pest (one changed test file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — never `docker exec olie-api-main` for those jobs while gates share the Card VM. Compatible work (core + gap **read-only**) stays on the Card VM. Own-card develop handoff still runs gap then mutation sequentially (mutation one file per paste / `next mutation`; prefer a mutation sandbox so Card VM `testing` stays clean).
 
-**Do not move to 'Corrigir' or 'Validação' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve PRs until the combined outcome below.
+**Do not move to 'Corrigir' or 'Validação' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve PRs until the combined outcome below. Workers never move the funnel themselves.
 
 **Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
 
@@ -83,6 +91,29 @@ Order when backend applies: colleague-review → test-gap-analysis → mutation-
 ## Project execution
 
 Do not start or end a project execution. Do not POST `project-executions` and do not call an MCP tool that starts one. The Opbed Job page (`/job`) owns that request. Continue the card work without waiting for an execution to start.
+
+## Reading the project notebook (Caderno)
+
+The card from MCP is not the whole spec. When a prompt requires the project Caderno (older name: forum / threads), read **every page** and the Markdown of each page via MCP — not management HTTP.
+
+| Older (management HTTP / UI habit) | MCP `olie-flow-ai` |
+| --- | --- |
+| forum | notebook (Caderno) |
+| thread / sub-thread | page / nested page (`pages[].children`) |
+| `get-forum` (list) | `get-notebook-tool` (full page tree) |
+| `get-thread-data` (latest TipTap) | `read-notebook-page-tool` |
+
+There is **one notebook per project**. **`get-notebook-tool` is the list-all tool**: it returns `pages` plus nested `children`. There is no separate "list forums" MCP tool — walk that tree. Do not stop at `default_page_id`.
+
+1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID.
+2. If `notebook` is `null`, the project has no Caderno yet — note that and continue from card media/description only (not a tooling failure).
+3. Walk every entry in `pages` and every nested `children` array. Collect each page's `id` and `name`, including the default page.
+4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). Empty `blocks` means an empty page — note the name and continue.
+5. A block with `type` `image` (or an image URL in markdown): follow the project's image-analysis skill when the prompt requires it. Do not store signed URL query strings; they expire.
+
+Do **not** use `~/git/bin/workvm-olie-management-read.sh` while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth**. Never inline Bearer curl for Caderno.
+
+On MCP error (other than `notebook: null`): stop and report (prompt-health rules).
 
 ## Several cards at once
 
@@ -94,7 +125,21 @@ The user works every listed card in parallel on the VMs.
 
 ## Toggling a funnel-step checklist item
 
-Board checklists on a funnel step (e.g. QA/CR item **Pull request created**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. MCP `get-project-details` may return empty `project_checklists` even when the UI shows items.
+Board checklists on a funnel step (e.g. QA/CR item **Pull Request criado**) are toggled over management HTTP — not via OlieFlowAi MCP form answers. Do **not** probe random management routes to find the id.
+
+### Resolve `step_checklist_id` from the project payload
+
+1. Load the card with MCP `get-project-details-tool` (by code or UUID).
+2. Find the live funnel step (e.g. display name **QA/CR**).
+3. Read `project.funnels[].steps[]` for that step and take `checklists[]`. Match the item by display name (case-insensitive trim). Live labels may be **Pull Request criado** or **Pull request created** — match either; do not hard-code the numeric id across funnels.
+4. The checklist object's `id` is `STEP_CHECKLIST_ID` for the toggle (example shape: `{ "id": 956, "name": "Pull Request criado", "funnel_step_id": 1452 }`).
+
+**MCP gap:** today’s `get-project-details-tool` often omits `steps[].checklists` and returns empty `project_checklists` / `checklists`, even when the board has items. When those arrays are missing or empty after MCP:
+
+- One fallback only: `GET https://api.olie.ai/api/management/projects/${CARD_PROJECT_ID}` with `${OLIE_MANAGEMENT_TOKEN}` (same project body; `funnels[].steps[].checklists` is present there).
+- Do **not** try alternate invent-the-path endpoints (`project-funnel-checklists`, `get-project-checklists`, etc.).
+
+### Toggle
 
 ```bash
 curl -sS --url 'https://api.olie.ai/api/management/toggle-funnel-checklist' \
@@ -104,8 +149,8 @@ curl -sS --url 'https://api.olie.ai/api/management/toggle-funnel-checklist' \
   --data-raw "{\"project_id\":\"${CARD_PROJECT_ID}\",\"step_checklist_id\":${STEP_CHECKLIST_ID}}"
 ```
 
-- `CARD_PROJECT_ID` — project UUID from MCP.
-- `STEP_CHECKLIST_ID` — numeric id of the checklist row to toggle (resolve from the live board / network for that step; do not invent or hard-code across funnels). Match by the item's display label when discovering (e.g. 'Pull request created').
+- `CARD_PROJECT_ID` — project UUID from the project payload.
+- `STEP_CHECKLIST_ID` — checklist `id` from step 3–4 above.
 - Expect `{"response":true}` and HTTP 2xx. On failure: stop and report (prompt-health).
 
 Never paste a Bearer token into a prompt, chat, or repo file — only `${OLIE_MANAGEMENT_TOKEN}` from `environment.d`.
@@ -118,9 +163,9 @@ Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the ca
 
 On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
-If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` only when MCP is down — prefer restoring MCP and `index-project-funnels-tool` for routine reads. Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
+If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` **only** when `index-project-funnels-tool` itself is `needsAuth` / 401 (MCP auth), not when a filtered call returned `[]` or when another MCP read already succeeded. Prefer restoring MCP and calling `index-project-funnels-tool` again (unfiltered if needed). Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
-Forum TipTap (when required): `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`), not inline Bearer curl.
+Project notebook (Caderno) bodies: **Reading the project notebook** (MCP `get-notebook-tool` + `read-notebook-page-tool` first).
 
 ## Tokens
 
@@ -135,9 +180,9 @@ Layout and examples: `~/git/.config/environment.d/README.md`.
 
 ## Temporary E2E CAPTCHA
 
-Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so the real `RECAPTCHA_SECRET` answers `Token inválido` and the spec never reaches the password step.
+Playwright stubs `grecaptcha` with a fake token. `api-main` skips `RecaptchaValidate` only when `APP_ENV=testing`. This VM is `local`, so use Google's public **test key pair** via env only: `RECAPTCHA_SECRET` in `api-main` `.env`, and when browser login must avoid Google challenges, `VITE_APP_RECAPTCHA_SITE_KEY` in `olie-fronts` `packages/management/.env.development.local` (not the tracked `.env.development`).
 
-Do not stub the management API to get past that. Do not change PHP. The same temporary window is Google's public test secret in the local `.env` only (`siteverify` then accepts any token). Full steps: `implementation.md`, `correction.md`, and `colleague-review.md`, section "Temporary E2E CAPTCHA".
+Do not stub the management API. Do not comment out or delete PHP/`getToken()` captcha code. Full steps: `~/git/olie/prompts/implementation.md` §7 (correction and colleague-review-core point there).
 
 ## Payment test cards
 
@@ -181,7 +226,7 @@ Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on th
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 
 Recommend the next prompt **only in the Cursor chat** report.
@@ -206,7 +251,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** if `~/git/olie/prompts/mutation-testing.md` is in progress and any changed `api-main` `*Test.php` is still missing a `100%` / `equivalent` ledger row, **refuse** `next prompt` (do not open `pre-qa.md`). List what remains and tell the user to send `next mutation`. |
 | `next mutation` | Only during the personal mutation stack (`~/git/olie/prompts/mutation-testing.md`): open that prompt and process the **next** changed test file not yet done in `~/git/olie/prompts/mutation-ledger.md` (one file per turn). Same as re-pasting mutation-testing. Do not jump to `pre-qa.md`. If the stack is already complete, say so and point at `next prompt` → `pre-qa.md`. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
-| `to correct` | Fix every item listed under **Needs code fixes** from the latest `~/git/olie/prompts/implementation-validation.md` pass in this chat. Implement those fixes only; then recommend re-running implementation-validation (`try again` on that pass, or `next prompt` if validation was already named next). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
+| `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” command for the stack is `next mutation`, not `next prompt`.
 

@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Sandbox Manager: ambientes isolados (container) dentro da WorkVM do Card.
+# Problema: testes, mutation e e2e no mesmo Card compartilhavam DB/Redis/código.
+# Não clona VM por sandbox. Uso na guest do Card (piloto: Televisão).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/sandbox/manager.sh
+source "$ROOT/lib/sandbox/manager.sh"
+# shellcheck source=../lib/sandbox/job.sh
+source "$ROOT/lib/sandbox/job.sh"
+# shellcheck source=../lib/sandbox/gui.sh
+source "$ROOT/lib/sandbox/gui.sh"
+
+usage() {
+    cat <<'EOF'
+workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
+
+  create --name <id> [--project olie|televisao] [--profile tests|mutation|e2e]
+         [--from-commit SHA] [--backend container|vm] [--mem 1g] [--cpus 1.0]
+  list
+  status <id>
+  destroy <id>
+
+  job run <id> [--service app] -- <comando…>
+  job status <id> <job-id>
+  job logs <id> <job-id> [stdout|stderr|both]
+  job artifacts <id> <job-id>
+
+  gui attach <id>
+  gui detach <id>
+
+Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/sandboxes/
+Projetos: olie/sandbox/ | televisao/sandbox/
+EOF
+}
+
+cmd="${1:-}"
+if [ -z "$cmd" ] || [ "$cmd" = "-h" ] || [ "$cmd" = "--help" ]; then
+    usage
+    exit 0
+fi
+shift || true
+
+case "$cmd" in
+    create) workvm_sandbox_create "$@" ;;
+    list) workvm_sandbox_list "$@" ;;
+    status) workvm_sandbox_status "$@" ;;
+    destroy) workvm_sandbox_destroy "$@" ;;
+    job)
+        sub="${1:-}"
+        shift || true
+        case "$sub" in
+            run)
+                # Parse: job run <id> [--service X] -- cmd…
+                sb=""
+                svc=app
+                while [ $# -gt 0 ]; do
+                    case "$1" in
+                        --service) svc="$2"; shift 2 ;;
+                        --) shift; break ;;
+                        -*)
+                            workvm_sandbox_log "flag desconhecida: $1"
+                            exit 2
+                            ;;
+                        *)
+                            if [ -z "$sb" ]; then
+                                sb="$1"
+                                shift
+                            else
+                                break
+                            fi
+                            ;;
+                    esac
+                done
+                if [ -z "$sb" ] || [ $# -eq 0 ]; then
+                    workvm_sandbox_log "uso: job run <id> [--service app] -- <comando…>"
+                    exit 2
+                fi
+                # Drop optional leading --
+                if [ "${1:-}" = "--" ]; then
+                    shift
+                fi
+                workvm_sandbox_job_run --sandbox "$sb" --service "$svc" -- "$@"
+                ;;
+            status) workvm_sandbox_job_status "$@" ;;
+            logs) workvm_sandbox_job_logs "$@" ;;
+            artifacts) workvm_sandbox_job_artifacts "$@" ;;
+            *)
+                workvm_sandbox_log "job subcomando: run|status|logs|artifacts"
+                exit 2
+                ;;
+        esac
+        ;;
+    gui)
+        sub="${1:-}"
+        shift || true
+        case "$sub" in
+            attach) workvm_sandbox_gui_attach "$@" ;;
+            detach) workvm_sandbox_gui_detach "$@" ;;
+            *)
+                workvm_sandbox_log "gui subcomando: attach|detach"
+                exit 2
+                ;;
+        esac
+        ;;
+    *)
+        workvm_sandbox_log "comando desconhecido: $cmd"
+        usage >&2
+        exit 2
+        ;;
+esac

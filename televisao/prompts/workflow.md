@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não Iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em andamento' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Run colleague review, then mutation when the backend changed. Move to 'Corrigir' only after both applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
 | `changes-requested` (normally 'Corrigir') | The person who owns the card | The review failed. Fix it. |
 | 'Validação' | Tech lead | Approve or send it back. Use `~/git/televisao/prompts/validation.md`. |
 | 'Revisão de produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'Concluído' (pass) or 'Corrigir' (fail). |
@@ -32,16 +32,17 @@ Do not start development while a card is waiting in step 1 or step 2.
 
 Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/televisao/prompts/colleague-review.md`. Do not open a pull request on a company repository for them.
 
-For each colleague card in 'QA/CR', run the colleague review flow:
+For each colleague card in 'QA/CR', paste **once** `~/git/televisao/prompts/colleague-review.md`. That dispatcher:
 
-1. Start the review on the card's pull requests.
-2. Run `~/git/televisao/prompts/colleague-review.md`. If it has comments about what should be fixed, update the card content with them. Keep the card in 'QA/CR' when gap analysis or mutation still applies.
-3. Run `~/git/televisao/prompts/test-gap-analysis.md` (only if the card changed `televisao-api`). Skip when there is no backend. Write missing use cases into the card content when reported.
-4. Run `~/git/televisao/prompts/mutation-testing.md` (personal, only if the card changed `televisao-api`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
-5. Only then apply the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
+1. Bootstraps the card/branches and detects backend touch.
+2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md` and `mutation-testing.md` when the card changed `televisao-api` (skip those when there is no backend).
+3. Waits for every applicable gate, prints a scoreboard (what ran / passed / failed / skipped).
+4. Applies the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
 
 - Move to 'Corrigir' only after all applicable gates finished **and** at least one failed.
 - Full pass (colleague passed; gap analysis skipped or clean; mutation skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
+
+Do not paste gap or mutation separately after the dispatcher unless a gate was blocked and the user asks to retry that gate.
 
 ## 2. Production review
 

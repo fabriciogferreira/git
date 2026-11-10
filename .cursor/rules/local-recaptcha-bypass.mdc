@@ -1,0 +1,35 @@
+---
+description: When local login/e2e needs reCAPTCHA bypass, apply Google's test key pair via env only — never comment out captcha code.
+alwaysApply: true
+---
+
+# Local reCAPTCHA bypass (automatic)
+
+When the user asks for something that needs getting past reCAPTCHA on this WorkVM (browser login, e2e `identify`, opening Studio after auth, etc.), **apply the documented env bypass yourself**. Do not ask them to edit `.env` by hand. Do **not** comment out or delete `RecaptchaValidate`, front `getToken()`, or related code.
+
+Canonical steps: `~/git/olie/prompts/implementation.md` §7 **Temporary E2E CAPTCHA**.
+
+## Server (always for API/e2e)
+
+1. Confirm `~/git/olie/api-main/.env` is gitignored.
+2. If `RECAPTCHA_SECRET` is not already `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`, copy `.env` to `~/.config/workvm/api-main.env.recaptcha-backup` (`chmod 600`) first. Never paste the original secret into chat/repo.
+3. Set that test secret; `docker exec olie-api-main php artisan config:clear`.
+4. Smoke: `POST /api/management/login/identify` with `{"email":"…","token":"test-token-…"}` and `Origin: http://devframe.olie.localhost` → `method: password`.
+
+## Browser UI (when Google challenges still appear)
+
+Secret alone is not enough if the front still uses a real **site key**. Then:
+
+1. Write `olie-fronts/packages/management/.env.development.local` with `VITE_APP_RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI`.
+2. Ensure that path is in `olie-fronts/.git/info/exclude`.
+3. Backup the prior development site key to `~/.config/workvm/management.recaptcha-site-key.backup`.
+4. `docker restart olie-front-management`.
+
+## Forbidden
+
+- Stubbing the management API to skip captcha
+- Commenting out / deleting captcha validation in PHP or the front
+- Editing tracked `.env.development` for this (use `.local` only)
+- Committing `.env`, `.env.development.local`, or backups
+
+Prefer normal login after the test key pair over injecting Sanctum tokens into `localStorage` (Auto-review often blocks session injection).

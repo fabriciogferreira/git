@@ -9,3 +9,5 @@
 | Clones da empresa | `api-main/`, `olie-fronts/`, … | **Não** |
 
 Setup: `./project-setup.sh olie` (symlink `~/.config/workvm/current` → esta pasta).
+
+Sandboxes (contrato colleague review / mutation paralelo): `sandbox/ORCHESTRATION.md`. CLI: `~/git/bin/workvm-sandbox` (piloto de containers ainda é Televisão).

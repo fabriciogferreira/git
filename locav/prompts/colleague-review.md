@@ -8,7 +8,7 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
 
-The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project forum** in `~/git/locav/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
+The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
 
 ## 2. Context
 
