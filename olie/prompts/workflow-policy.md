@@ -53,6 +53,8 @@ Follow **Tool preference**. Shell `curl` to `api.olie.ai` often triggers an unne
 
 Resolve **card id** and **funnel steps** through MCP `olie-flow-ai` (search by card code). Never hard-code `step_id`. Never paste a Bearer token into a prompt, chat, or repo file.
 
+**Name the destination step when asking to approve a move.** Auto-review (and any other confirmation UI) often shows only a generic “move funnel step” prompt. Whenever you call `move-project-to-funnel-step-tool`, `project-bulk-step-move`, or an equivalent write that changes the board column — including the description field the approval card displays — state the **live display name** of the destination step (and the current step when known). Example: “Move DOP-1272 from QA/CR to Validação”. Do **not** ask for confirmation with only a numeric `funnel_step_id` / `step_id`. Same rule for Olie, Locav, and Televisão.
+
 **Resolve incoming restrictions before the move.** Target steps often require form answers (or other step gates) before the link is allowed. A move that returns `incoming_restrictions` (or equivalent) is not a tooling failure — it means a required field on the destination step is unanswered. Do **not** retry the move until those answers are written (`get-model-dynamic-forms-tool` → `get-form-tool` / `get-form-answers-tool` → `set-form-answers-tool` as needed). Only then call the move and verify the stage.
 
 1. Load the card via MCP. Take its project/card id (UUID) and the live funnel steps for that board (`get-project-details-tool` and/or `index-project-funnels-tool` — see above).
