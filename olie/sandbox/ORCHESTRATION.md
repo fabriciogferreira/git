@@ -71,8 +71,10 @@ paste colleague-review.md          # dispatcher
 
 Mutation em modo dispatcher processa **todos** os arquivos restantes do
 change-set nesta corrida (não um `next mutation` por paste). Own-card
-develop handoff continua um arquivo por paste — também preferir sandbox
-`profile=mutation` para não tocar o `testing` da Card VM.
+develop handoff: `next mutation` = um arquivo por paste; **`correct mutations`**
+= drena os restantes nesta corrida (um sandbox `profile=mutation` + um
+subagent por arquivo; pai agrega o ledger) — mesmo contrato de shard /
+`WORKVM_SANDBOX_MAX`. Preferir sandbox para não tocar o `testing` da Card VM.
 
 ---
 

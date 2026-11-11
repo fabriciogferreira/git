@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Own-card mutation: `correct mutations` (drain paralelo)
+
+- **problema:** no handoff próprio, o stack de mutation só avançava com `next mutation` (um `*Test.php` por paste); N arquivos restantes viravam N pastes e wall-clock, enquanto o colleague dispatcher já drenava em paralelo com sandbox por arquivo.
+- **por que é um problema:** o autor esperava fechar o ledger antes do pre-QA e a sessão virava fila manual; a infra (`workvm-sandbox`) já existia mas o contrato do chat não tinha frase para o drain.
+- **resolvido como:** comando **`correct mutations`** em `olie/prompts/mutation-testing.md` + `workflow-policy` (Chat commands): um sandbox `--profile mutation` e um subagent por arquivo restante; o pai agrega `mutation-ledger.md` e respeita `WORKVM_SANDBOX_MAX`. `next mutation` continua o caminho de um arquivo. Cross-refs: README, workflow, implementation-validation, pre-qa, correction, `olie/sandbox/ORCHESTRATION.md`.
+
 ## Pre-QA: restrições do step antes de mover para QA/CR
 
 - **problema:** o agente tentava `move-project-to-funnel-step` para QA/CR e tomava `incoming_restrictions` (ex.: rádio Postman do form do step ainda vazio), depois preenchia e movia de novo.
