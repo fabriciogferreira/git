@@ -50,7 +50,7 @@ Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **
 - Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean.
 - Do **not** invent a third path.
 
-Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card).
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or clean-gate process wrap-ups on the card).
 
 ## 5. Scoreboard (required final report)
 
