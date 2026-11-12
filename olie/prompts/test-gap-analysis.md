@@ -18,7 +18,7 @@ Run this **before** `~/git/olie/prompts/mutation-testing.md` when that step appl
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `~/git/olie/prompts/implementation-validation.md` passes and the change set touched `~/git/olie/api-main` (reached via the `implementation.md` handoff chain). Next paste: `mutation-testing.md` (then `pre-qa.md`). If there is no backend change, skip this prompt. Gaps stay in chat; fix them before opening PRs.
+1. **Own card (develop handoff)** — after `~/git/olie/prompts/implementation-validation.md` passes and the change set touched `~/git/olie/api-main` (reached via the `implementation.md` handoff chain). Next paste: `mutation-testing.md`, then `coverage-testing.md`, then `pre-qa.md`. If there is no backend change, skip this prompt. Gaps stay in chat; fix them before opening PRs.
 2. **Colleague card in 'QA/CR'** — after `~/git/olie/prompts/colleague-review.md`, when the change set touched `api-main`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack finishes. Gaps reported here count as “fixes for the author” for the colleague follow-up loop in `~/git/olie/prompts/workflow-policy.md` / `colleague-review.md` and are written into the card.
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.

@@ -4,11 +4,11 @@ Use this when the card changed `~/git/olie/api-main`. Skip entirely when the cha
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/olie/prompts/test-gap-analysis.md` (which follows implementation-validation when backend changed). Continue with **`next mutation`** (one file) or **`correct mutations`** (drain every remaining file in parallel). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/pre-qa.md` (`next prompt` runs it).
+1. **Own card (develop handoff)** — after `~/git/olie/prompts/test-gap-analysis.md` (which follows implementation-validation when backend changed). Continue with **`next mutation`** (one file) or **`correct mutations`** (drain every remaining file in parallel). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/coverage-testing.md` (`next prompt` runs it) — then `pre-qa.md` after coverage.
 2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with `colleague-review-core.md` and `test-gap-analysis.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run. **Must** shard via `~/git/bin/workvm-sandbox create --project olie --profile mutation` (one file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — see `~/git/olie/sandbox/ORCHESTRATION.md`. Do **not** run baseline Pest or `pest --mutate` with `docker exec olie-api-main` (that is the Card VM DB). Do **not** stop after one file. Do **not** recommend `next mutation` / `correct mutations` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
 3. **Colleague card pasted alone** — one file per paste as in develop handoff (`next mutation`), or drain remaining with `correct mutations`; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Validação' yourself when the dispatcher owns the card.
 
-**Stack gate (develop handoff / alone):** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pre-qa.md`.
+**Stack gate (develop handoff / alone):** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/coverage-testing.md` or `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `coverage-testing.md`.
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands** (includes `next mutation` and `correct mutations`).
 
@@ -24,9 +24,9 @@ Personal workflow on this VM. Pest mutation testing is not an Olie team practice
 
 | Command | Do this |
 | --- | --- |
-| `next mutation` | Continue **this** stack: pick the next changed `*Test.php` not yet done in the ledger and run the full prepare → mutate → close procedure for **one** file. Same as re-pasting this prompt. Do not open `pre-qa.md`. |
-| `correct mutations` | **Own-card / alone drain:** process **every** remaining changed `*Test.php` in this turn (not one). One `workvm-sandbox` `--profile mutation` **and** one subagent per file; parent orchestrates. Not the same as `to correct` (validation / gap fixes). Do not open `pre-qa.md` until the drain finishes (or the user stops). Details: **`correct mutations` (parallel drain)** below. |
-| `next prompt` | **Blocked** while the change-set stack still has remaining test files. Refuse, list how many files remain (and the next path), and tell the user to send `next mutation` or `correct mutations`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/pre-qa.md`. |
+| `next mutation` | Continue **this** stack: pick the next changed `*Test.php` not yet done in the ledger and run the full prepare → mutate → close procedure for **one** file. Same as re-pasting this prompt. Do not open `coverage-testing.md` or `pre-qa.md`. |
+| `correct mutations` | **Own-card / alone drain:** process **every** remaining changed `*Test.php` in this turn (not one). One `workvm-sandbox` `--profile mutation` **and** one subagent per file; parent orchestrates. Not the same as `to correct` (validation / gap fixes). Do not open `coverage-testing.md` / `pre-qa.md` until the drain finishes (or the user stops). Details: **`correct mutations` (parallel drain)** below. |
+| `next prompt` | **Blocked** while the change-set stack still has remaining test files. Refuse, list how many files remain (and the next path), and tell the user to send `next mutation` or `correct mutations`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/coverage-testing.md`. |
 | `try again` | Resume or re-run mutation on the **current** (last attempted) test file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct mutations` shard, retry that file (or re-send `correct mutations` for all still-missing rows). |
 
 ## Ledger
@@ -51,12 +51,12 @@ Work only in `~/git/olie/api-main`.
 3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets for every file in this stack.
 4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
-If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`). That empty case also clears the stack gate for `pre-qa.md` on own-card.
+If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`). That empty case also clears the mutation stack gate on own-card — recommend `~/git/olie/prompts/coverage-testing.md` next (it will no-op to `pre-qa.md` when there is nothing to measure).
 
 ## One changed test file / `next mutation`
 
 1. Take the first remaining changed test file from the shared list. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set stack is complete, recommend `~/git/olie/prompts/pre-qa.md` as the next paste, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md` for the combined outcome.
+2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set stack is complete, recommend `~/git/olie/prompts/coverage-testing.md` as the next paste, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md` for the combined outcome.
 3. Prepare, mutate those classes, close the file using the scoring rules below. **Own-card / alone (`next mutation`):** stop — do not start the next test file in this paste. **Dispatcher mode:** after the ledger row, continue with the next remaining file (or the next sandbox shard).
 
 ## `correct mutations` (parallel drain)
@@ -65,7 +65,7 @@ Own-card / alone chat command. Same prepare → mutate → close **scoring** as 
 
 Problem this command solves: N remaining `*Test.php` files would need N× `next mutation` pastes and wall-clock; the colleague dispatcher already drains in parallel — own-card lacked an equivalent phrase.
 
-1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
+1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `coverage-testing.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do **not** process every file serially in one giant context when more than one remains.
 3. For each remaining file, in parallel up to `WORKVM_SANDBOX_MAX` (queue the rest — `~/git/olie/sandbox/ORCHESTRATION.md`):
    - Create `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
@@ -73,7 +73,7 @@ Problem this command solves: N remaining `*Test.php` files would need N× `next 
    - Launch **one subagent (Task) per file**. Pass at least: test path, sandbox id, change-set `--class` FQCNs, in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
 4. Each subagent runs baseline Pest → mutate → tighten if needed → returns a **proposed ledger row** (Result + Notes). It may edit **only** that `*Test.php` under the card working tree (or sync assertion edits back). It must **not** write `mutation-ledger.md` itself.
 5. **Parent only** appends rows to `~/git/olie/prompts/mutation-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
-6. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pre-qa.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
+6. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `coverage-testing.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
 
 Not for colleague **dispatcher** mode (that drain is already mandatory without this phrase). Do not confuse with `to correct`.
 
@@ -145,11 +145,11 @@ Skip +1 if there are no useful out-of-scope untested mutations, or if fixing one
 Report the file, in-scope result, Pest raw score if different, any +1 legacy fix, and how many **changed** test files are still absent from the ledger.
 
 - **Dispatcher mode:** if changed test files remain, continue with the next file in this same run (or the next sandbox shard). Do not ask for another paste.
-- **Own-card / alone after `next mutation`:** if changed test files remain, say to send `next mutation` (one more file) or `correct mutations` (drain the rest). Do **not** recommend `pre-qa.md`. Do **not** say the stack is ready for `next prompt`. Do **not** move a colleague card out of 'QA/CR'.
-- **Own-card / alone after `correct mutations`:** if every shard closed, treat as stack complete for the after-row “none remain” branch. If some failed, list missing paths and offer `try again` / `correct mutations` — still do **not** open `pre-qa.md`.
+- **Own-card / alone after `next mutation`:** if changed test files remain, say to send `next mutation` (one more file) or `correct mutations` (drain the rest). Do **not** recommend `coverage-testing.md` or `pre-qa.md`. Do **not** say the stack is ready for `next prompt`. Do **not** move a colleague card out of 'QA/CR'.
+- **Own-card / alone after `correct mutations`:** if every shard closed, treat as stack complete for the after-row “none remain” branch. If some failed, list missing paths and offer `try again` / `correct mutations` — still do **not** open `coverage-testing.md` / `pre-qa.md`.
 
 When **none** remain:
 
 - **Dispatcher mode:** if mutation reported fixes **for the author** (product gaps), write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths, no VM/sandbox/dispatcher/ledger jargon). If the gate is clean or only local test asserts were tightened, **do not** post a process wrap-up to the card — return Clean to `colleague-review.md` in chat only. Do **not** apply the funnel move yourself.
-- **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/olie/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
+- **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/olie/prompts/coverage-testing.md` as the next paste (`next prompt` runs it). Do **not** jump to `pre-qa.md` yet.
 - **Alone on colleague stack:** write mutation fixes to the card if any; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel here).

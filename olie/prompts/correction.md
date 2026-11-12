@@ -6,7 +6,7 @@ If MCP (any configured server), requests, shell, Docker, or other tooling this p
 
 ## 1. Objective and Context
 
-The card with the code `{{ code }}` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.
+The card with the code `DOP-1073` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.
 
 Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 
@@ -231,4 +231,4 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
-When the full correction on this paste is done (not the conflict-only first stop in §4), the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet — those come after implementation-validation (and after the mutation stack when `api-main` changed: finish with `next mutation` / `correct mutations`, then `pre-qa.md`).
+When the full correction on this paste is done (not the conflict-only first stop in §4), the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet — those come after implementation-validation (and when `api-main` changed: finish mutation with `next mutation` / `correct mutations`, then coverage with `next coverage` / `correct coverages`, then `pre-qa.md`).

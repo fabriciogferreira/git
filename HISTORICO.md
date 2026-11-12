@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Own-card handoff: coverage antes do pre-QA
+
+- **problema:** depois do mutation o handoff próprio recomendava `pre-qa.md`; `coverage-testing.md` existia mas era opcional e não bloqueava `next prompt`.
+- **por que é um problema:** o autor pedia coverage no fluxo de correction e o agente saltava para PRs; a medição de linhas do diff ficava fora da cadeia.
+- **resolvido como:** cadeia own-card = gap → mutation → **coverage** → pre-QA. Mutation recomenda `coverage-testing.md`; coverage ganha stack gate (como mutation) e só então recomenda `pre-qa.md`. Cross-refs: `correction`, `implementation-validation`, `workflow`, `workflow-policy`, `pre-qa`, `README`, ledgers.
+
 ## Own-card mutation: `correct mutations` (drain paralelo)
 
 - **problema:** no handoff próprio, o stack de mutation só avançava com `next mutation` (um `*Test.php` por paste); N arquivos restantes viravam N pastes e wall-clock, enquanto o colleague dispatcher já drenava em paralelo com sandbox por arquivo.
