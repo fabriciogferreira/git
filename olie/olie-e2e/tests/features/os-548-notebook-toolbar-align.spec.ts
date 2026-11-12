@@ -3,8 +3,9 @@ import { loginAsE2EUser } from '../helpers/auth'
 import { createE2EProject, openProjectDetailsTab } from '../helpers/project'
 
 /**
- * OS-548 — Caderno title and TipTap toolbar options must share the same left edge.
- * Header uses Metronic `padding: 0 2.25rem`; toolbar previously used `0.25rem`.
+ * OS-548 — Caderno title and TipTap Bold icon must share the same left edge.
+ * Resting toolbar buttons are transparent `btn-icon`; align the glyph, not the box.
+ * Header uses Metronic `padding: 0 2.25rem`; toolbar uses `ps-5 pe-9` on BaseForum.
  */
 
 async function openOrCreateNotebook(page: Page, projectId: string) {
@@ -39,7 +40,7 @@ async function openOrCreateNotebook(page: Page, projectId: string) {
 test.describe('OS-548 notebook title/toolbar alignment', () => {
     test.describe.configure({ timeout: 120_000 })
 
-    test('title and first toolbar option share the same left edge', async ({ page }) => {
+    test('title and first Bold icon share the same left edge', async ({ page }) => {
         await loginAsE2EUser(page)
         const projectId = await createE2EProject(page, {
             name: `e2e-os548-align-${Date.now()}`,
@@ -47,23 +48,23 @@ test.describe('OS-548 notebook title/toolbar alignment', () => {
         await openOrCreateNotebook(page, projectId)
 
         const title = page.locator('.card-header .card-title').first()
-        const firstToolbarBtn = page
-            .locator('.toolbar-menu__items .floating-button-container button')
+        const boldIcon = page
+            .locator('.toolbar-menu__items .floating-button-container button i.fa-bold')
             .first()
 
         await expect(title).toBeVisible()
-        await expect(firstToolbarBtn).toBeVisible()
+        await expect(boldIcon).toBeVisible()
 
         const titleBox = await title.boundingBox()
-        const btnBox = await firstToolbarBtn.boundingBox()
+        const iconBox = await boldIcon.boundingBox()
 
         expect(titleBox, 'OS-548: card title must have a layout box').not.toBeNull()
-        expect(btnBox, 'OS-548: first toolbar button must have a layout box').not.toBeNull()
+        expect(iconBox, 'OS-548: Bold icon must have a layout box').not.toBeNull()
 
-        const delta = Math.abs((titleBox?.x ?? 0) - (btnBox?.x ?? 0))
+        const delta = Math.abs((titleBox?.x ?? 0) - (iconBox?.x ?? 0))
         expect(
             delta,
-            `OS-548: title left (${titleBox?.x}) and toolbar button left (${btnBox?.x}) should align (delta=${delta})`
+            `OS-548: title left (${titleBox?.x}) and Bold icon left (${iconBox?.x}) should align (delta=${delta})`
         ).toBeLessThanOrEqual(2)
     })
 })
