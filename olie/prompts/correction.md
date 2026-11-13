@@ -6,7 +6,7 @@ If MCP (any configured server), requests, shell, Docker, or other tooling this p
 
 ## 1. Objective and Context
 
-The card with the code `DOP-1073` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.
+The card with the code `{{ code }}` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.
 
 Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 
