@@ -84,19 +84,16 @@ ls /sys/bus/pci/devices/0000:08:00.1/reset
 
 **Atenção:** depois do reboot, a 3060 **some do host** (só vfio) até desfazer. Display do host deve continuar na **5060**.
 
-- [ ] IDs deste host: `10de:2504,10de:228e`.
-
-**Opção A — modprobe (preferida se funcionar):**
+- [ ] IDs deste host: `10de:2504,10de:228e` (grupo 21).
+- [ ] Omarchy early-loada `nvidia*` no initramfs — por isso **modprobe + mkinitcpio** juntos (VFIO antes do nvidia). Arquivos em `host-files/`:
 
 ```bash
-# /etc/modprobe.d/vfio.conf
-options vfio-pci ids=10de:2504,10de:228e
-softdep nvidia pre: vfio-pci
+sudo cp ~/git/host-files/modprobe.d/vfio.conf /etc/modprobe.d/
+sudo cp ~/git/host-files/mkinitcpio.conf.d/00-vfio.conf /etc/mkinitcpio.conf.d/
+sudo mkinitcpio -P
+sudo reboot
 ```
 
-**Opção B — initramfs (mais forte):** além do `options`/`ids`, carregar cedo `vfio_pci` `vfio` `vfio_iommu_type1` no mkinitcpio/`MODULES`, regenerar initramfs. Se o framebuffer “congela” no prompt de disco cifrado, incluir drivers da GPU do **host** (5060) no initramfs — ver aviso kernel 6.0+ no wiki.
-
-- [ ] Reboot.
 - [ ] Verificar:
 
 ```bash
