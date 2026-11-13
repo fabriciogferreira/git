@@ -68,7 +68,7 @@ alwaysApply: true
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
 | `host-gpu-passthrough.md` | Checklist OVMF/VFIO deste host: 3060 → Win11 jogos, 5060 no Hyprland. O wiki Arch é genérico demais para o dia a dia. |
-| `host-files/` | Snippets do host (Limine IOMMU, modprobe/mkinitcpio VFIO) versionados; copiar para `/etc` com sudo. Ver `host-files/README.md`. |
+| `host-files/` | Snippets do host (Limine IOMMU, VFIO, libvirt CPU-pin dinâmico) versionados; copiar para `/etc` com sudo. Ver `host-files/README.md`. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |

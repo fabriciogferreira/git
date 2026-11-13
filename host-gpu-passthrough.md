@@ -162,19 +162,73 @@ nvidia-smi -L
 - [ ] **Anti-cheat:** vários jogos online (ex. Elden Ring Easy Anti-Cheat, Valorant) detectam VM e bloqueiam — não é falha do passthrough. Offline / dual-boot nativo se precisar (Akita).
 - [ ] Anotar resultado em `life.md` / fechar a tarefa.
 
-### 9. Depois (opcional — não bloqueia o 1º smoke)
+### 9a. CPU pin + isolamento host (cgroups) — dinâmico
+
+Base: [wiki OVMF § Isolating pinned CPUs / systemd](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF#Dynamically_isolating_CPUs) + Akita cap. ~23–39 (pin + hook).  
+**Não copie** `AllowedCPUs=0,1,6,7` do exemplo de 12 threads — em outro PC (ou neste 13700K) os números mudam.
+
+#### O que fazer em **qualquer** máquina
+
+1. Ver topologia:
+   ```bash
+   lscpu -e
+   lstopo          # pacote hwloc
+   cat /sys/devices/cpu_core/cpus /sys/devices/cpu_atom/cpus 2>/dev/null   # Intel hybrid
+   ```
+2. Gerar o plano (script versionado — rediscovery):
+   ```bash
+   # default: 2 P-cores pro host; resto dos P → guest; E-cores ficam no host
+   HOST_P_CORES=2 ~/git/host-files/bin/cpu-pin-plan
+   HOST_P_CORES=2 ~/git/host-files/bin/cpu-pin-plan --xml
+   HOST_P_CORES=2 ~/git/host-files/bin/cpu-pin-plan --write /tmp/cpu-pin.env
+   ```
+3. Colar o XML (`vcpu` / `cputune` / `cpu host-passthrough` + topology) na domain Win11 (`virsh edit NOME`).
+4. Instalar hook + lib (sudo):
+   ```bash
+   sudo mkdir -p /etc/libvirt/hooks/qemu.d /usr/local/lib/workvm
+   sudo cp ~/git/host-files/bin/cpu-pin-lib.sh /usr/local/lib/workvm/
+   sudo cp ~/git/host-files/libvirt/hooks/qemu /etc/libvirt/hooks/qemu
+   sudo cp ~/git/host-files/libvirt/hooks/qemu.d/cpu-pinning.sh /etc/libvirt/hooks/qemu.d/
+   sudo chmod +x /etc/libvirt/hooks/qemu /etc/libvirt/hooks/qemu.d/cpu-pinning.sh
+   # opcional: fixar o plano gerado (senão o hook recalcula com HOST_P_CORES=2)
+   sudo cp /tmp/cpu-pin.env /etc/libvirt/hooks/cpu-pin.env
+   # opcional: só uma VM — no env: PIN_GUEST_NAME=nome-da-domain
+   sudo systemctl restart libvirtd
+   ```
+5. Ligar a guest → no host, carga pesada deve ficar em `HOST_ALLOWED`; threads do guest saturam `GUEST_CPUS`. Desligar guest → host volta a `ALL_CPUS`.
+
+Hook usa `prepare` / `release` (wiki). Precisa **systemd ≥ 244** e **cgroups v2**.
+
+#### Exemplo jarvis (i7-13700K, medido 2026-11-13)
+
+| | |
+| --- | --- |
+| Threads | 0–23 (8 P-cores × 2 + 8 E-cores) |
+| P / E | `0-15` / `16-23` |
+| `HOST_P_CORES=2` | host **0-3,16-23** · guest **4-15** (12 threads, 6c×2t) |
+
+Trocar de PC: repetir só os passos 1–4; não editar números à mão no hook.
+
+#### Política padrão do script
+
+- Intel hybrid: E-cores **sempre no host** (fundo / IO); guest leva P-cores menos `HOST_P_CORES`.
+- Sem hybrid: trata todos como P; primeiros `HOST_P_CORES` cores físicos pro host, resto guest.
+- AMD com dois L3 (Akita): o script não escolhe L3 automaticamente — use `lstopo`, defina `HOST_ALLOWED`/`GUEST_CPUS` no `cpu-pin.env` gerado/ajustado à mão.
+
+### 9b. Outros opcionais (depois do smoke)
 
 | Tema | Nota prática (Akita / wiki) |
 | --- | --- |
-| **Evdev** | Um teclado+mouse: `/dev/input/by-id/*event*`; `cat` no device enquanto mexe pra achar o certo; toggle padrão **Ctrl esq+dir**. |
-| **CPU pin + cgroups** | `lscpu -e` / `lstopo`; pin no mesmo L3; hook libvirt `started`/`release` com `systemctl set-property … AllowedCPUs=` (script no wiki / vídeo). 13700K = P+E cores — mapear com cuidado. |
+| **Evdev** | Um teclado+mouse: `/dev/input/by-id/*event*`; `cat` no device enquanto mexe; toggle **Ctrl esq+dir**. |
 | **cpupower** | `performance` enquanto joga. |
-| **ddcutil** | Trocar input do monitor sem botão físico (`detect` / `setvcp 60 …`; códigos HDMI variam por modelo). |
-| **Suspend do host** | Host “idle” com guest ligada → dorme e congela a VM. Desligar suspend (gsettings / inhibit / hook) enquanto a Win11 estiver up. |
-| **Áudio** | PipeWire costuma falar com o backend pulse do QEMU; HDMI da 3060 = áudio no guest. |
-| **PCIe 3060 Gen1×4** | Melhorar slot depois; ver `life.md`. |
-| **Huge pages / iothreads / USB hub** | Wiki OVMF § performance; Akita pula no vídeo mas cita. |
+| **ddcutil** | Trocar input do monitor (`detect` / `setvcp 60 …`). |
+| **Suspend do host** | Desligar suspend enquanto a Win11 estiver up. |
+| **Áudio** | PipeWire ↔ pulse do QEMU; HDMI da 3060 = guest. |
+| **PCIe 3060 Gen1×4** | Melhorar slot; ver `life.md`. |
+| **Huge pages / iothreads / USB hub** | Wiki OVMF § performance. |
+
 ---
+
 
 ## Desfazer isolamento (host volta a ver a 3060)
 

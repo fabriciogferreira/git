@@ -1,0 +1,40 @@
+#!/bin/env bash
+# libvirt hook dispatcher: runs executable scripts under qemu.d/$GUEST/$OP or qemu.d/*-$OP patterns.
+# Problem: wiki/Akita expect per-VM or shared hooks without one monolithic script.
+# Based on the common VFIO-Tools / Arch qemu.d layout (Akita #137).
+
+GUEST_NAME=$1
+HOOK_NAME=$2
+STATE_NAME=${3:-}
+BASEDIR=$(dirname "$0")
+
+set -e
+
+run_path() {
+  local path=$1
+  if [[ -f $path && -x $path && -s $path ]]; then
+    # shellcheck disable=SC2086
+    "$path" "$@"
+  elif [[ -d $path ]]; then
+    find -L "$path" -maxdepth 1 -type f -executable -print0 2>/dev/null \
+      | sort -z | while IFS= read -r -d '' f; do
+          [[ -n $f ]] || continue
+          "$f" "$@"
+        done
+  fi
+}
+
+# Per-guest: qemu.d/<name>/<hook>/<state>
+if [[ -n $STATE_NAME ]]; then
+  run_path "$BASEDIR/qemu.d/$GUEST_NAME/$HOOK_NAME/$STATE_NAME" "$@"
+fi
+# Shared drop-ins: qemu.d/*.sh (every guest) — filter inside each script by $1 if needed
+if [[ -d $BASEDIR/qemu.d ]]; then
+  find -L "$BASEDIR/qemu.d" -maxdepth 1 -type f -executable -print0 2>/dev/null \
+    | sort -z | while IFS= read -r -d '' f; do
+        [[ -n $f ]] || continue
+        "$f" "$@"
+      done
+fi
+
+exit 0
