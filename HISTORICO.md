@@ -2,6 +2,17 @@
 
 Problema resolvido entra aqui.
 
+## Host: passthrough RTX 3060 → VM Windows 11 (jogos)
+
+- **problema:** quero **jogar em VM Windows 11** usando uma das duas RTX do host; GeForce de consumo **não** oferece vGPU — compartilhar a mesma placa entre duas VMs de jogo não funciona.
+- **por que é um problema:** sem decisão clara, o caminho vira fila/API (serve LLM, **não** DirectX/Vulkan na guest) ou tentativa de “dividir” a GPU; atrito e expectativa falsa.
+- **resolvido como (decisão + inventário; passthrough ainda a fazer):**
+  - **Papéis:** **RTX 5060** fica no **host** (Hyprland/`01:00.0` + áudio `01:00.1`); **RTX 3060** é a candidata a **VFIO passthrough** para a Win11 (`08:00.0` VGA `[10de:2504]` + `08:00.1` áudio `[10de:228e]`).
+  - **Por quê 3060 e não 5060:** a 5060 hoje carrega o display do host; passar ela obriga migrar o desktop para a iGPU antes. A 3060 (12 GB) pode ir para a guest com o host ainda usável na 5060.
+  - **vGPU descartado** para este objetivo; caminho = **passthrough 1:1**.
+  - **Smoke na guest (grátis):** Unigine Heaven → depois CS2 ou War Thunder.
+  - **Atenção de hardware:** 3060 medida em **PCIe Gen1 ×4** (nativo 4.0 ×16) — provavelmente slot chipset no Z690; para jogos na VM o passthrough ainda funciona, mas o link fraco limita banda. Confirmar slot físico / bifurcation. Detalhe e tarefas em `life.md`.
+
 ## Own-card handoff: coverage antes do pre-QA
 
 - **problema:** depois do mutation o handoff próprio recomendava `pre-qa.md`; `coverage-testing.md` existia mas era opcional e não bloqueava `next prompt`.

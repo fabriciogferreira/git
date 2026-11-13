@@ -14,7 +14,7 @@ Não substitui `HISTORICO.md` (lá: narrativa do problema resolvido, se precisar
 2. **Aumentar a renda** — mais capacidade de gerar receita (trabalho, produtos, automação que escala).
 3. **Acumular capital** — transformar renda em patrimônio (ativos, estoque de valor).
 4. **Guardar dinheiro de forma segura** — preservar o que já existe (risco baixo, liquidez quando preciso, sem buracos óbvios).
-5. **Fazer muito com pouco** — evitar gastar; só desembolsa quando for **muito** necessário. Preferir reorganizar o que já existe (ex.: RX 580 + 5060) a comprar hardware novo.
+5. **Fazer muito com pouco** — evitar gastar; só desembolsa quando for **muito** necessário. Preferir reorganizar o que já existe (ex.: 5060 + 3060 no host) a comprar hardware novo.
 
 Tudo neste arquivo deve, no fim, servir a um desses objetivos. Se não servir, questionar se merece espaço.
 
@@ -28,11 +28,18 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Objetivo:** economizar tempo (uma só “língua” host+guest) e sobrar CPU/RAM/disco para VMs e trabalho.
   - **Cuidado:** backup de `~/git`, `life.md`, hooks Ollama (`~/bin`, `~/.config/libvirt/hooks`, sudoers), `environment.d` (tokens), imagens libvirt; reaplicar Hyprland/meta-repo com cuidado.
 
-- [ ] **Descobrir qual outra tarefa atribuir à RTX 5060**
-  - **Por quê:** VLM já saiu da 5060 (está na RX 580); a 5060 está livre sem papel fixo — precisa de carga que pague o silício.
-  - **Objetivo:** muito com pouco + aumentar capacidade/renda sem comprar outra GPU.
-  - **Entrega:** 1–3 candidatos + atualizar o estado da 5060 neste arquivo.
+- [ ] **Passthrough da RTX 3060 para VM Windows 11 (jogos)**
+  - **Por quê:** GeForce não faz vGPU; jogo na guest precisa da placa inteira (VFIO). A **5060** fica no host (display); a **3060** vai para a Win11.
+  - **Objetivo:** muito com pouco — VM de jogo sem segundo PC.
+  - **IDs:** `08:00.0` `[10de:2504]` + `08:00.1` `[10de:228e]` (passar o par VGA+áudio).
+  - **Entrega:** IOMMU/VFIO; domain libvirt com hostdev da 3060; host sem driver nvidia nela; na guest: driver NVIDIA + smoke **Unigine Heaven**, depois **CS2** ou **War Thunder** (grátis). ISO Win11 já em `~/Downloads/isos/`.
+  - **depends:** liberar a 3060 no host antes de ligar a VM (nada usando a placa).
 
+- [ ] **Melhorar link PCIe da 3060 (hoje Gen1 ×4) — opcional pós-passthrough**
+  - **Por quê:** nativo é 4.0 ×16; Gen1 ×4 no slot chipset limita banda mesmo com passthrough.
+  - **Objetivo:** melhor FPS/estabilidade na guest sem hardware novo.
+  - **Entrega:** Gen ≥3 e width ≥8 no `nvidia-smi` (na guest ou no host sem VFIO); anotar slot físico.
+  - **depends:** pode rodar depois do primeiro smoke de jogo.
 - [ ] **Ajustar prompt(s) de revisão Olie: não reclamar de PR inexistente**
   - **Por quê:** revisão gasta tempo em falso positivo — PR ainda não aberto (fase errada).
   - **Objetivo:** economizar tempo nas revisões.
@@ -150,11 +157,13 @@ Inventário + **estado atual** (o que faz o quê e por quê).
 
 | Peça | Onde | Papel agora | Por quê |
 | --- | --- | --- | --- |
-| **iGPU Intel** | CPU | **Display** do host (Hyprland) | Não gasta VRAM das dGPUs no desktop |
-| **RX 580** (8 GB) | slot PCIe **2** (`06:00.0`, `amdgpu`) | **Ollama / VLM** para a WorkVM **vid2agent-code** (API + `10.0.2.2:11434`) | É a GPU **mais fraca**; serve LLM de vídeo e deixa a 5060 livre. Vulkan só RADV (`VK_ICD_FILENAMES=…/radeon_icd.json`, `CUDA_VISIBLE_DEVICES=`). Passthrough OSX dessa placa **off** (backup `*.osx-passthrough.bak`) |
-| **RTX 5060** (8 GB) | slot PCIe principal (`01:00.0`) | **Livre** para serviços/cargas mais pesadas (ainda sem papel fixo — ver tarefa) | Mais capaz que a 580; não deve correr o VLM “de rotina” |
+| **iGPU Intel** UHD 770 | `00:02.0` | Reserva de display | Meta futura: Hyprland na iGPU; hoje o desktop ainda usa a 5060 |
+| **RTX 5060** (8 GB) | `01:00.0` + áudio `01:00.1` — PCIe **5.0 ×8** (nativo ×8) | **Host** (Hyprland) — **não** passa para a VM de jogo | Mantém o host usável enquanto a 3060 está na guest |
+| **RTX 3060** (12 GB) | `08:00.0` `[10de:2504]` + áudio `08:00.1` `[10de:228e]` — medido **Gen1 ×4** | **Alvo de passthrough** → VM **Windows 11** (jogos) | GeForce = 1 placa : 1 VM; 12 GB e sem display do host |
 
-Scripts de referência no host: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-amd-rx580.conf`.
+**Decisão jogos:** sem vGPU em GeForce. Duas VMs jogando = duas dGPUs em passthrough, ou uma de cada vez. Smoke grátis na guest: **Heaven** → **CS2** / **War Thunder**.
+
+**RX 580:** fora do inventário ativo (antes VLM/vid2agent). Scripts legados: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-amd-rx580.conf`.
 
 ### CPU
 | | |
@@ -198,9 +207,10 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 
 **Expansion Slot**
 - 3× PCIe x16:
-  - `PCI_E1` (CPU): até **PCIe 5.0 x16** — hoje **RTX 5060**
-  - `PCI_E3` e `PCI_E4` (Z690): até **PCIe 3.0 x4** e **3.0 x1** — hoje **RX 580** no slot 2
+  - `PCI_E1` (CPU): até **PCIe 5.0 x16** — hoje **RTX 5060** (`01:00.0`, Gen5 ×8 nativo)
+  - `PCI_E3` e `PCI_E4` (Z690): até **PCIe 3.0 x4** e **3.0 x1** — candidato a onde a **3060** está (`08:00.0` medido Gen1 ×4; confirmar fisicamente)
 - 1× PCIe 3.0 x1 (Z690)
+- Dual GPU no desktop consumer = no máx. **x8/x8 no CPU**, não 2× x16 elétrico (HEDT/workstation). Slot chipset da 3060 explica Gen1×4 medido.
 
 **M.2 (Key M) — 4 slots**
 | Slot | Origem | Link | Notas |
@@ -213,7 +223,7 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 ### Implicações rápidas
 - **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs = swap/dor. Por isso cada VM leva só a RAM que o projeto precisa (ver §1).
 - **24 threads:** bom para compose/build paralelo nas guests; vCPU também **por projeto**, não “máximo igual em todas”.
-- **VLM na 580:** mais lento que na 5060 — trade-off consciente (**muito com pouco**).
+- **Win11 + jogos:** passthrough da **3060** (VGA+áudio); host na **5060**; smoke Heaven → CS2/War Thunder.
 
 ---
 
@@ -289,7 +299,7 @@ Fazer **um item por vez**, na ordem. Ao concluir: marcar `[x]`, anotar o que mud
 
 ### Host
 1. Login gráfico Omarchy (Hyprland).
-2. Monitor na **iGPU**; **RX 580** = Ollama/VLM (vid2agent); **RTX 5060** = cargas pesadas (papel ainda em aberto).
+2. **5060** = host (display); **3060** = passthrough Win11 jogos (quando a VM estiver ligada, a 3060 some do host).
 3. VMs sobem sob demanda (`virsh` / virt-manager), não “um app só”.
 4. Ollama **não** sobe no boot do host; sobe/para com a VM `vid2agent-code` (hook).
 
@@ -329,7 +339,7 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 | **libvirt + QEMU session** | Isolar ambiente por card/VM |
 | **Chromium** | App local, às vezes board |
 | **gh / git** | PRs e meta-repo |
-| **Ollama** (host) | VLM para vid2agent (`qwen2.5vl`) |
+| **Ollama** (host) | VLM/vid2agent (layout GPU a reavaliar sem RX 580; não misturar com passthrough da 3060) |
 | **MCP OlieFlowAi** | Conteúdo de DOP/OS (mídia, save-media) |
 | **spice / wayland-vdagent** | Clipboard host ↔ guest |
 
