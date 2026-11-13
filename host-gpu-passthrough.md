@@ -8,9 +8,11 @@ Runbook do **que fazer** neste host. Base: [PCI passthrough via OVMF](https://wi
 
 | Papel | Peça | PCI | IDs |
 | --- | --- | --- | --- |
-| **Host** (Hyprland) | RTX 5060 8 GB | `01:00.0` + áudio `01:00.1` | `10de:2d05` / `10de:22eb` |
-| **Guest Win11** | RTX 3060 12 GB | `08:00.0` + áudio `08:00.1` | `10de:2504` / `10de:228e` |
+| **Host** (Hyprland) | RTX 5060 8 GB | `01:00.0` + áudio `01:00.1` | `10de:2d05` / `10de:22eb` · IOMMU **grupo 16** (só o par) |
+| **Guest Win11** | RTX 3060 12 GB | `08:00.0` + áudio `08:00.1` | `10de:2504` / `10de:228e` · IOMMU **grupo 21** (só o par) |
 | Reserva display | iGPU UHD 770 | `00:02.0` | — |
+
+**Feito (2026-11-13):** `intel_iommu=on iommu=pt` via `host-files/limine-entry-tool.d/iommu.conf` → `/etc/limine-entry-tool.d/`; **23** grupos IOMMU; 3060 isolada no grupo 21 (ok para passo 3).
 
 - Board: **MSI PRO Z690-A** · CPU: **i7-13700K** (VT-x + VT-d).
 - ISO: `~/Downloads/isos/Windows11_Client_x64_pt-br_*.iso`.
