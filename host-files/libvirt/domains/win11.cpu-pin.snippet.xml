@@ -1,0 +1,32 @@
+<!--
+  CPU pin chosen for jarvis win11 (i7-13700K) — 2026-11-13.
+  Host keeps P-cores on CPUs 0-3 (emulator + iothreads) and E-cores 16-23 via cgroup hook.
+  Guest: 6 P-cores / 12 threads on CPUs 4-15.
+
+  Domain must have: <vcpu placement='static'>12</vcpu>
+  (A <vcpu> of 6 with twelve <vcpupin> lines is inconsistent — libvirt will not match topology.)
+
+  Also need: <iothreads>2</iothreads> if using the iothreadpin lines below.
+-->
+  <vcpu placement="static">12</vcpu>
+  <iothreads>2</iothreads>
+  <cputune>
+    <emulatorpin cpuset="0-1"/>
+    <iothreadpin iothread="1" cpuset="2"/>
+    <iothreadpin iothread="2" cpuset="3"/>
+    <vcpupin vcpu="0" cpuset="4"/>
+    <vcpupin vcpu="1" cpuset="5"/>
+    <vcpupin vcpu="2" cpuset="6"/>
+    <vcpupin vcpu="3" cpuset="7"/>
+    <vcpupin vcpu="4" cpuset="8"/>
+    <vcpupin vcpu="5" cpuset="9"/>
+    <vcpupin vcpu="6" cpuset="10"/>
+    <vcpupin vcpu="7" cpuset="11"/>
+    <vcpupin vcpu="8" cpuset="12"/>
+    <vcpupin vcpu="9" cpuset="13"/>
+    <vcpupin vcpu="10" cpuset="14"/>
+    <vcpupin vcpu="11" cpuset="15"/>
+  </cputune>
+  <cpu mode="host-passthrough">
+    <topology sockets="1" dies="1" cores="6" threads="2"/>
+  </cpu>

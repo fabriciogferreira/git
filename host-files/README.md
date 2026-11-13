@@ -45,4 +45,4 @@ sudo cp /tmp/cpu-pin.env /etc/libvirt/hooks/cpu-pin.env   # opcional mas recomen
 sudo systemctl restart libvirtd
 ```
 
-Detalhe e exemplo 13700K: `../host-gpu-passthrough.md` § 9a.
+Detalhe e pin real da domain `win11`: `../host-gpu-passthrough.md` § 9a · `libvirt/domains/win11.cpu-pin.snippet.xml` · `libvirt/hooks/cpu-pin.env.example`.

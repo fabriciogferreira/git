@@ -199,15 +199,21 @@ Base: [wiki OVMF § Isolating pinned CPUs / systemd](https://wiki.archlinux.org/
 
 Hook usa `prepare` / `release` (wiki). Precisa **systemd ≥ 244** e **cgroups v2**.
 
-#### Exemplo jarvis (i7-13700K, medido 2026-11-13)
+#### Exemplo jarvis — domain `win11` (escolhido 2026-11-13)
 
-| | |
-| --- | --- |
-| Threads | 0–23 (8 P-cores × 2 + 8 E-cores) |
-| P / E | `0-15` / `16-23` |
-| `HOST_P_CORES=2` | host **0-3,16-23** · guest **4-15** (12 threads, 6c×2t) |
+| Papel | CPUs | Uso |
+| --- | --- | --- |
+| Host P | `0-1` | `emulatorpin` |
+| Host P | `2`, `3` | `iothreadpin` 1 e 2 |
+| Host E | `16-23` | cgroup (`HOST_ALLOWED`) — não vão pra guest |
+| Guest P | `4-15` | 12× `vcpupin` · topology **6 cores × 2 threads** |
 
-Trocar de PC: repetir só os passos 1–4; não editar números à mão no hook.
+Snippet versionado: `host-files/libvirt/domains/win11.cpu-pin.snippet.xml`  
+Env do hook: `host-files/libvirt/hooks/cpu-pin.env.example` → `/etc/libvirt/hooks/cpu-pin.env`
+
+**Corrigir se ainda estiver assim:** `<vcpu …>6</vcpu>` com doze linhas de `vcpupin` — o certo é **`<vcpu placement='static'>12</vcpu>`** (+ `<iothreads>2</iothreads>` se usar os dois `iothreadpin`). Sem isso a topology 6×2 não fecha.
+
+Trocar de PC: `cpu-pin-plan` de novo → novos números → atualizar snippet/env/domain; não depender deste quadro.
 
 #### Política padrão do script
 
