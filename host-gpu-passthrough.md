@@ -208,7 +208,8 @@ Hook usa `prepare` / `release` (wiki). Precisa **systemd ≥ 244** e **cgroups v
 | Host E | `16-23` | cgroup (`HOST_ALLOWED`) — não vão pra guest |
 | Guest P | `4-15` | 12× `vcpupin` · topology **6 cores × 2 threads** |
 
-Snippet versionado: `host-files/libvirt/domains/win11.cpu-pin.snippet.xml`  
+Domain completa (copiar): `host-files/libvirt/domains/win11.xml`  
+Snippet só de CPU: `host-files/libvirt/domains/win11.cpu-pin.snippet.xml`  
 Env do hook: `host-files/libvirt/hooks/cpu-pin.env.example` → `/etc/libvirt/hooks/cpu-pin.env`
 
 **Corrigir se ainda estiver assim:** `<vcpu …>6</vcpu>` com doze linhas de `vcpupin` — o certo é **`<vcpu placement='static'>12</vcpu>`** (+ `<iothreads>2</iothreads>` se usar os dois `iothreadpin`). Sem isso a topology 6×2 não fecha.

@@ -1,0 +1,166 @@
+<!--
+  Snapshot of domain win11 on jarvis (2026-11-13) for reinstall / new host.
+  Copy into libvirt (system session), then fix paths if needed:
+    sudo virsh define ~/git/host-files/libvirt/domains/win11.xml
+  Or: virt-manager → open XML.
+
+  Requires on the host first: IOMMU + VFIO on 08:00.0/08:00.1 (see host-gpu-passthrough.md),
+  OVMF secboot firmware, disk image, ISO, and optionally cpu-pin hook + cpu-pin.env.
+
+  Known issue in this snapshot: <vcpu>6</vcpu> with 12 vcpupin lines — prefer
+  <vcpu placement="static">12</vcpu> and <iothreads>2</iothreads> (see win11.cpu-pin.snippet.xml).
+-->
+<domain type="kvm">
+  <name>win11</name>
+  <uuid>3647fb71-8845-4f56-97e7-19d5a6500e0f</uuid>
+  <metadata>
+    <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+      <libosinfo:os id="http://microsoft.com/win/11"/>
+    </libosinfo:libosinfo>
+  </metadata>
+  <memory>8388608</memory>
+  <currentMemory>8388608</currentMemory>
+  <vcpu current="6">6</vcpu>
+  <cputune>
+    <!-- QEMU emulator thread -->
+    <emulatorpin cpuset="0-1"/>
+
+    <!-- IO threads -->
+    <iothreadpin iothread="1" cpuset="2"/>
+    <iothreadpin iothread="2" cpuset="3"/>
+
+    <!-- VM: 6 P-Cores / 12 threads -->
+    <vcpupin vcpu="0" cpuset="4"/>
+    <vcpupin vcpu="1" cpuset="5"/>
+
+    <vcpupin vcpu="2" cpuset="6"/>
+    <vcpupin vcpu="3" cpuset="7"/>
+
+    <vcpupin vcpu="4" cpuset="8"/>
+    <vcpupin vcpu="5" cpuset="9"/>
+
+    <vcpupin vcpu="6" cpuset="10"/>
+    <vcpupin vcpu="7" cpuset="11"/>
+
+    <vcpupin vcpu="8" cpuset="12"/>
+    <vcpupin vcpu="9" cpuset="13"/>
+
+    <vcpupin vcpu="10" cpuset="14"/>
+    <vcpupin vcpu="11" cpuset="15"/>
+  </cputune>
+  <os>
+    <type arch="x86_64" machine="q35">hvm</type>
+    <loader readonly="yes" secure="yes" type="pflash">/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd</loader>
+    <boot dev="hd"/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <hyperv>
+      <relaxed state="on"/>
+      <vapic state="on"/>
+      <spinlocks state="on" retries="8191"/>
+      <vpindex state="on"/>
+      <runtime state="on"/>
+      <synic state="on"/>
+      <stimer state="on"/>
+      <frequencies state="on"/>
+      <tlbflush state="on"/>
+      <ipi state="on"/>
+      <evmcs state="on"/>
+      <avic state="on"/>
+    </hyperv>
+    <kvm>
+      <hidden state="on"/>
+    </kvm>
+    <vmport state="off"/>
+    <smm state="on"/>
+  </features>
+  <cpu mode="host-passthrough">
+    <topology sockets="1" dies="1" cores="6" threads="2"/>
+  </cpu>
+  <clock offset="localtime">
+    <timer name="rtc" tickpolicy="catchup"/>
+    <timer name="pit" tickpolicy="delay"/>
+    <timer name="hpet" present="no"/>
+    <timer name="hypervclock" present="yes"/>
+  </clock>
+  <pm>
+    <suspend-to-mem enabled="no"/>
+    <suspend-to-disk enabled="no"/>
+  </pm>
+  <devices>
+    <input type="evdev">
+      <source dev="/dev/input/by-id/usb-RealTek_MCHOSE_K7_Ultra_0123456789-event-mouse"/>
+    </input>
+    <input type="evdev">
+      <source dev="/dev/input/by-id/usb-RealTek_MCHOSE_K7_Ultra_0123456789-if01-event-kbd"/>
+    </input>
+    <input type="evdev">
+      <source dev="/dev/input/by-id/usb-SONiX_USB_DEVICE-event-kbd" grab="all" repeat="on" grabToggle="ctrl-ctrl"/>
+    </input>
+    <input type="evdev">
+      <source dev="/dev/input/by-id/usb-SONiX_USB_DEVICE-event-if01" grab="all" repeat="on" grabToggle="ctrl-ctrl"/>
+    </input>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type="file" device="disk">
+      <driver name="qemu" type="qcow2" discard="unmap"/>
+      <source file="/var/lib/libvirt/images/win11.qcow2"/>
+      <target dev="sda" bus="sata"/>
+    </disk>
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw"/>
+      <source file="/home/fabricio/Downloads/isos/Windows11_Client_x64_pt-br_26300_9457.iso"/>
+      <target dev="sdb" bus="sata"/>
+      <readonly/>
+    </disk>
+    <controller type="usb" model="qemu-xhci" ports="15"/>
+    <controller type="pci" model="pcie-root"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <controller type="pci" model="pcie-root-port"/>
+    <interface type="network">
+      <source network="default"/>
+      <mac address="52:54:00:25:13:a9"/>
+      <model type="e1000e"/>
+    </interface>
+    <console type="pty"/>
+    <channel type="spicevmc">
+      <target type="virtio" name="com.redhat.spice.0"/>
+    </channel>
+    <input type="tablet" bus="usb"/>
+    <tpm model="tpm-tis">
+      <backend type="emulator" version="2.0"/>
+    </tpm>
+    <graphics type="spice" port="-1" tlsPort="-1" autoport="yes">
+      <image compression="off"/>
+    </graphics>
+    <sound model="ich9"/>
+    <video>
+      <model type="virtio"/>
+    </video>
+    <redirdev bus="usb" type="spicevmc"/>
+    <redirdev bus="usb" type="spicevmc"/>
+    <hostdev mode="subsystem" type="pci" managed="yes">
+      <source>
+        <address domain="0" bus="8" slot="0" function="0"/>
+      </source>
+    </hostdev>
+    <hostdev mode="subsystem" type="pci" managed="yes">
+      <source>
+        <address domain="0" bus="8" slot="0" function="1"/>
+      </source>
+    </hostdev>
+  </devices>
+</domain>
