@@ -46,3 +46,14 @@ sudo systemctl restart libvirtd
 ```
 
 Detalhe e pin real da domain `win11`: `../host-gpu-passthrough.md` § 9a · `libvirt/domains/win11.cpu-pin.snippet.xml` · `libvirt/hooks/cpu-pin.env.example`.
+
+## Domain Win11 completa (copiar no futuro)
+
+Arquivo: `libvirt/domains/win11.xml` (snapshot com GPU `08:00.*`, evdev, pin, OVMF).
+
+```bash
+# Depois de IOMMU/VFIO + disco/ISO no lugar:
+sudo virsh -c qemu:///system define ~/git/host-files/libvirt/domains/win11.xml
+# Em PC novo: ajustar paths (qcow2, ISO, by-id do teclado/mouse), UUID se quiser domain nova,
+# e regenerar CPU pin com cpu-pin-plan (números 0-15 são do 13700K).
+```
