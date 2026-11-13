@@ -44,7 +44,15 @@ sudo dmesg | grep -iE 'IOMMU|DMAR|VT-d'
 
 Esperado: linhas `DMAR` / IOMMU ativo.
 
-- [ ] Se não estiver: parâmetro de boot **`intel_iommu=on`** (e opcional `iommu=pt`). Em Omarchy/systemd-boot ou GRUB — onde o host já define cmdline. Reboot.
+- [ ] Se não estiver (0 grupos / sem `intel_iommu` no cmdline): drop-in Limine neste host:
+
+```bash
+sudo cp ~/git/host-files/limine-entry-tool.d/iommu.conf /etc/limine-entry-tool.d/
+sudo limine-update
+sudo reboot
+```
+
+Depois do reboot: `ls /sys/kernel/iommu_groups | wc -l` deve ser **> 0** e `cat /proc/cmdline` deve ter `intel_iommu=on iommu=pt`.
 
 ### 2. Grupos IOMMU (isolamento)
 
