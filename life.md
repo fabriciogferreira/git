@@ -31,9 +31,10 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 - [ ] **Passthrough da RTX 3060 para VM Windows 11 (jogos)**
   - **Por quê:** GeForce não faz vGPU; jogo na guest precisa da placa inteira (VFIO). A **5060** fica no host (display); a **3060** vai para a Win11.
   - **Objetivo:** muito com pouco — VM de jogo sem segundo PC.
-  - **IDs:** `08:00.0` `[10de:2504]` + `08:00.1` `[10de:228e]` (passar o par VGA+áudio).
-  - **Entrega:** IOMMU/VFIO; domain libvirt com hostdev da 3060; host sem driver nvidia nela; na guest: driver NVIDIA + smoke **Unigine Heaven**, depois **CS2** ou **War Thunder** (grátis). ISO Win11 já em `~/Downloads/isos/`.
-  - **depends:** liberar a 3060 no host antes de ligar a VM (nada usando a placa).
+  - **Runbook:** `host-gpu-passthrough.md` (checklist a partir do [wiki OVMF](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF)).
+  - **IDs:** `08:00.0` `[10de:2504]` + `08:00.1` `[10de:228e]`.
+  - **Entrega:** passos 1–8 do runbook ok; Heaven + CS2/War Thunder na guest.
+  - **depends:** liberar a 3060 no host antes de isolar (nada usando a placa).
 
 - [ ] **Melhorar link PCIe da 3060 (hoje Gen1 ×4) — opcional pós-passthrough**
   - **Por quê:** nativo é 4.0 ×16; Gen1 ×4 no slot chipset limita banda mesmo com passthrough.

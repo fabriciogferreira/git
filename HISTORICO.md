@@ -11,7 +11,8 @@ Problema resolvido entra aqui.
   - **Por quê 3060 e não 5060:** a 5060 hoje carrega o display do host; passar ela obriga migrar o desktop para a iGPU antes. A 3060 (12 GB) pode ir para a guest com o host ainda usável na 5060.
   - **vGPU descartado** para este objetivo; caminho = **passthrough 1:1**.
   - **Smoke na guest (grátis):** Unigine Heaven → depois CS2 ou War Thunder.
-  - **Atenção de hardware:** 3060 medida em **PCIe Gen1 ×4** (nativo 4.0 ×16) — provavelmente slot chipset no Z690; para jogos na VM o passthrough ainda funciona, mas o link fraco limita banda. Confirmar slot físico / bifurcation. Detalhe e tarefas em `life.md`.
+  - **Atenção de hardware:** 3060 medida em **PCIe Gen1 ×4** (nativo 4.0 ×16) — provavelmente slot chipset no Z690; para jogos na VM o passthrough ainda funciona, mas o link fraco limita banda. Confirmar slot físico / bifurcation.
+  - **Runbook:** `host-gpu-passthrough.md` (checklist filtrado do Arch Wiki OVMF). Tarefas em `life.md`.
 
 ## Own-card handoff: coverage antes do pre-QA
 

@@ -2,6 +2,8 @@
 
 O host (Hyprland, fone no Fifine, monitor DP-1) ficou sem screenshot e com volume irregular. Este arquivo é o mapa do que foi instalado e configurado para isso. Não descreve as WorkVMs.
 
+Passthrough da RTX 3060 → Win11 (jogos): ver `host-gpu-passthrough.md`.
+
 O que vale em toda VM nova está no `vm-setup.sh` e no `.config/`. O áudio do Fifine fica só nesta máquina (`~/.config/easyeffects/`).
 
 ## Rede das WorkVMs (UFW + libvirt)
