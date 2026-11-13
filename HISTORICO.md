@@ -12,7 +12,7 @@ Problema resolvido entra aqui.
   - **vGPU descartado** para este objetivo; caminho = **passthrough 1:1**.
   - **Smoke na guest (grátis):** Unigine Heaven → depois CS2 ou War Thunder.
   - **Atenção de hardware:** 3060 medida em **PCIe Gen1 ×4** (nativo 4.0 ×16) — provavelmente slot chipset no Z690; para jogos na VM o passthrough ainda funciona, mas o link fraco limita banda. Confirmar slot físico / bifurcation.
-  - **Runbook:** `host-gpu-passthrough.md` (checklist filtrado do Arch Wiki OVMF). Tarefas em `life.md`.
+  - **Runbook:** `host-gpu-passthrough.md` (checklist filtrado do Arch Wiki OVMF + vídeo [Akita / Akitando #137](https://youtu.be/IDnabc3DjYY)). Tarefas em `life.md`.
 
 ## Own-card handoff: coverage antes do pre-QA
 

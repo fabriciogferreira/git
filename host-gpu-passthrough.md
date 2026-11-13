@@ -174,6 +174,32 @@ Script bind/unbind dinâmico do wiki (§ Isolating) é alternativa a “sempre v
 
 ## Referências
 
+### Vídeo (orientação)
+
+- **[Games em Máquina Virtual com GPU Passthrough \| Entendendo QEMU, KVM, Libvirt](https://youtu.be/IDnabc3DjYY)** — Fabio Akita (Akitando #137, ~68 min, 2023). Em PT; percorre o mesmo fluxo do [wiki OVMF](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF) com contexto e XML de exemplo.
+  - Setup dele (≠ jarvis): host **Manjaro** na **RX 6400**; guest Win11 com **RTX 3090** isolada. Aqui: host Omarchy/Hyprland na **5060**; guest com **3060**.
+  - Atalhos úteis do vídeo ↔ este runbook:
+
+| Cap. (aprox.) | Tema | Nosso passo |
+| --- | --- | --- |
+| 08:26 | IOMMU + grupos + `gpu-passthrough-manager` (AUR, só GRUB) | **1–3** (no jarvis preferir wiki/manual; tool é opcional) |
+| 17:57–19:51 | Virt-Manager + OVMF/UEFI | **4–5** |
+| 23:06 / 38:58 | Pinagem de CPU + cgroups | **9** (depois do smoke) |
+| 45:32 | SPICE/QXL (display virtual) | útil até a 3060 pintar; depois remove |
+| 47:22 | Áudio Pulse/PipeWire | opcional se não usar HDMI da 3060 |
+| 50:01 | PCI passthrough NVIDIA | **6** |
+| 50:27 | Teclado/mouse **evdev** | **9** |
+| 52:47 | Win + ISO **virtio-win** | **5** |
+| 57:15 | Games / performance | **8** |
+| 57:53 | Anti-cheat (ex. Elden Ring) → dual boot | aceitar limite; não é bug do VFIO |
+| 01:00:24 | Monitor 2 inputs (DDC) | cabo/entrada na 3060 |
+| 01:03:08 | Suspend do host com VM ligada | hook / inhibit |
+
+  - XML completo que ele mostra: [gist akitaonrails](https://gist.github.com/akitaonrails/d4d98b03f1126c81a20eb3ea57027ad2) (adaptar IDs `08:00.*` / CPU pin do 13700K — não copiar cego).
+  - Transcrição / links: [akitando 137](https://www.akitaonrails.com/2023/02/01/akitando-137-games-em-maquina-virtual-com-gpu-passthrough-entendendo-qemu-kvm-libvirt).
+
+### Wiki / docs
+
 - [PCI passthrough via OVMF](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF)
 - [PCI passthrough via OVMF/Examples](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF/Examples)
 - [QEMU/Guest graphics acceleration](https://wiki.archlinux.org/title/QEMU/Guest_graphics_acceleration) (Looking Glass)
