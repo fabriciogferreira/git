@@ -111,43 +111,47 @@ nvidia-smi -L
 
 ### 4. Pacotes e libvirt (sistema)
 
-- [ ] `qemu-desktop` `libvirt` `edk2-ovmf` `virt-manager` (+ `dnsmasq` se rede default).
-- [ ] Seguir `Libvirt#Configuration` do Arch (usuário no grupo, socket, etc.).
-- [ ] Firmware da guest: **UEFI (OVMF)** — não SeaBIOS.
-- [ ] Preferir sessão **system** no virt-manager para OVMF não ficar cinza (wiki). Se o resto do lab usa `qemu:///session`, decidir uma domain Win11 em system **ou** garantir OVMF/user docs equivalentes — anotar aqui o URI escolhido.
+**Já no jarvis:** `qemu-desktop` `libvirt` `edk2-ovmf` `virt-manager` `dnsmasq`.
+
+- [ ] `libvirtd` / socket ok; usuário no grupo certo (`Libvirt#Configuration`).
+- [ ] Preferir sessão **QEMU/KVM** (system) no Virt-Manager se OVMF ficar cinza na user session.
+- [ ] Rede: `default` (NAT) basta pro smoke; Bridge só se precisar de IP “como máquina física”.
 
 ### 5. Criar / preparar a guest Win11
 
-- [ ] VM nova (ou existente): **Customize before install** → Overview → Firmware **UEFI**.
-- [ ] CPU: `host-passthrough` (`virt-xml NOME --edit --cpu host-passthrough`).
-- [ ] Instalar Windows com ISO em `~/Downloads/isos/`; virtio drivers ([Fedora virtio-win](https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/)) para disco/rede se for o caso.
-- [ ] Desligar a VM.
+(Alinhado ao fluxo do Akita + wiki; chipset/TPM que o video enfatiza.)
+
+- [ ] Nova VM → ISO `~/Downloads/isos/Windows11_*.iso` → **Customize before install**.
+- [ ] Overview: chipset **Q35**, firmware **UEFI / OVMF** (com Secure Boot se a lista do OVMF tiver; Win11 gosta).
+- [ ] Add Hardware → **TPM**: emulado, modelo **TIS**, versão **2.0**.
+- [ ] CPU: `host-passthrough` (ajuste fino de pin/cgroups = passo 9).
+- [ ] Disco: bus **VirtIO**; baixar ISO [virtio-win](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/) e anexar como **CD-ROM SATA** (junto com a ISO do Windows em SATA). No instalador: **Load driver** → pasta `amd64` do virtio (vioscsi / viostor) até o disco aparecer.
+- [ ] Deixar **Display SPICE + Video QXL/Virtio** só na instalação (streaming na janela do Virt-Manager).
+- [ ] Instalar Windows → Device Manager: instalar resto dos virtio do CD → reboot guest → **desligar**.
 
 ### 6. Anexar a 3060 (PCI hostdev)
 
-- [ ] Em virt-manager: Add Hardware → **PCI Host Device** → `08:00.0` e `08:00.1` (o par).
-- [ ] Ou XML `hostdev` managed para os dois.
-- [ ] Remover (quando for display só na 3060): QXL/spice video se conflitar; **manter** um caminho de input no host.
-- [ ] Ligar: splash **OVMF** no monitor da 3060 = sucesso deste passo.
+- [ ] Add Hardware → **PCI Host Device** → `08:00.0` **e** `08:00.1` (sem o áudio a guest pode falhar o boot — Akita/wiki).
+- [ ] Cabo no monitor na **3060** (segunda entrada HDMI/DP). Sem tela física, SPICE não substitui o jogo.
+- [ ] Ligar: splash **OVMF** / Windows no monitor da 3060 = sucesso deste passo.
+- [ ] Depois dos drivers NVIDIA (passo 7): remover SPICE/QXL pelo XML se o Virt-Manager recusar — guest passa a usar só a 3060.
 
 ### 7. Guest Windows: driver NVIDIA
 
-- [ ] Instalar driver GeForce na guest.
-- [ ] Se Error 43 / tela preta (comum em GeForce + KVM), no XML:
+- [ ] Instalar GeForce (site NVIDIA / GeForce Experience).
+- [ ] Se Error 43 / tela preta, no XML:
 
 ```xml
 <features>
   <hyperv>
     <vendor_id state='on' value='randomid'/>
   </hyperv>
-  <!-- drivers NVIDIA antigos (<465) também: -->
+  <!-- drivers NVIDIA antigos (<465): -->
   <kvm>
     <hidden state='on'/>
   </kvm>
 </features>
 ```
-
-(Hoje drivers ≥465: `vendor_id` ainda é o mais citado; `kvm hidden` só se ainda falhar.)
 
 - [ ] Device Manager: 3060 ok, sem Code 43.
 
@@ -155,19 +159,21 @@ nvidia-smi -L
 
 - [ ] **Unigine Heaven** — vê a 3060 e FPS.
 - [ ] **CS2** ou **War Thunder**.
-- [ ] Anotar resultado em `life.md` / fechar a tarefa de passthrough.
+- [ ] **Anti-cheat:** vários jogos online (ex. Elden Ring Easy Anti-Cheat, Valorant) detectam VM e bloqueiam — não é falha do passthrough. Offline / dual-boot nativo se precisar (Akita).
+- [ ] Anotar resultado em `life.md` / fechar a tarefa.
 
 ### 9. Depois (opcional — não bloqueia o 1º smoke)
 
-| Tema | Quando | Wiki |
-| --- | --- | --- |
-| Evdev / Looking Glass | 1 teclado+mouse host↔guest | Evdev / Looking Glass |
-| CPU pin + isolcpus | stutter / latência | Performance tuning |
-| Virtio disk/net | IO/rede | Virtio |
-| Melhorar PCIe da 3060 | Gen1×4 | Slot CPU x8/x8; ver `life.md` |
-| Áudio HDMI da 3060 | crepitação | MSI interrupts na guest |
-| ACS override | grupo IOMMU sujo | Só se necessário |
-
+| Tema | Nota prática (Akita / wiki) |
+| --- | --- |
+| **Evdev** | Um teclado+mouse: `/dev/input/by-id/*event*`; `cat` no device enquanto mexe pra achar o certo; toggle padrão **Ctrl esq+dir**. |
+| **CPU pin + cgroups** | `lscpu -e` / `lstopo`; pin no mesmo L3; hook libvirt `started`/`release` com `systemctl set-property … AllowedCPUs=` (script no wiki / vídeo). 13700K = P+E cores — mapear com cuidado. |
+| **cpupower** | `performance` enquanto joga. |
+| **ddcutil** | Trocar input do monitor sem botão físico (`detect` / `setvcp 60 …`; códigos HDMI variam por modelo). |
+| **Suspend do host** | Host “idle” com guest ligada → dorme e congela a VM. Desligar suspend (gsettings / inhibit / hook) enquanto a Win11 estiver up. |
+| **Áudio** | PipeWire costuma falar com o backend pulse do QEMU; HDMI da 3060 = áudio no guest. |
+| **PCIe 3060 Gen1×4** | Melhorar slot depois; ver `life.md`. |
+| **Huge pages / iothreads / USB hub** | Wiki OVMF § performance; Akita pula no vídeo mas cita. |
 ---
 
 ## Desfazer isolamento (host volta a ver a 3060)
@@ -185,31 +191,34 @@ Script bind/unbind dinâmico do wiki (§ Isolating) é alternativa a “sempre v
 
 ### Vídeo (orientação)
 
-- **[Games em Máquina Virtual com GPU Passthrough \| Entendendo QEMU, KVM, Libvirt](https://youtu.be/IDnabc3DjYY)** — Fabio Akita (Akitando #137, ~68 min, 2023). Em PT; percorre o mesmo fluxo do [wiki OVMF](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF) com contexto e XML de exemplo.
-  - Setup dele (≠ jarvis): host **Manjaro** na **RX 6400**; guest Win11 com **RTX 3090** isolada. Aqui: host Omarchy/Hyprland na **5060**; guest com **3060**.
-  - Atalhos úteis do vídeo ↔ este runbook:
+- **[Games em Máquina Virtual com GPU Passthrough \| Entendendo QEMU, KVM, Libvirt](https://youtu.be/IDnabc3DjYY)** — Fabio Akita (Akitando #137, ~68 min, 2023). Em PT. **Não é passo a passo único** (palavras dele); é aula de conceitos + demo. Checklist acima = o que fazer no jarvis; o vídeo explica o *porquê*.
+  - Setup dele (≠ jarvis): host **Manjaro** + **RX 6400**; guest Win11 + **RTX 3090** em VFIO. Aqui: host **Omarchy/Hyprland** + **5060**; guest + **3060**. Ele usa `gpu-passthrough-manager` (AUR, GRUB); nós usamos Limine + `host-files/`.
+  - Post + links + gist XML: [akitando 137](https://www.akitaonrails.com/2023/02/01/akitando-137-games-em-maquina-virtual-com-gpu-passthrough-entendendo-qemu-kvm-libvirt) · [gist XML](https://gist.github.com/akitaonrails/d4d98b03f1126c81a20eb3ea57027ad2) (adaptar IDs/`cpuset` do 13700K — **não** copiar cego).
+  - Transcrição completa ficou no chat do agente (2026-11-13); extrato útil já absorvido nos passos 5–9 deste arquivo.
 
-| Cap. (aprox.) | Tema | Nosso passo |
+| Cap. (aprox.) | Tema no vídeo | Nosso passo |
 | --- | --- | --- |
-| 08:26 | IOMMU + grupos + `gpu-passthrough-manager` (AUR, só GRUB) | **1–3** (no jarvis preferir wiki/manual; tool é opcional) |
-| 17:57–19:51 | Virt-Manager + OVMF/UEFI | **4–5** |
-| 23:06 / 38:58 | Pinagem de CPU + cgroups | **9** (depois do smoke) |
-| 45:32 | SPICE/QXL (display virtual) | útil até a 3060 pintar; depois remove |
-| 47:22 | Áudio Pulse/PipeWire | opcional se não usar HDMI da 3060 |
-| 50:01 | PCI passthrough NVIDIA | **6** |
-| 50:27 | Teclado/mouse **evdev** | **9** |
-| 52:47 | Win + ISO **virtio-win** | **5** |
-| 57:15 | Games / performance | **8** |
-| 57:53 | Anti-cheat (ex. Elden Ring) → dual boot | aceitar limite; não é bug do VFIO |
-| 01:00:24 | Monitor 2 inputs (DDC) | cabo/entrada na 3060 |
-| 01:03:08 | Suspend do host com VM ligada | hook / inhibit |
+| 00:44 | Setup físico / por que VFIO ≠ dual boot | contexto |
+| 08:26 | IOMMU, grupos, VFIO stub | **1–3** (feito) |
+| 13:46 | Redes virtuais (NAT vs bridge) | **4** |
+| 17:57–19:51 | Virt-Manager, Q35, OVMF, TPM 2.0 | **5** |
+| 23:06 / 33:01 / 38:58 | QEMU vs KVM vs libvirt; pin + cgroups | **9** |
+| 45:32 | SPICE / QXL (instalação) → remover depois | **5–6** |
+| 47:22 | Áudio Pulse/PipeWire | **9** |
+| 50:01 | PCI NVIDIA + áudio do mesmo grupo | **6** |
+| 50:27 | Evdev (Ctrl×2) | **9** |
+| 52:47 | virtio-win ISO + Load driver | **5** |
+| 57:15 | Games | **8** |
+| 57:53 | Anti-cheat → dual boot / offline | **8** |
+| 01:00:24 | `ddcutil` input do monitor | **9** |
+| 01:03:08 | Suspend do host + `virsh start` wrapper | **9** |
 
-  - XML completo que ele mostra: [gist akitaonrails](https://gist.github.com/akitaonrails/d4d98b03f1126c81a20eb3ea57027ad2) (adaptar IDs `08:00.*` / CPU pin do 13700K — não copiar cego).
-  - Transcrição / links: [akitando 137](https://www.akitaonrails.com/2023/02/01/akitando-137-games-em-maquina-virtual-com-gpu-passthrough-entendendo-qemu-kvm-libvirt).
+**Ideias que ele enfatiza e o checklist já cobre:** IOMMU = endereço virtual pro guest falar com o device sem a CPU host no meio; VFIO = “plugue” até a VM ligar; instalar Win com SPICE e **só então** cravar a GPU; virtio = guest *sabe* que é VM (paravirt); pinagem = mesmo L3 + host fora desses cores só enquanto a guest roda; monitor com 2 inputs = host na 5060, guest na 3060.
 
 ### Wiki / docs
 
 - [PCI passthrough via OVMF](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF)
 - [PCI passthrough via OVMF/Examples](https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF/Examples)
+- [GPU passthrough (Gentoo)](https://wiki.gentoo.org/wiki/GPU_passthrough_with_libvirt_qemu_kvm) (Akita recomenda como complemento)
 - [QEMU/Guest graphics acceleration](https://wiki.archlinux.org/title/QEMU/Guest_graphics_acceleration) (Looking Glass)
 - Estado / tarefas: `life.md` · decisão: `HISTORICO.md`
