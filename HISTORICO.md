@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## PRs extras sem campo de formulário → conteúdo do card
+
+- **problema:** Televisão (e o mesmo padrão em Locav/Olie) tem mais repositórios com PR do que campos **Pull Request (front)/(back)**; meet/outros PRs ficavam só no relatório do chat.
+- **por que é um problema:** o board não mostra o link; revisor e autor perdem o PR sem campo dedicado.
+- **resolvido como:** `workflow-policy` + `pre-qa` (Olie/Locav/Televisão): form quando o label casa; senão append dos URLs no conteúdo do projeto via `edit-project-tool` (sem inventar campo). Sincronizado em `config.prompts` no Opbed.
+
 ## Own-card handoff: coverage antes do pre-QA
 
 - **problema:** depois do mutation o handoff próprio recomendava `pre-qa.md`; `coverage-testing.md` existia mas era opcional e não bloqueava `next prompt`.

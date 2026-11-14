@@ -224,6 +224,13 @@ When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prom
 - If a prompt is dirty that way, restore it (`git checkout -- path`) before the commit.
 - Intentional prompt wording changes are fine; leave `{{ code }}` (and the other placeholders) intact.
 
+## Pull request links on the card
+
+Olie cards often have fewer form fields for PR URLs than repositories that can change on one card (`olie-fronts`, `api-main`, `backoffice`, `landing`, `websocket`, … — never `docs`). After each required PR exists and is verified:
+
+1. Write each PR URL into a matching dynamic-form field when one exists (`get-model-dynamic-forms-tool` → `get-form-answers-tool` → `set-form-answers-tool`). Match by field label to the repository; do not invent fields. Value shape follows the form (commonly an array of one URL).
+2. **PRs without a form field.** When this card has more verified PRs than matching form fields, append the unmatched URLs to the **project content** (card description) with MCP `edit-project-tool`: read the current description from `get-project-details-tool`, keep all existing text, and append a short Brazilian Portuguese block listing each unmatched repo name and its PR URL. Also list those URLs in the final report. Never wipe the prior description.
+
 ## Card content vs chat (private prompts)
 
 Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.

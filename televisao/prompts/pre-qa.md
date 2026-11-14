@@ -155,6 +155,7 @@ Example: for `feature/teste-123`, select the label closest to `feature`.
 - [ ] After every required PR exists, `gh pr edit` each body so **PR(s) relacionados** has the other PR URL. If this card changes only one repository, mark **Não se aplica**.
 - [ ] Verify that the pull request exists (`gh pr view`), targets the correct base branch, contains the intended commits, and the body still has the template headings, the card link, and the related PR URL when one exists.
 - [ ] After those PRs are verified, write **Pull Request (front)** and **Pull Request (back)** with `set-form-answers-tool`, using **Code review form** in `~/git/televisao/prompts/workflow-policy.md`. Read the fields back and confirm the stored URLs.
+- [ ] If this card also opened PRs for repositories without a matching form field (e.g. `televisao-meet-front`, `televisao-meet-core`), append those URLs to the project content per **PRs without a form field** in `~/git/televisao/prompts/workflow-policy.md`.
 
 Do not assume that a pull request was created successfully merely because a creation action was attempted. Verify its existence and configuration through `gh pr view`.
 

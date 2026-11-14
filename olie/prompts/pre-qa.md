@@ -240,6 +240,7 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 - [ ] Resolve **incoming restrictions** for the destination 'QA/CR' step **before** moving. In particular, answer the step form that asks whether api-main Postman documentation must be updated (`Sim` / `Não`) from the Phase 2 determination — use `get-model-dynamic-forms-tool` / `get-form-answers-tool` then `set-form-answers-tool` (see **Moving a card on the board** in `~/git/olie/prompts/workflow-policy.md`). Do not call the move while a required destination-step field is still empty.
 - [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
+- [ ] Record every verified PR URL on the card per **Pull request links on the card** in `~/git/olie/prompts/workflow-policy.md`: matching form fields when they exist; otherwise append unmatched PR URLs to the project content (do not invent fields).
 - [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using the stage-resolution and move procedure in `~/git/olie/prompts/workflow-policy.md` (prefer MCP `move-project-to-funnel-step-tool`; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.
 - [ ] Verify the card's current stage is 'QA/CR' after the move.
 
