@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Checklist manual Olie → prompts
+
+- **problema:** o checklist antigo (planejamento de impactos, loop front `frame_id`/permissão/i18n, limpeza de comentários de debug, triage de correção) vivia só na cabeça; os prompts cobriam parte disso e deixavam gaps.
+- **por que é um problema:** o agente planejava sem forçar meios/requests/telas; validação de tenant focava no backend; pre-QA só tirava `console`; correção absorvia achados fora de escopo sem freio.
+- **resolvido como:** reforço pontual em `implementation` (§4.3 + §8), `implementation-validation` (`multitenancy`/`front-back`), `pre-qa` (comentários de debug + sem regressão visual), `correction` (triage in-scope/simple/out-of-scope + stop se >3 findings novos). Sync `config.prompts` no Opbed. Sem prompt novo de checklist. O mesmo espelho em Locav (`project_id` 4) e Televisão (`project_id` 6), trocando `frame_id`/`pt-br` por ownership/`autorizacao` do produto; sync Opbed nos dois.
+
 ## PRs extras sem campo de formulário → conteúdo do card
 
 - **problema:** Televisão (e o mesmo padrão em Locav/Olie) tem mais repositórios com PR do que campos **Pull Request (front)/(back)**; meet/outros PRs ficavam só no relatório do chat.

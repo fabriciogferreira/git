@@ -72,7 +72,7 @@ Two reviewers run on every card:
 
 | Reviewer | When | What it does |
 | --- | --- | --- |
-| `multitenancy` | Always | Hunt queries without `frame_id`, policies without `ensureModelFrameId`, and any path that can leak another tenant's data. Highest-severity risk in this codebase. |
+| `multitenancy` | Always | Hunt queries without `frame_id`, policies without `ensureModelFrameId`, and any path that can leak another tenant's data. When `olie-fronts` changed, also check that new or changed HTTP calls send `frame_id` (or the project's established tenant context) whenever the matching API path scopes by frame — omit/wrong frame is the same class of leak. Highest-severity risk in this codebase. |
 | `advogado-do-diabo` | Always | Challenge the card's premises, find ignored edge cases, and ask whether the delivery is actually mature. |
 
 Optional reviewers — add when the delivery needs them:
@@ -82,7 +82,7 @@ Optional reviewers — add when the delivery needs them:
 | `segurança` | On demand | Auth, authorization, data exposure, new attack surface. |
 | `integridade` | On demand | Logic, bugs, error paths, migrations, side effects. |
 | `requisitos` | On demand | Confront the local change with the spec attached to the card, item by item. |
-| `front-back` | On demand | Cross-repo contract: payload, type, response shape, errors. |
+| `front-back` | On demand | Cross-repo contract: payload, type, response shape, errors. When both sides changed, confirm the front's request includes every tenant/frame field the backend requires for the new or changed endpoints. |
 | `performance` | On demand | When the card touches queries, listings, jobs, or volume. |
 
 Without an attached spec or PRD as card media, the Requirements criterion has nothing solid to check against. Say so explicitly; do not invent acceptance criteria from the title or a vague description.

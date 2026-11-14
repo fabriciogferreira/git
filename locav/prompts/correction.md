@@ -103,6 +103,14 @@ The plan must include:
 - A checklist of small, independently reviewable tasks.
 - A section titled 'Issues encountered during development'.
 
+**Scope triage (every finding and every extra defect you discover):** classify each item before it enters the checklist:
+
+- **In-scope** — clearly part of the return / the card's acceptance criteria → fix in this pass.
+- **Simple** — outside the original ask but a small, local fix with no product decision → fix in this pass and note it.
+- **Out-of-scope** — needs a product decision, a larger change, or a separate delivery → do **not** fix here; propose a new card (or ask the user) instead.
+
+Count **new** findings discovered during this correction (defects you found that were not in the reviewer's return). If that count is greater than **3**, stop before expanding the plan: report the list, explain why so many extras appeared (weak card tasks, incomplete first implementation, or review noise), and wait for instructions instead of absorbing unbounded scope.
+
 Order the checklist by dependencies. Ensure that prerequisite tests, code changes, and integration checks are planned in the correct sequence.
 
 Each item should describe one concrete task and have a clear completion condition.
@@ -191,6 +199,8 @@ The correction work is complete only when:
 At completion, provide a concise report containing:
 
 - The issues corrected.
+- Scope triage summary: in-scope / simple / out-of-scope (and any suggested new cards).
+- How many **new** findings (not in the reviewer's return) were discovered; if that count was greater than 3 and work stopped, say so explicitly.
 - The files and repositories changed.
 - The tests created or updated and their results.
 - Any unresolved issues or verification limitations.

@@ -103,6 +103,13 @@ The document must include:
 - Potential risks, dependencies, and regression scenarios.
 - A section titled 'Issues encountered during development'.
 
+When the card touches a frontend (`televisao-front`, `televisao-meet-front`) or any HTTP/API path, the plan must also document these four items (agent plan only — do not paste them into card content):
+
+- **Means:** every path through which the action can happen (UI control, API route, job, webhook, keyboard submit, deep link, etc.).
+- **Request / performance impacts:** expected calls (including N+1 or two-or-more of the same request), whether debounce or duplicate-submit guards are needed, and any listing/query volume concern.
+- **Screens and why:** which screens or flows change and why each is in scope.
+- **Foreseen problems:** defects or regressions you expect before coding, with a mitigation or checklist item when known.
+
 The checklist must contain small, independently reviewable tasks, ordered by dependency. Include testing, documentation, and verification tasks where applicable.
 
 Do not begin implementation until the plan is documented and presented for review.
@@ -158,6 +165,11 @@ Follow the project's existing architecture, conventions, and established pattern
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
 - When the card has a report, reproduce that problem on the hosted preview in the next section. Local `localhost` does not stand in for that check.
+
+When the card changes `televisao-front` or `televisao-meet-front`, treat these as checklist items whenever they apply to a changed call or UI path (do not invent unrelated work):
+
+- **Ownership / auth context:** the front sends the identifiers the API uses to scope data (clinic, doctor, patient, consultation, or the project's established ownership fields) on requests that require them.
+- **Permission:** the UI respects the same authorization gate the backend enforces (hide/disable or fail clearly; do not assume the API alone is enough for the card's UX).
 
 **Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/televisao/prompts/workflow-policy.md` when it applies.
 

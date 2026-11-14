@@ -101,6 +101,13 @@ The document must include:
 - Potential risks, dependencies, and regression scenarios.
 - A section titled 'Issues encountered during development'.
 
+When the card touches the frontend (`olie-fronts`) or any HTTP/API path, the plan must also document these four items (agent plan only — do not paste them into card content):
+
+- **Means:** every path through which the action can happen (UI control, API route, job, webhook, keyboard submit, deep link, etc.).
+- **Request / performance impacts:** expected calls (including N+1 or two-or-more of the same request), whether debounce or duplicate-submit guards are needed, and any listing/query volume concern.
+- **Screens and why:** which screens or flows change and why each is in scope.
+- **Foreseen problems:** defects or regressions you expect before coding, with a mitigation or checklist item when known.
+
 The checklist must contain small, independently reviewable tasks, ordered by dependency. Include testing, documentation, and verification tasks where applicable.
 
 Do not begin implementation until the plan is documented and presented for review.
@@ -187,6 +194,12 @@ Follow the project's existing architecture, conventions, and established pattern
 - Run appropriate tests and verification commands for the current checklist item when the environment permits.
 - Clearly distinguish successful checks from checks that failed, were skipped, or could not run.
 - Document any verification limitations in the plan.
+
+When the card changes `olie-fronts`, treat these as checklist items whenever they apply to a changed call or UI path (do not invent unrelated work):
+
+- **Tenant / `frame_id`:** the front sends `frame_id` (or the project's established tenant context) on requests that the API scopes by frame.
+- **Permission:** the UI respects the same permission gate the backend enforces (hide/disable or fail clearly; do not assume the API alone is enough for the card's UX).
+- **i18n:** new or changed user-facing copy uses keys in `pt-br.json` only.
 
 **Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/olie/prompts/workflow-policy.md` when it applies.
 

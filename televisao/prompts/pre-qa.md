@@ -25,6 +25,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 ### 2.2. Code Quality
 
 - [ ] Check for `console` statements in the code. Remove unintended debugging statements and retain only those explicitly justified by the project's logging conventions.
+- [ ] Check the branch diff for temporary or debug comments introduced by this work (`<!--`, `//`, `/*`, `#`, and equivalents). Remove those leftovers; do not strip pre-existing explanatory comments unrelated to this card.
 - [ ] Check for duplicate enums, especially in `televisao-api`. Reuse existing enums where appropriate instead of introducing redundant definitions.
 - [ ] Review the implementation for unnecessary duplication, regressions, edge cases, and inconsistencies with existing project conventions.
 - [ ] Verify that the implementation satisfies the card's requirements and does not introduce unrelated changes.
@@ -33,6 +34,7 @@ Do not mark a check as complete unless the corresponding action has been perform
 
 - [ ] Prefer components the front already uses over ad-hoc dialogs or forms.
 - [ ] Verify that the implementation follows the established frontend architecture, component conventions, and error-handling patterns.
+- [ ] Do not change layout or styling unless the card asks for it. Unrelated visual diffs are a fail for this phase.
 
 ### 2.4. Repository-Specific Checks
 
