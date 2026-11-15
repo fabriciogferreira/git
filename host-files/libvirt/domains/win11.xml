@@ -1,14 +1,6 @@
 <!--
-  Snapshot of domain win11 on jarvis (2026-11-13) for reinstall / new host.
-  Copy into libvirt (system session), then fix paths if needed:
-    sudo virsh define ~/git/host-files/libvirt/domains/win11.xml
-  Or: virt-manager → open XML.
-
-  Requires on the host first: IOMMU + VFIO on 08:00.0/08:00.1 (see host-gpu-passthrough.md),
-  OVMF secboot firmware, disk image, ISO, and optionally cpu-pin hook + cpu-pin.env.
-
-  Known issue in this snapshot: <vcpu>6</vcpu> with 12 vcpupin lines — prefer
-  <vcpu placement="static">12</vcpu> and <iothreads>2</iothreads> (see win11.cpu-pin.snippet.xml).
+  Snapshot of domain win11 on jarvis for reinstall / copy-paste into virt-manager.
+  virtio-win ISO must be device=cdrom bus=sata so Windows Setup can Browse for drivers.
 -->
 <domain type="kvm">
   <name>win11</name>
@@ -20,7 +12,8 @@
   </metadata>
   <memory>8388608</memory>
   <currentMemory>8388608</currentMemory>
-  <vcpu current="6">6</vcpu>
+  <vcpu placement="static">12</vcpu>
+  <iothreads>2</iothreads>
   <cputune>
     <!-- QEMU emulator thread -->
     <emulatorpin cpuset="0-1"/>
@@ -106,12 +99,18 @@
     <disk type="file" device="disk">
       <driver name="qemu" type="qcow2" discard="unmap"/>
       <source file="/var/lib/libvirt/images/win11.qcow2"/>
-      <target dev="sda" bus="sata"/>
+      <target dev="vda" bus="virtio"/>
     </disk>
     <disk type="file" device="cdrom">
       <driver name="qemu" type="raw"/>
       <source file="/home/fabricio/Downloads/isos/Windows11_Client_x64_pt-br_26300_9457.iso"/>
       <target dev="sdb" bus="sata"/>
+      <readonly/>
+    </disk>
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw"/>
+      <source file="/home/fabricio/Downloads/virtio-win-0.1.302.iso"/>
+      <target dev="sdc" bus="sata"/>
       <readonly/>
     </disk>
     <controller type="usb" model="qemu-xhci" ports="15"/>

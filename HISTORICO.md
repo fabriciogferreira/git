@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host: Astah UML 12 via Distrobox
+
+- **problema:** o Astah UML 12 chega em `.deb` e exige Adoptium Temurin 25.0.3 (recusa JDK 26+). O host é Omarchy/Arch; o `.deb` não instala aqui, e a sessão não está no grupo `docker`.
+- **por que é um problema:** sem um Debian com esse JDK, o modelador não abre na sessão Hyprland. Usar o Docker das WorkVMs mistura o app gráfico com o daemon root e exige grupo `docker`.
+- **resolvido como:** Distrobox `astah-uml` em `debian:13` com Podman rootless, Temurin 25.0.3+9 em `/usr/lib/jvm/temurin-25`, `dpkg` com `DEBIAN_FRONTEND=passthrough` (o `preinst` trata resposta vazia como não), `PATH` do launcher apontando para esse JDK, e `distrobox-export` do atalho **astah\* UML** mais `~/.local/bin/astah-uml`. A janela branca no Hyprland era o AWT sem `_JAVA_AWT_WM_NONREPARENTING=1` no script `/usr/lib/astah_uml/astah-uml`. Runbook: `host-astah-uml.md`.
+
 ## Host: passthrough RTX 3060 → VM Windows 11 (jogos)
 
 - **problema:** quero **jogar em VM Windows 11** usando uma das duas RTX do host; GeForce de consumo **não** oferece vGPU — compartilhar a mesma placa entre duas VMs de jogo não funciona.

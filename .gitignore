@@ -30,6 +30,7 @@ vm.local.conf
 !life.md
 !host-setup.md
 !host-gpu-passthrough.md
+!host-astah-uml.md
 !host-files/
 !host-files/**
 # Secrets locais de sessão (OLIE_FLOW_AI_MCP_TOKEN, OLIE_MANAGEMENT_TOKEN etc.) — nunca versionar
