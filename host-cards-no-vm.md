@@ -163,7 +163,7 @@ Hooks (compose slim + Cursor):
 | Projeto | ensure | destroy |
 | --- | --- | --- |
 | olie | `olie/sandbox/host-card-ensure.sh` — compose slim + Vite front; DNS `api.{slug}.olie.localhost` / `devframe.{slug}.olie.localhost` via Caddy (`lib/host-card-proxy.sh`) | `host-card-destroy.sh` — `compose down -v` + reload proxy |
-| televisao | `televisao/sandbox/host-card-ensure.sh` — idem com `~/git/televisao` | idem |
+| televisao | `televisao/sandbox/host-card-ensure.sh` — `compose.host.yml` (pgsql + Laravel + Next); DNS `api|devframe.{slug}.olie.localhost` | idem |
 | locav | ainda sem hook compose (só workspace/estado) | genérico |
 
 `WORKVM_HOST_CARD_OPEN_CURSOR=0` pula abrir o Cursor. Default: abre

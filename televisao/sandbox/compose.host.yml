@@ -1,0 +1,120 @@
+# Stack host-card Televisão (navegável no jarvis, sem WorkVM).
+# Problema: compose.slim.yml só sobe php -S no meta-dir — browser em
+# :port_base devolve 404; o card precisa de API Laravel + Next como na VM.
+# Sem container_name; portas via SB_PORT_*; volumes/rede pelo COMPOSE_PROJECT_NAME.
+# O slim continua para Pest/sandbox na Card VM.
+
+services:
+  postgresql:
+    image: postgres:17.5-bookworm
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-db_televisao}
+      POSTGRES_USER: ${DB_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - hc_pgsql:/var/lib/postgresql/data
+    networks: [hc_net]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -q -d $${POSTGRES_DB} -U $${POSTGRES_USER}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8.8.0-trixie
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - hc_redis:/data
+    networks: [hc_net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ${SB_API}
+      # Fora do context: stage composer do clone falha sem ext-bcmath
+      dockerfile: ${SB_DOCKERFILE}
+      target: api
+    image: ${HC_BACKEND_IMAGE:-televisao-backend:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    volumes:
+      - ${SB_API}:/srv
+    ports:
+      - "${SB_PORT_API}:8000"
+    environment:
+      PSYSH_CONFIG: /srv/psysh.php
+      DB_CONNECTION: pgsql
+      DB_HOST: postgresql
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-db_televisao}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      BROADCAST_CONNECTION: log
+      APP_URL: ${APP_URL:-http://127.0.0.1:${SB_PORT_API}}
+      FRONTEND_URL: ${FRONTEND_URL:-http://127.0.0.1:${SB_PORT_FRONT}/}
+      PATH: /srv/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # setup.sh: composer se faltar vendor, migrate/seed, artisan serve
+    entrypoint: ["/bin/sh", "/srv/setup.sh"]
+    command: ["true"]
+    networks: [hc_net]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:8000/up > /dev/null || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
+
+  frontend:
+    image: oven/bun:1.2.15-alpine
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    volumes:
+      - ${SB_FRONT}:/srv
+      - ${SB_FRONT_ENV}:/srv/.env.local:ro
+    ports:
+      - "${SB_PORT_FRONT}:3000"
+    environment:
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+    # next no package.json já usa turbopack; hostname p/ bind no container
+    entrypoint: ["sh", "-c"]
+    command:
+      [
+        "bun install && bun run dev -- --hostname 0.0.0.0 --port 3000",
+      ]
+    depends_on:
+      - backend
+    networks: [hc_net]
+
+networks:
+  hc_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_hc_net
+
+volumes:
+  hc_pgsql:
+    name: ${COMPOSE_PROJECT_NAME}_pgsql
+  hc_redis:
+    name: ${COMPOSE_PROJECT_NAME}_redis

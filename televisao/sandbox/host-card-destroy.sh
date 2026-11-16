@@ -1,4 +1,4 @@
-# Hook Televisão: derruba o compose slim do host-card.
+# Hook Televisão: derruba o compose do host-card (host ou slim legado).
 # Sourced by lib/host-card.sh — define workvm_host_card_destroy_hook.
 
 workvm_host_card_destroy_hook() {
@@ -24,9 +24,8 @@ workvm_host_card_destroy_hook() {
             [ -f .env ] && source .env
             set +a
             export COMPOSE_PROJECT_NAME="$pname"
-            docker compose --profile slim down -v --remove-orphans 2>/dev/null \
-                || docker compose down -v --remove-orphans 2>/dev/null \
-                || true
+            docker compose --profile slim down -v --remove-orphans 2>/dev/null || true
+            docker compose down -v --remove-orphans 2>/dev/null || true
         ) || true
     elif [ -n "$pname" ] && command -v docker >/dev/null 2>&1; then
         docker compose -p "$pname" down -v --remove-orphans 2>/dev/null || true

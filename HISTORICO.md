@@ -970,3 +970,9 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** em `APP_ENV=local` o secret real rejeita o token fake do Playwright (`Token inválido`), e a site key de development ainda abre desafio do Google no browser do agente — comentar PHP/`getToken()` era tentador e arriscava commit
 - **por que é um problema:** e2e e login no Cursor param no captcha; bypass em código suja o diff e foge do prompt
 - **resolvido como:** par de teste público do Google só em env — `RECAPTCHA_SECRET` no `.env` do `api-main` (backup em `~/.config/workvm/`) e, para UI, `VITE_APP_RECAPTCHA_SITE_KEY` em `packages/management/.env.development.local` (exclude local); documentado em `olie/prompts/implementation.md` §7; proibido comentar validação
+
+## Host-card Televisão navegável (TV-16)
+
+- **problema:** `ensure` do Televisão subia só o compose slim (`php -S` em `~/git/televisao`); `/` e `/up` davam 404 e não havia front
+- **por que é um problema:** o caso 2 do experimento (card no jarvis sem WorkVM) parecia “não está rodando” ao abrir no browser
+- **resolvido como:** `compose.host.yml` + `Dockerfile.host-api` (pgsql/redis/Laravel/Next namespaced); ensure escreve DNS `api|devframe.{slug}.olie.localhost`; slim fica só para Pest/sandbox
