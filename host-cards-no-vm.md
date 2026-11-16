@@ -167,8 +167,9 @@ Hooks (compose slim + Cursor):
 | locav | ainda sem hook compose (só workspace/estado) | genérico |
 
 `WORKVM_HOST_CARD_OPEN_CURSOR=0` pula abrir o Cursor. Default: abre
-`<id>.code-workspace` com `cursor --new-window` (dois cards compartilham
-os mesmos clones; sem `-n` o Cursor funde numa janela).
+`<id>.code-workspace` com `cursor --new-window`. No Olie, a pasta `api-main`
+do workspace é o **worktree do card** (não o clone compartilhado), para o
+agente editar in-workspace o mesmo path que o compose monta.
 
 `ensure` faz **clone/pull** dos `CLONE_REPOS` do `project.conf` (igual à
 WorkVM: fronts, backoffice, landing, …) e monta o workspace só com os

@@ -1007,6 +1007,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
 - **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
 
+## Workspace do card apontava clone, não o worktree
+
+- **problema:** janela host-card listava `~/git/olie/api-main`, mas o compose usa o worktree em `~/.local/share/workvm/host-cards/...`; editar o worktree pedia permissão (fora do workspace)
+- **por que é um problema:** implementação no card vira “Ask every Write”; ou o agente edita o clone e o container não vê
+- **resolvido como:** após o ensure hook, `workvm_host_card_bind_workspace_worktree` troca a pasta `api-main` do `.code-workspace` pelo path absoluto do worktree
+
 ## ensure host-card falha no proxy MCP (start-limit)
 
 - **problema:** `workvm-host-card ensure` saía 1 em `workvm_sync_olie_mcp_proxy` com `start-limit-hit` / Address already in use, mesmo com `:47331` já ouvindo

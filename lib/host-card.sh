@@ -266,6 +266,51 @@ PY
     printf '%s\n' "$dest"
 }
 
+# Aponta a pasta api-main do .code-workspace para o worktree do card.
+# Problema: o workspace listava ~/git/olie/api-main (clone compartilhado), mas o
+# compose monta ~/.local/share/.../worktree/api-main — editar o worktree era
+# "fora do workspace" e o Cursor pedia permissão a cada Write.
+workvm_host_card_bind_workspace_worktree() {
+    local project="$1"
+    local workspace="$2"
+    local dir="$3"
+    local wt_api shared_api
+
+    [ "$project" = "olie" ] || return 0
+    [ -f "$workspace" ] || return 0
+    wt_api="${dir}/worktree/api-main"
+    [ -d "$wt_api" ] || return 0
+    shared_api="$(workvm_host_card_api_src)"
+
+    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_API="$wt_api" \
+        WORKVM_HC_SHARED_API="$shared_api" python3 <<'PY'
+import json, os
+from pathlib import Path
+ws = Path(os.environ["WORKVM_HC_WS"])
+wt = Path(os.environ["WORKVM_HC_WT_API"]).resolve()
+shared = Path(os.environ["WORKVM_HC_SHARED_API"]).resolve()
+raw = json.loads(ws.read_text(encoding="utf-8"))
+folders = []
+for ent in raw.get("folders", []):
+    name = (ent.get("name") or "").lower()
+    path = ent.get("path") or ""
+    # Replace shared/relative api-main with absolute card worktree.
+    if name == "api-main" or path.rstrip("/").endswith("api-main"):
+        folders.append({"name": "api-main", "path": str(wt)})
+        continue
+    folders.append(ent)
+raw["folders"] = folders
+settings = raw.setdefault("settings", {})
+ignored = list(settings.get("git.ignoredRepositories") or [])
+shared_s = str(shared)
+if shared_s not in ignored:
+    ignored.append(shared_s)
+settings["git.ignoredRepositories"] = ignored
+ws.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+print(f"workvm-host-card: workspace api-main → {wt}", file=__import__("sys").stderr, flush=True)
+PY
+}
+
 workvm_host_card_meta_write() {
     local project="$1"
     local code="$2"
@@ -479,14 +524,18 @@ workvm_host_card_ensure() {
         compose_project="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('compose_project','$compose_project'))")"
     fi
 
+    # Depois do worktree: api-main no .code-workspace = path do card (não o clone).
+    workvm_host_card_bind_workspace_worktree "$project" "$workspace" "$dir" || true
+
     if [ "${WORKVM_HOST_CARD_OPEN_CURSOR:-1}" != "0" ] && [ -f "$workspace" ]; then
         # shellcheck source=session.sh
         source "$(workvm_host_card_meta_repo)/lib/session.sh"
         # Boost user-level: aponta para o card desta janela antes de abrir.
         if [ "$project" = "olie" ]; then
             workvm_host_card_set_boost_container "$id"
+            workvm_host_card_set_e2e_container "$id" 2>/dev/null || true
         fi
-        # --new-window: two cards share clone paths; without -n Cursor reuses one window.
+        # --new-window: two cards share front clones; without -n Cursor reuses one window.
         workvm_open_cursor "$workspace" --new-window \
             || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"
     fi
