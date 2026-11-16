@@ -995,6 +995,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** a VM aplica `overlay/` (mcp.json do api-main → `olie-api-main`) no login; host-card não aplicava overlay e o container do card é `hc-olie-*-app-1`
 - **resolvido como:** ensure aplica overlay + merge; `bin/workvm-host-card-boost-mcp.sh` aponta Boost ao container do card ativo (`host-card-boost-container`)
 
+## finish card fecha a janela Cursor
+
+- **problema:** `finish card` / `destroy` limpava compose e estado, mas a janela do card ficava aberta
+- **por que é um problema:** N janelas mortas no Hyprland depois de revisar vários cards
+- **resolvido como:** `workvm_close_cursor_workspace` (hyprctl `closewindow` pelo título `olie-dop-… (Workspace)`) no fim do destroy
+
 ## Host-card Playwright MCP em Connecting…
 
 - **problema:** Playwright ficava em Connecting… no Cursor do jarvis

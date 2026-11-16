@@ -247,6 +247,65 @@ workvm_open_cursor() {
     echo "workvm: Cursor pid $pid → $workspace ${extra_args[*]+(${extra_args[*]})} (log /tmp/workvm-cursor.log)" >&2
 }
 
+# Fecha a janela Cursor do host-card (Hyprland), não o processo inteiro.
+# Problema: finish card / destroy derrubava o stack e a janela ficava aberta.
+# Título típico: "… - olie-dop-1285 (Workspace) - … Cursor"
+workvm_close_cursor_workspace() {
+    local workspace="${1:-}"
+    local needle closed
+
+    if [ -z "$workspace" ]; then
+        return 0
+    fi
+    needle="$(basename "$workspace")"
+    needle="${needle%.code-workspace}"
+    if [ -z "$needle" ]; then
+        return 0
+    fi
+
+    if ! command -v hyprctl >/dev/null 2>&1; then
+        echo "workvm: hyprctl ausente — não fechei a janela Cursor ($needle)" >&2
+        return 0
+    fi
+
+    workvm_ensure_session_env
+
+    closed="$(
+        WORKVM_HC_NEEDLE="$needle" hyprctl clients -j 2>/dev/null | python3 -c '
+import json, os, sys
+needle = os.environ["WORKVM_HC_NEEDLE"]
+# Prefer "id (Workspace)" so we do not close a random title that mentions the id.
+markers = (f"{needle} (Workspace)", f"{needle}.code-workspace")
+try:
+    clients = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for c in clients:
+    title = c.get("title") or ""
+    cls = (c.get("class") or "").lower()
+    if "cursor" not in cls and "cursor" not in title.lower():
+        continue
+    if not any(m in title for m in markers):
+        continue
+    addr = c.get("address") or ""
+    if addr:
+        print(addr)
+'
+    )"
+
+    if [ -z "$closed" ]; then
+        echo "workvm: nenhuma janela Cursor para $needle" >&2
+        return 0
+    fi
+
+    while IFS= read -r addr; do
+        [ -n "$addr" ] || continue
+        hyprctl dispatch closewindow "address:$addr" >/dev/null 2>&1 \
+            && echo "workvm: fechei Cursor ($needle) address:$addr" >&2 \
+            || echo "workvm: falha ao fechar Cursor address:$addr" >&2
+    done <<<"$closed"
+}
+
 workvm_open_chromium() {
     if [ "$#" -eq 0 ]; then
         return 0

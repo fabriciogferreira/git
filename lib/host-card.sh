@@ -590,6 +590,15 @@ workvm_host_card_destroy() {
     # shellcheck source=host-card-proxy.sh
     source "$(workvm_host_card_meta_repo)/lib/host-card-proxy.sh"
     workvm_host_card_proxy_reload || true
+
+    # Depois do teardown: fecha a janela Cursor deste card (Hyprland).
+    # shellcheck source=session.sh
+    source "$(workvm_host_card_meta_repo)/lib/session.sh"
+    if [ -n "$workspace" ]; then
+        workvm_close_cursor_workspace "$workspace" || true
+    else
+        workvm_close_cursor_workspace "${id}.code-workspace" || true
+    fi
 }
 
 workvm_host_card_list() {
