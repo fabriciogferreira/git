@@ -11,7 +11,7 @@ Verify the card's acceptance criteria in production. A local or staging result i
 ## Before testing
 
 0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `~/git/olie/prompts/workflow-policy.md`). Resume across days. Local stack is for notes/media/workspace; **production evidence** remains gui1 (below), not localhost.
-1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
+1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). Acceptance criteria also come from those notebook page texts.
 2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/olie/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
    1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
    2. For each image, video, or audio that defines expected production behavior:

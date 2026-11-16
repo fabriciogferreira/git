@@ -100,7 +100,7 @@ Do not start or end a project execution. Do not POST `project-executions` and do
 
 ## Reading the project notebook (Caderno)
 
-The card from MCP is not the whole spec. When a prompt requires the project Caderno (older name: forum / threads), read **every page** and the Markdown of each page via MCP — not management HTTP.
+The card from MCP is not the whole spec. Before deciding what to implement, correct, or review, also read **every page** on that project's notebook and the Markdown of each page. Older prompts called this the project **forum** / **threads** — same object, new MCP name.
 
 | Older (management HTTP / UI habit) | MCP `olie-flow-ai` |
 | --- | --- |
@@ -111,15 +111,15 @@ The card from MCP is not the whole spec. When a prompt requires the project Cade
 
 There is **one notebook per project**. **`get-notebook-tool` is the list-all tool**: it returns `pages` plus nested `children`. There is no separate "list forums" MCP tool — walk that tree. Do not stop at `default_page_id`.
 
-1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID.
+1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID (e.g. `DOP-1274` or `CARD_PROJECT_ID` from `get-project-details-tool`).
 2. If `notebook` is `null`, the project has no Caderno yet — note that and continue from card media/description only (not a tooling failure).
 3. Walk every entry in `pages` and every nested `children` array. Collect each page's `id` and `name`, including the default page.
-4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). Empty `blocks` means an empty page — note the name and continue.
-5. A block with `type` `image` (or an image URL in markdown): follow the project's image-analysis skill when the prompt requires it. Do not store signed URL query strings; they expire.
+4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). That text is part of what the card asks for. Empty `blocks` means an empty page — note the name and continue.
+5. A block with `type` `image` (or an image URL in markdown): follow `olie-project-image-analysis` (notebook page images). Do not store signed URL query strings; they expire.
 
-Do **not** use `~/git/bin/workvm-olie-management-read.sh` while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth**. Never inline Bearer curl for Caderno.
+Do **not** use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth** (`needsAuth` / 401 on the notebook tools themselves). Never inline Bearer curl for Caderno.
 
-On MCP error (other than `notebook: null`): stop and report (prompt-health rules).
+On MCP error (other than `notebook: null`): stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the notebook read failed.
 
 ## Host card environment
 

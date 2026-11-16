@@ -10,13 +10,14 @@ If MCP (any configured server), requests, shell, Docker, or other tooling this p
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
 
-The card's requirements and acceptance criteria are the source of truth. A change that works but does not match the card is not a pass.
+The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
 
 ## 2. Context
 
 Load the card through `mcp olie-flow-ai`. Read:
 
 - The description, requirements, and acceptance criteria.
+- Every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`).
 - The repositories and branches the author changed.
 - The pull requests and the commits on those branches.
 - Comments, attachments, and test notes.
