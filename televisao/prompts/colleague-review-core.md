@@ -2,7 +2,7 @@
 
 Review card {{ code }} while it sits in 'QA/CR'. This is the **review body** only: decide pass/fail, e2e when needed, write fail findings. Do **not** apply the funnel move, approve/merge, or recommend sequential next pastes — the dispatcher `~/git/televisao/prompts/colleague-review.md` owns those.
 
-Launched by that dispatcher (often in parallel with `test-gap-analysis.md` / `mutation-testing.md`). If the user pastes this file alone, still do the review body, then tell them to paste `colleague-review.md` for the combined outcome.
+Launched by that dispatcher (often in parallel with `test-gap-analysis.md` / `mutation-testing.md` / `coverage-testing.md`). If the user pastes this file alone, still do the review body, then tell them to paste `colleague-review.md` for the combined outcome.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 

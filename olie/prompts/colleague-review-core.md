@@ -2,7 +2,7 @@
 
 Review card {{ code }} while it sits in 'QA/CR'. This is the **review body** only: decide pass/fail, e2e when needed, write fail findings. Do **not** apply the funnel move, approve, or recommend sequential next pastes — the dispatcher `~/git/olie/prompts/colleague-review.md` owns those.
 
-Launched by that dispatcher (often in parallel with `test-gap-analysis.md` / `mutation-testing.md`). If the user pastes this file alone, still do the review body, then tell them to paste `colleague-review.md` for the combined outcome.
+Launched by that dispatcher (often in parallel with `test-gap-analysis.md` / `mutation-testing.md` / `coverage-testing.md`). If the user pastes this file alone, still do the review body, then tell them to paste `colleague-review.md` for the combined outcome.
 
 If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and **ask the user to fix the broken tool** before continuing. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 

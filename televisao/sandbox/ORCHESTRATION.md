@@ -4,17 +4,17 @@ Problema: o stack de revisão de colegas era **sequencial e manual** — paste
 `colleague-review` → paste `test-gap-analysis` → paste `mutation-testing` →
 vários `next mutation`. Cada passo esperava o anterior.
 
-Objetivo: manter os **gates** (veredito + gap + mutation + testes), mas
-disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e
-rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM
+Objetivo: manter os **gates** (veredito + gap + mutation + coverage + testes),
+mas disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher)
+e rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM
 do Card (`televisao-{code}`), sem clonar outra VM.
 
 CLI / estado: `~/git/bin/workvm-sandbox`, `~/git/televisao/sandbox/README.md`.
 
 Prompts: `colleague-review.md` (disparador) → paralelo
-`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md`
-(quando há backend). Scoreboard + **Colleague review outcome** no fim do
-dispatcher.
+`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
+`coverage-testing.md` (quando há backend). Scoreboard + **Colleague review
+outcome** no fim do dispatcher.
 
 ---
 
@@ -58,13 +58,15 @@ paste colleague-review.md          # dispatcher
   bootstrap (card, branches, backend?)
   ├── Task: colleague-review-core.md
   ├── Task: test-gap-analysis.md   # se backend
-  └── Task: mutation-testing.md    # se backend; drena todos os *Test.php
+  ├── Task: mutation-testing.md    # se backend; drena todos os *Test.php
+  └── Task: coverage-testing.md    # se backend; drena todos os app/**/*.php
   wait → scoreboard → Colleague review outcome
 ```
 
-Mutation em modo dispatcher processa **todos** os arquivos restantes do
-change-set nesta corrida (não um `next mutation` por paste). Own-card
-develop handoff continua um arquivo por paste.
+Mutation/coverage em modo dispatcher processam **todos** os arquivos
+restantes do change-set nesta corrida (não um `next mutation` /
+`next coverage` por paste). Own-card develop handoff continua um arquivo
+por paste. Mutation × coverage no **mesmo** sandbox **não**.
 
 ### Alvo — fan-out de sandboxes no mesmo Card VM
 
@@ -87,9 +89,9 @@ televisao-{code}                         # WorkVM do Card
 ```
 
 Gates do funil (**Colleague review outcome** em `workflow-policy.md`)
-continuam válidos: não marcar 'Revisado' / merge enquanto gap+mutation
-aplicáveis não terminarem. O que muda é **como** mutation/testes correm
-(paralelo em sandboxes), não a regra de outcome.
+continuam válidos: não marcar 'Revisado' / merge enquanto gap+mutation+
+coverage aplicáveis não terminarem. O que muda é **como** mutation/
+coverage/testes correm (paralelo em sandboxes), não a regra de outcome.
 
 ---
 

@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não Iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em andamento' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
 | `changes-requested` (normally 'Corrigir') | The person who owns the card | The review failed. Fix it. |
 | 'Validação' | Tech lead | Approve or send it back. Use `~/git/televisao/prompts/validation.md`. |
 | 'Revisão de produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'Concluído' (pass) or 'Corrigir' (fail). |
@@ -35,7 +35,7 @@ Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/televisao/
 For each colleague card in 'QA/CR', paste **once** `~/git/televisao/prompts/colleague-review.md`. That dispatcher:
 
 1. Bootstraps the card/branches and detects backend touch.
-2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md` and `mutation-testing.md` when the card changed `televisao-api` (skip those when there is no backend).
+2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md`, `mutation-testing.md`, and `coverage-testing.md` when the card changed `televisao-api` (skip those when there is no backend).
 3. Waits for every applicable gate, prints a scoreboard (what ran / passed / failed / skipped).
 4. Applies the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
 

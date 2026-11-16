@@ -75,14 +75,15 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+4. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
 
-Order when the stack applies: colleague-review → test-gap-analysis → mutation-testing (mutation only if `LocavApi`).
+Order when the stack applies: colleague-review → test-gap-analysis → mutation-testing → coverage-testing (mutation/coverage only if `LocavApi`).
 
-**Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis or mutation still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` when backend applies **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
+**Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis, mutation, or coverage still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` then `coverage-testing.md` when backend applies **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
 
-**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author and/or coverage reported fixes for the author).
 
-**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no `LocavApi`) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no `LocavApi`) or finished without fixes to send back **and** coverage either was skipped (no `LocavApi`) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
 
 ## Project execution
 
@@ -209,7 +210,7 @@ Files under `~/git/locav/prompts/` are private WorkVM prompts. Other people on t
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 
 Recommend the next prompt **only in the Cursor chat** report.
@@ -243,7 +244,10 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 
 | Command | Meaning |
 | --- | --- |
-| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/locav/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. |
+| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/locav/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** refuse while changed `LocavApi` `*Test.php` files lack a done `mutation-ledger.md` row — tell the user to send `next mutation`. **Exception — coverage stack:** refuse while changed `app/**/*.php` files lack a done `coverage-ledger.md` row — tell the user to send `next coverage` or `correct coverages`. |
+| `next mutation` | Continue `mutation-testing.md` for the next changed test file not yet done in `mutation-ledger.md` (one file). |
+| `next coverage` | Continue `coverage-testing.md` for the next changed `app/**/*.php` not yet done in `coverage-ledger.md` (one file). |
+| `correct coverages` | Drain every remaining changed production file for the coverage stack in this turn. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/locav/prompts/implementation-validation.md`, or **Tests to add** from `~/git/locav/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
 | `finish card` | Host-card teardown: `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (**Host card environment**). If the board is not yet `done`, ask whether to move to concluído first; destroy local state when the user confirms finish even if they defer the board move. |

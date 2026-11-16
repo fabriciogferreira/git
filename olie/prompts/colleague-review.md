@@ -12,7 +12,7 @@ Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcom
 
 0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`). Resume if the unit already exists. Do **not** destroy when this dispatcher ends (card stays in QA/CR, Validação, or Corrigir).
 1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
-2. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits). That flag decides whether gap + mutation run.
+2. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits). That flag decides whether gap + mutation + coverage run.
 3. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
 4. Record `started_at` (UTC) for the scoreboard.
 5. Do **not** write the colleague verdict, gap list, or mutation fixes yet — workers do that. Do **not** move the funnel or approve until §4.
@@ -26,11 +26,12 @@ Open and **run** these prompts **at the same time** (Task / subagents / parallel
 | Colleague core | `~/git/olie/prompts/colleague-review-core.md` | Always |
 | Test gap analysis | `~/git/olie/prompts/test-gap-analysis.md` | Only if backend touched; else mark **skipped** |
 | Mutation testing | `~/git/olie/prompts/mutation-testing.md` | Only if backend touched; else mark **skipped** |
+| Coverage testing | `~/git/olie/prompts/coverage-testing.md` | Only if backend touched; else mark **skipped** |
 
 Rules for workers:
 
-- **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste.
-- **Exclusive work (mutation / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
+- **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` / `next coverage` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste; coverage drains **all** remaining changed `app/**/*.php` files (ledger rows) in this run.
+- **Exclusive work (mutation / coverage / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation/coverage on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
 - Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve.
 
 If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.
@@ -42,13 +43,14 @@ Wait until every dispatched gate has finished (or is skipped). Collect:
 - Colleague core: Pass / Fail (+ findings posted or not)
 - Gap: No tests to add / Tests to add / Skipped / Blocked
 - Mutation: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
+- Coverage: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
 
 ## 4. Combined outcome
 
 Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **once**, after all applicable gates finished (or the user explicitly skips a remaining gate in chat).
 
-- Move to 'Corrigir' only if at least one applicable gate failed (colleague fail **or** gap reported tests to add **or** mutation reported fixes for the author).
-- Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean.
+- Move to 'Corrigir' only if at least one applicable gate failed (colleague fail **or** gap reported tests to add **or** mutation reported fixes for the author **or** coverage reported fixes for the author).
+- Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean **and** coverage was skipped or clean.
 - Do **not** invent a third path.
 
 Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or clean-gate process wrap-ups on the card).
@@ -64,10 +66,11 @@ Print one table (or equivalent bullets) covering **everything that ran**. Includ
 | Started / ended (UTC) | timestamps |
 | Duration | wall-clock |
 | Backend touched | yes / no |
-| Gates run | core + gap? + mutation? |
+| Gates run | core + gap? + mutation? + coverage? |
 | Colleague core | Pass / Fail — short reason |
 | Gap analysis | No tests to add / N titles / Skipped / Blocked |
 | Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
+| Coverage | Clean / fixes / Skipped / Blocked — files in ledger |
 | Contrast | light/dark result (from core) |
 | E2E | added/extended commit, or N/A / blocked |
 | Payment / CAPTCHA | ok / N/A / blocked (from core when relevant) |

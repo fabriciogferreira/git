@@ -5,18 +5,18 @@ Problema: o stack de revisão de colegas era **sequencial e manual** — paste
 vários `next mutation`. Cada passo esperava o anterior. Em paralelo na mesma
 Card VM, Pest/mutation corrompiam o MySQL `testing` e até o `api_main`.
 
-Objetivo: manter os **gates** (veredito + gap + mutation + testes), disparar
-tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e rodar o
-que for **exclusive** em sandboxes paralelos **dentro** da WorkVM do Card
-(`olie-{code}`), sem clonar outra VM.
+Objetivo: manter os **gates** (veredito + gap + mutation + coverage + testes),
+disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e
+rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM do
+Card (`olie-{code}`), sem clonar outra VM.
 
 CLI: `~/git/bin/workvm-sandbox`. Compose slim: `olie/sandbox/` (mesmo contrato
 da Televisão em `televisao/sandbox/`).
 
 Prompts: `colleague-review.md` (disparador) → paralelo
-`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md`
-(quando há backend). Scoreboard + **Colleague review outcome** no fim do
-dispatcher.
+`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
+`coverage-testing.md` (quando há backend). Scoreboard + **Colleague review
+outcome** no fim do dispatcher.
 
 ---
 
@@ -62,19 +62,24 @@ paste colleague-review.md          # dispatcher
   bootstrap (card, branches, backend?)
   ├── Task: colleague-review-core.md     # Card VM (compatible)
   ├── Task: test-gap-analysis.md         # Card VM, sem Pest runtime
-  └── Task: mutation-testing.md          # exclusive → sandboxes
-        ├── sb-mut-<file1>
-        ├── sb-mut-<file2>
-        └── sb-mut-<fileN>               # fila se N > WORKVM_SANDBOX_MAX
+  ├── Task: mutation-testing.md          # exclusive → sandboxes
+  │     ├── sb-mut-<file1>
+  │     └── sb-mut-<fileN>
+  └── Task: coverage-testing.md          # exclusive → sandboxes
+        ├── sb-cov-<app-file1>
+        └── sb-cov-<app-fileN>           # fila se N > WORKVM_SANDBOX_MAX
   wait → scoreboard → Colleague review outcome
 ```
 
-Mutation em modo dispatcher processa **todos** os arquivos restantes do
-change-set nesta corrida (não um `next mutation` por paste). Own-card
-develop handoff: `next mutation` = um arquivo por paste; **`correct mutations`**
-= drena os restantes nesta corrida (um sandbox `profile=mutation` + um
-subagent por arquivo; pai agrega o ledger) — mesmo contrato de shard /
-`WORKVM_SANDBOX_MAX`. Preferir sandbox para não tocar o `testing` da Card VM.
+Mutation/coverage em modo dispatcher processam **todos** os arquivos
+restantes do change-set nesta corrida (não um `next mutation` /
+`next coverage` por paste). Own-card develop handoff: `next mutation` /
+`next coverage` = um arquivo por paste; **`correct mutations`** /
+**`correct coverages`** = drenam os restantes nesta corrida (um sandbox
+`profile=mutation` + um subagent por arquivo; pai agrega o ledger) —
+mesmo contrato de shard / `WORKVM_SANDBOX_MAX`. Preferir sandbox para não
+tocar o `testing` da Card VM. Mutation × coverage no **mesmo** sandbox
+**não** (ambos usam Pest/DB).
 
 ---
 

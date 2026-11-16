@@ -84,14 +84,15 @@ For a colleague card in 'QA/CR', the board move waits until **every** gate that 
 1. **Colleague review core** (`colleague-review-core.md`, launched by `colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
 3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+4. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
 
-**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation **in parallel** (gap/mutation skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. **Require** `~/git/bin/workvm-sandbox` (`--project olie`) to shard exclusive mutation / Pest (one changed test file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — never `docker exec olie-api-main` for those jobs while gates share the Card VM. Compatible work (core + gap **read-only**) stays on the Card VM. Own-card develop handoff still runs gap → mutation → coverage sequentially by default (`next mutation` / `next coverage` = one file); `correct mutations` / `correct coverages` drain remaining files in parallel (sandbox + subagent per file — same shard contract). Prefer a mutation-profile sandbox so Card VM `testing` stays clean.
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation + coverage **in parallel** (gap/mutation/coverage skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation/coverage after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. **Require** `~/git/bin/workvm-sandbox` (`--project olie`) to shard exclusive mutation / coverage / Pest (one changed test or production file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — never `docker exec olie-api-main` for those jobs while gates share the Card VM. Compatible work (core + gap **read-only**) stays on the Card VM. Own-card develop handoff still runs gap → mutation → coverage sequentially by default (`next mutation` / `next coverage` = one file); `correct mutations` / `correct coverages` drain remaining files in parallel (sandbox + subagent per file — same shard contract). Prefer a mutation-profile sandbox so Card VM `testing` stays clean.
 
 **Do not move to 'Corrigir' or 'Validação' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve PRs until the combined outcome below. Workers never move the funnel themselves.
 
-**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author and/or coverage reported fixes for the author).
 
-**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back.
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back **and** coverage either was skipped (no backend) or finished without fixes to send back.
 
 ## Project execution
 
@@ -252,6 +253,14 @@ If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/r
 
 Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal placeholders (`{{ code }}`, and any other `{{ … }}` the file uses). Replacing them with a real card code happens only in the chat paste, never in the versioned file.
 
+**Do not edit the template in the editor** to swap `{{ code }}` — that dirties the shared meta-repo and shows up in every host-card window. Prefer a chat command (agent reads the file, substitutes in memory, runs — no save):
+
+- `colleague review DOP-1285`
+- `run prompt colleague-review DOP-1285`
+- or `@colleague-review.md` + the card code in the same message
+
+Optional clipboard helper (no agent): `~/git/bin/workvm-paste-prompt olie colleague-review DOP-1285` → clipboard + `@.paste-prompt.md`. Do **not** create a git worktree of `~/git` just to isolate this edit.
+
 When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prompt edits, or any other path):
 
 - Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. `DOP-1262` instead of `{{ code }}`).
@@ -272,7 +281,7 @@ Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on th
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 - Do **not** cite private meta-repo E2E (see **Private E2E suites** below).
 - Do **not** cite personal WorkVM / Card VM / sandbox / dispatcher / ledger tooling. That stack exists only for the owner of this meta-repo. Ban on the card (and Caderno): `VM`, `WorkVM`, `Card VM`, `sandbox`, `workvm-sandbox`, `dispatcher`, `ledger`, `mutation-ledger`, `coverage-ledger`, “nesta VM”, “nesta máquina”, hostnames, compose service names used only here, and process notes that only make sense with those tools (“fechamento do gate”, “Pest raw score”, “in-scope hunks”). Put that detail in the Cursor chat scoreboard only.
@@ -320,6 +329,8 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
 | `finish card` | Host-card teardown for `{{ code }}` / the card this chat is working: run `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (**Host card environment**). Do not destroy other cards. If the board is not yet `done`, ask whether to move to 'concluído' first; destroy local state when the user confirms finish even if they defer the board move. |
+| `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
+| `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” commands are `next mutation` or `correct mutations`, not `next prompt`. While coverage-testing still has remaining files, the remembered “continue” commands are `next coverage` or `correct coverages`, not `next prompt`. Own-card develop handoff after mutation recommends `coverage-testing.md` before `pre-qa.md`.
 
