@@ -982,3 +982,9 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** suite paralela no DOP-1183 falhava 3 testes: URLs com `*.dop-1183.olie.localhost` e `SubmitPublicForm` sem `invalid_token`; re-runs seguintes caíam em massa (`testing_test_*` sem tables)
 - **por que é um problema:** o ensure injeta `MANAGEMENT_URL` com slug (browser multi-card) e o secret reCAPTCHA de teste do Google (login local); `--recreate-databases` esvazia o MySQL mas o checksum do FastRefreshDatabase faz pular `migrate:fresh`
 - **resolvido como:** `bin/workvm-host-card-pest` força no `exec` o env da WorkVM (`MANAGEMENT_URL=http://{subdomain}.olie.localhost`, `DB_DATABASE=testing`, secret que rejeita token fake) e apaga `storage/app/migration-checksum_*.txt` antes do Pest
+
+## Host-card Cursor abria o explorer no Televisão
+
+- **problema:** ensure Olie abria janela com o workspace certo, mas o explorer mostrava `televisao/` (e outros produtos) sob o meta-repo
+- **por que é um problema:** o root `git` → `~/git` lista todos os projetos; só reordenar pastas não esconde os irmãos
+- **resolvido como:** clones primeiro + meta-repo por último; `files.exclude` + `git.repositoryScanIgnoredFolders` + `git.ignoredRepositories` nos clones dos outros produtos (SCM ainda listava `televisao-*` sob `~/git`); limpa `treeViewState` ao reabrir

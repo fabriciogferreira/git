@@ -189,27 +189,78 @@ workvm_host_card_write_workspace() {
     # Paths relative to the file; keep beside project workspace. Only include
     # roots that exist. Two cards share the same clones — window isolation is
     # cursor --new-window, not a fake "card CODE" folder in the explorer.
+    # Meta-repo (`..`) fica por último e com nome explícito: se for o 1º root,
+    # o explorer abre ~/git e o foco cai em televisao/ (ou outro projeto).
     project_dir="$(dirname "$src")"
     dest="${project_dir}/${id}.code-workspace"
     WORKVM_HC_SRC="$src" WORKVM_HC_DEST="$dest" \
-        WORKVM_HC_PROJECT_DIR="$project_dir" python3 <<'PY'
+        WORKVM_HC_PROJECT_DIR="$project_dir" WORKVM_HC_CODE="$code" \
+        WORKVM_HC_PROJECT="$project" python3 <<'PY'
 import json, os
 from pathlib import Path
 src = Path(os.environ["WORKVM_HC_SRC"])
 dest = Path(os.environ["WORKVM_HC_DEST"])
 project_dir = Path(os.environ["WORKVM_HC_PROJECT_DIR"])
+code = os.environ.get("WORKVM_HC_CODE") or ""
+project = os.environ.get("WORKVM_HC_PROJECT") or ""
 raw = json.loads(src.read_text(encoding="utf-8"))
-folders = []
+clones = []
+meta = []
 for ent in raw.get("folders", []):
     rel = ent.get("path") or ""
     name = ent.get("name") or rel
     if not rel or rel == ".":
         continue
     target = (project_dir / rel).resolve()
-    if target.exists():
-        folders.append({"name": name, "path": rel})
-raw["folders"] = folders
-raw.setdefault("settings", {})
+    if not target.exists():
+        continue
+    if rel in ("..", "../"):
+        label = f"meta-repo ({project} {code})".strip()
+        meta.append({"name": label, "path": rel})
+    else:
+        clones.append({"name": name, "path": rel})
+raw["folders"] = clones + meta
+# Meta-repo (`~/git`) lista todos os produtos; sem exclude o explorer
+# mostra televisao/, locav/, … numa janela Olie.
+product_dirs = [
+    "olie",
+    "televisao",
+    "locav",
+    "opbed",
+    "da-o-play",
+    "boilerplate-laravel",
+    "boilerplate-next",
+    "vid2agent-code",
+    "use-url-query",
+]
+settings = raw.setdefault("settings", {})
+exclude = dict(settings.get("files.exclude") or {})
+scan_ignore = list(settings.get("git.repositoryScanIgnoredFolders") or [])
+ignored_repos = list(settings.get("git.ignoredRepositories") or [])
+meta_repo = project_dir.parent  # ~/git (workspace fonte em ~/git/<project>/)
+for name in product_dirs:
+    if name == project:
+        continue
+    exclude[name] = True
+    if name not in scan_ignore:
+        scan_ignore.append(name)
+    other = meta_repo / name
+    if not other.is_dir():
+        continue
+    # SCM auto-detecta clones sob o meta-repo mesmo com files.exclude
+    candidates = [other]
+    try:
+        candidates.extend(p for p in other.iterdir() if p.is_dir())
+    except OSError:
+        pass
+    for cand in candidates:
+        if (cand / ".git").exists():
+            path = str(cand.resolve())
+            if path not in ignored_repos:
+                ignored_repos.append(path)
+settings["files.exclude"] = exclude
+settings["git.repositoryScanIgnoredFolders"] = scan_ignore
+settings["git.ignoredRepositories"] = ignored_repos
 dest.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
 PY
     printf '%s\n' "$dest"
