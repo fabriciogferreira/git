@@ -10,6 +10,7 @@ Verify the card's acceptance criteria in production. A local or staging result i
 
 ## Before testing
 
+0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `~/git/olie/prompts/workflow-policy.md`). Resume across days. Local stack is for notes/media/workspace; **production evidence** remains gui1 (below), not localhost.
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
 2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/olie/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
    1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
@@ -51,6 +52,8 @@ Move **only** if the user answers yes (or an unambiguous equivalent). If the use
 
 When yes: resolve the live step id by display name via MCP / `~/git/olie/prompts/workflow-policy.md` (**Moving a card on the board**). Never hard-code step ids. Verify the transition succeeded.
 
+**After a successful move to `done` ('concluído'):** run host-card teardown — `~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'`. Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no to the move.
+
 ## Done when
 
-The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, and whether the stage change ran. It clearly distinguishes pass, fail, and blocked checks.
+The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.

@@ -10,6 +10,7 @@ Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcom
 
 ## 1. Bootstrap (serial, once)
 
+0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`). Resume if the unit already exists. Do **not** destroy when this dispatcher ends (card stays in QA/CR, Validação, or Corrigir).
 1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
 2. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits). That flag decides whether gap + mutation run.
 3. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
@@ -29,7 +30,7 @@ Open and **run** these prompts **at the same time** (Task / subagents / parallel
 Rules for workers:
 
 - **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste.
-- **Exclusive work (mutation / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation on the Card VM while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the Card VM.
+- **Exclusive work (mutation / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
 - Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve.
 
 If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.

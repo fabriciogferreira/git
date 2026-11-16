@@ -11,6 +11,17 @@ Recognize these user messages in this develop flow (shared table: `~/git/televis
 | `next prompt` | Run the next recommended prompt file (after this paste finishes: `~/git/televisao/prompts/recommendation.md`). Open that file and execute it; do not wait for another paste. |
 | `try again` | Resume or re-run **this** implementation prompt after a stop or a manual fix. Continue from the blocked checklist item when safe. |
 | `to correct` | Only after implementation-validation reported **Needs code fixes**: implement those listed failures, then recommend re-running validation. If validation has not failed yet, say so and do not invent a correction list. |
+| `finish card` | Destroy the host-card unit for this code (**Host card environment** in `workflow-policy.md`). Not the end of a normal implementation day. |
+
+### Host card environment (required first)
+
+Before media review, stage moves, or git work, run **Host card environment** in `~/git/televisao/prompts/workflow-policy.md`:
+
+```bash
+~/git/bin/workvm-host-card ensure --project televisao --code '{{ code }}'
+```
+
+Idempotent across days. Do **not** `destroy` when this paste ends — only on `finish card` or board `done`.
 
 ## 1. Context and Objective
 

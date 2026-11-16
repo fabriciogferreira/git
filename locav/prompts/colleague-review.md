@@ -4,6 +4,14 @@ Review card {{ code }} while it sits in 'QA/CR'. This is a review of someone els
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
+### Host card environment (required first)
+
+```bash
+~/git/bin/workvm-host-card ensure --project locav --code '{{ code }}'
+```
+
+See **Host card environment** in `~/git/locav/prompts/workflow-policy.md`. Resume across days. Do **not** destroy when this review ends.
+
 ## 1. Objective
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.

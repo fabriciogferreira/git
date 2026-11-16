@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-cards sem WorkVM (jarvis)
+
+- **problema:** cada card virava domain libvirt; N cards × N projetos no host de 32 GiB não cabiam (OS + Hyprland + Cursor + compose por guest). Pest `-p` em dois cards no mesmo clone/vendor corrompia a suite; MySQL default no host (24 threads) engasgava.
+- **por que é um problema:** custo de VM por card e colisão de porta/DB/DNS; dual Pest inválido; suite travava ou falhava em massa.
+- **resolvido como:** `bin/workvm-host-card` + `lib/host-card.sh` / proxy Caddy (`*.olie.localhost`); compose slim+front+MySQL tmpfs (`compose.mysql-host.yml`); worktree `api-main` + vendor rsync **por card**; triggers nos prompts Olie/Locav/Televisão. Contrato: `host-cards-no-vm.md`.
+
 ## Checklist manual Olie → prompts
 
 - **problema:** o checklist antigo (planejamento de impactos, loop front `frame_id`/permissão/i18n, limpeza de comentários de debug, triage de correção) vivia só na cabeça; os prompts cobriam parte disso e deixavam gaps.

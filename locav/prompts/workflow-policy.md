@@ -111,6 +111,29 @@ Do **not** use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-th
 
 On MCP error (other than `notebook: null`): stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the notebook read failed.
 
+## Host card environment
+
+Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
+
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+
+```bash
+~/git/bin/workvm-host-card ensure --project locav --code '{{ code }}'
+```
+
+- First day → creates state, `port_base`, and `~/git/locav/<id>.code-workspace` (opens Cursor when a graphical session exists).
+- Later day / re-paste → **resume** the same id (do not destroy; do not recreate from scratch).
+- Report `id`, `port_base`, URLs, and `workspace` in chat. Prefer that workspace window for the card.
+- Compose slim hook for Locav is **not** wired yet (unlike olie/televisao) — local stack stays the project compose until `locav/sandbox/host-card-ensure.sh` exists. If the CLI fails, stop (prompt-health).
+
+**Destroy (only when the card is finished):**
+
+```bash
+~/git/bin/workvm-host-card destroy --project locav --code '{{ code }}'
+```
+
+Run destroy when the card moved to logical `done` after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or when the user sends `finish card`. Do **not** destroy at the end of an implementation/correction/colleague-review paste or when closing the chat for the day.
+
 ## Card branch name
 
 Locav does not store the git branch in the card. Build it. Use the same name in every repository the card changes.
@@ -223,6 +246,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/locav/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/locav/prompts/implementation-validation.md`, or **Tests to add** from `~/git/locav/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
+| `finish card` | Host-card teardown: `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (**Host card environment**). If the board is not yet `done`, ask whether to move to concluído first; destroy local state when the user confirms finish even if they defer the board move. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
 

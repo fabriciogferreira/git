@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Host card lifecycle on jarvis (no WorkVM): ensure / status / destroy / list.
+# Problema: prompts precisam montar e limpar o card no host sem domain libvirt.
+# Contrato: ~/git/host-cards-no-vm.md
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card — unidade card/projeto no host (sem WorkVM)
+
+  ensure  --project <olie|locav|televisao|opbed> --code <CODE>
+  status  --project <…> --code <CODE>
+  destroy --project <…> --code <CODE>
+  list
+
+ensure é idempotente: cria ou retoma (multi-dia). destroy limpa estado,
+workspace gerado e containers com label compose do card.
+
+Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/host-cards/
+EOF
+}
+
+cmd="${1:-}"
+if [ -z "$cmd" ] || [ "$cmd" = "-h" ] || [ "$cmd" = "--help" ]; then
+    usage
+    exit 0
+fi
+shift || true
+
+case "$cmd" in
+    ensure) workvm_host_card_ensure "$@" ;;
+    status) workvm_host_card_status "$@" ;;
+    destroy) workvm_host_card_destroy "$@" ;;
+    list) workvm_host_card_list "$@" ;;
+    *)
+        workvm_host_card_log "comando desconhecido: $cmd"
+        usage
+        exit 2
+        ;;
+esac

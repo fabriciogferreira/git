@@ -120,13 +120,47 @@ Do **not** use `~/git/bin/workvm-olie-management-read.sh` while MCP notebook too
 
 On MCP error (other than `notebook: null`): stop and report (prompt-health rules).
 
+## Host card environment
+
+Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
+
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+
+```bash
+~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
+```
+
+- First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
+- Browser (slug = código em minúsculas, ex. `dop-1183`):
+  - Front: `http://devframe.{slug}.olie.localhost`
+  - API: `http://api.{slug}.olie.localhost`
+  - Do **not** use bare `devframe.olie.localhost` for a host-card (colide entre cards).
+- Later day / re-paste → **resume** the same id (compose up again; do not destroy).
+- Report `id`, `port_base`, `front_dns` / `api_dns`, and `workspace` in chat.
+- Requires clones + `vendor` on the host. If the hook or CLI fails, stop (prompt-health).
+
+**Destroy (only when the card is finished):** remove containers/networks for that compose project, generated workspace, and state dir — same spirit as dropping the Card VM domain.
+
+```bash
+~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'
+```
+
+Run destroy when:
+
+1. The card moved to logical `done` ('concluído') after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or
+2. The user sends chat command `finish card` (see **Chat commands**).
+
+Do **not** destroy at the end of an implementation/correction/colleague-review paste, when closing the chat for the day, or when the card only moves to QA/CR, Validação, or Corrigir.
+
+Child exclusive jobs (mutation/Pest) still use `~/git/bin/workvm-sandbox --project olie` on top of this host card.
+
 ## Several cards at once
 
-The board shows one project execution. VMs can run several cards at the same time.
+The board shows one project execution. Several **host cards** (or WorkVMs) can run at the same time; each needs its own `workvm-host-card ensure` id / ports.
 
 The Opbed Job page (`/job`) reads `board_executions` and sends the project-execution requests, one card at a time, for each card's 'Tempo que eu acho'. This chat does not send those requests, does not end an execution, and does not ask for the codes.
 
-The user works every listed card in parallel on the VMs.
+The user works every listed card in parallel (one Cursor window / host-card unit per code).
 
 ## Toggling a funnel-step checklist item
 
@@ -285,6 +319,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `correct coverages` | Only during the personal coverage stack: drain **every** remaining changed production file in this turn — prefer one sandbox **and** one subagent per file; parent writes `coverage-ledger.md`. Do not jump to `pre-qa.md` until the drain finishes. Detail: `coverage-testing.md` → **`correct coverages` (parallel drain)**. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
+| `finish card` | Host-card teardown for `{{ code }}` / the card this chat is working: run `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (**Host card environment**). Do not destroy other cards. If the board is not yet `done`, ask whether to move to 'concluído' first; destroy local state when the user confirms finish even if they defer the board move. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” commands are `next mutation` or `correct mutations`, not `next prompt`. While coverage-testing still has remaining files, the remembered “continue” commands are `next coverage` or `correct coverages`, not `next prompt`. Own-card develop handoff after mutation recommends `coverage-testing.md` before `pre-qa.md`.
 

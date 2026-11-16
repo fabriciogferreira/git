@@ -51,3 +51,4 @@ Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
 - `Dockerfile.app` — `olie/api-main` + PCOV
 - `mysql-init/` — cria `testing` + `api_main`
 - `project.sh` — hooks do Manager
+- `host-card-ensure.sh` / `host-card-destroy.sh` — stack slim do **card no host** (`workvm-host-card`; clones em `~/git/olie`, sem worktree detach)

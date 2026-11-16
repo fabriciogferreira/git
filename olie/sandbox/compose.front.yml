@@ -1,0 +1,21 @@
+# Front management por host-card (Vite :5172 → SB_PORT_FRONT).
+# Problema: slim só tinha API; browser precisa de DNS por card + Vite.
+# Env VITE_* aponta para api.{slug}.olie.localhost / domain {slug}.olie.localhost.
+services:
+  front-management:
+    image: node:22
+    profiles: ["slim"]
+    working_dir: /app
+    command: sh -c "yarn install --frozen-lockfile && yarn workspace @olie/management dev"
+    volumes:
+      - ${SB_FRONTS}:/app
+      - ${SB_FRONT_ENV}:/app/packages/management/.env.development.local:ro
+    environment:
+      NODE_ENV: development
+    ports:
+      - "127.0.0.1:${SB_PORT_FRONT}:5172"
+    networks: [sb_net]
+    mem_limit: ${SB_FRONT_MEM:-1536m}
+    cpus: ${SB_FRONT_CPUS:-1.0}
+    depends_on:
+      - http

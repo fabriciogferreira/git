@@ -119,6 +119,10 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 
 Perguntas abertas. Quando tiver resposta confiável → mover para **Dúvidas respondidas** (não deixar a resposta só na cabeça).
 
+- **Cards/projetos no host sem WorkVM?** *(RAM / operação)*
+  - Contexto: N cards × N projetos no jarvis (32 GiB), uma janela Cursor por card (Opbed = por projeto); sandboxes já isolam jobs na guest.
+  - Resposta desejada / checklist: `host-cards-no-vm.md` (branch `experiment/host-cards-no-vm`). Aceite = §9 desse arquivo; até lá WorkVM segue.
+
 - **Como trabalhar ao mesmo tempo nas duas empresas sem ficar confuso?** *(renda / operação)*
   - Contexto: dois empregadores/clientes; risco de misturar contexto, branch, credencial, VM, horário e compromisso mental.
   - Resposta desejada: regra simples de isolamento (1 VM ou workspace por empresa, calendário, “modo” de troca) que economize tempo e evite erro caro.

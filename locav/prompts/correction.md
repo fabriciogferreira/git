@@ -4,6 +4,16 @@ Use this when a card comes back from review.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
+### Host card environment (required first)
+
+Before media review, stage moves, or git work, run **Host card environment** in `~/git/locav/prompts/workflow-policy.md`:
+
+```bash
+~/git/bin/workvm-host-card ensure --project locav --code '{{ code }}'
+```
+
+Idempotent across days. Do **not** destroy when correction ends — only on `finish card` or board `done`.
+
 ## 1. Objective and Context
 
 The card with the code `{{ code }}` was returned for corrections. Its expected workflow is to move from the logical `changes-requested` stage to `in-progress` before correction work begins, provided it is still in `changes-requested`.

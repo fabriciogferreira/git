@@ -202,7 +202,17 @@ workvm_sync_olie_mcp_proxy() {
 
 workvm_open_cursor() {
     local workspace="$1"
+    shift || true
+    local extra_args=("$@")
     local pid
+    local new_window=0
+    local arg
+
+    for arg in "${extra_args[@]+"${extra_args[@]}"}"; do
+        case "$arg" in
+            -n|--new-window) new_window=1 ;;
+        esac
+    done
 
     if [ ! -f "$workspace" ]; then
         echo "workvm: workspace not found: $workspace" >&2
@@ -219,7 +229,8 @@ workvm_open_cursor() {
         return 1
     fi
 
-    if pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
+    # Skip "already open" when forcing a new window (second host-card).
+    if [ "$new_window" -eq 0 ] && pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
         echo "workvm: Cursor already open for $workspace" >&2
         return 0
     fi
@@ -230,10 +241,10 @@ workvm_open_cursor() {
     # systemd has no graphical env; force Wayland so Electron ignores a wrong DISPLAY.
     export ELECTRON_OZONE_PLATFORM_HINT="${ELECTRON_OZONE_PLATFORM_HINT:-wayland}"
 
-    setsid cursor "$workspace" </dev/null >/tmp/workvm-cursor.log 2>&1 &
+    setsid cursor "${extra_args[@]+"${extra_args[@]}"}" "$workspace" </dev/null >/tmp/workvm-cursor.log 2>&1 &
     pid=$!
     echo "$pid" >/tmp/workvm-cursor.pid
-    echo "workvm: Cursor pid $pid → $workspace (log /tmp/workvm-cursor.log)" >&2
+    echo "workvm: Cursor pid $pid → $workspace ${extra_args[*]+(${extra_args[*]})} (log /tmp/workvm-cursor.log)" >&2
 }
 
 workvm_open_chromium() {

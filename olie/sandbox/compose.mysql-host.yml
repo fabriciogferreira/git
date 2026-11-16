@@ -1,0 +1,29 @@
+# MySQL do host-card afinado para Pest --parallel no jarvis.
+# Problema: no host (24 threads) o Pest abre N workers; cada um migra
+# testing_test_N no mesmo MySQL. Defaults do MySQL 8 (binlog + fsync a cada
+# commit + datadir em volume) viram o gargalo — a WorkVM “parece rápida”
+# porque só tem 9 vCPUs. Aqui: sem binlog, fsync relaxado, buffer grande e
+# datadir em tmpfs (dado do card é descartável no recreate).
+#
+# Só entra no COMPOSE_FILE do host-card-ensure — não afeta Card VM / sandbox.
+
+services:
+  mysql:
+    command:
+      - --log_bin_trust_function_creators=1
+      - --skip-log-bin
+      - --innodb_flush_log_at_trx_commit=2
+      - --sync_binlog=0
+      - --innodb_buffer_pool_size=${SB_MYSQL_BUFFER:-4G}
+      - --innodb_log_file_size=512M
+      - --max_connections=${SB_MYSQL_MAX_CONN:-500}
+      - --table_open_cache=4000
+      - --skip-name-resolve
+      - --performance_schema=OFF
+    # Troca o volume sb_mysql por tmpfs, mas mantém o mysql-init (o !reset
+    # sozinho apagava o bind de /docker-entrypoint-initdb.d e o Pest ficava
+    # sem DB testing / testing_test_*).
+    volumes: !override
+      - ${SB_MYSQL_INIT}:/docker-entrypoint-initdb.d:ro
+    tmpfs:
+      - /var/lib/mysql:rw,noexec,nosuid,size=${SB_MYSQL_TMPFS_SIZE:-8g}

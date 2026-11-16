@@ -10,6 +10,7 @@ Contract for parallel work: `~/git/televisao/sandbox/ORCHESTRATION.md`. Shared o
 
 ## 1. Bootstrap (serial, once)
 
+0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project televisao --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`). Resume if the unit already exists. Do **not** destroy when this dispatcher ends.
 1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
 2. Detect whether the change set touched `~/git/televisao/televisao-api` (open PRs, form links, branch commits). That flag decides whether gap + mutation run.
 3. On each company repository the card touches: find the author's branch, check it out (create the name from **Card branch name** in `workflow-policy.md` + base `preview` in `project.md` only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
@@ -29,7 +30,7 @@ Open and **run** these prompts **at the same time** (Task / subagents / parallel
 Rules for workers:
 
 - **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `*Test.php` files in this run (ledger rows), not one file per paste.
-- Prefer sandboxes (`~/git/bin/workvm-sandbox`) for exclusive mutation shards when available — see `ORCHESTRATION.md`. Compatible work (core + gap) may stay on the Card VM.
+- Prefer sandboxes (`~/git/bin/workvm-sandbox`) for exclusive mutation shards when available — see `ORCHESTRATION.md`. Compatible work (core + gap) may stay on the host card unit.
 - Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve / merge.
 
 If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.

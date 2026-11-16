@@ -29,6 +29,7 @@ vm.local.conf
 !mcps/**
 !life.md
 !host-setup.md
+!host-cards-no-vm.md
 # Secrets locais de sessão (OLIE_FLOW_AI_MCP_TOKEN, OLIE_MANAGEMENT_TOKEN etc.) — nunca versionar
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides

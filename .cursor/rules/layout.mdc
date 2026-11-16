@@ -50,6 +50,8 @@ alwaysApply: true
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
 | `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
+| `bin/workvm-host-card` / `lib/host-card.sh` | Card/projeto no jarvis sem WorkVM: ensure (multi-dia) / destroy (só ao finalizar). Contrato: `host-cards-no-vm.md`. |
+| `lib/host-card-proxy.sh` | N cards no host: Caddy roteia `api|devframe.{slug}.olie.localhost` → portas do card. |
 | `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
 | `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
 | `olie/sandbox/` | Isolamento exclusive (mutation/Pest/e2e) na Card VM Olie: `project.sh` + compose slim + PCOV; contrato em `ORCHESTRATION.md`. |
@@ -67,6 +69,7 @@ alwaysApply: true
 | `bin/workvm-shutdown-card-vm.sh` | O chat acaba e o clone do card continua ligado. Desliga `projeto-codigo` sem apagar a domain nem o disco; a modelo fica. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
+| `host-cards-no-vm.md` | Card/projeto no jarvis sem WorkVM: checklist de isolamento (porta, DNS, destroy, Cursor, teto RAM) antes de largar a domain. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
