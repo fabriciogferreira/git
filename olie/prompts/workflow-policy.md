@@ -149,7 +149,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 Run destroy when:
 
 1. The card moved to logical `done` ('concluído') after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or
-2. The user sends chat command `finish card` (see **Chat commands**).
+2. The user sends `finish card` / `finalize card` (see **Chat commands**) — **local teardown only**, no board move.
 
 Do **not** destroy at the end of an implementation/correction/colleague-review paste, when closing the chat for the day, or when the card only moves to QA/CR, Validação, or Corrigir.
 
@@ -328,7 +328,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `correct coverages` | Only during the personal coverage stack: drain **every** remaining changed production file in this turn — prefer one sandbox **and** one subagent per file; parent writes `coverage-ledger.md`. Do not jump to `pre-qa.md` until the drain finishes. Detail: `coverage-testing.md` → **`correct coverages` (parallel drain)**. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
-| `finish card` | Host-card teardown for `{{ code }}` / the card this chat is working: run `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (**Host card environment**). Destroy also closes that card’s Cursor window (Hyprland). Do not destroy other cards. If the board is not yet `done`, ask whether to move to 'concluído' first; destroy local state when the user confirms finish even if they defer the board move. |
+| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (compose/sandbox + fecha a janela Cursor). Do **not** ask about or move the board to 'concluído' — that is a separate explicit request. Do not destroy other cards. |
 | `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
 | `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |
 

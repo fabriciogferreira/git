@@ -1001,6 +1001,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** N janelas mortas no Hyprland depois de revisar vários cards
 - **resolvido como:** `workvm_close_cursor_workspace` (hyprctl `closewindow` pelo título `olie-dop-… (Workspace)`) no fim do destroy
 
+## finish card não pergunta Concluído
+
+- **problema:** `finish card` / `finalize card` perguntava se movia o board para Concluído
+- **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
+- **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
+
 ## Host-card Playwright MCP em Connecting…
 
 - **problema:** Playwright ficava em Connecting… no Cursor do jarvis
