@@ -125,7 +125,7 @@ On MCP error (other than `notebook: null`): stop and report (prompt-health rules
 
 Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
 
-**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `implementation-validation.md` (when §4 needs Pest/lint), `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
 
 ```bash
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
