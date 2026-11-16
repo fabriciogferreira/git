@@ -311,12 +311,14 @@ workvm_open_cursor() {
     echo "workvm: Cursor pid $pid → $workspace ${extra_args[*]+(${extra_args[*]})} (log /tmp/workvm-cursor.log)" >&2
 }
 
-# Fecha a janela Cursor do host-card (Hyprland), não o processo inteiro.
-# Problema: finish card / destroy derrubava o stack e a janela ficava aberta.
+# Fecha só a janela Cursor do host-card (Hyprland), não o processo nem outras apps.
+# Problema: finish/destroy limpava o stack e a janela do card ficava aberta.
+# Hyprland 0.56 (Lua): `dispatch closewindow address:…` quebra; sem `window=`
+# o `hl.dsp.window.close()` fecha a janela ativa (ou pior). Sempre passar address.
 # Título típico: "… - olie-dop-1285 (Workspace) - … Cursor"
 workvm_close_cursor_workspace() {
     local workspace="${1:-}"
-    local needle closed
+    local needle closed addr selector
 
     if [ -z "$workspace" ]; then
         return 0
@@ -333,6 +335,11 @@ workvm_close_cursor_workspace() {
     fi
 
     workvm_ensure_session_env
+    # hyprctl precisa da instance da sessão gráfica (agent/SSH costuma não ter).
+    if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && [ -d "${XDG_RUNTIME_DIR:-}/hypr" ]; then
+        HYPRLAND_INSTANCE_SIGNATURE="$(find "${XDG_RUNTIME_DIR}/hypr" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | head -n1 || true)"
+        export HYPRLAND_INSTANCE_SIGNATURE
+    fi
 
     closed="$(
         hyprctl clients -j 2>/dev/null | WORKVM_HC_NEEDLE="$needle" python3 -c '
@@ -364,9 +371,16 @@ for c in clients:
 
     while IFS= read -r addr; do
         [ -n "$addr" ] || continue
-        hyprctl dispatch closewindow "address:$addr" >/dev/null 2>&1 \
-            && echo "workvm: fechei Cursor ($needle) address:$addr" >&2 \
-            || echo "workvm: falha ao fechar Cursor address:$addr" >&2
+        # Nunca chamar hl.dsp.window.close() sem window — fecha a ativa.
+        case "$addr" in
+            address:*) selector="$addr" ;;
+            *) selector="address:$addr" ;;
+        esac
+        if hyprctl dispatch "hl.dsp.window.close({ window = \"${selector}\" })" >/dev/null 2>&1; then
+            echo "workvm: fechei Cursor ($needle) ${selector}" >&2
+        else
+            echo "workvm: falha ao fechar Cursor ${selector}" >&2
+        fi
     done <<<"$closed"
 }
 
