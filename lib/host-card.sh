@@ -261,7 +261,12 @@ for name in product_dirs:
 settings["files.exclude"] = exclude
 settings["git.repositoryScanIgnoredFolders"] = scan_ignore
 settings["git.ignoredRepositories"] = ignored_repos
-dest.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+text = json.dumps(raw, indent=2) + "\n"
+# Só grava se mudou — rewrite a cada ensure faz o Cursor recarregar o workspace.
+if dest.is_file() and dest.read_text(encoding="utf-8") == text:
+    pass
+else:
+    dest.write_text(text, encoding="utf-8")
 PY
     printf '%s\n' "$dest"
 }
@@ -306,8 +311,13 @@ shared_s = str(shared)
 if shared_s not in ignored:
     ignored.append(shared_s)
 settings["git.ignoredRepositories"] = ignored
-ws.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
-print(f"workvm-host-card: workspace api-main → {wt}", file=__import__("sys").stderr, flush=True)
+text = json.dumps(raw, indent=2) + "\n"
+old = ws.read_text(encoding="utf-8") if ws.is_file() else None
+if old == text:
+    print(f"workvm-host-card: workspace api-main já é {wt}", file=__import__("sys").stderr, flush=True)
+else:
+    ws.write_text(text, encoding="utf-8")
+    print(f"workvm-host-card: workspace api-main → {wt}", file=__import__("sys").stderr, flush=True)
 PY
 }
 

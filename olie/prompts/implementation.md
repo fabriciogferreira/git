@@ -11,6 +11,7 @@ Recognize these user messages in this develop flow (shared table: `~/git/olie/pr
 | `next prompt` | Run the next recommended prompt file (after this paste finishes: `~/git/olie/prompts/implementation-validation.md`). Open that file and execute it; do not wait for another paste. |
 | `try again` | Resume or re-run **this** implementation prompt after a stop or a manual fix. Continue from the blocked checklist item when safe. |
 | `to correct` | Only after implementation-validation reported **Needs code fixes**: implement those listed failures, then recommend re-running validation. If validation has not failed yet, say so and do not invent a correction list. |
+| `add` | Only after `test-gap-analysis.md` reported **Tests to add**: implement those listed missing tests, then recommend `try again` on gap. Not for validation failures (`to correct`). |
 | `finish card` | Destroy the host-card unit for this code (**Host card environment** in `workflow-policy.md`). Not the end of a normal implementation day. |
 
 ### Host card environment (required first)

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Gap analysis: comando `add` para fechar testes faltantes
+
+- **problema:** depois de **Tests to add**, o handoff misturava implementação de testes com `to correct` (validação / Needs code fixes); não havia frase curta só para gravar os testes recomendados pelo gap.
+- **por que é um problema:** o autor pedia algo tipo “add” e o agente não tinha contrato; ou usava `to correct` e a intenção ficava ambígua.
+- **resolvido como:** comando **`add`** em `olie/prompts/workflow-policy.md` (Chat commands) + `test-gap-analysis.md`: implementa só a lista título+descrição daquele pass, depois `try again` no gap. `to correct` fica para validation / Pest parallel.
+
 ## Host-cards sem WorkVM (jarvis)
 
 - **problema:** cada card virava domain libvirt; N cards × N projetos no host de 32 GiB não cabiam (OS + Hyprland + Cursor + compose por guest). Pest `-p` em dois cards no mesmo clone/vendor corrompia a suite; MySQL default no host (24 threads) engasgava.
@@ -1006,6 +1012,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** `finish card` / `finalize card` perguntava se movia o board para Concluído
 - **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
 - **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
+
+## pest-parallel / ensure “resetava” o workspace
+
+- **problema:** ao rodar `pest-parallel.md`, a janela Cursor parecia resetar
+- **por que é um problema:** o prompt manda `ensure`, que reescrevia o `.code-workspace` e abria `--new-window` de novo
+- **resolvido como:** só grava o workspace se o JSON mudou; `workvm_open_cursor` não reabre se a janela do card já existe (Hyprland); pest-parallel pode pular ensure se o stack já está up
 
 ## Workspace do card apontava clone, não o worktree
 

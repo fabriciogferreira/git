@@ -230,6 +230,36 @@ workvm_sync_olie_mcp_proxy() {
     return 1
 }
 
+# True se já existe janela Cursor para este .code-workspace (Hyprland title).
+workvm_cursor_workspace_open() {
+    local workspace="${1:-}"
+    local needle
+    [ -n "$workspace" ] || return 1
+    needle="$(basename "$workspace")"
+    needle="${needle%.code-workspace}"
+    [ -n "$needle" ] || return 1
+    command -v hyprctl >/dev/null 2>&1 || return 1
+    workvm_ensure_session_env
+    # Env no python (não no hyprctl): pipe não herda o prefixo do lado esquerdo.
+    hyprctl clients -j 2>/dev/null | WORKVM_HC_NEEDLE="$needle" python3 -c '
+import json, os, sys
+needle = os.environ["WORKVM_HC_NEEDLE"]
+markers = (f"{needle} (Workspace)", f"{needle}.code-workspace")
+try:
+    clients = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+for c in clients:
+    title = c.get("title") or ""
+    cls = (c.get("class") or "").lower()
+    if "cursor" not in cls and "cursor" not in title.lower():
+        continue
+    if any(m in title for m in markers):
+        sys.exit(0)
+sys.exit(1)
+'
+}
+
 workvm_open_cursor() {
     local workspace="$1"
     shift || true
@@ -259,7 +289,11 @@ workvm_open_cursor() {
         return 1
     fi
 
-    # Skip "already open" when forcing a new window (second host-card).
+    # Já aberto: não reabra (ensure do pest-parallel etc. resetava a janela).
+    if workvm_cursor_workspace_open "$workspace"; then
+        echo "workvm: Cursor já aberto para $(basename "$workspace") — skip" >&2
+        return 0
+    fi
     if [ "$new_window" -eq 0 ] && pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
         echo "workvm: Cursor already open for $workspace" >&2
         return 0
@@ -301,7 +335,7 @@ workvm_close_cursor_workspace() {
     workvm_ensure_session_env
 
     closed="$(
-        WORKVM_HC_NEEDLE="$needle" hyprctl clients -j 2>/dev/null | python3 -c '
+        hyprctl clients -j 2>/dev/null | WORKVM_HC_NEEDLE="$needle" python3 -c '
 import json, os, sys
 needle = os.environ["WORKVM_HC_NEEDLE"]
 # Prefer "id (Workspace)" so we do not close a random title that mentions the id.

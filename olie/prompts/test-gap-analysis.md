@@ -23,6 +23,15 @@ Two entry points:
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.
 
+### Chat commands (this prompt)
+
+| Command | Meaning |
+| --- | --- |
+| `add` | After this pass reported **Tests to add**: leave analysis mode and implement every listed missing test from that report. Then stop and recommend `try again` (re-run this gap analysis). Do not implement during the analysis pass itself unless the user already sent `add`. |
+| `try again` | Re-run **this** gap analysis (e.g. after `add` or after the author closed gaps manually). |
+| `next prompt` | After **No tests to add**, run the next recommended file (`coverage-testing.md` when backend applies). While this pass still reported open **Tests to add**, refuse and tell the user to send `add` (or close the gaps) first. |
+| `to correct` | Not for this prompt’s list — use `add`. (`to correct` remains for validation / Pest parallel failures.) |
+
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
 ## Scope (Olie)
@@ -71,8 +80,8 @@ For every **missing** test, draft one list item:
 ## 5. Outcome (two exits only)
 
 1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/olie/prompts/coverage-testing.md` when backend coverage still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
-2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. Do **not** approve and do **not** move the funnel in this paste.
-   - **Own-card:** chat only — do **not** write into the card. Still recommend coverage next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps (or have the author close them) before coverage / PRs.
+2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. Do **not** approve and do **not** move the funnel in this paste. Tell the user they can send `add` to implement those items in this chat, then `try again` to re-run this gap analysis.
+   - **Own-card:** chat only — do **not** write into the card. Still recommend coverage next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps via `add` (or manually) before coverage / PRs.
    - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR' and continue the colleague gates; treat these items like mutation-reported fixes in the follow-up / Corrigir loop.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/olie/prompts/workflow-policy.md`.

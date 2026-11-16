@@ -32,6 +32,7 @@ Idempotent ensure if needed (**Host card environment** in `workflow-policy.md`):
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
 ```
 
+If this chat is already the card’s Cursor window and the stack is up (`hc-olie-…-app-1`), skip ensure — re-running it used to rewrite the `.code-workspace` / reopen Cursor and feel like the workspace was “resetting”. Prefer `workvm-host-card-pest` directly when resume is enough.
 ## 3. Run the full suite in parallel
 
 ```bash
