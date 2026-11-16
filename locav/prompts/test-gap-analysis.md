@@ -14,11 +14,11 @@ This prompt has **exactly two exits**:
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
-Run this **before** `~/git/locav/prompts/mutation-testing.md` when that step applies.
+Run this **before** `~/git/locav/prompts/coverage-testing.md` when that step applies (own-card: gap → coverage → mutation → Pest parallel → pre-qa).
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `~/git/locav/prompts/implementation-validation.md` passes, when the change set touched `LocavApi` and/or `locav-front` (reached via the `implementation.md` handoff chain). Next: `mutation-testing.md` only if `LocavApi` changed; then `pre-qa.md`. If neither backend nor front changed, skip this prompt. Gaps stay in chat; fix them before opening PRs.
+1. **Own card (develop handoff)** — after `~/git/locav/prompts/implementation-validation.md` passes, when the change set touched `LocavApi` and/or `locav-front`. Next: if `LocavApi` changed → `coverage-testing.md` → `mutation-testing.md` → `pest-parallel.md` → `pre-qa.md`; if only front → `pest-parallel.md` → `pre-qa.md`. Gaps stay in chat; close them before coverage / PRs.
 2. **Colleague card in 'QA/CR'** — after `~/git/locav/prompts/colleague-review.md`, when backend and/or front changed, **before** mutation (mutation still only if `LocavApi` changed). Leave the card in 'QA/CR' until the remaining stack finishes. Gaps reported here count as “fixes for the author” in the colleague follow-up and are written into the card.
 
 Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
@@ -76,7 +76,7 @@ For every **missing** test, draft one list item:
 
 ## 5. Outcome (two exits only)
 
-1. **No tests to add** — Say so. In the **Cursor chat** only, if `LocavApi` changed, recommend `~/git/locav/prompts/mutation-testing.md`; else continue to `pre-qa.md` (own card) or colleague funnel rules (no mutation).
+1. **No tests to add** — Say so. In the **Cursor chat** only, if `LocavApi` changed, recommend `~/git/locav/prompts/coverage-testing.md`; if only front, recommend `pest-parallel.md`; else `pre-qa.md`.
 2. **Tests to add** — In the chat report, list each missing test as **title** + **description**.
    - **Own-card:** chat only — do **not** write into the card. Recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt when mutation still applies. Close the gaps (or have the author close them) before pre-QA / PRs.
    - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR'; continue to mutation when backend applies; treat these items like mutation-reported fixes in the Corrigir / loop rules.

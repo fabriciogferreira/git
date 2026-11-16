@@ -74,10 +74,12 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
-3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
-4. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
+3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
+4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
 
-Order when the stack applies: colleague-review → test-gap-analysis → mutation-testing → coverage-testing (mutation/coverage only if `LocavApi`).
+Own-card sequential order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
+
+Order when the stack applies (colleague sequential): colleague-review → test-gap-analysis → coverage-testing → mutation-testing (mutation/coverage only if `LocavApi`). Own-card: gap → coverage → mutation → pest-parallel → pre-qa.
 
 **Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis, mutation, or coverage still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` then `coverage-testing.md` when backend applies **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
 
@@ -116,7 +118,7 @@ On MCP error (other than `notebook: null`): stop and report (prompt-health rules
 
 Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
 
-**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `implementation-validation.md` (when §4 needs suite/lint), `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `pest-parallel.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
 
 ```bash
 ~/git/bin/workvm-host-card ensure --project locav --code '{{ code }}'

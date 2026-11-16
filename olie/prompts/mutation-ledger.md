@@ -2,7 +2,7 @@
 
 Personal stack for `~/git/olie/prompts/mutation-testing.md`. One row per test file in `~/git/olie/api-main/tests` after that file has been mutation-tested on this VM. Not part of the Olie test suite.
 
-While any changed `*Test.php` from the card’s `api-main` diff is missing here (or lacks `100%` / `equivalent`), the stack is incomplete: use **`next mutation`** (one file) or **`correct mutations`** (drain all remaining in parallel); do not run `coverage-testing.md` or `pre-qa.md` via `next prompt`. When this ledger is complete for the card, the next own-card paste is `coverage-testing.md`.
+While any changed `*Test.php` from the card’s `api-main` diff is missing here (or lacks `100%` / `equivalent`), the stack is incomplete: use **`next mutation`** (one file) or **`correct mutations`** (drain all remaining in parallel); do not run `pest-parallel.md` or `pre-qa.md` via `next prompt`. When this ledger is complete for the card, the next own-card paste is `pest-parallel.md`.
 
 | Test file | Result | Notes |
 | --- | --- | --- |

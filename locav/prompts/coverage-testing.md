@@ -8,7 +8,7 @@ This is a personal WorkVM stack, same family as `~/git/locav/prompts/mutation-te
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/locav/prompts/mutation-testing.md` when backend changed (or after `test-gap-analysis.md` when you only want coverage). Continue with **`next coverage`** (one production file) or **`correct coverages`** (drain every remaining file in parallel). When this coverage stack is finished (or the user stops / skips), the next recommended prompt is `~/git/locav/prompts/pre-qa.md` (`next prompt` runs it).
+1. **Own card (develop handoff)** — after `~/git/locav/prompts/test-gap-analysis.md` when backend changed. Continue with **`next coverage`** / **`correct coverages`**. When finished (or stop/skip), next is `~/git/locav/prompts/mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`.
 2. **Colleague card in 'QA/CR'** — after `~/git/locav/prompts/mutation-testing.md` when `LocavApi` changed (Locav colleague stack is sequential: colleague-review → gap → mutation → coverage). **Colleague drain:** process **every** remaining changed `app/**/*.php` in this run (or continue with `next coverage` / `correct coverages`). Do **not** recommend skipping to approve/merge before this stack finishes. When coverage finishes, apply **Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`.
 3. **Colleague card pasted alone** — one file per paste (`next coverage`), or drain with `correct coverages`; when none remain, tell the user to return to `colleague-review.md` if that owns the card.
 
@@ -71,7 +71,7 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 ## One production file / `next coverage`
 
 1. Take the first remaining changed production file from the shared list. If the user named an `app/` path in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card / alone** → say the coverage stack is complete, recommend `~/git/locav/prompts/pre-qa.md` as the next paste, and stop.
+2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card / alone** → say the coverage stack is complete, recommend `~/git/locav/prompts/mutation-testing.md` as the next paste, and stop.
 3. Prepare, measure that file, close using the scoring rules below. **Own-card / alone (`next coverage`):** stop — do not start the next production file in this paste. **Dispatcher mode:** after the ledger row, continue with the next remaining file.
 
 ## `correct coverages` (parallel drain)
@@ -197,7 +197,7 @@ Report the file, in-scope %, file raw %, ratchet target vs result, any legacy/ra
 When **none** remain:
 
 - **Colleague stack:** return Clean/Fixes/Blocked and apply **Colleague review outcome** when this was the last gate (or tell the user if another gate still owns the card).
-- **Develop handoff** (came from mutation-testing / implementation-validation): recommend `~/git/locav/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
+- **Develop handoff** (came from test-gap-analysis): recommend `~/git/locav/prompts/mutation-testing.md` as the next paste (`next prompt` runs it).
 - **Alone mid-stack:** tell the user to finish remaining gates / apply **Colleague review outcome**.
 
 Do not move Locav funnel steps from this prompt.

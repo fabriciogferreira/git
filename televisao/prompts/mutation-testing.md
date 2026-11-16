@@ -4,7 +4,7 @@ Use this when the card changed `~/git/televisao/televisao-api`. Skip entirely wh
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/televisao/prompts/test-gap-analysis.md` (which follows implementation-validation when backend changed). **One changed `*Test.php` per paste** (`next mutation`). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/televisao/prompts/coverage-testing.md` (`next prompt` runs it), then `pre-qa.md` after coverage.
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/coverage-testing.md` (which follows gap when backend changed). **One changed `*Test.php` per paste** (`next mutation`). When finished (or the user stops), next is `~/git/televisao/prompts/pest-parallel.md`, then `pre-qa.md`.
 2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/televisao/prompts/colleague-review.md` with `colleague-review-core.md`, `test-gap-analysis.md`, and `coverage-testing.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run (loop § “One changed test file” until the ledger has a row for each, or shard via `~/git/bin/workvm-sandbox` per `ORCHESTRATION.md`). Do **not** stop after one file. Do **not** recommend `next mutation` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
 3. **Colleague card pasted alone** — one file per paste as in develop handoff; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Revisado' yourself when the dispatcher owns the card.
 
@@ -40,7 +40,7 @@ Work only in `~/git/televisao/televisao-api`.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger. Skip a file that is a trait or helper and not a test case.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set mutation stack is complete, recommend `~/git/televisao/prompts/coverage-testing.md` as the next paste, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md` for the combined outcome.
+4. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set mutation stack is complete, recommend `~/git/televisao/prompts/pest-parallel.md` as the next paste, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md` for the combined outcome.
 5. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /srv televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/` or any other file. If Drift is missing, stop and report. Do not install it. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
 6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
 7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
@@ -111,5 +111,5 @@ After the row is written, report the file, whether it was converted from PHPUnit
 When **none** remain:
 
 - **Dispatcher mode:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths). Return the aggregate result to `colleague-review.md`. Do **not** apply the funnel move yourself.
-- **Develop handoff** (came from test-gap-analysis / implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste.
+- **Develop handoff** (came from coverage-testing): recommend `~/git/televisao/prompts/pest-parallel.md` as the next paste; `pre-qa.md` after a green suite.
 - **Alone on colleague stack:** write mutation fixes to the card if any; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel here).

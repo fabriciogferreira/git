@@ -76,8 +76,10 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 1. **Colleague core** (`colleague-review-core.md`, launched by `colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `televisao-api` (backend only). Skip when there is no backend. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
-3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
-4. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
+3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
+4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `televisao-api`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+
+Own-card sequential order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
 
 **Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation + coverage **in parallel** (gap/mutation/coverage skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation/coverage after that dispatcher. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Prefer `~/git/bin/workvm-sandbox --project televisao` to shard exclusive mutation / coverage (one changed test or production file per sandbox; queue when over `WORKVM_SANDBOX_MAX`). Compatible work (core + gap) stays on the Card VM. Own-card develop handoff still runs gap → mutation → coverage sequentially (one file per paste / `next mutation` / `next coverage`).
 
@@ -118,7 +120,7 @@ On MCP error (other than `notebook: null`): stop and report (prompt-health rules
 
 Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
 
-**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `implementation-validation.md` (when §4 needs suite/lint), `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `pest-parallel.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
 
 ```bash
 ~/git/bin/workvm-host-card ensure --project televisao --code '{{ code }}'

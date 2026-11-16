@@ -61,8 +61,8 @@ Execute the card with `~/git/locav/prompts/implementation.md` (that prompt moves
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/locav/prompts/implementation-validation.md` (code only; no PRs/forms/commits required).
-2. **Test gap analysis** — `~/git/locav/prompts/test-gap-analysis.md` when `LocavApi` and/or `locav-front` changed (backend + frontend). List missing use cases in chat only (do not write them into the card — close them before pre-QA / PRs).
-3. **Mutation testing** (personal, only if the card changed `LocavApi`) — `~/git/locav/prompts/mutation-testing.md`. Skip when the change set has no backend. Not a team gate; do not block handoff forever on it if the user skips.
+2. **Test gap analysis** — `~/git/locav/prompts/test-gap-analysis.md` when `LocavApi` and/or `locav-front` changed. List missing use cases in chat only (close before coverage / PRs).
+3. **Coverage → mutation → Pest parallel** (when `LocavApi` changed) — `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`. Skip backend gates when there is no `LocavApi` change (front-only: gap → pest-parallel lint → pre-qa).
 4. **Pre-QA** — `~/git/locav/prompts/pre-qa.md` (commits, PRs, and forms) after implementation-validation passes, and after gap analysis + mutation when those steps applied. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**. The Dev - Locav funnel has no step checklists; do not mark 'Pull request created'.
 
 Colleague 'QA/CR' uses `~/git/locav/prompts/colleague-review.md`.

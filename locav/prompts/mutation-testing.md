@@ -1,11 +1,11 @@
 # Mutation testing (personal)
 
-Use this **after** `~/git/locav/prompts/test-gap-analysis.md` **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend.
+Use this **after** `~/git/locav/prompts/coverage-testing.md` **and** the card changed `~/git/locav/LocavApi`. Skip entirely when the change set has no backend.
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `test-gap-analysis.md` (which follows implementation-validation when backend/front apply). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/coverage-testing.md` (`next prompt` runs it), then `pre-qa.md` after coverage.
-2. **Colleague card in 'QA/CR'** — after `test-gap-analysis.md` (which follows colleague-review when `LocavApi` changed). Leave the card in 'QA/CR' until this stack finishes, then run `~/git/locav/prompts/coverage-testing.md`. Do **not** apply **Colleague review outcome** until coverage finishes (or the user explicitly skips coverage). Do not move the card before mutation+coverage when those gates apply.
+1. **Own card (develop handoff)** — after `coverage-testing.md` (which follows gap when `LocavApi` applies). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pest-parallel.md`, then `pre-qa.md`.
+2. **Colleague card in 'QA/CR'** — after gap/coverage when `LocavApi` changed (Locav colleague stack may be sequential). Leave the card in 'QA/CR' until mutation finishes, then run `pest-parallel.md` before the combined outcome when applicable.
 
 Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
 
@@ -37,7 +37,7 @@ Work only in `~/git/locav/LocavApi`.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger. Skip a file that is a trait or helper and not a test case.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/coverage-testing.md` as the next paste, and stop.
+4. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/pest-parallel.md` as the next paste, and stop.
 5. If that file is still a PHPUnit test case (`extends TestCase`), convert **that file only** with Drift before mutating: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If `pestphp/pest-plugin-drift` is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/` or any other file. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
 6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
 7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
@@ -104,5 +104,5 @@ After the row is written, report the file, whether it was converted from PHPUnit
 
 - **Files remain:** say to paste this prompt again (or send `next mutation`) for the next changed test file. Do **not** recommend `pre-qa.md`. Do **not** move a colleague card out of 'QA/CR'.
 - **None remain:**
-  - **Develop handoff:** recommend `~/git/locav/prompts/coverage-testing.md` as the next paste (`next prompt` runs it); `pre-qa.md` comes after coverage.
-  - **Colleague QA/CR stack:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat**; no prompt paths). Recommend `~/git/locav/prompts/coverage-testing.md` next; **Colleague review outcome** runs after coverage (or an explicit skip), not here.
+  - **Develop handoff:** recommend `~/git/locav/prompts/pest-parallel.md` as the next paste (`next prompt` runs it); `pre-qa.md` comes after a green suite.
+  - **Colleague QA/CR stack:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat**; no prompt paths). Recommend `pest-parallel.md` next when applicable; **Colleague review outcome** after that stack (or an explicit skip).

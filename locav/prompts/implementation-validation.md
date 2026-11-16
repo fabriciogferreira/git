@@ -2,150 +2,71 @@
 
 Use this **after** `~/git/locav/prompts/implementation.md` (or a correction that changed code) and **before** handoff. This is a **code-only** pass while the card is still in `in-progress`. It is not board 'Validação', not colleague 'QA/CR', not pre-QA, and not production review.
 
-**Next paste after a pass** depends on whether the card changed the backend (`~/git/locav/LocavApi`):
+**Reviewers only** — do **not** run the full Pest suite here. Suite regression is `~/git/locav/prompts/pest-parallel.md` after gap → coverage → mutation (when those apply).
 
-1. Backend and/or front touched → `~/git/locav/prompts/test-gap-analysis.md`; if `LocavApi` also changed, then `mutation-testing.md`, then `pre-qa.md`.
-2. Neither backend nor front touched → `~/git/locav/prompts/pre-qa.md` (same as before).
+**Next paste after a pass** depends on whether the card changed the backend (`~/git/locav/LocavApi`) and/or front:
 
-If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
+1. Backend and/or front touched → `~/git/locav/prompts/test-gap-analysis.md`; if `LocavApi` also changed, then `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`. If only front changed, after gap run `pest-parallel.md` (lint) then `pre-qa`.
+2. Neither backend nor front touched → `~/git/locav/prompts/pre-qa.md`.
+
+If tooling fails or stalls too long: stop and report (prompt-health). Exception: `olie-flow-ai` `needsAuth` — **MCP auth** in `~/git/locav/prompts/workflow-policy.md`.
 
 ### Chat commands
 
-Same phrases as in `~/git/locav/prompts/workflow-policy.md` (**Chat commands**) and `implementation.md`:
-
 | Command | Do this |
 | --- | --- |
-| `next prompt` | After **Ready for handoff**, run the next recommended file (`test-gap-analysis.md`, `mutation-testing.md`, or `pre-qa.md`) without waiting for a paste. |
-| `try again` | Re-run **this** validation pass (e.g. after a manual env fix or after `to correct`). |
-| `to correct` | Leave validation mode: implement every **Needs code fixes** item from this pass’s report, then stop and recommend `try again` (re-run this validation). Do not implement fixes during the scoring pass itself unless the user already sent `to correct`. |
+| `next prompt` | After **Ready for handoff**, run the next recommended file without waiting for a paste. |
+| `try again` | Re-run **this** validation pass. |
+| `to correct` | Implement **Needs code fixes** from this pass, then recommend `try again`. |
 
 ## 1. Objective
 
-Decide whether the **local implementation** for card `{{ code }}` is ready for handoff. Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass unless the user sends `to correct` (or otherwise asks to fix).
-
-A card passes this pass only when it clears the five code criteria below and no reviewer raises a blocker.
+Decide whether the **local implementation** for card `{{ code }}` is ready for the test/quality stacks. Report one verdict with criterion-by-criterion justification. Do not implement fixes during this pass unless the user sends `to correct`.
 
 ## 2. Out of scope for this pass
 
-Do **not** require or fail on:
-
-- Pull requests existing or being open
-- Commits pushed to remote
-- Card forms filled
-- Checklist items on the board
-- The card being in 'QA/CR' or 'Validação'
-
-Those belong to `~/git/locav/prompts/pre-qa.md` and later to `~/git/locav/prompts/validation.md`.
-
-Also:
-
-- Do not create commits, push, or open pull requests.
-- Do not move the card stage.
-- Do not treat this pass as production evidence.
+Do **not** require PRs, commits, forms, checklist, stage moves, or a green full suite (that is `pest-parallel.md`). Do not create commits, push, or open PRs. Do not move the card stage.
 
 ## 3. Context first, code second
 
-Follow these steps in order. If card context is empty, stop and report that validation cannot proceed without guessing.
+1. Load the card through OlieFlowAi: description, requirements, acceptance criteria, and attached media (spec, PRD).
+2. Read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`).
+3. State the proposal before opening code.
+4. Inspect the **local** branches and working trees for every repository the card changes. Review the diff against the correct base.
+5. Score against the five criteria (§4) using specialized reviewers (§5).
 
-1. Load the card through OlieFlowAi: description, requirements, acceptance criteria, and attached media (spec, PRD). Forms and PR links may be empty — that is expected here.
-2. Read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`). Those texts are part of what the card asked for.
-3. State the proposal before opening code: what the card asked for, for whom, and which behavior changes in practice.
-4. Inspect the **local** branches and working trees for every repository the card changes (card-specific branch from the card / implementation). Review the actual diff against the correct base. Do not invent a PR if none exists.
-5. **Run the automated checks** in §4 (required — do not score without them when the change set needs them).
-6. Score the delivery against the five criteria (§5), using the check results and the specialized reviewers (§6).
-
-## 4. Automated checks (required)
-
-Scoring without a green suite lets regressions slip. Run these **before** (or **in parallel with**) the specialized reviewers. Do not skip because implementation already ran a subset.
-
-### Host card / stack
-
-Idempotent ensure if the unit may be down (**Host card environment** in `~/git/locav/prompts/workflow-policy.md`):
-
-```bash
-~/git/bin/workvm-host-card ensure --project locav --code '{{ code }}'
-```
-
-Use the Locav compose stack for this card (`locav-backend` / `locav-frontend`). Do not run PHP on the host.
-
-### Backend (`LocavApi` in the local change set)
-
-Run the **full** suite in **parallel** inside the backend container:
-
-```bash
-docker exec -w /var/www/html locav-backend php artisan test --compact --parallel
-```
-
-- Do **not** pass a path filter or `--filter` on this pass — the point is the whole suite.
-- If `--parallel` is rejected (`Unknown option "--parallel"`), run `docker exec -w /var/www/html locav-backend composer pest:dump-plugins` once and retry the same full parallel command. If it still fails, stop and report (prompt-health) — do not invent a smaller subset to “make validation pass”.
-- Any failed test → this pass is **Needs code fixes** (Integrity and/or Maturity). List the failing file/name in the report. Do not dismiss failures as “unrelated” without evidence; investigate.
-
-### Frontend (`locav-front` in the local change set)
-
-```bash
-docker exec locav-frontend bun run lint
-```
-
-Red lint from this change set → **Needs code fixes**.
-
-### No backend / no front
-
-If the change set has neither `LocavApi` nor `locav-front`, say so and skip the matching check. Still run reviewers on whatever did change.
-
-### Private e2e
-
-Do **not** fail this pass solely because private Cypress/e2e specs were not executed here. If you do run them for confidence, keep suite paths out of card/Caderno/PR text (**Private E2E suites** in `workflow-policy.md`).
-
-## 5. The five criteria
-
-These are a set, not a sequence. Fail any one and this pass fails.
+## 4. The five criteria
 
 | Criterion | Look for |
 | --- | --- |
 | Security | Vulnerability, exposed sensitive data, authentication or authorization in the wrong place. |
-| Integrity | The code does what it claims, without an obvious bug or broken alternate path. A red required suite (§4) fails this. |
-| Maturity | The delivery is complete and structured, not half-finished. Test coverage counts here. Required automated checks (§4) must have been run and green when applicable. |
-| Requirements | Everything the card asked for was delivered — the whole request, not only the easy part. |
-| Front / back coherence | API contract, types, and payloads match across repositories. No field that exists on only one side. |
+| Integrity | The code does what it claims, without an obvious bug or broken alternate path. |
+| Maturity | Complete and structured, not half-finished. Do not require a green full suite in this pass. |
+| Requirements | Everything the card asked for was delivered. |
+| Front / back coherence | API contract, types, and payloads match across repositories. |
 
-## 6. Specialized reviewers in parallel
+## 5. Specialized reviewers in parallel
 
-Do not review in a single pass. Choose the aspects the delivery requires and launch one specialized reviewer per aspect at the same time. Merge their findings into one verdict. Prefer launching reviewers **while** §4 tests/lint are running so wall-clock stays short.
-
-Two reviewers run on every card:
+Launch specialized reviewers at the same time; merge findings.
 
 | Reviewer | When | What it does |
 | --- | --- | --- |
-| `autorizacao` | Always | Hunt auth/authorization gaps, missing ownership checks (customer, construction site, stock), and any path that can leak another account's data. When `locav-front` changed, also check that new or changed HTTP calls send the ownership/auth identifiers the matching API path requires — omit/wrong scope is the same class of leak. |
-| `advogado-do-diabo` | Always | Challenge the card's premises, find ignored edge cases, and ask whether the delivery is actually mature. |
+| `autorizacao` | Always | Hunt auth/authorization gaps, missing ownership checks (customer, construction site, stock), and any path that can leak another account's data. When `locav-front` changed, also check HTTP calls send the ownership/auth identifiers the API requires. |
+| `advogado-do-diabo` | Always | Challenge premises, edge cases, maturity. |
 
-Optional reviewers — add when the delivery needs them:
+Optional: `segurança`, `integridade`, `requisitos`, `front-back`, `performance` when needed.
 
-| Reviewer | When | What it does |
-| --- | --- | --- |
-| `segurança` | On demand | Auth, authorization, data exposure, new attack surface. |
-| `integridade` | On demand | Logic, bugs, error paths, migrations, side effects. |
-| `requisitos` | On demand | Confront the local change with the spec attached to the card, item by item. |
-| `front-back` | On demand | Cross-repo contract: payload, type, response shape, errors. When both sides changed, confirm the front's request includes every ownership/auth field the backend requires for the new or changed endpoints. |
-| `performance` | On demand | When the card touches queries, listings, jobs, or volume. |
+Without an attached spec or PRD as card media, say so for Requirements; do not invent acceptance criteria from the title alone.
 
-Without an attached spec or PRD as card media, the Requirements criterion has nothing solid to check against. Say so explicitly; do not invent acceptance criteria from the title or a vague description.
+## 6. Verdict
 
-## 7. Verdict
+**Ready for handoff** — all five criteria passed, no reviewer blocker.
 
-Only two outcomes. Always justify item by item. Never answer with a bare pass or fail.
+- **Backend and/or front changed** — next: `test-gap-analysis.md`. If `LocavApi` changed: then `coverage-testing.md` → `mutation-testing.md` → `pest-parallel.md` → `pre-qa.md`. If only front: after gap → `pest-parallel.md` → `pre-qa.md`.
+- **Neither changed** — next: `pre-qa.md`.
 
-**Ready for handoff**  
-All five criteria passed, required §4 checks ran and were green when applicable, and no reviewer raised a blocker. Decide the next paste from the **local** branches/working trees already reviewed in §3:
-
-- **Backend and/or front changed** — paths under `LocavApi` and/or `locav-front`: next paste is `~/git/locav/prompts/test-gap-analysis.md`. If `LocavApi` changed, then `mutation-testing.md`, then `pre-qa.md`. Do not run pre-QA in this same paste when those steps apply.
-- **Neither changed** — no `LocavApi` / `locav-front` paths in the card's local change set: next paste is `~/git/locav/prompts/pre-qa.md` directly.
-
-State which branch you took and why (list whether `LocavApi` appears in the reviewed diffs). Include §4 command results (pass/fail counts or lint outcome).
-
-**Needs code fixes**  
-List every failure: which criterion, which reviewer or §4 check, and where in the code — so the author can fix without guessing. Tell the user they can send `to correct` to have those items fixed in this chat, then `try again` to re-run this validation (including §4). Do not run mutation-testing or pre-QA yet.
+**Needs code fixes** — list criterion, reviewer, location. `to correct` then `try again`. Do not run gap / coverage / mutation / Pest parallel / pre-QA yet.
 
 ## Done when
 
-The report names card `{{ code }}`, the local branches/diffs reviewed, **which §4 automated checks ran and their outcomes** (full parallel suite and/or lint — or why a check was N/A), which optional reviewers ran and why, the result for each of the five criteria, the merged findings, and either Ready for handoff (with the next paste: test-gap-analysis then mutation then pre-QA when applicable, or pre-QA only) or Needs code fixes with actionable locations. Checks that did not run are named with the reason — skipping a required §4 check without a tool failure is not allowed.
+Card `{{ code }}`, diffs reviewed, reviewers used, five criteria, and Ready for handoff (gap → coverage → mutation → Pest parallel → pre-QA when applicable) or Needs code fixes.

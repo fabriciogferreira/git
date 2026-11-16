@@ -8,7 +8,7 @@ This is a personal WorkVM stack, same family as `~/git/televisao/prompts/mutatio
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/televisao/prompts/mutation-testing.md` when backend changed (or after `test-gap-analysis.md` when you only want coverage). Continue with **`next coverage`** (one production file) or **`correct coverages`** (drain every remaining file in parallel). When this coverage stack is finished (or the user stops / skips), the next recommended prompt is `~/git/televisao/prompts/pre-qa.md` (`next prompt` runs it).
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/test-gap-analysis.md` when backend changed. Continue with **`next coverage`** / **`correct coverages`**. When finished, next is `~/git/televisao/prompts/mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`.
 2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/televisao/prompts/colleague-review.md` with core / gap / mutation when backend changed. **Dispatcher mode:** drain **every** remaining changed `app/**/*.php` in this run. Prefer `~/git/bin/workvm-sandbox create --project televisao --profile mutation` (same exclusive Pest DB isolation as mutation — see `~/git/televisao/sandbox/ORCHESTRATION.md`). Do **not** recommend `next coverage` / `correct coverages` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
 3. **Colleague card pasted alone** — one file per paste (`next coverage`), or drain with `correct coverages`; when none remain, tell the user to return to `colleague-review.md` if that owns the card.
 
@@ -71,7 +71,7 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 ## One production file / `next coverage`
 
 1. Take the first remaining changed production file from the shared list. If the user named an `app/` path in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card / alone** → say the coverage stack is complete, recommend `~/git/televisao/prompts/pre-qa.md` as the next paste, and stop.
+2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card / alone** → say the coverage stack is complete, recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste, and stop.
 3. Prepare, measure that file, close using the scoring rules below. **Own-card / alone (`next coverage`):** stop — do not start the next production file in this paste. **Dispatcher mode:** after the ledger row, continue with the next remaining file.
 
 ## `correct coverages` (parallel drain)
@@ -202,7 +202,7 @@ Report the file, in-scope %, file raw %, ratchet target vs result, any legacy/ra
 When **none** remain:
 
 - **Dispatcher mode:** return Clean/complete to the dispatcher in chat only. Do **not** apply the funnel move yourself.
-- **Develop handoff** (came from mutation-testing / implementation-validation): recommend `~/git/televisao/prompts/pre-qa.md` as the next paste (`next prompt` runs it).
+- **Develop handoff** (came from test-gap-analysis): recommend `~/git/televisao/prompts/mutation-testing.md` as the next paste (`next prompt` runs it).
 - **Alone on colleague stack:** tell the user to return to `colleague-review.md` if that owns the card.
 
 Do not move Televisão funnel steps from this prompt.

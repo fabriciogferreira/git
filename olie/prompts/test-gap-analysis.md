@@ -14,11 +14,11 @@ This prompt has **exactly two exits**:
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
-Run this **before** `~/git/olie/prompts/mutation-testing.md` when that step applies.
+Run this **before** `~/git/olie/prompts/coverage-testing.md` when that step applies (own-card order: gap → coverage → mutation → Pest parallel → pre-qa).
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `~/git/olie/prompts/implementation-validation.md` passes and the change set touched `~/git/olie/api-main` (reached via the `implementation.md` handoff chain). Next paste: `mutation-testing.md`, then `coverage-testing.md`, then `pre-qa.md`. If there is no backend change, skip this prompt. Gaps stay in chat; fix them before opening PRs.
+1. **Own card (develop handoff)** — after `~/git/olie/prompts/implementation-validation.md` passes and the change set touched `~/git/olie/api-main` (reached via the `implementation.md` handoff chain). Next paste: `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`. If there is no backend change, skip this prompt. Gaps stay in chat; close them before coverage / PRs.
 2. **Colleague card in 'QA/CR'** — after `~/git/olie/prompts/colleague-review.md`, when the change set touched `api-main`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack finishes. Gaps reported here count as “fixes for the author” for the colleague follow-up loop in `~/git/olie/prompts/workflow-policy.md` / `colleague-review.md` and are written into the card.
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.
@@ -70,9 +70,9 @@ For every **missing** test, draft one list item:
 
 ## 5. Outcome (two exits only)
 
-1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/olie/prompts/mutation-testing.md` when backend mutation still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
+1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/olie/prompts/coverage-testing.md` when backend coverage still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
 2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. Do **not** approve and do **not** move the funnel in this paste.
-   - **Own-card:** chat only — do **not** write into the card. Still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps (or have the author close them) before pre-QA / PRs.
-   - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR' and continue to `mutation-testing.md` when it applies; treat these items like mutation-reported fixes in the follow-up / Corrigir loop.
+   - **Own-card:** chat only — do **not** write into the card. Still recommend coverage next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps (or have the author close them) before coverage / PRs.
+   - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR' and continue the colleague gates; treat these items like mutation-reported fixes in the follow-up / Corrigir loop.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/olie/prompts/workflow-policy.md`.
