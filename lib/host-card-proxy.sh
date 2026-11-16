@@ -76,16 +76,22 @@ services:
       - ${caddy}:/etc/caddy/Caddyfile:ro
 EOF
 
-    workvm_host_card_log "proxy reload (Caddy :${port})"
+    # Já rodando: só reload do Caddyfile (force-recreate colide no nome fixo).
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx workvm-host-card-proxy; then
+        workvm_host_card_log "proxy reload (Caddy :${port}, container já up)"
+        docker exec workvm-host-card-proxy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null \
+            || workvm_host_card_log "caddy reload falhou — Caddyfile em ${caddy}"
+        return 0
+    fi
+
+    workvm_host_card_log "proxy up (Caddy :${port})"
     (
         cd "$proxy_dir"
-        docker compose up -d --force-recreate 2>/dev/null \
-            || docker compose up -d
+        docker compose up -d
     ) || {
         workvm_host_card_log "proxy falhou na :${port} — tente WORKVM_HOST_CARD_PROXY_PORT=8080"
         return 1
     }
-    # Soft reload if already running
     docker exec workvm-host-card-proxy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 }
 

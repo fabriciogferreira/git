@@ -1007,6 +1007,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
 - **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
 
+## ensure host-card falha no proxy MCP (start-limit)
+
+- **problema:** `workvm-host-card ensure` saía 1 em `workvm_sync_olie_mcp_proxy` com `start-limit-hit` / Address already in use, mesmo com `:47331` já ouvindo
+- **por que é um problema:** correction/colleague param no ensure; o proxy manual ou restart repetido deixa a unit failed
+- **resolvido como:** se a porta já responde → OK; senão `reset-failed` + start; fallback `nohup` do script
+
 ## finish card devolve clones para develop
 
 - **problema:** depois do destroy, `api-main` / `olie-fronts` (e outros CLONE_REPOS) ficavam na feature do review

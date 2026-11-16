@@ -157,6 +157,13 @@ workvm_load_environment_d() {
 # api.olie.ai publishes OAuth discovery, so Cursor drops the Bearer header and
 # the prompt agent sees needsAuth. The proxy on 127.0.0.1:47331 answers 404
 # there and adds the token. Only MCP=olie keeps the unit.
+#
+# Já em :47331 (processo manual / unit antiga) → sucesso sem restart.
+# systemd start-limit / Address already in use não pode derrubar o ensure.
+workvm_olie_mcp_proxy_listening() {
+    (echo >/dev/tcp/127.0.0.1/47331) >/dev/null 2>&1
+}
+
 workvm_sync_olie_mcp_proxy() {
     local repo_root="${1:-}"
     local systemd_user="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
@@ -184,12 +191,35 @@ workvm_sync_olie_mcp_proxy() {
 
     mkdir -p "$systemd_user"
     ln -sfn "$unit_src" "$unit_dst"
-    systemctl --user daemon-reload || return 1
-    systemctl --user enable --now workvm-olie-mcp-proxy.service || return 1
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+
+    if workvm_olie_mcp_proxy_listening; then
+        systemctl --user enable workvm-olie-mcp-proxy.service >/dev/null 2>&1 || true
+        return 0
+    fi
+
+    systemctl --user reset-failed workvm-olie-mcp-proxy.service >/dev/null 2>&1 || true
+    if ! systemctl --user enable --now workvm-olie-mcp-proxy.service >/dev/null 2>&1; then
+        systemctl --user reset-failed workvm-olie-mcp-proxy.service >/dev/null 2>&1 || true
+        systemctl --user start workvm-olie-mcp-proxy.service >/dev/null 2>&1 || true
+    fi
 
     attempt=0
-    while [ "$attempt" -lt 10 ]; do
-        if (echo >/dev/tcp/127.0.0.1/47331) >/dev/null 2>&1; then
+    while [ "$attempt" -lt 15 ]; do
+        if workvm_olie_mcp_proxy_listening; then
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 0.2
+    done
+
+    # Fallback: unit preso em start-limit; sobe o script direto.
+    echo "workvm: unit proxy falhou — fallback nohup workvm-olie-mcp-proxy.py" >&2
+    nohup "$repo_root/bin/workvm-olie-mcp-proxy.py" \
+        >/tmp/workvm-olie-mcp-proxy.log 2>&1 &
+    attempt=0
+    while [ "$attempt" -lt 15 ]; do
+        if workvm_olie_mcp_proxy_listening; then
             return 0
         fi
         attempt=$((attempt + 1))
