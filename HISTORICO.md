@@ -976,3 +976,9 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** `ensure` do Televisão subia só o compose slim (`php -S` em `~/git/televisao`); `/` e `/up` davam 404 e não havia front
 - **por que é um problema:** o caso 2 do experimento (card no jarvis sem WorkVM) parecia “não está rodando” ao abrir no browser
 - **resolvido como:** `compose.host.yml` + `Dockerfile.host-api` (pgsql/redis/Laravel/Next namespaced); ensure escreve DNS `api|devframe.{slug}.olie.localhost`; slim fica só para Pest/sandbox
+
+## Pest no host-card Olie (DNS slug + reCAPTCHA)
+
+- **problema:** suite paralela no DOP-1183 falhava 3 testes: URLs com `*.dop-1183.olie.localhost` e `SubmitPublicForm` sem `invalid_token`; re-runs seguintes caíam em massa (`testing_test_*` sem tables)
+- **por que é um problema:** o ensure injeta `MANAGEMENT_URL` com slug (browser multi-card) e o secret reCAPTCHA de teste do Google (login local); `--recreate-databases` esvazia o MySQL mas o checksum do FastRefreshDatabase faz pular `migrate:fresh`
+- **resolvido como:** `bin/workvm-host-card-pest` força no `exec` o env da WorkVM (`MANAGEMENT_URL=http://{subdomain}.olie.localhost`, `DB_DATABASE=testing`, secret que rejeita token fake) e apaga `storage/app/migration-checksum_*.txt` antes do Pest

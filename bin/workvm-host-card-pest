@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Pest no host-card Olie com env de teste da WorkVM.
+# Problema: o ensure injeta MANAGEMENT_URL com slug do card e o secret
+# reCAPTCHA de teste do Google — a suite espera *.olie.localhost e
+# invalid_token para token fake. Sem este wrapper, ~3 testes falham.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card-pest — Pest no stack do host-card (Olie)
+
+  workvm-host-card-pest --project olie --code <CODE> [--] [args do artisan test…]
+
+Defaults: --compact --parallel --recreate-databases
+Env forçado no container (não muda o compose do browser):
+  DB_DATABASE=testing
+  APP_ENV=testing
+  MANAGEMENT_URL=http://{subdomain}.olie.localhost
+  RECAPTCHA_SECRET=host-card-pest-rejects-invalid-tokens
+
+Ex.:
+  workvm-host-card-pest --project olie --code DOP-1183
+  workvm-host-card-pest --project olie --code DOP-1183 -- --filter=ShowOfferOrder
+EOF
+}
+
+project=""
+code=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --project)
+            project="${2:-}"
+            shift 2
+            ;;
+        --code)
+            code="${2:-}"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ "$project" != "olie" ] || [ -z "$code" ]; then
+    workvm_host_card_log "uso: --project olie --code <CODE> [-- artisan test args…]"
+    exit 1
+fi
+
+id="$(workvm_host_card_id "$project" "$code")"
+meta="$(workvm_host_card_meta_path "$project" "$id")"
+if [ ! -f "$meta" ]; then
+    workvm_host_card_log "card ausente: $id (rode ensure antes)"
+    exit 1
+fi
+
+compose_dir="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_dir') or '')")"
+pname="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_project') or '')")"
+if [ -z "$compose_dir" ] || [ ! -d "$compose_dir" ]; then
+    compose_dir="$(workvm_host_card_dir "$project" "$id")/compose"
+fi
+if [ -z "$pname" ]; then
+    pname="hc-${id}"
+fi
+
+procs="${WORKVM_HOST_CARD_PEST_PROCESSES:-$(nproc)}"
+extra=("$@")
+if [ ${#extra[@]} -eq 0 ]; then
+    extra=(--compact --parallel --recreate-databases --processes="$procs")
+fi
+
+workvm_host_card_log "pest $id ($pname) → ${extra[*]}"
+
+(
+    cd "$compose_dir"
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
+    export COMPOSE_PROJECT_NAME="$pname"
+    docker compose --profile slim exec -T app mkdir -p /tmp/pest-hc
+    # FastRefreshDatabase grava migration-checksum_*.txt; --recreate-databases
+    # esvazia o MySQL mas o checksum igual faz pular migrate:fresh → 0 tables.
+    docker compose --profile slim exec -T app \
+        sh -c 'rm -f storage/app/migration-checksum_*.txt'
+    # -e no exec: workers do --parallel herdam o env do PHP pai
+    docker compose --profile slim exec -T \
+        -e TMPDIR=/tmp/pest-hc \
+        -e DB_DATABASE=testing \
+        -e APP_ENV=testing \
+        -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
+        -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+        app \
+        php -d memory_limit=2G artisan test "${extra[@]}"
+)

@@ -51,6 +51,7 @@ alwaysApply: true
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
 | `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
 | `bin/workvm-host-card` / `lib/host-card.sh` | Card/projeto no jarvis sem WorkVM: ensure (multi-dia) / destroy (só ao finalizar). Contrato: `host-cards-no-vm.md`. |
+| `bin/workvm-host-card-pest` | Pest no host-card Olie: o ensure injeta DNS/slug e reCAPTCHA de teste; a suite espera WorkVM (`*.olie.localhost` + `invalid_token`). |
 | `lib/host-card-proxy.sh` | N cards no host: Caddy roteia `api|devframe.{slug}.olie.localhost` → portas do card. |
 | `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
 | `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
