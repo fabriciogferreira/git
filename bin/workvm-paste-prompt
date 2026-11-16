@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Substitui {{ code }} no prompt e cola no clipboard — sem editar o template.
+# Problema: abrir prompts/*.md, trocar {{ code }} e salvar suja o meta-repo
+# (aparece em toda janela host-card) e pode ir no commit por engano.
+# Uso: workvm-paste-prompt olie colleague-review DOP-1285
+#      workvm-paste-prompt ~/git/olie/prompts/colleague-review.md DOP-1285
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PASTE_LOCAL="${ROOT}/.paste-prompt.md"
+
+usage() {
+    cat <<'EOF' >&2
+usage:
+  workvm-paste-prompt <project> <prompt> <CODE>
+  workvm-paste-prompt <path-to-prompt.md> <CODE>
+
+examples:
+  workvm-paste-prompt olie colleague-review DOP-1285
+  workvm-paste-prompt televisao implementation TV-16
+  workvm-paste-prompt ~/git/olie/prompts/colleague-review.md DOP-1285
+
+Writes substituted text to the clipboard (wl-copy) and to ~/git/.paste-prompt.md
+(gitignored) so you can @.paste-prompt.md in Cursor without dirtying the template.
+EOF
+    exit 2
+}
+
+resolve_prompt() {
+    local project="$1" prompt="$2" path
+    prompt="${prompt%.md}"
+    path="${ROOT}/${project}/prompts/${prompt}.md"
+    if [ ! -f "$path" ]; then
+        echo "workvm-paste-prompt: prompt não encontrado: $path" >&2
+        exit 1
+    fi
+    printf '%s\n' "$path"
+}
+
+normalize_code() {
+    # dop-1285 / DOP-1285 → DOP-1285
+    printf '%s\n' "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+copy_clipboard() {
+    local text="$1"
+    if command -v wl-copy >/dev/null 2>&1; then
+        if printf '%s' "$text" | wl-copy 2>/dev/null; then
+            return 0
+        fi
+    fi
+    if command -v xclip >/dev/null 2>&1; then
+        if printf '%s' "$text" | xclip -selection clipboard 2>/dev/null; then
+            return 0
+        fi
+    fi
+    echo "workvm-paste-prompt: clipboard indisponível — use @.paste-prompt.md" >&2
+    return 1
+}
+
+main() {
+    local src code body out
+    if [ "$#" -eq 2 ] && [[ "$1" == *.md || "$1" == /* || "$1" == ~* || "$1" == ./* ]]; then
+        src="$1"
+        code="$(normalize_code "$2")"
+        src="${src/#\~/$HOME}"
+    elif [ "$#" -eq 3 ]; then
+        src="$(resolve_prompt "$1" "$2")"
+        code="$(normalize_code "$3")"
+    else
+        usage
+    fi
+
+    if [ ! -f "$src" ]; then
+        echo "workvm-paste-prompt: arquivo ausente: $src" >&2
+        exit 1
+    fi
+    if [[ ! "$code" =~ ^[A-Z0-9]+-[0-9]+$ ]]; then
+        echo "workvm-paste-prompt: CODE inválido (ex. DOP-1285): $code" >&2
+        exit 2
+    fi
+
+    body="$(cat "$src")"
+    # Só o placeholder de paste — não reescreve o arquivo versionado.
+    out="${body//\{\{ code \}\}/$code}"
+
+    printf '%s' "$out" >"$PASTE_LOCAL"
+    clip_ok=0
+    copy_clipboard "$out" && clip_ok=1 || true
+
+    echo "workvm-paste-prompt: $code ← $(realpath --relative-to="$ROOT" "$src" 2>/dev/null || echo "$src")"
+    if [ "$clip_ok" -eq 1 ]; then
+        echo "  clipboard: ok"
+    else
+        echo "  clipboard: skip"
+    fi
+    echo "  @-mention: ${PASTE_LOCAL}  (gitignored)"
+    echo "  template intacto: $src"
+}
+
+main "$@"

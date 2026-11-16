@@ -53,6 +53,8 @@ alwaysApply: true
 | `bin/workvm-host-card` / `lib/host-card.sh` | Card/projeto no jarvis sem WorkVM: ensure (multi-dia) / destroy (só ao finalizar). Contrato: `host-cards-no-vm.md`. Ensure Olie também sobe MCP `olie-flow-ai` + proxy `:47331` e Boost (na VM isso era o login/`project-start`). |
 | `bin/workvm-host-card-boost-mcp.sh` | Overlay aponta Boost a `olie-api-main`; no jarvis o app é `hc-olie-*-app-1`. Resolve o container do card ativo para o `boost:mcp`. |
 | `bin/workvm-host-card-playwright-mcp.sh` | Playwright MCP no jarvis: `docker exec` no `hc-olie-*-olie-e2e-1` do card ativo (pointer), via `workvm-playwright-mcp.sh`. |
+| `bin/workvm-paste-prompt` | Atalho opcional: clipboard + `.paste-prompt.md`. Preferir chat `colleague review CODE` (agente substitui na memória). |
+| `.cursor/rules/prompt-templates-hands-off.mdc` | Agente/humano editava `{{ code }}` no disco e sujava todas as janelas. Proíbe gravar; manda rodar com código só no chat. |
 | `olie/sandbox/compose.e2e-host.yml` | Host-card sem `olie-e2e` → sem MCP/suite. Sobe image `olie/e2e` no ensure (`network_mode: host` + DNS do card). |
 | `bin/workvm-host-card-pest` | Pest no host-card Olie: o ensure injeta DNS/slug e reCAPTCHA de teste; a suite espera WorkVM (`*.olie.localhost` + `invalid_token`). |
 | `lib/host-card-proxy.sh` | N cards no host: Caddy roteia `api|devframe.{slug}.olie.localhost` → portas do card. |

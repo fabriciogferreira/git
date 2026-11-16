@@ -1,0 +1,29 @@
+---
+description: >-
+  Evita sujar */prompts/*.md com código de card ({{ code }} → DOP-…). Templates
+  são compartilhados no meta-repo; edição no editor aparece em toda janela host-card.
+alwaysApply: true
+---
+
+# Prompt templates — não gravar `{{ code }}`
+
+Arquivos em `~/git/*/prompts/*.md` são **templates**. O placeholder `{{ code }}` (e outros `{{ … }}`) fica no disco.
+
+## Nunca
+
+- Substituir `{{ code }}` por um código real **no arquivo** (nem “só para colar”).
+- Commitar/pushar prompt cujo único diff é código de card.
+- Criar worktree do meta-repo `~/git` só para isolar essa substituição.
+
+## Quando o usuário pedir um prompt + card
+
+Exemplos: `colleague review DOP-1285`, `run prompt colleague-review DOP-1285`, `@colleague-review.md` + código na mensagem.
+
+1. **Leia** o template (`Read` / abrir o path).
+2. Substitua `{{ code }}` **só na memória / no contexto do chat**.
+3. **Execute** o prompt com esse código.
+4. Não grave o arquivo. Se já estiver sujo, `git checkout -- path` (só esse arquivo) e siga.
+
+Atalho opcional (clipboard / `@.paste-prompt.md`): `~/git/bin/workvm-paste-prompt` — o agente prefere o fluxo acima sem o usuário rodar comando.
+
+Detalhe: **Prompt templates** em `olie/prompts/workflow-policy.md` (e equivalentes Locav/Televisão).
