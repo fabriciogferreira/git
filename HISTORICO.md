@@ -1007,6 +1007,12 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
 - **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
 
+## finish card devolve clones para develop
+
+- **problema:** depois do destroy, `api-main` / `olie-fronts` (e outros CLONE_REPOS) ficavam na feature do review
+- **por que é um problema:** o próximo card / workspace compartilhado herdava branch e diffs errados
+- **resolvido como:** `workvm_host_card_restore_clone_bases` no destroy (stash se dirty → checkout da branch do `project.conf`; pula `olie/docs`)
+
 ## Host-card Playwright MCP em Connecting…
 
 - **problema:** Playwright ficava em Connecting… no Cursor do jarvis

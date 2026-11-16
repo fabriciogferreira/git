@@ -250,7 +250,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `correct coverages` | Drain every remaining changed production file for the coverage stack in this turn. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/locav/prompts/implementation-validation.md`, or **Tests to add** from `~/git/locav/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
-| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (compose/sandbox + fecha a janela Cursor). Do **not** ask about or move the board to concluído — that is a separate explicit request. |
+| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (compose/sandbox + fecha a janela Cursor + clones → branch base do `project.conf`). Do **not** ask about or move the board to concluído — that is a separate explicit request. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
 

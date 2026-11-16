@@ -147,7 +147,7 @@ Regra compartilhada: secção **Host card environment** em cada `*/prompts/workf
 | Início de qualquer trigger acima | `ensure` **antes** de git/stage/review pesado |
 | Fim de um dia / fechar o chat | **não** destroy — o estado fica |
 | Card em `done` / 'concluído' (ex. production-review Pass + yes) | `destroy` depois do move confirmado |
-| Chat `finish card` / `finalize card` | só `destroy` + fecha a janela Cursor (não mexe no board) |
+| Chat `finish card` / `finalize card` | `destroy` + fecha janela Cursor + clones compartilhados → branch base (`develop`/…) (não mexe no board) |
 | Colleague-review / correction terminam o paste | **não** destroy — o card ainda vive no funil |
 
 Não misturar domain libvirt do mesmo código com host-card sem regra explícita.

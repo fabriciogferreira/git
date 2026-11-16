@@ -584,12 +584,27 @@ workvm_host_card_destroy() {
         rm -f "$workspace"
     fi
     rm -rf "$dir"
+    # Se o worktree remove falhou no meio, sobra entrada em .git/worktrees.
+    if [ "$project" = "olie" ] && [ -d "$(workvm_host_card_git_root)/olie/api-main/.git" ]; then
+        git -C "$(workvm_host_card_git_root)/olie/api-main" worktree prune 2>/dev/null || true
+    fi
     workvm_host_card_log "destroyed $id"
+
+    # Pointers MCP não podem apontar para container já apagado.
+    workvm_host_card_clear_mcp_pointers "$id"
+
+    # Open Recent do Cursor ainda listava o .code-workspace apagado.
+    if [ -n "$workspace" ]; then
+        workvm_host_card_forget_cursor_workspace "$workspace"
+    fi
 
     # Drop DNS routes for this card (meta already gone).
     # shellcheck source=host-card-proxy.sh
     source "$(workvm_host_card_meta_repo)/lib/host-card-proxy.sh"
     workvm_host_card_proxy_reload || true
+
+    # Colleague review deixa api-main/olie-fronts na branch do card; volta à base.
+    workvm_host_card_restore_clone_bases "$project" "$id" || true
 
     # Depois do teardown: fecha a janela Cursor deste card (Hyprland).
     # shellcheck source=session.sh
@@ -599,6 +614,118 @@ workvm_host_card_destroy() {
     else
         workvm_close_cursor_workspace "${id}.code-workspace" || true
     fi
+}
+
+# Volta clones compartilhados à branch do project.conf (ex. develop).
+# Problema: finish card limpava o host-card, mas api-main/olie-fronts ficavam
+# na feature do review e o próximo card herdava o checkout errado.
+workvm_host_card_restore_clone_bases() {
+    local project="$1"
+    local id="${2:-}"
+    local meta_repo conf git_root line url rel branch path cur
+    meta_repo="$(workvm_host_card_meta_repo)"
+    conf="${meta_repo}/${project}/project.conf"
+    git_root="$(workvm_host_card_git_root)"
+    [ -f "$conf" ] || return 0
+
+    # shellcheck source=/dev/null
+    source "$conf"
+    if ! declare -p CLONE_REPOS >/dev/null 2>&1 || [ "${#CLONE_REPOS[@]}" -eq 0 ]; then
+        return 0
+    fi
+
+    for line in "${CLONE_REPOS[@]}"; do
+        # "<url> <relative-path> <branch>"
+        url=""
+        rel=""
+        branch=""
+        # shellcheck disable=SC2086
+        set -- $line
+        url="${1:-}"
+        rel="${2:-}"
+        branch="${3:-}"
+        [ -n "$rel" ] && [ -n "$branch" ] || continue
+        # olie-docs-hands-off: nunca checkout no clone docs.
+        case "$rel" in
+            */docs|olie/docs) continue ;;
+        esac
+        path="${git_root}/${rel}"
+        if [ ! -d "${path}/.git" ] && [ ! -f "${path}/.git" ]; then
+            continue
+        fi
+        cur="$(git -C "$path" branch --show-current 2>/dev/null || true)"
+        if [ "$cur" = "$branch" ]; then
+            workvm_host_card_log "clone já em $branch: $rel"
+            continue
+        fi
+        if ! git -C "$path" diff --quiet 2>/dev/null \
+            || ! git -C "$path" diff --cached --quiet 2>/dev/null \
+            || [ -n "$(git -C "$path" status --porcelain -uall 2>/dev/null | head -1)" ]; then
+            workvm_host_card_log "stash local em $rel (antes de $branch) [$id]"
+            git -C "$path" stash push -u -m "workvm-host-card destroy ${id:-?} → ${branch}" >/dev/null 2>&1 \
+                || workvm_host_card_log "stash falhou em $rel — tentando checkout mesmo assim"
+        fi
+        workvm_host_card_log "checkout $branch ← $rel (era ${cur:-detached})"
+        if git -C "$path" show-ref --verify --quiet "refs/heads/${branch}"; then
+            git -C "$path" -c core.hooksPath=/dev/null checkout "$branch" >/dev/null 2>&1 \
+                || workvm_host_card_log "checkout $branch falhou: $rel"
+        elif git -C "$path" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+            git -C "$path" -c core.hooksPath=/dev/null checkout -B "$branch" "origin/${branch}" >/dev/null 2>&1 \
+                || workvm_host_card_log "checkout origin/$branch falhou: $rel"
+        else
+            workvm_host_card_log "branch $branch ausente em $rel"
+        fi
+    done
+}
+
+# Limpa pointers Boost/Playwright se ainda apontam para este card.
+workvm_host_card_clear_mcp_pointers() {
+    local id="$1"
+    local cfg boost e2e
+    cfg="${XDG_CONFIG_HOME:-$HOME/.config}/workvm"
+    boost="${cfg}/host-card-boost-container"
+    e2e="${cfg}/host-card-e2e-container"
+    if [ -f "$boost" ] && grep -q "hc-${id}-app-1" "$boost" 2>/dev/null; then
+        rm -f "$boost"
+        workvm_host_card_log "pointer boost limpo ($id)"
+    fi
+    if [ -f "$e2e" ] && grep -q "hc-${id}-olie-e2e-1" "$e2e" 2>/dev/null; then
+        rm -f "$e2e"
+        workvm_host_card_log "pointer e2e limpo ($id)"
+    fi
+}
+
+# Remove workspaceStorage do Cursor que ainda referencia o .code-workspace.
+# Problema: destroy apagava o arquivo, mas Open Recent / storage mantinha o path.
+workvm_host_card_forget_cursor_workspace() {
+    local workspace="$1"
+    local storage uri
+    storage="${XDG_CONFIG_HOME:-$HOME/.config}/Cursor/User/workspaceStorage"
+    [ -d "$storage" ] || return 0
+    workspace="$(realpath -m "$workspace" 2>/dev/null || echo "$workspace")"
+    uri="file://${workspace}"
+    WORKVM_HC_WS_URI="$uri" python3 - "$storage" <<'PY'
+import json, os, shutil, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+uri = os.environ["WORKVM_HC_WS_URI"]
+# also accept trailing variants
+want = {uri, uri.rstrip("/")}
+for d in root.iterdir():
+    if not d.is_dir():
+        continue
+    meta = d / "workspace.json"
+    if not meta.is_file():
+        continue
+    try:
+        data = json.loads(meta.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    w = data.get("workspace") or data.get("folder") or ""
+    if w in want or w.rstrip("/") in want:
+        shutil.rmtree(d, ignore_errors=True)
+        print(f"workvm-host-card: Cursor workspaceStorage removido ({d.name})", file=sys.stderr)
+PY
 }
 
 workvm_host_card_list() {
