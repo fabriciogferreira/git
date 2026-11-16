@@ -3,6 +3,8 @@
 # Problema: o ensure injeta MANAGEMENT_URL com slug do card e o secret
 # reCAPTCHA de teste do Google — a suite espera *.olie.localhost e
 # invalid_token para token fake. Sem este wrapper, ~3 testes falham.
+# Problema (2026-11-16): no jarvis nproc=24; --processes≥23 mata workers
+# com SIGSEGV (exit 139). Default teto 22; override WORKVM_HOST_CARD_PEST_PROCESSES.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,7 +17,8 @@ workvm-host-card-pest — Pest no stack do host-card (Olie)
 
   workvm-host-card-pest --project olie --code <CODE> [--] [args do artisan test…]
 
-Defaults: --compact --parallel --recreate-databases
+Defaults: --compact --parallel --recreate-databases --processes=min(nproc,22)
+  (teto 22: ≥23 segfaulta no jarvis; override WORKVM_HOST_CARD_PEST_PROCESSES)
 Env forçado no container (não muda o compose do browser):
   DB_DATABASE=testing
   APP_ENV=testing
@@ -75,7 +78,12 @@ if [ -z "$pname" ]; then
     pname="hc-${id}"
 fi
 
-procs="${WORKVM_HOST_CARD_PEST_PROCESSES:-$(nproc)}"
+nproc_count="$(nproc)"
+default_procs="$nproc_count"
+if [ "$nproc_count" -gt 22 ]; then
+    default_procs=22
+fi
+procs="${WORKVM_HOST_CARD_PEST_PROCESSES:-$default_procs}"
 extra=("$@")
 if [ ${#extra[@]} -eq 0 ]; then
     extra=(--compact --parallel --recreate-databases --processes="$procs")

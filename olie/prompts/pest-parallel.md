@@ -39,8 +39,9 @@ If this chat is already the card’s Cursor window and the stack is up (`hc-olie
 ~/git/bin/workvm-host-card-pest --project olie --code '{{ code }}'
 ```
 
-Defaults: `--compact --parallel --recreate-databases`.
+Defaults: `--compact --parallel --recreate-databases --processes=min(nproc, 22)`.
 
+- Parallel workers default to **at most 22** (`workvm-host-card-pest`): on the jarvis host (`nproc=24`), **23+** kills Pest workers with SIGSEGV (exit 139). Override with `WORKVM_HOST_CARD_PEST_PROCESSES` only when intentional.
 - Do **not** pass a path filter or `--filter` — the point is the whole suite.
 - Do **not** use `docker exec olie-api-main` / another card’s container.
 - If the command fails or stalls too long: stop and report (prompt-health). Do not invent a smaller subset to “pass”.

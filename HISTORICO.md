@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card Pest: teto de 22 processes no jarvis
+
+- **problema:** `workvm-host-card-pest` usava `nproc` (24 no jarvis); com `--processes` 23 ou 24 o Paratest matava workers com SIGSEGV (exit 139) e a suite abortava sem contagem.
+- **por que é um problema:** o gate `pest-parallel` ficava vermelho por infra, não por regressão; retry manual com menos workers era ad hoc.
+- **resolvido como:** default `min(nproc, 22)` em `bin/workvm-host-card-pest` (2026-11-16; 22 completou a suite). Override `WORKVM_HOST_CARD_PEST_PROCESSES`. Documentado em `olie/prompts/pest-parallel.md`, `host-cards-no-vm.md` §6, `layout.mdc`.
+
 ## Gap analysis: comando `add` para fechar testes faltantes
 
 - **problema:** depois de **Tests to add**, o handoff misturava implementação de testes com `to correct` (validação / Needs code fixes); não havia frase curta só para gravar os testes recomendados pelo gap.
@@ -1005,7 +1011,13 @@ resolvido como: o que foi feito e por que dessa forma
 
 - **problema:** `finish card` / `destroy` limpava compose e estado, mas a janela do card ficava aberta
 - **por que é um problema:** N janelas mortas no Hyprland depois de revisar vários cards
-- **resolvido como:** `workvm_close_cursor_workspace` (hyprctl `closewindow` pelo título `olie-dop-… (Workspace)`) no fim do destroy
+- **resolvido como:** `workvm_close_cursor_workspace` fecha só a janela cujo título tem `olie-dop-… (Workspace)` (class Cursor)
+
+## finish card + Hyprland 0.56 não fecha o Cursor
+
+- **problema:** `hyprctl dispatch closewindow address:…` falha no Hyprland 0.56 (config Lua); a mensagem era `falha ao fechar Cursor` e a janela ficava
+- **por que é um problema:** finalize card não limpa a janela; tentar `hl.dsp.window.close()` sem `window=` fecha a ativa (ou outras)
+- **resolvido como:** `hyprctl dispatch 'hl.dsp.window.close({ window = "address:…" })'` só para addresses batidos pelo título do card; sem fallback sem `window=`
 
 ## finish card não pergunta Concluído
 

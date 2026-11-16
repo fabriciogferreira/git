@@ -81,7 +81,10 @@ Sem destroy automático confiável, a política de limpeza manual **não** basta
 - Teto opcional no host: `WORKVM_HOST_CARD_MEM=2g` e/ou `WORKVM_HOST_CARD_CPUS=2`
   no ambiente antes do ensure.
 - Pest `--parallel` no jarvis (24 threads) ≠ WorkVM (9 vCPUs): o gargalo é **um**
-  MySQL × N workers. O host-card aplica `compose.mysql-host.yml` (sem binlog,
+  MySQL × N workers. **Teto de workers = 22** em `bin/workvm-host-card-pest`
+  (`min(nproc, 22)` desde 2026-11-16): com 23+ o Paratest morre em SIGSEGV
+  (exit 139). Override: `WORKVM_HOST_CARD_PEST_PROCESSES`. O host-card aplica
+  `compose.mysql-host.yml` (sem binlog,
   fsync relaxado, buffer ~4 GiB, datadir em **tmpfs**, DBs `testing_test_1..32`
   pré-criados). Ajustes: `WORKVM_HOST_CARD_MYSQL_BUFFER`, `_MAX_CONN`, `_TMPFS`.
 - 32 GiB: N cards com Cursor + compose completo ainda estouram sem **MAX** de
