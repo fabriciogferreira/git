@@ -3,7 +3,7 @@ import { loginAsE2EUser } from './helpers/auth'
 import { createE2EProject, openProjectDetailsTab } from './helpers/project'
 
 /**
- * OS-549 — notebook must NOT toast `network_error` on `save-thread-data`
+ * OS-549 — notebook must NOT toast `network_error` on REST content save
  * CORS/network-looking blips (Chrome empty response / `ERR_FAILED` /
  * `ERR_NETWORK`; Axios: no `response`).
  *
@@ -45,17 +45,17 @@ async function clickNotebookSave(page: Page) {
     await save.first().click()
 }
 
-test.describe('OS-549 notebook save-thread-data', () => {
+test.describe('OS-549 notebook content save', () => {
     test.describe.configure({ timeout: 120_000 })
 
-    test('retries once when save-thread-data fails with a CORS-like network abort', async ({
+    test('retries once when content save fails with a CORS-like network abort', async ({
         page,
     }) => {
         let armed = false
         let attempts = 0
 
-        await page.route('**/save-thread-data/**', async route => {
-            if (!armed || route.request().method() !== 'POST') {
+        await page.route('**/forums/**/threads/**/content', async route => {
+            if (!armed || !['PUT', 'PATCH'].includes(route.request().method())) {
                 await route.continue()
                 return
             }
@@ -85,7 +85,7 @@ test.describe('OS-549 notebook save-thread-data', () => {
             .poll(() => attempts, {
                 timeout: 15_000,
                 message:
-                    'OS-549: one Save click must POST save-thread-data twice (fail + retry). Without notebook-local retry this stays 1.',
+                    'OS-549: one Save click must PUT/PATCH content twice (fail + retry). Without notebook-local retry this stays 1.',
             })
             .toBe(2)
 
@@ -93,13 +93,13 @@ test.describe('OS-549 notebook save-thread-data', () => {
         await expect(page.getByText(/Salvo|Saved/i).first()).toBeVisible({ timeout: 10_000 })
     })
 
-    test('does not toast when save-thread-data keeps failing — stays unsaved', async ({
+    test('does not toast when content save keeps failing — stays unsaved', async ({
         page,
     }) => {
         let armed = false
 
-        await page.route('**/save-thread-data/**', async route => {
-            if (!armed || route.request().method() !== 'POST') {
+        await page.route('**/forums/**/threads/**/content', async route => {
+            if (!armed || !['PUT', 'PATCH'].includes(route.request().method())) {
                 await route.continue()
                 return
             }

@@ -84,18 +84,19 @@ async function notebookIds(page: Page) {
     return page.evaluate(async apiHost => {
         const token = localStorage.getItem('token')
         const projectId = window.location.pathname.match(/\/projects\/([^/]+)/)?.[1]
-        const forumRes = await fetch(`${window.location.protocol}//${apiHost}/api/management/get-forum`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({
-                model_class: 'App\\Models\\Project',
-                model_id: projectId,
-            }),
+        const qs = new URLSearchParams({
+            model_class: 'App\\Models\\Project',
+            model_id: String(projectId),
         })
+        const forumRes = await fetch(
+            `${window.location.protocol}//${apiHost}/api/management/forums?${qs}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+            }
+        )
         const forumData = await forumRes.json()
         const forum = forumData.forum
         const threadId = forum?.default_thread_id ?? forum?.threads?.[0]?.id

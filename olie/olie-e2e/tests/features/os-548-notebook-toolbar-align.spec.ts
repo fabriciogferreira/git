@@ -9,7 +9,7 @@ import { createE2EProject, openProjectDetailsTab } from '../helpers/project'
  */
 
 async function openOrCreateNotebook(page: Page, projectId: string) {
-    // Same retry pattern as DOP-1262: transient get-forum blips show error_loading_forum.
+    // Same retry pattern as DOP-1262: transient forum load blips show error_loading_forum.
     for (let attempt = 1; attempt <= 3; attempt++) {
         await openProjectDetailsTab(page, projectId, 'forum')
 
