@@ -318,6 +318,95 @@ workvm_host_card_run_hook() {
     return 0
 }
 
+# Aponta Boost MCP para o app do card (mcp.json user-level é compartilhado).
+workvm_host_card_set_boost_container() {
+    local id="$1"
+    local pointer="${XDG_CONFIG_HOME:-$HOME/.config}/workvm/host-card-boost-container"
+    mkdir -p "$(dirname "$pointer")"
+    printf 'hc-%s-app-1\n' "$id" >"$pointer"
+}
+
+# Aponta Playwright MCP para o olie-e2e do card (mesmo mcp.json compartilhado).
+workvm_host_card_set_e2e_container() {
+    local id="$1"
+    local pointer="${XDG_CONFIG_HOME:-$HOME/.config}/workvm/host-card-e2e-container"
+    mkdir -p "$(dirname "$pointer")"
+    printf 'hc-%s-olie-e2e-1\n' "$id" >"$pointer"
+}
+
+# MCP no jarvis (igual ao login da WorkVM): olie-flow-ai + Boost + playwright.
+# Problema: host-card não roda project-start — sem overlay/`mcp.json` + proxy
+# o colleague review para e o Laravel Boost não aparece.
+workvm_host_card_ensure_olie_mcp() {
+    local project="$1"
+    local id="${2:-}"
+    local meta_repo conf project_dir dest
+    meta_repo="$(workvm_host_card_meta_repo)"
+    conf="${meta_repo}/${project}/project.conf"
+    project_dir="${meta_repo}/${project}"
+    dest="${HOME}/.cursor/mcp.json"
+
+    case "$project" in
+        olie|locav|televisao) ;;
+        *) return 0 ;;
+    esac
+    if [ ! -f "$conf" ]; then
+        return 0
+    fi
+
+    # shellcheck source=/dev/null
+    source "${meta_repo}/lib/common.sh"
+    # shellcheck source=/dev/null
+    source "$conf"
+    if [ "${MCP:-}" != "olie" ]; then
+        return 0
+    fi
+
+    export GIT_ROOT="$(workvm_host_card_git_root)"
+    # Overlay traz api-main/.cursor/mcp.json (laravel-boost → olie-api-main).
+    workvm_host_card_log "overlay → clones (MCP Boost/Playwright)"
+    workvm_apply_files "$project_dir" "$project" || true
+
+    workvm_host_card_log "MCP → ~/.cursor/mcp.json + proxy :47331"
+    workvm_apply_cursor_permissions "$meta_repo" || true
+    workvm_apply_mcp "$meta_repo" "olie" "$project_dir" || return 1
+    workvm_sync_olie_mcp_proxy "$meta_repo" || return 1
+
+    # WorkVM: Boost→olie-api-main, Playwright→olie-e2e. Host-card: wrappers.
+    if [ "$project" = "olie" ] && [ -f "$dest" ]; then
+        WORKVM_HC_MCP_DEST="$dest" \
+            WORKVM_HC_BOOST_WRAPPER="${meta_repo}/bin/workvm-host-card-boost-mcp.sh" \
+            WORKVM_HC_PW_WRAPPER="${meta_repo}/bin/workvm-host-card-playwright-mcp.sh" \
+            python3 <<'PY'
+import json, os
+from pathlib import Path
+dest = Path(os.environ["WORKVM_HC_MCP_DEST"])
+boost_w = os.environ["WORKVM_HC_BOOST_WRAPPER"]
+pw_w = os.environ["WORKVM_HC_PW_WRAPPER"]
+data = json.loads(dest.read_text(encoding="utf-8"))
+servers = data.setdefault("mcpServers", {})
+boost = servers.get("laravel-boost")
+if isinstance(boost, dict):
+    boost["command"] = boost_w
+    boost["args"] = []
+    servers["laravel-boost"] = boost
+pw = servers.get("playwright")
+if isinstance(pw, dict):
+    # Container olie-e2e do card (pointer); wrapper = workvm-playwright-mcp
+    pw["command"] = pw_w
+    pw["args"] = []
+    servers["playwright"] = pw
+dest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+PY
+        if [ -n "$id" ]; then
+            workvm_host_card_set_boost_container "$id"
+            workvm_host_card_set_e2e_container "$id"
+            workvm_host_card_log "laravel-boost → hc-${id}-app-1"
+            workvm_host_card_log "playwright → hc-${id}-olie-e2e-1"
+        fi
+    fi
+}
+
 # Clone/pull CLONE_REPOS do project.conf (mesmo conjunto da WorkVM).
 workvm_host_card_ensure_clones() {
     local project="$1"
@@ -378,6 +467,8 @@ workvm_host_card_ensure() {
 
     # Same clones as WorkVM project-setup (olie-fronts, backoffice, …).
     workvm_host_card_ensure_clones "$project" || return 1
+    # Antes do Cursor: MCP + proxy (VM fazia isso no project-start/login).
+    workvm_host_card_ensure_olie_mcp "$project" "$id" || return 1
     workspace="$(workvm_host_card_write_workspace "$project" "$id" "$code")" || return 1
 
     workvm_host_card_meta_write "$project" "$code" "$id" "$dir" "$port_base" "$workspace" "$compose_project" || return 1
@@ -391,6 +482,10 @@ workvm_host_card_ensure() {
     if [ "${WORKVM_HOST_CARD_OPEN_CURSOR:-1}" != "0" ] && [ -f "$workspace" ]; then
         # shellcheck source=session.sh
         source "$(workvm_host_card_meta_repo)/lib/session.sh"
+        # Boost user-level: aponta para o card desta janela antes de abrir.
+        if [ "$project" = "olie" ]; then
+            workvm_host_card_set_boost_container "$id"
+        fi
         # --new-window: two cards share clone paths; without -n Cursor reuses one window.
         workvm_open_cursor "$workspace" --new-window \
             || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"

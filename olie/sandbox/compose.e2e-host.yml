@@ -1,0 +1,30 @@
+# olie-e2e no host-card (Playwright MCP + suite).
+# Problema: ensure só subia slim+front; o e2e da WorkVM não existia no
+# jarvis e o MCP/suite ficavam sem container (Connecting... / sem alvo).
+# network_mode: host — alcança Caddy :80 e *.olie.localhost como o browser.
+# Serviço separado de `e2e` do slim (profile sandbox) para não misturar paths.
+services:
+  olie-e2e:
+    profiles: ["slim"]
+    build:
+      context: ${SB_E2E}
+      dockerfile: Dockerfile
+    image: olie/e2e
+    network_mode: host
+    ipc: host
+    user: "0:0"
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      E2E_BASE_URL: http://devframe.${SB_DNS_SLUG}.olie.localhost
+      E2E_API_URL: http://api.${SB_DNS_SLUG}.olie.localhost
+      E2E_USER: ${E2E_USER:-tester@olie.ai}
+      E2E_PASSWORD: ${E2E_PASSWORD:-password}
+    volumes:
+      - ${SB_E2E}/tests:/app/tests
+      - ${SB_E2E}/playwright.config.ts:/app/playwright.config.ts
+      - ${SB_E2E}/test-results:/app/test-results
+      - ${SB_E2E}/playwright-report:/app/playwright-report
+    mem_limit: ${SB_E2E_MEM:-1536m}
+    cpus: ${SB_E2E_CPUS:-1.0}
+    command: ["sleep", "infinity"]

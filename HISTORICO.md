@@ -983,6 +983,25 @@ resolvido como: o que foi feito e por que dessa forma
 - **por que é um problema:** o ensure injeta `MANAGEMENT_URL` com slug (browser multi-card) e o secret reCAPTCHA de teste do Google (login local); `--recreate-databases` esvazia o MySQL mas o checksum do FastRefreshDatabase faz pular `migrate:fresh`
 - **resolvido como:** `bin/workvm-host-card-pest` força no `exec` o env da WorkVM (`MANAGEMENT_URL=http://{subdomain}.olie.localhost`, `DB_DATABASE=testing`, secret que rejeita token fake) e apaga `storage/app/migration-checksum_*.txt` antes do Pest
 
+## Host-card sem olie-flow-ai (colleague review)
+
+- **problema:** no jarvis o colleague review parava em “olie-flow-ai MCP is unavailable”; na WorkVM o board carregava
+- **por que é um problema:** host-card não passa pelo `project-start` — sem merge em `~/.cursor/mcp.json` nem proxy `:47331` o agente não fala com o card
+- **resolvido como:** `workvm_host_card_ensure_olie_mcp` no ensure (olie/locav/televisão com `MCP=olie`): mesmo caminho da VM (`workvm_apply_mcp` + `workvm_sync_olie_mcp_proxy`)
+
+## Host-card sem Laravel Boost MCP
+
+- **problema:** `~/.cursor/mcp.json` no jarvis só tinha `olie-flow-ai` + playwright; Boost não aparecia
+- **por que é um problema:** a VM aplica `overlay/` (mcp.json do api-main → `olie-api-main`) no login; host-card não aplicava overlay e o container do card é `hc-olie-*-app-1`
+- **resolvido como:** ensure aplica overlay + merge; `bin/workvm-host-card-boost-mcp.sh` aponta Boost ao container do card ativo (`host-card-boost-container`)
+
+## Host-card Playwright MCP em Connecting…
+
+- **problema:** Playwright ficava em Connecting… no Cursor do jarvis
+- **por que é um problema:** o merge apontava `workvm-playwright-mcp.sh` → container `olie-e2e`, que a WorkVM sobe no compose e o host-card não
+- **resolvido como (1º):** wrapper Chromium + npx no host (paliativo)
+- **resolvido como (atual):** ensure sobe `olie-e2e` por card (`compose.e2e-host.yml`, `network_mode: host`, `E2E_*` → `*.{slug}.olie.localhost`); `workvm-host-card-playwright-mcp.sh` faz `docker exec` nesse container (pointer `host-card-e2e-container`), igual à WorkVM
+
 ## Host-card Cursor abria o explorer no Televisão
 
 - **problema:** ensure Olie abria janela com o workspace certo, mas o explorer mostrava `televisao/` (e outros produtos) sob o meta-repo

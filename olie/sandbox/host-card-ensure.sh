@@ -94,12 +94,23 @@ PY
         app_key="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     fi
 
+    local e2e_dir="${meta_repo}/olie/olie-e2e"
+    if [ ! -d "$e2e_dir" ]; then
+        workvm_host_card_log "olie-e2e ausente: $e2e_dir"
+        return 1
+    fi
+    # O container grava relatório com outro uid (igual project-start e2e).
+    mkdir -p "$e2e_dir/test-results" "$e2e_dir/playwright-report"
+    chmod -R a+rwX "$e2e_dir/test-results" "$e2e_dir/playwright-report" 2>/dev/null || true
+
     mkdir -p "$compose_dir/artifacts"
     cp -f "${meta_repo}/olie/sandbox/compose.slim.yml" "$compose_dir/compose.yaml"
     cp -f "${meta_repo}/olie/sandbox/compose.gui.yml" "$compose_dir/compose.gui.yml"
     cp -f "${meta_repo}/olie/sandbox/compose.front.yml" "$compose_dir/compose.front.yml"
     # MySQL rápido para Pest -p no jarvis (tmpfs + tunings); ver compose.mysql-host.yml
     cp -f "${meta_repo}/olie/sandbox/compose.mysql-host.yml" "$compose_dir/compose.mysql-host.yml"
+    # Playwright MCP + suite — mesmo image olie/e2e da WorkVM
+    cp -f "${meta_repo}/olie/sandbox/compose.e2e-host.yml" "$compose_dir/compose.e2e-host.yml"
 
     local pname="hc-${id}"
     {
@@ -108,6 +119,7 @@ PY
         printf 'SB_API_VENDOR=%s\n' "$api_vendor"
         printf 'SB_FRONTS=%s\n' "$fronts"
         printf 'SB_FRONT_ENV=%s\n' "$front_env"
+        printf 'SB_E2E=%s\n' "$e2e_dir"
         printf 'SB_DNS_SLUG=%s\n' "$dns_slug"
         printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/mysql-init"
         workvm_host_card_write_resource_env
@@ -117,7 +129,7 @@ PY
         printf 'SB_PORT_API=%s\n' "$port_base"
         printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
         printf 'APP_KEY=%s\n' "$app_key"
-        printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml\n'
+        printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml:compose.e2e-host.yml\n'
     } >"$compose_dir/.env"
 
     workvm_host_card_apply_compose_limits "$compose_dir"
@@ -172,7 +184,7 @@ services:
       RECAPTCHA_SECRET: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
 EOF
     # shellcheck disable=SC2016
-    sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml:compose.appkey.yml|' \
+    sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml:compose.e2e-host.yml:compose.appkey.yml|' \
         "$compose_dir/.env"
 
     python3 - "$dir/meta.json" "$pname" "$compose_dir" "$dns_slug" "$port_base" "$wt" "$api_vendor" <<'PY'
@@ -196,7 +208,7 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n")
 PY
 
-    workvm_host_card_log "compose up ($pname profile=slim + front)"
+    workvm_host_card_log "compose up ($pname profile=slim + front + olie-e2e)"
     (
         cd "$compose_dir"
         set -a
@@ -204,6 +216,7 @@ PY
         source .env
         set +a
         export COMPOSE_PROJECT_NAME="$pname"
+        # Sem --build: Compose V2 constrói olie/e2e só se a image não existir
         docker compose --profile slim up -d --remove-orphans
     ) || return 1
 
@@ -213,8 +226,12 @@ PY
 
     workvm_host_card_proxy_ensure || workvm_host_card_log "proxy DNS falhou — use portas diretas"
 
+    # Playwright MCP aponta para o e2e deste card
+    workvm_host_card_set_e2e_container "$id"
+
     workvm_host_card_log "API  http://api.${dns_slug}.olie.localhost  (→ :${port_base})"
     workvm_host_card_log "Front http://devframe.${dns_slug}.olie.localhost  (→ :$((port_base + 1)))"
+    workvm_host_card_log "e2e  hc-${id}-olie-e2e-1  (E2E_* → ${dns_slug}.olie.localhost)"
 }
 
 # Espera MySQL e aplica migrate (+ seed na primeira vez).

@@ -51,4 +51,7 @@ Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
 - `Dockerfile.app` — `olie/api-main` + PCOV
 - `mysql-init/` — cria `testing` + `api_main`
 - `project.sh` — hooks do Manager
-- `host-card-ensure.sh` / `host-card-destroy.sh` — stack slim do **card no host** (`workvm-host-card`; clones em `~/git/olie`, sem worktree detach)
+- `compose.e2e-host.yml` — `olie-e2e` no ensure do jarvis (`network_mode: host`, DNS do card)
+- `host-card-ensure.sh` / `host-card-destroy.sh` — stack slim + front + e2e do **card no host** (`workvm-host-card`; clones em `~/git/olie`, sem worktree detach)
+  - Suite: `docker exec -u pwuser hc-olie-<id>-olie-e2e-1 npx playwright test --project=chromium`
+  - MCP Playwright: pointer `~/.config/workvm/host-card-e2e-container` → mesmo container
