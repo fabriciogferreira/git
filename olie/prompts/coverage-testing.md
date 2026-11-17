@@ -8,15 +8,15 @@ This is a personal WorkVM stack, same family as `~/git/olie/prompts/mutation-tes
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/olie/prompts/test-gap-analysis.md` when backend changed. Continue with **`next coverage`** (one production file) or **`correct coverages`** (drain every remaining file in parallel). When this coverage stack is finished (or the user stops / skips), the next recommended prompt is `~/git/olie/prompts/mutation-testing.md` (`next prompt` runs it), then Pest parallel, then pre-qa.
+1. **Own card (develop handoff)** — after `~/git/olie/prompts/test-gap-analysis.md` when backend changed. **Default:** drain every remaining changed `app/**/*.php` in this paste (`correct coverages` / parallel sandboxes). Use **`next coverage`** only when the user asks for one file. When this coverage stack is finished (or the user stops / skips), the next recommended prompt is `~/git/olie/prompts/mutation-testing.md` (`next prompt` runs it), then Pest parallel, then pre-qa.
 2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with core / gap / mutation when backend changed. **Dispatcher mode:** drain **every** remaining changed `app/**/*.php` in this run. Prefer `~/git/bin/workvm-sandbox create --project olie --profile mutation` (same exclusive Pest DB isolation as mutation — see `~/git/olie/sandbox/ORCHESTRATION.md`). Do **not** recommend `next coverage` / `correct coverages` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
-3. **Colleague card pasted alone** — one file per paste (`next coverage`), or drain with `correct coverages`; when none remain, tell the user to return to `colleague-review.md` if that owns the card.
+3. **Colleague card pasted alone** — same default as own-card (parallel drain); **`next coverage`** only if the user asks for one file; when none remain, tell the user to return to `colleague-review.md` if that owns the card.
 
 **Stack gate (develop handoff / alone):** while any changed `app/**/*.php` from the card’s `api-main` diff is missing a done row in `coverage-ledger.md` (or fails the Close gates), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/mutation-testing.md`, `pest-parallel.md`, or `pre-qa.md`. Do **not** treat `next prompt` as permission to leave coverage early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `mutation-testing.md`. If there is no `app/` PHP in the change set, the stack is empty — say so and recommend `mutation-testing.md` (then Pest parallel → pre-qa).
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands** (includes `next coverage` and `correct coverages`).
 
-**Own-card / alone:** `next coverage` = one changed `api-main` production PHP file per turn; `correct coverages` = drain **all** remaining change-set production files in this turn (sandbox + subagent per file when parallel). Prefer `workvm-sandbox` so Card VM `testing` stays untouched.
+**Own-card / alone:** default = **`correct coverages`** (drain **all** remaining change-set production files in this turn — sandbox + subagent per file). **`next coverage`** = one file only when the user asks. Prefer `workvm-sandbox` so Card VM `testing` stays untouched.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
@@ -30,8 +30,8 @@ Never walk the whole `app/` tree for suite Total. Never treat Pest’s suite-wid
 
 | Command | Do this |
 | --- | --- |
-| `next coverage` | Continue **this** stack: pick the next changed `app/**/*.php` not yet done in the ledger and run prepare → measure → close for **one** file. Same as re-pasting this prompt. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`. |
-| `correct coverages` | **Own-card / alone drain:** process **every** remaining changed production file in this turn (not one). Prefer one sandbox **and** one subagent per file; parent orchestrates and writes the ledger. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md` until the drain finishes (or the user stops). Details below. |
+| `next coverage` | Opt-in: one changed `app/**/*.php` only. Prefer the default parallel drain. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`. |
+| `correct coverages` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed production file in this turn. Prefer one sandbox **and** one subagent per file; parent writes the ledger. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
 | `next prompt` | **Blocked** while the change-set stack still has remaining production files. Refuse, list how many files remain (and the next path), and tell the user to send `next coverage` or `correct coverages`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/mutation-testing.md`. |
 | `try again` | Resume or re-run coverage on the **current** (last attempted) production file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct coverages` shard, retry that file (or re-send `correct coverages` for all still-missing rows). |
 
@@ -78,9 +78,9 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 ## `correct coverages` (parallel drain)
 
-Own-card / alone chat command. Same prepare → measure → close scoring as a single file; different orchestration.
+**Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same prepare → measure → close scoring as a single file; different orchestration.
 
-1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
+1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `mutation-testing.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
 3. For each remaining file, in parallel (Olie: no default cap; queue only if `WORKVM_SANDBOX_MAX` > 0 — `~/git/olie/sandbox/ORCHESTRATION.md`):
    - Prefer `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
@@ -88,7 +88,7 @@ Own-card / alone chat command. Same prepare → measure → close scoring as a s
    - Launch **one subagent (Task) per file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id (if any), candidate test paths, and the scoring/ledger rules.
 4. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
 5. **Parent only** appends/updates rows in `~/git/olie/prompts/coverage-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
-6. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `pre-qa.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
+6. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `mutation-testing.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
 
 ## Prepare
 

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Own-card: drain paralelo por padrão
+
+- **problema:** no handoff próprio, coverage/mutation avançavam com `next coverage` / `next mutation` (um arquivo por paste); N arquivos = N pastes + wall-clock serial, enquanto o colleague dispatcher já drenava em paralelo.
+- **por que é um problema:** bench DOP-1258 (3 arquivos, create+mutate+destroy): sequencial ~472s vs paralelo ~230s (~2×); ainda sem a espera humana entre pastes.
+- **resolvido como:** default own-card = `correct coverages` / `correct mutations` ao abrir o prompt (Olie/Locav/Televisão); `next *` fica opt-in. `workflow-policy` + `olie/sandbox/ORCHESTRATION.md` alinhados.
+
 ## Mutation/coverage: ledger por SHA (file@blob)
 
 - **problema:** o budget de re-run evitava repetir no mesmo chat, mas entre chats/colleague o dispatcher ainda reabria sandbox + mutate/coverage no mesmo tip já fechado no ledger (path-only ou “card pass”).

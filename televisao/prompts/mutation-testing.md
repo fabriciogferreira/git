@@ -4,13 +4,13 @@ Use this when the card changed `~/git/televisao/televisao-api`. Skip entirely wh
 
 Three entry points:
 
-1. **Own card (develop handoff)** — after `~/git/televisao/prompts/coverage-testing.md` (which follows gap when backend changed). **One changed `*Test.php` per paste** (`next mutation`). When finished (or the user stops), next is `~/git/televisao/prompts/pest-parallel.md`, then `pre-qa.md`.
-2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/televisao/prompts/colleague-review.md` with `colleague-review-core.md`, `test-gap-analysis.md`, and `coverage-testing.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run (loop § “One changed test file” until the ledger has a row for each, or shard via `~/git/bin/workvm-sandbox` per `ORCHESTRATION.md`). Do **not** stop after one file. Do **not** recommend `next mutation` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
-3. **Colleague card pasted alone** — one file per paste as in develop handoff; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Revisado' yourself when the dispatcher owns the card.
+1. **Own card (develop handoff)** — after `~/git/televisao/prompts/coverage-testing.md` (which follows gap when backend changed). **Default:** drain every remaining changed `*Test.php` in this paste (`correct mutations` / parallel sandboxes). Use **`next mutation`** only when the user asks for one file. When finished (or the user stops), next is `~/git/televisao/prompts/pest-parallel.md`, then `pre-qa.md`.
+2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/televisao/prompts/colleague-review.md` with `colleague-review-core.md`, `test-gap-analysis.md`, and `coverage-testing.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run (sandbox shard per `ORCHESTRATION.md`). Do **not** stop after one file. Do **not** recommend `next mutation` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
+3. **Colleague card pasted alone** — same default as own-card (parallel drain); **`next mutation`** only if the user asks for one file; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Revisado' yourself when the dispatcher owns the card.
 
-Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
+Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands** (`correct mutations` default; `next mutation` opt-in).
 
-**Own-card / alone today:** one changed `*Test.php` per paste (`next mutation`). **Colleague dispatcher:** all remaining files in this run (sandbox shard when available — `~/git/televisao/sandbox/ORCHESTRATION.md`).
+**Own-card / alone:** default = **`correct mutations`** (all remaining files this turn). **`next mutation`** = one file only when asked. **Colleague dispatcher:** all remaining files in this run (sandbox shard when available — `~/git/televisao/sandbox/ORCHESTRATION.md`).
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
@@ -32,7 +32,7 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 **Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <televisao-api> <test-path> <each --class production path>`. Later chats / dispatcher skip that test (no sandbox/mutate) when Result is done **and** `sha:` still matches. Done row with **no** `sha:` → re-run once and stamp.
 
-## One changed test file per paste
+## Change-set file list (shared)
 
 Work only in `~/git/televisao/televisao-api`.
 
@@ -41,14 +41,32 @@ Work only in `~/git/televisao/televisao-api`.
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
-3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set mutation stack is complete, recommend `~/git/televisao/prompts/pest-parallel.md` as the next paste, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md` for the combined outcome.
-5. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /srv televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/` or any other file. If Drift is missing, stop and report. Do not install it. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
-6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
-7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
-8. Prepare, mutate those classes, close the file using the scoring rules below. **Own-card / alone:** stop — do not start the next test file in this paste. **Dispatcher mode:** after the ledger row, continue from step 2 with the next remaining file (or the next sandbox shard).
+3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
+4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`).
+
+## One changed test file / `next mutation`
+
+Opt-in one-file path (user asked for `next mutation`).
+
+1. Take the first remaining changed test file from the shared list (or the path the user named).
+2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set mutation stack is complete, recommend `~/git/televisao/prompts/pest-parallel.md`, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md`.
+3. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /srv televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/`. If Drift is missing, stop and report. Do not install it.
+4. Prepare, mutate the change-set `--class` targets, close the file. **Own-card / alone (`next mutation`):** stop — do not start the next file. **Dispatcher mode:** continue with the next remaining file (or sandbox shard).
+
+## `correct mutations` (parallel drain)
+
+**Default** for own-card / alone when this prompt opens (or the user sends `correct mutations`).
+
+1. Build the remaining-file list (shared steps 1–2). If empty, say complete and recommend `pest-parallel.md`.
+2. Parent orchestrates — do not serialize every file in one giant context when more than one remains.
+3. For each remaining file, in parallel (respect `WORKVM_SANDBOX_MAX` — `~/git/televisao/sandbox/ORCHESTRATION.md`):
+   - Create `~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation` when available; else `docker exec -w /srv televisao-backend` (own-card fallback only).
+   - Sync dirty `televisao-api` into the sandbox worktree when needed.
+   - One subagent (Task) per file (Drift that file if still PHPUnit; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
+4. Parent only appends ledger rows; destroy each sandbox when the row is accepted.
+5. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.
 
 ## Prepare
 

@@ -72,15 +72,14 @@ paste colleague-review.md          # dispatcher
 ```
 
 Mutation/coverage em modo dispatcher processam **todos** os arquivos
-restantes do change-set nesta corrida (não um `next mutation` /
-`next coverage` por paste). Own-card develop handoff: `next mutation` /
-`next coverage` = um arquivo por paste; **`correct mutations`** /
-**`correct coverages`** = drenam os restantes nesta corrida (um sandbox
-`profile=mutation` + um subagent por arquivo; pai agrega o ledger) —
-mesmo contrato de shard. Preferir sandbox para não tocar o `testing` da
-Card VM. Mutation × coverage no **mesmo** sandbox **não** (ambos usam
-Pest/DB). Olie: **sem teto** por padrão (`WORKVM_SANDBOX_MAX=0`); cap
-opcional com `WORKVM_SANDBOX_MAX=N`.
+restantes do change-set nesta corrida. Own-card develop handoff: default
+também é **`correct mutations`** / **`correct coverages`** (dreno paralelo
+nesta corrida — um sandbox `profile=mutation` + um subagent por arquivo;
+pai agrega o ledger); `next mutation` / `next coverage` = opt-in um
+arquivo. Preferir sandbox para não tocar o `testing` da Card VM.
+Mutation × coverage no **mesmo** sandbox **não** (ambos usam Pest/DB).
+Olie: **sem teto** por padrão (`WORKVM_SANDBOX_MAX=0`); cap opcional com
+`WORKVM_SANDBOX_MAX=N`.
 
 ---
 

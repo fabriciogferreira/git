@@ -64,9 +64,10 @@ paste colleague-review.md          # dispatcher
 ```
 
 Mutation/coverage em modo dispatcher processam **todos** os arquivos
-restantes do change-set nesta corrida (não um `next mutation` /
-`next coverage` por paste). Own-card develop handoff continua um arquivo
-por paste. Mutation × coverage no **mesmo** sandbox **não**.
+restantes do change-set nesta corrida. Own-card develop handoff: default
+também é **`correct mutations`** / **`correct coverages`** (dreno paralelo);
+`next mutation` / `next coverage` = opt-in um arquivo. Mutation × coverage
+no **mesmo** sandbox **não**.
 
 ### Alvo — fan-out de sandboxes no mesmo Card VM
 

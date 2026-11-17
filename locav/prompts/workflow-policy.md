@@ -92,7 +92,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
 4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them. **Re-run budget:** after one mutate report, classify in-scope survivors as killable vs `equivalent` immediately; re-mutate only after a real assert change (prefer ≤1 re-run per `--class`); never re-mutate an unchanged tree “to confirm”. Coverage has a matching re-measure budget.
 
-Own-card sequential order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
+Own-card stage order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`. Within coverage/mutation the default is **`correct coverages` / `correct mutations`** (parallel drain); `next coverage` / `next mutation` are opt-in one-file.
 
 Order when the stack applies (colleague sequential): colleague-review → test-gap-analysis → coverage-testing → mutation-testing (mutation/coverage only if `LocavApi`). Own-card: gap → coverage → mutation → pest-parallel → pre-qa.
 
@@ -263,9 +263,10 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | Command | Meaning |
 | --- | --- |
 | `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/locav/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** refuse while changed `LocavApi` `*Test.php` files lack a done `mutation-ledger.md` row — tell the user to send `next mutation`. **Exception — coverage stack:** refuse while changed `app/**/*.php` files lack a done `coverage-ledger.md` row — tell the user to send `next coverage` or `correct coverages`. |
-| `next mutation` | Continue `mutation-testing.md` for the next changed test file not yet done in `mutation-ledger.md` (one file). |
-| `next coverage` | Continue `coverage-testing.md` for the next changed `app/**/*.php` not yet done in `coverage-ledger.md` (one file). |
-| `correct coverages` | Drain every remaining changed production file for the coverage stack in this turn. |
+| `next mutation` | Opt-in one file during the personal mutation stack. Prefer default `correct mutations`. |
+| `correct mutations` | **Default** personal mutation drain: every remaining changed `*Test.php` in this turn (subagent per file; Locav has no mutation sandbox yet). Opening `mutation-testing.md` with files remaining does this. |
+| `next coverage` | Opt-in one file during the personal coverage stack. Prefer default `correct coverages`. |
+| `correct coverages` | **Default** personal coverage drain: every remaining changed production file in this turn. Opening `coverage-testing.md` with files remaining does this. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/locav/prompts/implementation-validation.md`, or **Tests to add** from `~/git/locav/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
 | `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (compose/sandbox + fecha a janela Cursor + clones → branch base do `project.conf`). Do **not** ask about or move the board to concluído — that is a separate explicit request. |

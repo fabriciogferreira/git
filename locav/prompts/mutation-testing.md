@@ -4,10 +4,10 @@ Use this **after** `~/git/locav/prompts/coverage-testing.md` **and** the card ch
 
 Two entry points:
 
-1. **Own card (develop handoff)** — after `coverage-testing.md` (which follows gap when `LocavApi` applies). When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/locav/prompts/pest-parallel.md`, then `pre-qa.md`.
-2. **Colleague card in 'QA/CR'** — after gap/coverage when `LocavApi` changed (Locav colleague stack may be sequential). Leave the card in 'QA/CR' until mutation finishes, then run `pest-parallel.md` before the combined outcome when applicable.
+1. **Own card (develop handoff)** — after `coverage-testing.md` (which follows gap when `LocavApi` applies). **Default:** drain every remaining changed `*Test.php` in this paste (`correct mutations` / parallel subagents). Use **`next mutation`** only when the user asks for one file. When finished (or the user stops), next is `~/git/locav/prompts/pest-parallel.md`, then `pre-qa.md`.
+2. **Colleague card in 'QA/CR'** — after gap/coverage when `LocavApi` changed (Locav colleague stack may be sequential). Same default drain; leave the card in 'QA/CR' until mutation finishes, then run `pest-parallel.md` before the combined outcome when applicable.
 
-Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands**.
+Chat commands: `~/git/locav/prompts/workflow-policy.md` → **Chat commands** (`correct mutations` default; `next mutation` opt-in).
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/locav/prompts/workflow-policy.md`.
 
@@ -29,7 +29,7 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 **Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <LocavApi> <test-path> <each --class production path>`. Later chats skip that test (no sandbox/mutate) when Result is done **and** `sha:` still matches. Done row with **no** `sha:` → re-run once and stamp.
 
-## One changed test file per paste
+## Change-set file list (shared)
 
 Work only in `~/git/locav/LocavApi`.
 
@@ -38,14 +38,28 @@ Work only in `~/git/locav/LocavApi`.
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
-3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
-4. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/pest-parallel.md` as the next paste, and stop.
-5. If that file is still a PHPUnit test case (`extends TestCase`), convert **that file only** with Drift before mutating: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If `pestphp/pest-plugin-drift` is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/` or any other file. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.
-6. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
-7. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
-8. Prepare, mutate those classes, close the file using the scoring rules below. Stop. Do not start the next test file in this paste.
+3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
+4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`).
+
+## One changed test file / `next mutation`
+
+Opt-in one-file path (user asked for `next mutation`).
+
+1. Take the first remaining changed test file from the shared list (or the path the user named).
+2. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/pest-parallel.md`, and stop.
+3. If that file is still a PHPUnit test case (`extends TestCase`), convert **that file only** with Drift before mutating: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If `pestphp/pest-plugin-drift` is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/`.
+4. Prepare, mutate the change-set `--class` targets, close the file. Stop — do not start the next test file in this paste.
+
+## `correct mutations` (parallel drain)
+
+**Default** for own-card / alone when this prompt opens (or the user sends `correct mutations`). Locav has no mutation sandbox profile yet — use parallel **subagents** and `docker exec -w /var/www/html locav-backend` (serialize only if the shared testing DB cannot take concurrent Pest mutate).
+
+1. Build the remaining-file list (shared steps 1–2). If empty, say complete and recommend `pest-parallel.md`.
+2. Parent orchestrates. Prefer one subagent (Task) per remaining file (Drift if needed; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
+3. Parent only appends ledger rows.
+4. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.
 
 ## Prepare
 
