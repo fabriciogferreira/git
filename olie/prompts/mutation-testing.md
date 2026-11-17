@@ -130,6 +130,15 @@ If `--class` fails for a given Pest build, temporarily add `mutates(ChangedClass
 - In-scope untested: tighten assertions in that test file so the mutated behavior fails. Re-run mutate. Do not change production code to satisfy a mutation. If a mutation shows a real product bug, stop and report it.
 - In-scope untested that does not change behavior: record `equivalent` and name the mutation id and why. Do not invent an assertion that cannot fail.
 
+### Re-run budget (wall-clock)
+
+Re-running `pest --mutate` without new killable asserts (or without accepting `equivalent`) only repeats the same score. On jarvis that burns minutes per file for zero ledger progress.
+
+- After **one** mutate report for a `--class` / file: split in-scope survivors into **killable** vs **equivalent** immediately.
+- Re-run mutate **only** after you changed the test to kill at least one killable in-scope mutant (or after a tooling fix). Cap: prefer **at most one** re-run per `--class` once killables are addressed; then close with `equivalent` for any remaining behavior-preserving ids.
+- Do **not** re-mutate “to confirm” an unchanged tree, to climb Pest’s class-wide `%`, or to re-check mutants you already marked `equivalent`.
+- Do **not** invent asserts that cannot fail just to avoid `equivalent`.
+
 Pest’s overall `%` on a fat class may stay below 100%. That is OK. Ledger Result reflects **in-scope**, not Pest’s class-wide score. Put Pest’s raw score in Notes when it differs.
 
 ### +1 legacy (optional, once per paste)

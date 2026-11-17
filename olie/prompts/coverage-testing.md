@@ -151,6 +151,8 @@ Do **not** use Pest `--min` / `--exactly` against suite Total. File raw is score
 - Prefer the smallest test change that executes the touched path. Do not rewrite the suite for the whole pre-existing class unless a rule below requires File raw `100%`.
 - No executable in-scope lines (comment/whitespace-only hunk): In-scope `100%`, Notes `no executable in-scope lines` — still apply the ratchet / small-file rules when they apply.
 
+**Re-measure budget:** run `pest --coverage` again **only** after the Via test (or sibling) changed to hit uncovered in-scope lines or to satisfy the Large-file +1pp ratchet. Do **not** re-measure an unchanged tree “to confirm” a prior report.
+
 ### 2) File-size / complexity band
 
 Count **executable** lines Pest considers for that file (from the coverage report: covered + uncovered). Choose one band:

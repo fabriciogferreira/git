@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation/coverage: orçamento de re-run (equivalent cedo)
+
+- **problema:** no colleague review o agente re-rodava `pest --mutate` / `--coverage` “para confirmar” ou sem assert novo; no jarvis isso repetia o mesmo score (ex. SafeUrlGuard 54.65% ×4) e queimava minutos por arquivo.
+- **por que é um problema:** wall-clock do gate era dominado por re-medida inútil, não por fechar in-scope/+1pp.
+- **resolvido como:** seção **Re-run budget** em `mutation-testing.md` e re-measure budget em `coverage-testing.md` (Olie, Locav, Televisão) + nota em `workflow-policy.md`: classificar killable vs `equivalent` após 1 reporte; re-rodar só após mudança real de teste (≤1 re-mutate por `--class`); proibido re-medir árvore inalterada. Bench local DOP-1258: ~200s (4×) → ~23s (1×) no mesmo score.
+
 ## Host-card ensure: worktree api-main na branch do card
 
 - **problema:** `open olie DOP-…` criava o worktree em detached HEAD/`develop`; a janela Cursor não mostrava os arquivos já commitados na `feature/DOP-…`.

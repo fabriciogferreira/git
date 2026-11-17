@@ -75,7 +75,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
 2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
 3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
-4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them. **Re-run budget:** after one mutate report, classify in-scope survivors as killable vs `equivalent` immediately; re-mutate only after a real assert change (prefer ≤1 re-run per `--class`); never re-mutate an unchanged tree “to confirm”. Coverage has a matching re-measure budget.
 
 Own-card sequential order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
 
