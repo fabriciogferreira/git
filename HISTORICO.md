@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation: `--class` por teste, não o pool inteiro do change-set
+
+- **problema:** `mutation-testing` mandava passar **todas** as FQCN `app/` do change-set em **cada** `*Test.php`; com `--covered-only` classes só tocadas de passagem ainda geravam mutate longo (ex. CloudConnector +171s num teste de templates).
+- **por que é um problema:** a descoberta do colleague review (1ª onda) fica no teto do pior shard; pool largo × N testes paga wall-clock sem fechar survivors úteis.
+- **resolvido como:** escopo **per-test** em `olie|locav|televisao/prompts/mutation-testing.md` (+ nota em `olie/sandbox/ORCHESTRATION.md`): pool do change-set → filtrar FQCN que o teste exercita (`use` + drivers HTTP/jobs). Bench DOP-1281 no host-card: `ChannelMessageTemplatesTest` full 21 classes ~657s vs scoped 8 ~416s (**~1.6×**); leve ~4.7×.
+
 ## Colleague review: gap/mutation/coverage → reviewer-fix, não Corrigir
 
 - **problema:** o outcome do colleague review mandava mover para 'Corrigir' se gap, mutation ou coverage reportassem trabalho — mesmo com o core Pass — e ainda gravava esses resultados no conteúdo do projeto.

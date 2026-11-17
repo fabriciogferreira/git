@@ -41,8 +41,9 @@ Work only in `~/git/televisao/televisao-api`.
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
-3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
-4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
+3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). That list is the **change-set pool** only — **not** the `--class` list for every test.
+4. **Per-test `--class` scope (required):** for each `*Test.php`, mutate **only** the pool FQCNs that test actually exercises. Prefer `use App\…` imports that intersect the pool; add FQCNs the test clearly drives via HTTP/jobs when imports are missing. Do **not** pass the whole pool to every file (Olie bench DOP-1281: heavy test ~1.6× faster scoped; light ~4.7×).
+5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`).
 
@@ -53,7 +54,7 @@ Opt-in one-file path (user asked for `next mutation`).
 1. Take the first remaining changed test file from the shared list (or the path the user named).
 2. If none remain: **dispatcher mode** → return clean/complete to the dispatcher and stop. **Own-card** → say the change-set mutation stack is complete, recommend `~/git/televisao/prompts/pest-parallel.md`, and stop. **Alone on colleague stack** → say complete and tell the user to use `colleague-review.md`.
 3. If that file is still a PHPUnit test case (`extends TestCase`) and Drift is already installed, convert **that file only** before mutating: `docker exec -w /srv televisao-backend vendor/bin/pest --drift <that-file>`. Do not pass `tests/`. If Drift is missing, stop and report. Do not install it.
-4. Prepare, mutate the change-set `--class` targets, close the file. **Own-card / alone (`next mutation`):** stop — do not start the next file. **Dispatcher mode:** continue with the next remaining file (or sandbox shard).
+4. Prepare, mutate **that file’s scoped** `--class` targets (step 4), close the file. **Own-card / alone (`next mutation`):** stop — do not start the next file. **Dispatcher mode:** continue with the next remaining file (or sandbox shard).
 
 ## `correct mutations` (parallel drain)
 
@@ -85,7 +86,7 @@ If that fails, stop. Do not mutate a red file.
 
 ## Mutate
 
-Pass changed production FQCNs via `--class=...`. Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`.
+Pass **only that test’s scoped** production FQCNs via `--class=...` (change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool on every file.
 
 Example (escape `\` for the shell):
 
@@ -96,7 +97,7 @@ docker exec -w /srv televisao-backend vendor/bin/pest --mutate --covered-only --
 ```
 
 - `--class` scopes the run (replaces needing committed `covers()` / `mutates()`).
-- `--covered-only` keeps mutations on lines this test run executes inside those classes.
+- `--covered-only` keeps mutations on lines this test run executes inside those classes — still expensive if you pass unrelated pool classes the test happens to touch.
 - `--ignore-min-score-on-zero-mutations` treats nothing-to-mutate as success.
 - Pest may still emit mutations on **pre-existing** lines in a large modified class. That is expected. Split the report into **in-scope** (diff hunks) vs **out-of-scope** (everything else).
 

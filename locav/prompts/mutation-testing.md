@@ -38,8 +38,9 @@ Work only in `~/git/locav/LocavApi`.
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
-3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets.
-4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
+3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). That list is the **change-set pool** only — **not** the `--class` list for every test.
+4. **Per-test `--class` scope (required):** for each `*Test.php`, mutate **only** the pool FQCNs that test actually exercises. Prefer `use App\…` imports that intersect the pool; add FQCNs the test clearly drives via HTTP/jobs when imports are missing. Do **not** pass the whole pool to every file (Olie bench DOP-1281: heavy test ~1.6× faster scoped; light ~4.7×).
+5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`).
 
@@ -50,7 +51,7 @@ Opt-in one-file path (user asked for `next mutation`).
 1. Take the first remaining changed test file from the shared list (or the path the user named).
 2. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/pest-parallel.md`, and stop.
 3. If that file is still a PHPUnit test case (`extends TestCase`), convert **that file only** with Drift before mutating: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If `pestphp/pest-plugin-drift` is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/`.
-4. Prepare, mutate the change-set `--class` targets, close the file. Stop — do not start the next test file in this paste.
+4. Prepare, mutate **that file’s scoped** `--class` targets (step 4), close the file. Stop — do not start the next test file in this paste.
 
 ## `correct mutations` (parallel drain)
 
@@ -78,7 +79,7 @@ If that fails, stop. Do not mutate a red file.
 
 ## Mutate
 
-Pass changed production FQCNs via `--class=...`. Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`.
+Pass **only that test’s scoped** production FQCNs via `--class=...` (change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool on every file.
 
 Example (escape `\` for the shell):
 
@@ -89,7 +90,7 @@ docker exec -w /var/www/html locav-backend vendor/bin/pest --mutate --covered-on
 ```
 
 - `--class` scopes the run (replaces needing committed `covers()` / `mutates()`).
-- `--covered-only` keeps mutations on lines this test run executes inside those classes.
+- `--covered-only` keeps mutations on lines this test run executes inside those classes — still expensive if you pass unrelated pool classes the test happens to touch.
 - `--ignore-min-score-on-zero-mutations` treats nothing-to-mutate as success.
 - Pest may still emit mutations on **pre-existing** lines in a large modified class. That is expected. Split the report into **in-scope** (diff hunks) vs **out-of-scope** (everything else).
 

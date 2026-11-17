@@ -88,7 +88,7 @@ Olie: **sem teto** por padrão (`WORKVM_SANDBOX_MAX=0`); cap opcional com
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
 2. Cria um sandbox `profile=mutation` **por arquivo** (Olie: todos juntos; só fila se `WORKVM_SANDBOX_MAX` > 0 e N passar do teto).
 3. Atribui **um arquivo por sandbox**; se houver teto e a fila existir, quando um termina pega o próximo.
-4. Em cada sandbox:
+4. Em cada sandbox: `--class` só das FQCN do **pool do change-set que aquele teste exercita** (não o pool inteiro em todo arquivo — ver `mutation-testing.md`; bench DOP-1281 ~1.6× no pesado).
 
 ```bash
 ~/git/bin/workvm-sandbox create --name "mut-$(basename "$file" .php | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | cut -c1-40)" \

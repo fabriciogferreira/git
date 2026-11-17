@@ -50,8 +50,9 @@ Work only in `~/git/olie/api-main`.
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats.
-3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets for every file in this stack.
-4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
+3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). That list is the **change-set pool** only — **not** the `--class` list for every test.
+4. **Per-test `--class` scope (required):** for each `*Test.php`, mutate **only** the pool FQCNs that test actually exercises. Prefer `use App\…` imports that intersect the pool; add FQCNs the test clearly drives via HTTP/jobs/observers when imports are missing. Do **not** pass the whole pool to every file — `--covered-only` still burns wall-clock on transitively covered classes (bench DOP-1281: `ChannelMessageTemplatesTest` full pool 21 classes ~657s vs scoped 8 ~416s ≈ **1.6×**; light file ~4.7×).
+5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, still run mutation on those tests (coverage may have been empty earlier). If the change set has **no** test files to mutate, say the mutation stack is empty and recommend `~/git/olie/prompts/pest-parallel.md` next.
 
@@ -72,7 +73,7 @@ Problem this solves: N remaining `*Test.php` files as N× `next mutation` pastes
 3. For each remaining file, in parallel (Olie: no default cap; queue only if `WORKVM_SANDBOX_MAX` > 0 — `~/git/olie/sandbox/ORCHESTRATION.md`):
    - Create `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
    - Sync the card’s dirty `api-main` working tree into that sandbox worktree (sandboxes start from HEAD; uncommitted DOP changes must be copied in).
-   - Launch **one subagent (Task) per file**. Pass at least: test path, sandbox id, change-set `--class` FQCNs, in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
+   - Launch **one subagent (Task) per file**. Pass at least: test path, sandbox id, **that file’s** scoped `--class` FQCNs (step 4 — not the whole change-set pool), in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
 4. Each subagent runs baseline Pest → mutate → tighten if needed → returns a **proposed ledger row** (Result + Notes). It may edit **only** that `*Test.php` under the card working tree (or sync assertion edits back). It must **not** write `mutation-ledger.md` itself.
 5. **Parent only** appends rows to `~/git/olie/prompts/mutation-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
 6. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pest-parallel.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
@@ -103,7 +104,7 @@ If that fails, stop. Do not mutate a red file.
 
 ## Mutate
 
-Pass changed production FQCNs via `--class=...`. Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`.
+Pass **only that test’s scoped** production FQCNs via `--class=...` (see change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool “for safety” on every file.
 
 Example (escape `\` for the shell):
 
@@ -115,7 +116,7 @@ Example (escape `\` for the shell):
 ```
 
 - `--class` is the Pest 4 scope (replaces needing committed `covers()` / `mutates()`).
-- `--covered-only` keeps mutations on lines this test run executes inside those classes.
+- `--covered-only` keeps mutations on lines this test run executes inside those classes — still expensive if you pass unrelated pool classes the test happens to touch.
 - `--ignore-min-score-on-zero-mutations` treats nothing-to-mutate as success.
 - Pest may still emit mutations on **pre-existing** lines in a large modified class. That is expected. Split the report into **in-scope** (diff hunks) vs **out-of-scope** (everything else).
 
