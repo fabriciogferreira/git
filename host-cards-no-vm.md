@@ -173,6 +173,7 @@ Hooks (compose slim + Cursor):
 | --- | --- | --- |
 | olie | `olie/sandbox/host-card-ensure.sh` — compose slim + Vite front + `olie-e2e` (`compose.e2e-host.yml`); DNS `api.{slug}.olie.localhost` / `devframe.{slug}.olie.localhost` via Caddy (`lib/host-card-proxy.sh`). Pest: `bin/workvm-host-card-pest`. Playwright MCP → `hc-*-olie-e2e-1` | `host-card-destroy.sh` — `compose down -v` + reload proxy |
 | televisao | `televisao/sandbox/host-card-ensure.sh` — `compose.host.yml` (pgsql + Laravel + Next); DNS `api|devframe.{slug}.olie.localhost` | idem |
+| opbed | `opbed/sandbox/host-card-ensure.sh` — `compose.host.yml` (pgsql + Laravel + Next); unidade projeto `--code opbed`; DNS `api|devframe.opbed.olie.localhost` | `host-card-destroy.sh` |
 | locav | ainda sem hook compose (só workspace/estado) | genérico |
 
 `WORKVM_HOST_CARD_OPEN_CURSOR=0` pula abrir o Cursor. Default: abre
@@ -194,5 +195,5 @@ detach) — o host-card não substitui o shard.
 3. Hook Locav (quando houver compose slim).  
 4. Segundo card em paralelo (smoke de colisão).  
 5. Sandbox filho (mutation) em cima do card host.  
-6. Opbed como unidade projeto (`--project opbed`).  
+6. ~~Opbed como unidade projeto (`--project opbed`)~~ + compose host.  
 7. Desligar Card VM no agent quando §9 estiver verde.

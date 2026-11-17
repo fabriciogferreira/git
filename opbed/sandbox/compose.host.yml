@@ -1,0 +1,101 @@
+# Stack host-card Opbed (navegável no jarvis, sem WorkVM).
+# Problema: ensure só abria Cursor; o compose da empresa assume portas
+# fixas 8000/3000/5432 e mounts de guest. Aqui: portas SB_PORT_*, paths
+# absolutos, sem cloudflared, pgsql só na rede do compose.
+# Sem container_name — isolamento via COMPOSE_PROJECT_NAME.
+
+services:
+  pgsql:
+    image: postgres:18.4-trixie
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-opbed_local}
+      POSTGRES_USER: ${DB_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - hc_pgsql:/var/lib/postgresql
+    networks: [hc_net]
+    shm_size: 256mb
+    command:
+      - postgres
+      - -c
+      - max_locks_per_transaction=256
+      - -c
+      - max_connections=200
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "${DB_DATABASE:-opbed_local}",
+          "-U",
+          "${DB_USERNAME:-root}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ${SB_API}
+    image: ${HC_BACKEND_IMAGE:-opbed-backend:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    volumes:
+      - ${SB_API}:/srv
+    ports:
+      - "${SB_PORT_API}:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: ${APP_URL:-http://127.0.0.1:${SB_PORT_API}}
+      DB_CONNECTION: pgsql
+      DB_HOST: pgsql
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-opbed_local}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      BROADCAST_CONNECTION: log
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    entrypoint: ["sh", "/srv/bin/docker-entrypoint.sh"]
+    networks: [hc_net]
+
+  frontend:
+    build:
+      context: ${SB_FRONT}
+      dockerfile: Dockerfile.dev
+    image: ${HC_FRONTEND_IMAGE:-opbed-frontend:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    volumes:
+      - ${SB_FRONT}:/srv
+      - ${WORK_VM_SSH_DIR:-${HOME}/.ssh}:/home/bun/.ssh:ro
+      - /etc/hostname:/etc/host-hostname:ro
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+    ports:
+      - "${SB_PORT_FRONT}:3000"
+    environment:
+      NEXT_PUBLIC_CLIENT_API_URL: ${NEXT_PUBLIC_CLIENT_API_URL:-http://127.0.0.1:${SB_PORT_API}/api}
+      NEXT_PRIVATE_API_URL: ${NEXT_PRIVATE_API_URL:-http://backend:8000/api}
+      WORK_VM_LIBVIRT_SSH: ${WORK_VM_LIBVIRT_SSH:-fabricio@192.168.122.1}
+      WORK_VM_HOST_IDENTITY: ${WORK_VM_HOST_IDENTITY:-/home/bun/.ssh/workvm_host_ed25519}
+      OLIE_MANAGEMENT_TOKEN: ${OLIE_MANAGEMENT_TOKEN:-}
+      OLIE_FLOW_AI_MCP_TOKEN: ${OLIE_FLOW_AI_MCP_TOKEN:-}
+    depends_on:
+      - backend
+    networks: [hc_net]
+
+networks:
+  hc_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_hc_net
+
+volumes:
+  hc_pgsql:
+    name: ${COMPOSE_PROJECT_NAME}_pgsql

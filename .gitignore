@@ -83,6 +83,11 @@ opbed/*
 !opbed/project.conf
 !opbed/post-clone.sh
 !opbed/workspace.code-workspace
+!opbed/sandbox/
+!opbed/sandbox/**
+!opbed/config-vm.xml
+opbed/**/.env
+opbed/**/.cursor/mcp.workvm-user
 
 # televisao: definição + e2e; clones televisao-api|front|meet-* ficam fora.
 !televisao/

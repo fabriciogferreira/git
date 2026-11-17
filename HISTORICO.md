@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card Opbed: ensure só abria Cursor
+
+- **problema:** `workvm-host-card ensure --project opbed` clonava repos e abria a janela, sem compose — o board/API não subiam no jarvis.
+- **por que é um problema:** “open opbed” ficava igual a abrir workspace vazio; Olie/Televisão já tinham hook de stack.
+- **resolvido como:** `opbed/sandbox/compose.host.yml` + `host-card-ensure.sh` / `host-card-destroy.sh` (pgsql + backend + front, portas `port_base`, DNS Caddy, sem cloudflared).
+
 ## Host-card ensure: PermissionError em ~/.cursor/mcp.json no chat
 
 - **problema:** `workvm-host-card ensure` no colleague review / prompts falhava com `PermissionError: … ~/.cursor/mcp.json` (e avisos falsos de DNS/`gh`); o agente pedia chmod ao usuário.
