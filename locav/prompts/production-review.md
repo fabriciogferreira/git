@@ -24,6 +24,8 @@ Verify the card's acceptance criteria in production. A local or staging result i
 3. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
 4. Do not expose credentials, tokens, personal data, or private production records in the report.
 
+**Re-run budget:** after Pass/Fail/Blocked for the current production deploy in this chat, do not re-smoke the same paths “to confirm” unless deploy/data changed or the user asks to retry a failed/blocked check. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 ## Verify
 
 1. Test the primary acceptance path in production.

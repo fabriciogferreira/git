@@ -147,6 +147,10 @@ Each item should describe one concrete task and have a clear completion conditio
 
 Present the plan to the user before implementing any corrections.
 
+## 5b. Re-run budget
+
+Verify only what this correction changed. Do **not** re-run the whole unrelated suite or re-open gap/coverage/mutation stacks “for safety” unless the return explicitly requires it or the user asks. Shared rule: **Expensive re-run budget** in `~/git/televisao/prompts/workflow-policy.md`.
+
 ## 6. TDD Workflow
 
 Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/televisao/televisao-api` and Playwright under `~/git/televisao/televisao-front-e2e` or `~/git/televisao/televisao-meet-front-e2e`, as well as tests in any other affected repositories.

@@ -18,8 +18,10 @@ Same phrases as in `~/git/olie/prompts/workflow-policy.md` (**Chat commands**) a
 | Command | Do this |
 | --- | --- |
 | `next prompt` | After **Ready for handoff**, run the next recommended file (`test-gap-analysis.md`, `coverage-testing.md`, `mutation-testing.md`, `pest-parallel.md`, or `pre-qa.md`) without waiting for a paste. Once coverage-testing has started, use `next coverage` / `correct coverages` for remaining production files; once mutation-testing has started, use `next mutation` / `correct mutations` for remaining test files; do not use `next prompt` to open `pre-qa.md` until coverage, mutation, and Pest parallel are complete (when backend changed). |
-| `try again` | Re-run **this** validation pass (e.g. after a manual env fix or after `to correct`). |
+| `try again` | Re-run **this** validation pass **after** a manual env fix or after `to correct`. Do not re-score an unchanged diff “to confirm”. |
 | `to correct` | Leave validation mode: implement every **Needs code fixes** item from this pass’s report, then stop and recommend `try again` (re-run this validation). Do not implement fixes during the scoring pass itself unless the user already sent `to correct`. |
+
+**Re-run budget:** one Ready / Needs code fixes verdict for the current local diff stands until that diff (or requirements/media) changes. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
 
 ## 1. Objective
 

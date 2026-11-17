@@ -17,8 +17,10 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 | Command | Do this |
 | --- | --- |
 | `next prompt` | After a **green** suite, run `~/git/olie/prompts/pre-qa.md`. Do not open pre-QA while this pass is red. |
-| `try again` | Re-run the full parallel suite (e.g. after a fix). |
+| `try again` | Re-run the full parallel suite **after a fix** (or unblock). Do not re-run a green suite on an unchanged tree “to confirm”. |
 | `to correct` | Fix failures from this pass’s report, then `try again`. |
+
+**Re-run budget:** one green full-suite result in this chat stands until code/tests change or the suite was red and fixed. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
 
 ## 1. Objective
 

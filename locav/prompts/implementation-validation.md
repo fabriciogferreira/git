@@ -16,8 +16,10 @@ If tooling fails or stalls too long: stop and report (prompt-health). Exception:
 | Command | Do this |
 | --- | --- |
 | `next prompt` | After **Ready for handoff**, run the next recommended file without waiting for a paste. |
-| `try again` | Re-run **this** validation pass. |
+| `try again` | Re-run **this** validation pass **after** a fix / unblock. Do not re-score an unchanged diff “to confirm”. |
 | `to correct` | Implement **Needs code fixes** from this pass, then recommend `try again`. |
+
+**Re-run budget:** one Ready / Needs code fixes verdict for the current local diff stands until that diff (or requirements/media) changes. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
 
 ## 1. Objective
 

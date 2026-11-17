@@ -38,6 +38,8 @@ If a worker tooling failure stops that gate, record it on the scoreboard as **fa
 
 ## 3. Wait and collect
 
+**Re-run budget:** after this scoreboard is complete, do **not** re-dispatch gates that already returned Clean/Pass on an unchanged tree “to confirm”. Retry only a blocked/failed gate when the user asks (or after a real unblock). Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 Wait until every dispatched gate has finished (or is skipped). Collect:
 
 - Colleague core: Pass / Fail (+ findings posted or not)

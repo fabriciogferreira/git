@@ -156,6 +156,10 @@ Each item should describe one concrete task and have a clear completion conditio
 
 Present the plan to the user before implementing any corrections.
 
+## 6b. Re-run budget
+
+Verify only what this correction changed (regression tests for the findings + the touched paths). Do **not** re-run the whole unrelated Pest suite or re-open gap/coverage/mutation stacks “for safety” unless the return explicitly requires it or the user asks. Shared rule: **Expensive re-run budget** in `~/git/olie/prompts/workflow-policy.md`.
+
 ## 7. TDD Workflow
 
 Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/olie/olie-e2e` and `~/git/olie/api-main`, as well as tests in any other affected repositories. Keep `olie-e2e` private: use it in the WorkVM, never cite paths or “meta-repo e2e” in card content, Caderno, company repos, or PR bodies (**Private E2E suites** in `workflow-policy.md`).

@@ -89,6 +89,10 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 - Do not search for related improvements in this pass. This is a review only.
 - Do not run `test-gap-analysis.md` or `mutation-testing.md` from here when the dispatcher already launched them.
 
+## 7b. Re-run budget
+
+Do not re-walk media, PRs, or acceptance paths “to confirm” after this core gate already returned Pass/Fail in this chat on the same branches. Re-open only if the user asks to retry or the branches/media changed. Shared rule: **Expensive re-run budget** in `~/git/olie/prompts/workflow-policy.md`.
+
 ## 8. Return to the dispatcher
 
 - Card {{ code }}.

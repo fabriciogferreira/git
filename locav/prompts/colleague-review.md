@@ -16,6 +16,8 @@ See **Host card environment** in `~/git/locav/prompts/workflow-policy.md`. Resum
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
 
+**Re-run budget:** after Pass/Fail for this card in this chat on the same branches, do not re-walk media/PRs/acceptance “to confirm”. Retry only when the user asks or branches/media changed. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project notebook** in `~/git/locav/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
 
 ## 2. Context

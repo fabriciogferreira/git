@@ -25,6 +25,8 @@ Verify the card's acceptance criteria in production. A local or staging result i
 5. If the login shows a reCAPTCHA challenge, stop at once. Do not select images, do not press verify, and do not wait on it. Unlock the browser if it is locked, leave that tab open on the challenge, and ask the user to solve it. Continue only after they confirm and the login has reached the app. Solving the challenge is not part of this review. The handoff is expected: it is not a tooling failure and it does not make the review blocked.
 6. Do not repeat the login password, tokens, personal data, or private production records in the report.
 
+**Re-run budget:** after Pass/Fail/Blocked for the current production deploy in this chat, do not re-smoke the same paths “to confirm” unless deploy/data changed or the user asks to retry a failed/blocked check. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 ## Verify
 
 1. Test the primary acceptance path in the gui1 frame at https://gui1.olie.ai, after the login above (navigate from the page login opens to the feature the card changed).

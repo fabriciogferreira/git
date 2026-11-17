@@ -36,6 +36,8 @@ Verify the card's acceptance criteria on the hosted preview below. A local resul
 3. Test on the hosts and accounts above. Observable success and error paths come from the card. Stop and report a missing prerequisite. Do not guess another host and do not use customer credentials.
 4. Do not repeat passwords, tokens, personal data, or private records in the report. Name the account as admin or superadmin when the evidence needs it.
 
+**Re-run budget:** after Pass/Fail/Blocked for the current production deploy in this chat, do not re-smoke the same paths “to confirm” unless deploy/data changed or the user asks to retry a failed/blocked check. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 ## Verify
 
 1. Test the primary acceptance path on the hosted preview.

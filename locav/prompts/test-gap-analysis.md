@@ -36,6 +36,8 @@ Analyze **both** sides the change set touched:
 
 Skip an area that the change set did not touch. Skip the whole prompt when neither `LocavApi` nor `locav-front` changed.
 
+**Re-run budget:** if this pass already reported No tests to add / Tests to add for the current diff in this chat, do not re-derive the matrix until requirements or tests change. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 ## 1. Load the card and requirements
 
 Follow **Tool preference** in `~/git/locav/prompts/workflow-policy.md` (MCP → `gh` → curl).

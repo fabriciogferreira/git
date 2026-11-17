@@ -28,7 +28,9 @@ Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.
 | Command | Meaning |
 | --- | --- |
 | `add` | After this pass reported **Tests to add**: leave analysis mode and implement every listed missing test from that report. Then stop and recommend `try again` (re-run this gap analysis). Do not implement during the analysis pass itself unless the user already sent `add`. |
-| `try again` | Re-run **this** gap analysis (e.g. after `add` or after the author closed gaps manually). |
+| `try again` | Re-run **this** gap analysis **after** `add` or after the author closed gaps / changed the diff. Do not re-scan an unchanged change-set “to confirm”. |
+
+**Re-run budget:** if this pass already reported No tests to add / Tests to add for the current diff in this chat, do not re-derive the matrix until requirements or tests change. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
 | `next prompt` | After **No tests to add**, run the next recommended file (`coverage-testing.md` when backend applies). While this pass still reported open **Tests to add**, refuse and tell the user to send `add` (or close the gaps) first. |
 | `to correct` | Not for this prompt’s list — use `add`. (`to correct` remains for validation / Pest parallel failures.) |
 

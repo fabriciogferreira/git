@@ -20,6 +20,21 @@ Cursor Auto-review often prompts on `gh` in the shell (network + session credent
 
 Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
 
+## Expensive re-run budget
+
+Do **not** repeat an expensive step when nothing material changed since the last run of that step in this chat (same code/asserts/env/deploy, same card diff).
+
+| Expensive step | Re-run only when |
+| --- | --- |
+| `pest --mutate` / `pest --coverage` | Test or production code under test changed, or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). |
+| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. |
+| Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
+| Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |
+| Pre-QA checklist / production smoke | Code, PR, or production deploy changed; or a prior check failed and was fixed. |
+| Correction verification | Re-check only what this correction changed — not the whole unrelated suite “for safety”. |
+
+`try again` means “run again **after** a real change or unblock”, not “repeat the same measurement on an unchanged tree”.
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:

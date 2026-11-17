@@ -31,6 +31,8 @@ If MCP, requests, shell, Docker, or other tooling this prompt assumes will work 
 
 Skip entirely when the change set has no `televisao-api` paths.
 
+**Re-run budget:** if this pass already reported No tests to add / Tests to add for the current diff in this chat, do not re-derive the matrix until requirements or tests change. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+
 ## 1. Load the card and requirements
 
 Follow **Tool preference** in `~/git/televisao/prompts/workflow-policy.md` (MCP → `gh` → curl).

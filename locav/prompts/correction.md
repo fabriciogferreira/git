@@ -127,6 +127,10 @@ Each item should describe one concrete task and have a clear completion conditio
 
 Present the plan to the user before implementing any corrections.
 
+## 5b. Re-run budget
+
+Verify only what this correction changed. Do **not** re-run the whole unrelated suite or re-open gap/coverage/mutation stacks “for safety” unless the return explicitly requires it or the user asks. Shared rule: **Expensive re-run budget** in `~/git/locav/prompts/workflow-policy.md`.
+
 ## 6. TDD Workflow
 
 Apply Test-Driven Development to the corrections, using the relevant tests in `~/git/locav/LocavApi` and Cypress under `~/git/locav/locav-front/cypress`, as well as tests in any other affected repositories.

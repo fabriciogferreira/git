@@ -85,6 +85,10 @@ If `televisao-api` tests were added or edited and Pest is installed, those files
 - Do not search for related improvements in this pass. This is a review only.
 - Do not run `test-gap-analysis.md` or `mutation-testing.md` from here when the dispatcher already launched them.
 
+## 6b. Re-run budget
+
+Do not re-walk media, PRs, or acceptance paths “to confirm” after this core gate already returned Pass/Fail in this chat on the same branches. Re-open only if the user asks to retry or the branches/media changed. Shared rule: **Expensive re-run budget** in `~/git/televisao/prompts/workflow-policy.md`.
+
 ## 7. Return to the dispatcher
 
 - Card {{ code }}.

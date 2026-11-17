@@ -19,8 +19,10 @@ If tooling fails or stalls too long: stop and report (prompt-health). Exception:
 | Command | Do this |
 | --- | --- |
 | `next prompt` | After a **green** required check, run `~/git/locav/prompts/pre-qa.md`. |
-| `try again` | Re-run the suite / lint. |
+| `try again` | Re-run the suite / lint **after a fix** (or unblock). Do not re-run a green suite on an unchanged tree “to confirm”. |
 | `to correct` | Fix failures from this pass, then `try again`. |
+
+**Re-run budget:** one green full-suite result in this chat stands until code/tests change or the suite was red and fixed. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
 
 ## 1. Objective
 
