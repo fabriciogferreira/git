@@ -77,6 +77,8 @@ If `televisao-front` or `televisao-meet-front` changed, the e2e tests in section
 
 If `televisao-api` tests were added or edited and Pest is installed, those files use that Pest. A new PHPUnit test class, or a PHPUnit file the card edited and left as PHPUnit while Pest is installed, is a failed review. Untouched PHPUnit files are not a defect. Do not convert them yourself. If Pest is not installed, do not fail the review for PHPUnit tests.
 
+When the card changed API inputs/outputs: expect Scribe source annotations plus a regenerate (`scribe:generate`) and a **dedicated commit** that only contains generated paths (`.scribe/`, `resources/views/scribe/`, `public/vendor/scribe/`, …) — **Scribe** in `~/git/televisao/prompts/workflow-policy.md`. Do **not** line-review that generated commit. Fail if the API contract changed and regenerate/dedicated commit is missing, or if generated Scribe files were mixed into a feature/test/Pint commit.
+
 ## 6. Out of scope
 
 - Do not fix the author's code.

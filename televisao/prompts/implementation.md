@@ -184,6 +184,8 @@ When the card changes `televisao-front` or `televisao-meet-front`, treat these a
 
 **Do not run 'pint' unless the user explicitly instructs you to do so.** The pre-QA workflow is an explicit exception; follow `~/git/televisao/prompts/workflow-policy.md` when it applies.
 
+When the card changes API inputs/outputs, update Scribe source annotations as part of the implementation and regenerate with `php artisan scribe:generate --force -n` so local `/docs` matches the contract. Do not hand-write generated Scribe YAML/Blade. The **dedicated Scribe commit** (generated paths only) happens at pre-QA, like Pint — **Scribe** in `~/git/televisao/prompts/workflow-policy.md`.
+
 ### Hosted preview when the card has a report
 
 A report is a problem described on the card, in a project thread, or in attached media. That problem was seen on the hosted preview. Reproduce it there before treating the reported behavior as verified. Implementation and Playwright still run against the local stack in `~/git/televisao/prompts/project.md`.

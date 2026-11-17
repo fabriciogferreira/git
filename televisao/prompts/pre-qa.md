@@ -46,6 +46,8 @@ Do not mark a check as complete unless the corresponding action has been perform
 - [ ] Review test results and investigate any failures instead of assuming they are unrelated to the changes.
 - [ ] Run Pint to format affected PHP changes (`docker exec televisao-backend ./vendor/bin/pint` or the project equivalent).
 - [ ] If Pint changes files, create a dedicated commit containing only those formatting changes. Do not create an empty formatting commit.
+- [ ] If this card changed API inputs/outputs (or Scribe annotations), run `php artisan scribe:generate --force -n` in the API container (**Scribe** in `~/git/televisao/prompts/workflow-policy.md`). Confirm the regenerated docs include the changed endpoints.
+- [ ] If Scribe changed tracked generated files (`.scribe/`, `resources/views/scribe/`, `public/vendor/scribe/`, …), create a dedicated commit containing only those generated paths. Do not create an empty Scribe commit. Do not mix them with feature, test, or Pint commits.
 
 #### `televisao-front` and `televisao-meet-front`
 
@@ -80,11 +82,11 @@ API outputs include, but are not limited to:
 - HTTP response status codes.
 - Other externally observable response behavior.
 
-If any API input or output changes, mark card `{{ code }}` as requiring an API documentation update.
+If any API input or output changes, the card requires an API documentation update via Scribe (source annotations + `scribe:generate`). See **Scribe** in `~/git/televisao/prompts/workflow-policy.md`.
 
 Do not assume that a change is internal merely because it involves an existing endpoint. Evaluate its externally observable behavior.
 
-If API documentation is required, record this explicitly in the card and report the documentation update that remains necessary. Do not claim the documentation has been updated unless it actually has been.
+If documentation was required: annotate the controller/FormRequests, run `scribe:generate`, and keep the dedicated Scribe commit (Phase 1 / Phase 3). Record on the card only when the regenerate or that commit is still missing — do not leave “docs still needed” after a successful generate+commit. Do not claim documentation is done unless generate ran and the dedicated commit (when files changed) exists.
 
 ## 4. Phase 3 — Commit and Branch Validation
 
@@ -106,7 +108,8 @@ Before renaming or deleting a remote branch, verify that it is the incorrect bra
 - [ ] Ensure commit messages are written in English.
 - [ ] Ensure no commit lists Cursor as a co-author.
 - [ ] Verify that the dedicated Pint formatting commit contains only formatting changes.
-- [ ] Ensure functional changes, test changes, and formatting changes are separated appropriately for review.
+- [ ] Verify that the dedicated Scribe commit (when required) contains only Scribe-generated paths.
+- [ ] Ensure functional changes, test changes, formatting changes, and Scribe-generated docs are separated appropriately for review.
 - [ ] Review the final commit history and verify that no unrelated changes, secrets, environment files, or accidental generated files are included.
 
 Do not rewrite or discard existing commits without evaluating their impact. If correcting the history would affect shared branches or other contributors, request confirmation first.
@@ -170,7 +173,7 @@ If a **Revisor(es)** name does not match exactly one collaborator, do not add th
 **Proceed only after the required pull request or pull requests have been created and verified, and all applicable checks in Phases 1–4 have passed.**
 
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
-- [ ] If the API documentation impact check determined that an update is required, ensure the card is marked accordingly.
+- [ ] If the API documentation impact check determined that an update is required, verify Scribe was regenerated and the dedicated Scribe commit exists when generated files changed; only mark the card as still needing docs when that work remains incomplete.
 - [ ] Verify that the card reflects the actual pull request status and any remaining documentation requirements.
 - [ ] Move the card to the live funnel step whose display name matches 'QA/CR' (logical `quality-review`), using `~/git/televisao/prompts/workflow-policy.md` (prefer MCP move; HTTP fallback with `${OLIE_MANAGEMENT_TOKEN}`). Resolve the step id from the live funnel — never hard-code it.
 - [ ] Verify the card's current stage is 'QA/CR' after the move.
@@ -199,12 +202,13 @@ If an action requires additional permissions, involves a potentially destructive
 After completing the applicable workflow, provide a concise report containing:
 
 - The repositories checked (product clones and meta-repo).
-- The results of PHPStan, tests, lint, and Pint, as applicable.
-- The identifier of the dedicated Pint commit.
+- The results of PHPStan, tests, lint, Pint, and Scribe, as applicable.
+- The identifier of the dedicated Pint commit (or that Pint made no changes).
+- The identifier of the dedicated Scribe commit (or that Scribe was not required / made no tracked changes).
 - The commit convention and branch-name validation results.
 - Meta-repo: commit hash(es) on `main`, whether `origin/main` was updated, or that there was nothing to commit.
 - The pull request URLs and their verified configuration, including the filled template body and the **Pull Request (front)** and **Pull Request (back)** values read back from the card.
-- Whether an API documentation update is required.
+- Whether an API documentation update was required and whether Scribe regenerate + dedicated commit completed.
 - Whether the card was moved to 'QA/CR' and the verified stage after the move.
 - Any unresolved issues, skipped checks, or outstanding actions.
 

@@ -243,4 +243,6 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
+When a correction changes API inputs/outputs, update Scribe **source** annotations and run `php artisan scribe:generate --force -n` in the API container before considering the docs done. Keep generated paths ready for a dedicated Scribe commit at pre-QA (same separation as Pint) — **Scribe** in `~/git/televisao/prompts/workflow-policy.md`. Do not invent OpenAPI/Blade by hand.
+
 When correction work on this paste is done, the next paste is `~/git/televisao/prompts/recommendation.md` (related improvements only; do not implement them in that paste). After that paste, run `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.

@@ -248,6 +248,23 @@ Recommend the next prompt **only in the Cursor chat** report.
 - During implementation, do not run Pint unless the user explicitly asks for it or the task is the pre-QA workflow.
 - During pre-QA, run Pint for affected `televisao-api` PHP changes (`docker exec televisao-backend`). If Pint changes files, isolate those formatting-only changes in a dedicated commit; do not create an empty formatting commit.
 
+## Scribe (API docs)
+
+`televisao-api` uses Knuckles Scribe (`config/scribe.php`, `php artisan scribe:generate`). Same idea as the dedicated Pint commit: reviewers should not have to read generated blobs mixed into feature commits.
+
+- When a card changes API inputs/outputs (routes, FormRequests, resources, status codes, or Scribe annotations), update the **source** docs (controller `@group` / `@response` / `@*Param`, FormRequest `queryParameters()` / `bodyParameters()`), then regenerate with:
+
+```bash
+docker exec -w /srv televisao-backend php artisan scribe:generate --force -n
+```
+
+  On a host-card stack, use that card’s backend container the same way (e.g. `hc-televisao-<slug>-backend-1`).
+
+- Generated artifacts that land in git (typically `.scribe/`, `resources/views/scribe/`, `public/vendor/scribe/`) go in a **dedicated commit** that contains only Scribe output. Do not create an empty Scribe commit. Do not mix those paths with feature, test, or Pint commits.
+- Annotations and FormRequest parameter helpers stay with the functional/docs-source commit; only the regenerate output is isolated.
+- Colleague review: do **not** fail or nitpick the contents of those generated paths when they sit in that dedicated commit. Review the source annotations and the live contract instead. Missing regenerate / missing dedicated commit when the API contract changed is a defect.
+- Do not invent OpenAPI/Blade/YAML by hand as a substitute for `scribe:generate`.
+
 ## MCP auth
 
 Cursor desktop can show `olie-flow-ai` as authenticated, and the MCP request status can say the same, while this agent still receives `needsAuth`. `https://api.olie.ai` publishes OAuth discovery, so Cursor ignores the `Authorization` header in `mcp.json`. Interactive `mcp_auth` does not run in this agent.
