@@ -60,6 +60,18 @@ if [[ -z "${E2E_AUTENTIQUE_LINK_CONSULTATION_ID:-}" ]] || [[ -z "${E2E_AUTENTIQU
     echo "  prescription: ${E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID}"
 fi
 
+# TV-189 signature waiting UI + success toast (Autentique mocked in the spec).
+if [[ -z "${E2E_TV189_CONSULTATION_ID:-}" ]] || [[ -z "${E2E_TV189_PRESCRIPTION_ID:-}" ]] || [[ "${E2E_SEED_TV189:-1}" == "1" ]]; then
+    echo "→ seeding pending prescription signature for TV-189 E2E"
+    tv189_seed="$(./scripts/seed-pending-prescription-signature.sh)"
+    E2E_TV189_CONSULTATION_ID="${tv189_seed%% *}"
+    E2E_TV189_PRESCRIPTION_ID="${tv189_seed##* }"
+    export E2E_TV189_CONSULTATION_ID E2E_TV189_PRESCRIPTION_ID
+    echo "  consultation: ${E2E_TV189_CONSULTATION_ID}"
+    echo "  prescription: ${E2E_TV189_PRESCRIPTION_ID}"
+fi
+
+
 # TV-16 support chat: reset clinic-admin chat + isolation marker on another clinic.
 if [[ -z "${E2E_SUPPORT_CHAT_ISOLATION_MARKER:-}" ]] || [[ "${E2E_SEED_SUPPORT_CHAT:-1}" == "1" ]]; then
     echo "→ resetting support chat for TV-16 E2E"
@@ -77,6 +89,8 @@ docker compose exec -T -u pwuser \
     -e E2E_JOIN_MEETING_OUTSIDE_ID \
     -e E2E_AUTENTIQUE_LINK_CONSULTATION_ID \
     -e E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID \
+    -e E2E_TV189_CONSULTATION_ID \
+    -e E2E_TV189_PRESCRIPTION_ID \
     -e E2E_SUPPORT_CHAT_ISOLATION_MARKER \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
