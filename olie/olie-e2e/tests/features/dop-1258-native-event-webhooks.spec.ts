@@ -13,11 +13,10 @@ import {
  * DOP-1258 — native event webhooks (Integrações → API → Webhooks).
  *
  * Covers the management UI the card asked for: list/empty state, create with
- * secret reveal, details + deliveries tab. Skips when Pennant `webhook` is off
- * on the frame under test (coming-soon card).
+ * secret reveal, details + deliveries tab, helper-copy contrast. Skips when
+ * the create CTA is missing (old coming-soon front or no `webhooks.index`).
  *
- * Uses the seeded `tester@olie.ai` / `devframe` session. Activate the flag on
- * that frame before expecting the suite to run (not the coming-soon path).
+ * Uses the seeded `tester@olie.ai` session on the frame under test.
  */
 test.describe('DOP-1258 native event webhooks', () => {
     test.describe.configure({ timeout: 180_000 })
@@ -112,17 +111,21 @@ test.describe('DOP-1258 native event webhooks', () => {
 
         // Soft-delete via management API so the shared frame stays tidy.
         const webhookId = page.url().split('/').pop()!
-        await page.evaluate(async id => {
-            const token = localStorage.getItem('token')
-            await fetch(`http://api.olie.localhost/api/management/webhooks/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                    Origin: location.origin,
-                },
-            })
-        }, webhookId)
+        const apiBase = process.env.E2E_API_URL || 'http://api.olie.localhost'
+        await page.evaluate(
+            async ({ id, apiBase }) => {
+                const token = localStorage.getItem('token')
+                await fetch(`${apiBase}/api/management/webhooks/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        Accept: 'application/json',
+                        Authorization: `Bearer ${token}`,
+                        Origin: location.origin,
+                    },
+                })
+            },
+            { id: webhookId, apiBase }
+        )
     })
 
     test('helper copy meets WCAG AA contrast in light and dark', async ({ page }) => {

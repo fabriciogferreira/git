@@ -5,16 +5,15 @@ import { requireFeature } from './feature'
 /**
  * DOP-1258 — native event webhooks under Integrações → API → Webhooks.
  *
- * Gated by Pennant `webhook` + `webhooks.index`. Skip when the running front
- * still shows the coming-soon card or the tab is missing.
+ * Feature flag was removed; the tab is always registered. Skip when the
+ * running front still lacks the create CTA (old build) or the user cannot
+ * see `webhooks.index`.
  */
 export async function openFrameWebhooks(page: Page) {
     await page.goto(`${resolvePageOrigin(page)}/frame/integrations/api/webhooks`)
     await requireFeature(page, {
         id: 'DOP-1258',
         probe: async () => {
-            // Prefer the create CTA — other Settings stubs also say "Em breve", so a
-            // page-wide coming-soon match false-skips when the flag is already on.
             const createBtn = page.getByRole('button', {
                 name: /Novo webhook|New webhook/i,
             })
@@ -22,7 +21,7 @@ export async function openFrameWebhooks(page: Page) {
                 await createBtn.first().waitFor({ state: 'visible', timeout: 12_000 })
                 return true
             } catch {
-                // Flag off (or no permission): gated card / missing CTA — skip.
+                // Old coming-soon stub or missing permission — skip.
                 return false
             }
         },
