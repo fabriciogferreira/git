@@ -58,7 +58,7 @@ test.describe('televisao-front support chat', () => {
 
         await search.fill('zzz-clinica-inexistente-e2e')
         await expect(
-            page.getByText(/Nenhum chamado nesta lista/i)
+            page.getByText(/chamados não encontrados na base de dados/i)
         ).toBeVisible({ timeout: 20_000 })
     })
 

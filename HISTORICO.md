@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Correction: plano deve ler comentários dos PRs do card
+
+- **problema:** o correction montava o plano só com o texto do card/retorno e podia omitir threads de review do GitHub (ou listá-los e não fechar o lote).
+- **por que é um problema:** findings line-level ficam de fora do triage; o revisor vê pendência que o plano “não viu”.
+- **resolvido como:** em `olie`/`locav`/`televisao` `prompts/correction.md` §Analyze — obrigatório carregar review threads de cada PR do formulário/conteúdo **antes** do plano; se houver comentários, entram no triage como qualquer finding; o plano lista PRs checados e threads.
+
+## Correction: marcar thread do PR como Resolved
+
+- **problema:** `correction.md` fechava o trabalho sem marcar “Resolve conversation” nos comentários de review do PR; o código já estava corrigido e o revisor ainda via threads abertas.
+- **por que é um problema:** parecer de pendência falsa e retrabalho de “ainda não resolveu o comentário”.
+- **resolvido como:** §Resolve GitHub PR review threads + critério de conclusão em `olie`/`locav`/`televisao` `prompts/correction.md` — só resolve o thread depois que **todos** os pontos daquele comentário estão feitos (MCP ou `gh` GraphQL `resolveReviewThread`); reporta threads resolvidos e os que ficaram abertos.
+
 ## Own-card: drain paralelo por padrão
 
 - **problema:** no handoff próprio, coverage/mutation avançavam com `next coverage` / `next mutation` (um arquivo por paste); N arquivos = N pastes + wall-clock serial, enquanto o colleague dispatcher já drenava em paralelo.

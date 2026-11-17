@@ -58,7 +58,13 @@ Before modifying code, load the card and its live funnel through MCP `olie-flow-
 
 Before creating the correction plan, inspect the reviewer's feedback and the affected implementation.
 
-For every reported issue:
+**Pull request review comments (required before the plan).** Resolve the card's associated PR URLs (code-review form fields and any PR URLs in the project content — **Code review form** in `~/git/locav/prompts/workflow-policy.md`). For **each** of those PRs, load the review conversation threads (GitHub MCP `pull_request_read` method `get_review_comments`, or `gh` when MCP is unavailable — **Tool preference**). Do this even when the card content / return text already lists findings: PR threads are a source of truth and often carry line-level detail the card text omits.
+
+- If a PR has review comments or unresolved threads, treat every actionable point in those threads as a finding for analysis and for the correction plan (same triage as card/forum findings).
+- If a PR has no review comments, say so in the plan and continue with card/forum findings only.
+- Do not build or present the plan until those PRs have been checked for comments.
+
+For every reported issue (card, forum/notebook, **and** PR review thread):
 
 1. Identify the criterion that failed, if specified by the reviewer.
 2. Locate the relevant code in the correct repository and branch.
@@ -103,7 +109,8 @@ Before implementing any fix, create the plan in the agent's native planning mech
 The plan must include:
 
 - Card code and objective.
-- The reviewer's findings and the root cause of each issue.
+- Which associated PRs were checked for review comments, and whether each had threads (list unresolved threads by repo + PR number + short subject when any exist).
+- The reviewer's findings (**including every actionable PR review comment**) and the root cause of each issue. Do not drop a PR comment from triage because it was labeled nit/suggestion/padrão — classify it (in-scope / simple / out-of-scope) like any other finding.
 - The relevant repository, branch, files, and code locations.
 - The expected behavior and acceptance criteria for each correction.
 - Existing test coverage and missing scenarios.
@@ -197,11 +204,25 @@ For each issue, describe the evidence, impact, status, and resolution or next ac
 
 Do not silently dismiss review findings or mark unresolved problems as completed.
 
+## 8b. Resolve GitHub PR review threads
+
+When a finding lives as a **pull request review comment / conversation thread** on an associated PR, mark that thread **Resolved** on GitHub after the correction for that comment is done — not before.
+
+Rules:
+
+- Resolve a thread only when **every** actionable point in that comment (and its replies in the same thread) is fixed with supporting evidence, or documented as a verified non-issue / out-of-scope with the user’s agreement where required.
+- Do **not** resolve a thread that still has an open point, a failing regression for that finding, or a pending product decision.
+- Do **not** leave threads open after the fix is verified just because the paste is ending: unresolved open threads after a completed correction are a miss.
+- Card/forum text findings without a GitHub thread are unchanged — there is nothing to click Resolve on.
+- Prefer GitHub MCP when a resolve-thread tool exists; otherwise use `gh api graphql` with `resolveReviewThread` (thread id from the PR’s `reviewThreads`). Follow **Tool preference** in `~/git/locav/prompts/workflow-policy.md`.
+- In the completion report, list which threads were resolved (repo + PR number + short subject) and any left open with why.
+
 ## 9. Completion Criteria
 
 The correction work is complete only when:
 
 - Every reviewer finding has been addressed or explicitly resolved with supporting evidence.
+- Every associated GitHub PR review thread whose points were fully fixed (or verified non-issue / agreed out-of-scope) has been marked **Resolved** (§8b). Threads still open only when a point remains unfinished — and those are listed in the report.
 - All applicable checklist items have been completed and verified.
 - Regression tests cover the corrected behavior.
 - Relevant tests have been executed, with any limitations documented.
@@ -217,6 +238,7 @@ At completion, provide a concise report containing:
 - How many **new** findings (not in the reviewer's return) were discovered; if that count was greater than 3 and work stopped, say so explicitly.
 - The files and repositories changed.
 - The tests created or updated and their results.
+- Which GitHub PR review threads were marked Resolved, and any left open with reason.
 - Any unresolved issues or verification limitations.
 - Any remaining manual actions.
 
