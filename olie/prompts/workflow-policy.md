@@ -152,7 +152,10 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
 ```
 
-- **Shell permissions (required):** run this (and `destroy`) with **unrestricted** agent shell — `required_permissions: ["all"]`. The ensure writes `~/.cursor/mcp.json` and host-card state outside the workspace; the default Cursor sandbox returns `PermissionError` on that path and may also fake DNS/`gh` failures. That is **not** a chmod/ownership problem — do **not** stop and ask the user to fix permissions; re-run once with `all` immediately. Same for DNS/`could not read Username for https://github.com` that appear only inside the sandbox.
+- **Shell permissions (required):** call `ensure` / `destroy` **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”.
+  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same ensure succeeds with `all` when the host is fine.
+  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure in a terminal unless `all` already ran and still failed for a real host reason.
+  - Do **not** stop the prompt declaring tooling/host broken while only the sandboxed shell failed.
 - First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
 - **api-main worktree branch:** if a local or `origin` branch name already contains the card code (ex. `feature/DOP-1273-…`), ensure checks it out **in the card worktree** (not the shared clone). No matching branch yet → worktree stays on `develop`/HEAD until implementation creates one.
 - Browser (slug = código em minúsculas, ex. `dop-1183`):
