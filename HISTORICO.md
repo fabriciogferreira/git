@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card ensure: worktree api-main na branch do card
+
+- **problema:** `open olie DOP-…` criava o worktree em detached HEAD/`develop`; a janela Cursor não mostrava os arquivos já commitados na `feature/DOP-…`.
+- **por que é um problema:** reopen/colleague review dependia de checkout manual (ou do prompt de implementation) só para ver o diff do card.
+- **resolvido como:** `workvm_host_card_prepare_api_isolation` recebe o código; resolve branch local/`origin` pelo nome (contém o código) e faz checkout só no worktree do card (`lib/host-card.sh`); hook Olie passa `$code`. Sem branch → HEAD/develop como antes.
+
 ## Olie sandbox: sem teto de 3
 
 - **problema:** colleague mutation/coverage enfileiravam após 3 sandboxes (`WORKVM_SANDBOX_MAX` default 3), mesmo no jarvis com host-card.

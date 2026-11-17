@@ -37,7 +37,8 @@ workvm_host_card_ensure_hook() {
         return 1
     fi
 
-    workvm_host_card_prepare_api_isolation "$dir" || return 1
+    # Passa o código para o worktree já nascer/retomar na branch do card.
+    workvm_host_card_prepare_api_isolation "$dir" "$code" || return 1
     wt="$card_wt"
     api_vendor="${dir}/vendor"
     if [ ! -f "${api_vendor}/autoload.php" ]; then

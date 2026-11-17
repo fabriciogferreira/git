@@ -62,13 +62,92 @@ workvm_host_card_apply_compose_limits() {
 # corrompia cache/vendor e estourava schema (api_main_test_* sem tabelas).
 # Cursor ainda abre os clones compartilhados; o compose usa estes paths.
 # Uso: prepare no ensure; remove no destroy (antes do rm -rf do state dir).
+# Segundo arg opcional: código do card (ex. DOP-1273) → checkout da branch no
+# worktree (não no clone compartilhado). Sem branch ainda → fica em HEAD/develop.
 workvm_host_card_api_src() {
     printf '%s/olie/api-main\n' "$(workvm_host_card_git_root)"
 }
 
+# Resolve a branch do card em api-main (local primeiro, senão origin).
+# Critério: nome contém o código (ex. DOP-1273); desempate = committerdate.
+# Só imprime o nome curto (sem origin/). Exit 1 se não achar.
+workvm_host_card_resolve_api_card_branch() {
+    local src="$1"
+    local code="$2"
+    local ref short
+
+    [ -n "$code" ] || return 1
+
+    while IFS= read -r ref; do
+        [ -n "$ref" ] || continue
+        if printf '%s' "$ref" | grep -qiF -- "$code"; then
+            printf '%s\n' "$ref"
+            return 0
+        fi
+    done < <(git -C "$src" for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/)
+
+    while IFS= read -r ref; do
+        [ -n "$ref" ] || continue
+        case "$ref" in
+            origin/HEAD) continue ;;
+        esac
+        short="${ref#origin/}"
+        if printf '%s' "$short" | grep -qiF -- "$code"; then
+            printf '%s\n' "$short"
+            return 0
+        fi
+    done < <(git -C "$src" for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/)
+
+    return 1
+}
+
+# No worktree do card: fetch + checkout da branch que contém $code.
+# Problema: ensure criava worktree --detach em develop; a janela abria sem os
+# arquivos da feature já existente. Não mexe no clone compartilhado.
+workvm_host_card_checkout_api_card_branch() {
+    local dir="$1"
+    local code="$2"
+    local src wt_api branch cur
+
+    src="$(workvm_host_card_api_src)"
+    wt_api="${dir}/worktree/api-main"
+    [ -n "$code" ] || return 0
+    if [ ! -d "$wt_api" ] || { [ ! -d "${wt_api}/.git" ] && [ ! -f "${wt_api}/.git" ]; }; then
+        return 0
+    fi
+
+    git -C "$src" fetch origin --prune --quiet 2>/dev/null \
+        || workvm_host_card_log "fetch origin falhou (seguindo com refs locais)"
+
+    branch="$(workvm_host_card_resolve_api_card_branch "$src" "$code" || true)"
+    if [ -z "$branch" ]; then
+        workvm_host_card_log "api-main: sem branch com $code — worktree em HEAD/develop"
+        return 0
+    fi
+
+    cur="$(git -C "$wt_api" branch --show-current 2>/dev/null || true)"
+    if [ "$cur" = "$branch" ]; then
+        workvm_host_card_log "api-main worktree já em $branch"
+        return 0
+    fi
+
+    if git -C "$src" show-ref --verify --quiet "refs/heads/${branch}"; then
+        workvm_host_card_log "api-main worktree → $branch"
+        git -C "$wt_api" -c core.hooksPath=/dev/null checkout "$branch" \
+            || workvm_host_card_log "checkout $branch falhou no worktree (dirty? branch noutro worktree?)"
+    elif git -C "$src" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+        workvm_host_card_log "api-main worktree → $branch (de origin)"
+        git -C "$wt_api" -c core.hooksPath=/dev/null checkout -B "$branch" "origin/${branch}" \
+            || workvm_host_card_log "checkout -B $branch falhou no worktree"
+    else
+        workvm_host_card_log "branch $branch sumiu após resolve"
+    fi
+}
+
 workvm_host_card_prepare_api_isolation() {
     local dir="$1"
-    local src wt_root wt_api vendor_dst head
+    local code="${2:-}"
+    local src wt_root wt_api vendor_dst branch
     src="$(workvm_host_card_api_src)"
     wt_root="${dir}/worktree"
     wt_api="${wt_root}/api-main"
@@ -88,9 +167,28 @@ workvm_host_card_prepare_api_isolation() {
         workvm_host_card_log "api worktree já existe: $wt_api"
     else
         # Hooks do clone podem chamar docker exec olie-api-main (ausente no host).
-        workvm_host_card_log "git worktree add --detach $wt_api"
+        # Se a branch do card já existe, cria o worktree nela; senão detach em HEAD.
         rm -rf "$wt_api"
-        git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt_api" HEAD || return 1
+        branch=""
+        if [ -n "$code" ]; then
+            git -C "$src" fetch origin --prune --quiet 2>/dev/null || true
+            branch="$(workvm_host_card_resolve_api_card_branch "$src" "$code" || true)"
+        fi
+        if [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/heads/${branch}"; then
+            workvm_host_card_log "git worktree add $wt_api → $branch"
+            git -C "$src" -c core.hooksPath=/dev/null worktree add "$wt_api" "$branch" || return 1
+        elif [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+            workvm_host_card_log "git worktree add -b $branch $wt_api (origin)"
+            git -C "$src" -c core.hooksPath=/dev/null worktree add -b "$branch" "$wt_api" "origin/${branch}" || return 1
+        else
+            workvm_host_card_log "git worktree add --detach $wt_api"
+            git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt_api" HEAD || return 1
+        fi
+    fi
+
+    # Resume / create sem branch no add: garante checkout se a feature já existir.
+    if [ -n "$code" ]; then
+        workvm_host_card_checkout_api_card_branch "$dir" "$code"
     fi
 
     mkdir -p \

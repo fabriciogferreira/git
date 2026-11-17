@@ -66,6 +66,9 @@ Sem destroy automático confiável, a política de limpeza manual **não** basta
 - **Runtime Olie:** cada card tem `state_dir/worktree/api-main` (git worktree) +
   `state_dir/vendor` (rsync do vendor). Compose/`Pest -p` usam esses paths —
   dois cards podem rodar a suite em paralelo sem corromper o clone.
+  No `ensure`, se já existir branch local/remota cujo nome contém o código do
+  card (ex. `feature/DOP-1273-…`), o worktree faz checkout nela; o clone
+  compartilhado `~/git/olie/api-main` permanece na base (`develop`).
 - Janelas distintas isolam chat/foco; **não** isolam sozinhas `~/.cursor/mcp.json` — ver §5.
 
 ### 5. MCP: roteamento, não token por janela
