@@ -14,6 +14,9 @@ import {
  *
  * Seed: `scripts/seed-support-chat-reset.sh` (wired in run.sh) clears the
  * clinic-admin chat and creates an isolation marker on another clinic.
+ *
+ * Filename `01-` keeps this suite before `clinic-lifecycle` alphabetically so a
+ * shared clinic-admin DB still starts empty for create-on-first-message.
  */
 test.describe('TV-16 clinic support chat', () => {
     test.describe.configure({ mode: 'serial', timeout: 180_000 })

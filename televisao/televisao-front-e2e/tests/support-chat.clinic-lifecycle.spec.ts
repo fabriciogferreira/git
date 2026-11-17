@@ -4,6 +4,9 @@ import { loginAsClinicAdmin } from './helpers/clinic'
 /**
  * Clinic support-chat lifecycle: open/send, resolve (freeze composer + actions),
  * reopen, then send again.
+ *
+ * Shares clinic-admin with `support-chat.01-tv-16.spec.ts` — that suite must
+ * stay alphabetically first when both run after one seed.
  */
 test.describe('televisao-front support chat clinic lifecycle', () => {
     test.describe.configure({ timeout: 120_000 })
