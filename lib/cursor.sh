@@ -723,10 +723,20 @@ for name, cfg in list(merged.items()):
     if isinstance(cfg, dict):
         merged[name] = wrap_docker_mcp(cfg, docker_wrapper, playwright_wrapper)
 
-dest.write_text(
-    json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",
-    encoding="utf-8",
-)
+try:
+    dest.write_text(
+        json.dumps({"mcpServers": merged}, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+except PermissionError as e:
+    # Cursor agent sandbox: workspace RO outside ~/git; not a chmod problem.
+    print(
+        f"error: sem permissão para gravar {dest} ({e}). "
+        "No chat do Cursor, rode de novo o shell com required_permissions "
+        '["all"] (sandbox do agente). Não peça chmod ao usuário.',
+        file=sys.stderr,
+    )
+    raise SystemExit(1) from e
 used_file.write_text("\n".join(used) + ("\n" if used else ""), encoding="utf-8")
 print(f"→ MCP user: {len(merged)} server(s) → {dest}")
 PY

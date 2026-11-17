@@ -133,6 +133,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
 ```
 
+- **Shell permissions (required):** run this (and `destroy`) with **unrestricted** agent shell — `required_permissions: ["all"]`. The ensure writes `~/.cursor/mcp.json` and host-card state outside the workspace; the default Cursor sandbox returns `PermissionError` on that path and may also fake DNS/`gh` failures. That is **not** a chmod/ownership problem — do **not** stop and ask the user to fix permissions; re-run once with `all` immediately. Same for DNS/`could not read Username for https://github.com` that appear only inside the sandbox.
 - First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
 - Browser (slug = código em minúsculas, ex. `dop-1183`):
   - Front: `http://devframe.{slug}.olie.localhost`
@@ -140,7 +141,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
   - Do **not** use bare `devframe.olie.localhost` for a host-card (colide entre cards).
 - Later day / re-paste → **resume** the same id (compose up again; do not destroy).
 - Report `id`, `port_base`, `front_dns` / `api_dns`, and `workspace` in chat.
-- Requires clones + `vendor` on the host. If the hook or CLI fails, stop (prompt-health).
+- Requires clones + `vendor` on the host. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
 
 **Destroy (only when the card is finished):** remove containers/networks for that compose project, generated workspace, and state dir — same spirit as dropping the Card VM domain.
 

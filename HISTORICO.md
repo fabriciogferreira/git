@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card ensure: PermissionError em ~/.cursor/mcp.json no chat
+
+- **problema:** `workvm-host-card ensure` no colleague review / prompts falhava com `PermissionError: … ~/.cursor/mcp.json` (e avisos falsos de DNS/`gh`); o agente pedia chmod ao usuário.
+- **por que é um problema:** o arquivo já era `fabricio` `600`; a falha era o sandbox do Shell no Cursor (sem `required_permissions: ["all"]`). Retry no mesmo chat sem `all` repetia o erro; o stack do card já estava ok no host.
+- **resolvido como:** bullet **Shell permissions** em `olie|locav|televisao/prompts/workflow-policy.md` (Host card environment); allow em `.cursor/permissions.json`; mensagem em `lib/cursor.sh` (`workvm_apply_mcp`) apontando sandbox/`all` em vez de chmod; nota em `host-cards-no-vm.md`.
+
 ## Host-card Pest: teto de 22 processes no jarvis
 
 - **problema:** `workvm-host-card-pest` usava `nproc` (24 no jarvis); com `--processes` 23 ou 24 o Paratest matava workers com SIGSEGV (exit 139) e a suite abortava sem contagem.

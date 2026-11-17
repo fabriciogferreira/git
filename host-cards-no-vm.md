@@ -145,6 +145,12 @@ Regra compartilhada: secção **Host card environment** em cada `*/prompts/workf
 ~/git/bin/workvm-host-card destroy --project <olie|locav|televisao> --code '{{ code }}'
 ```
 
+No chat do Cursor, `ensure`/`destroy` precisam de shell **unrestricted**
+(`required_permissions: ["all"]`): gravam `~/.cursor/mcp.json` e estado em
+`~/.local/share/workvm/host-cards/`. `PermissionError` nesse path (e DNS/`gh`
+falsos) é sandbox do agente, não chmod — ver **Host card environment** nos
+`workflow-policy.md` e allow em `.cursor/permissions.json`.
+
 | Momento | Ação |
 | --- | --- |
 | Início de qualquer trigger acima | `ensure` **antes** de git/stage/review pesado |

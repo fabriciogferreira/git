@@ -126,10 +126,11 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 ~/git/bin/workvm-host-card ensure --project televisao --code '{{ code }}'
 ```
 
+- **Shell permissions (required):** run this (and `destroy`) with **unrestricted** agent shell — `required_permissions: ["all"]`. The ensure writes `~/.cursor/mcp.json` and host-card state outside the workspace; the default Cursor sandbox returns `PermissionError` on that path and may also fake DNS/`gh` failures. That is **not** a chmod/ownership problem — do **not** stop and ask the user to fix permissions; re-run once with `all` immediately.
 - First day → creates state, `port_base`, `~/git/televisao/<id>.code-workspace`, opens Cursor, and brings up **compose slim** (`televisao/sandbox/host-card-ensure.sh`) using clones under `~/git/televisao`.
 - Later day / re-paste → **resume** the same id (compose up again; do not destroy).
 - Report `id`, `port_base`, URLs, and `workspace` in chat. Prefer that workspace window for the card.
-- Exclusive jobs still use `~/git/bin/workvm-sandbox --project televisao`. If the hook or CLI fails, stop (prompt-health).
+- Exclusive jobs still use `~/git/bin/workvm-sandbox --project televisao`. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
 
 **Destroy (only when the card is finished):**
 
