@@ -29,6 +29,10 @@ test.describe('DOP-1258 native event webhooks', () => {
     test('shows empty state and opens the create dialog', async ({ page }) => {
         // Empty or populated both expose Novo webhook; empty copy is optional.
         await expect(webhookCreateButton(page).first()).toBeVisible()
+        // Wait for the list to settle (rows or empty copy) before branching on count.
+        await expect(
+            page.locator('.webhook-row').first().or(webhookEmptyTitle(page))
+        ).toBeVisible({ timeout: 15_000 })
 
         if ((await page.locator('.webhook-row').count()) === 0) {
             await expect(webhookEmptyTitle(page)).toBeVisible()
@@ -49,6 +53,43 @@ test.describe('DOP-1258 native event webhooks', () => {
                 /Tudo o que acontecer nesta conta|Everything that happens in this account/i
             )
         ).toBeVisible()
+    })
+
+    test('asks for an HTTPS destination and rejects http URLs', async ({ page }) => {
+        await webhookCreateButton(page).first().click()
+        await expect(
+            page.getByRole('heading', { name: /Novo webhook|New webhook/i })
+        ).toBeVisible({ timeout: 15_000 })
+
+        await expect(
+            page.getByText(/URL pública em HTTPS|public HTTPS URL/i)
+        ).toBeVisible()
+
+        await page
+            .getByLabel(/URL de destino|Destination URL/i)
+            .fill('http://example.com/olie-e2e-webhooks/plain-http')
+
+        const rejected = page.waitForResponse(
+            r =>
+                /\/webhooks\/?$/.test(new URL(r.url()).pathname) &&
+                r.request().method() === 'POST',
+            { timeout: 30_000 }
+        )
+
+        await page
+            .getByRole('button', { name: /^Criar webhook$|^Create webhook$/i })
+            .click()
+
+        expect((await rejected).status()).toBe(422)
+        // The validation alert is shown and nothing was created: no secret reveal.
+        const alert = page.getByRole('dialog').filter({
+            hasText: /erros de validação|validation errors/i,
+        })
+        await expect(alert).toBeVisible({ timeout: 10_000 })
+        await alert.getByRole('button', { name: /^OK$/i }).click()
+        await expect(
+            page.getByText(/Guarde o secret agora|Save the secret now/i)
+        ).toHaveCount(0)
     })
 
     test('creates a webhook, shows the secret once, then opens details and deliveries', async ({
