@@ -41,9 +41,11 @@ Progress lives only in `~/git/locav/prompts/coverage-ledger.md` (meta-repo). Cre
 
 | File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `app/...` | `YYYY-MM-DD HH:MM TZ` | `100%` | `—` or `29` | `12.5%` | `tests/...` | FQCN; hunks; +1 legacy |
+| `app/...` | `YYYY-MM-DD HH:MM TZ` | `100%` | `—` or `29` | `12.5%` | `tests/...` | `sha:<fp>`; FQCN; hunks; +1 legacy |
 
 A row is **done** when the **Close the file** gates pass (in-scope + ratchet / small-file rules below). Update the same row on re-measure (do not duplicate paths). The previous **File raw** on that row is the baseline for the next card’s +1pp ratchet.
+
+**Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <LocavApi> <production-path>`. Later chats skip that file when the row is done **and** `sha:` matches. Done row with **no** `sha:` → re-measure once and stamp.
 
 - **File** — path under `app/` (repo-relative from `LocavApi`).
 - **Last measured** — local VM clock when this row was written (`date '+%Y-%m-%d %H:%M %Z'`).
@@ -61,7 +63,7 @@ Work only in `~/git/locav/LocavApi`.
 
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
-2. From that list, keep production PHP under `app/` (`*.php`). Sort by path. Skip paths that already have a done ledger row **for this card pass** unless the user asked to re-measure.
+2. From that list, keep production PHP under `app/` (`*.php`). Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on that production path). Do not treat “done for this card pass” as a free skip across chats without `sha:`. Re-measure when the user asks.
 3. From the same change set, keep `*Test.php` under `tests/` as candidate runners.
 4. Map each production path to its FQCN (PSR-4 `App\` ← `app/`).
 5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope. Deleted-only hunks are not coverage targets.

@@ -6,6 +6,8 @@ Gates (see the prompt): always cover the change-set hunks; **new/small** files (
 
 While any changed `app/**/*.php` from the card’s `televisao-api` diff is missing here or fails those gates, the coverage stack still has work: use **`next coverage`** (one file) or **`correct coverages`** (drain all remaining); do not run `pre-qa.md` via `next prompt` on own-card while files remain. On colleague dispatcher, drain remaining files in that run.
 
+Cross-chat skip: done row + matching `sha:<fp>` in Notes (`workvm-ledger-sha.sh`) — see `coverage-testing.md`. Missing `sha:` → re-measure once and stamp.
+
 | File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `app/Broadcasting/Payloads/PrescriptionSignatureChangedPayload.php` | `2026-11-17 11:01 -03` | `100%` | `—` | `100.0%` | `tests/Unit/Events/PrescriptionSignatureChangedTest.php` | `App\Broadcasting\Payloads\PrescriptionSignatureChangedPayload`; new file; File raw 100% |

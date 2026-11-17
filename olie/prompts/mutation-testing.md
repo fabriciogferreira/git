@@ -35,9 +35,11 @@ Progress lives only in `~/git/olie/prompts/mutation-ledger.md` (meta-repo). Crea
 
 | Test file | Result | Notes |
 | --- | --- | --- |
-| `tests/...` | `100%` or `equivalent` | short note; list `--class` targets; note any +1 legacy fix |
+| `tests/...` | `100%` or `equivalent` | `sha:<fp>`; `--class` targets; +1 legacy |
 
 A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (see below). `equivalent` means every remaining in-scope untested mutation is a behavior-preserving change (for example a cast the tests already feed as a float) and the Notes column says why. Do not mark a file done to skip a real in-scope gap.
+
+**Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <api-main> <test-path> <each --class production path>` (sorted blobs of the test file + every production file you mutated). On later chats / colleague dispatcher passes, **skip** that test (no sandbox, no mutate) when Result is done **and** Notes contain `sha:…` **and** recomputing the fingerprint matches. Done row with **no** `sha:` → re-run once and stamp (legacy rows). Same tip + same blobs across chats must not recreate sandboxes.
 
 ## Change-set file list (shared)
 
@@ -47,7 +49,7 @@ Work only in `~/git/olie/api-main`.
 
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
-2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger.
+2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats.
 3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). Those are the mutation `--class` targets for every file in this stack.
 4. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
 

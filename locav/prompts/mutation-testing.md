@@ -23,9 +23,11 @@ Progress lives only in `~/git/locav/prompts/mutation-ledger.md` (meta-repo). Cre
 
 | Test file | Result | Notes |
 | --- | --- | --- |
-| `tests/...` | `100%` or `equivalent` | short note; list `--class` targets; note any +1 legacy fix |
+| `tests/...` | `100%` or `equivalent` | `sha:<fp>`; `--class` targets; +1 legacy |
 
 A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (see below). `equivalent` means every remaining in-scope untested mutation is a behavior-preserving change (for example a cast the tests already feed as a float) and the Notes column says why. Do not mark a file done to skip a real in-scope gap.
+
+**Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <LocavApi> <test-path> <each --class production path>`. Later chats skip that test (no sandbox/mutate) when Result is done **and** `sha:` still matches. Done row with **no** `sha:` → re-run once and stamp.
 
 ## One changed test file per paste
 
@@ -35,7 +37,7 @@ Work only in `~/git/locav/LocavApi`.
 
    `git status --short` and `git diff --name-only HEAD` plus untracked files.
 
-2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip paths already done in the ledger. Skip a file that is a trait or helper and not a test case.
+2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
 3. Take the first remaining changed test file. If the user named a test file in the same message, use that path instead (it must still be in the change set, unless they explicitly override).
 4. If none remain, say the change-set mutation stack is complete, recommend `~/git/locav/prompts/pest-parallel.md` as the next paste, and stop.
 5. If that file is still a PHPUnit test case (`extends TestCase`), convert **that file only** with Drift before mutating: `docker exec -w /var/www/html locav-backend vendor/bin/pest --drift <that-file>`. If `pestphp/pest-plugin-drift` is missing, `composer require pestphp/pest-plugin-drift:^4.1 --dev --no-interaction` in that container. Do not install Drift 5. Do not pass `tests/` or any other file. If Drift leaves that file as PHPUnit, finish only that file by hand. If a data provider or shared trait cannot be expressed without rewriting unrelated files, stop and report that limit.

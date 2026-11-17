@@ -6,5 +6,7 @@ Gates (see the prompt): always cover the change-set hunks; **new/small** files (
 
 While any changed `app/**/*.php` from the card’s `LocavApi` diff is missing here or fails those gates, the coverage stack still has work: use **`next coverage`** (one file) or **`correct coverages`** (drain all remaining); do not run `pre-qa.md` via `next prompt` on own-card while files remain. On colleague QA/CR, finish coverage before approve/merge / 'Revisado'.
 
+Cross-chat skip: done row + matching `sha:<fp>` in Notes (`workvm-ledger-sha.sh`) — see `coverage-testing.md`. Missing `sha:` → re-measure once and stamp.
+
 | File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

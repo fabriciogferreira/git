@@ -26,7 +26,7 @@ Do **not** repeat an expensive step when nothing material changed since the last
 
 | Expensive step | Re-run only when |
 | --- | --- |
-| `pest --mutate` / `pest --coverage` | Test or production code under test changed, or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). |
+| `pest --mutate` / `pest --coverage` | Test or production blobs under test changed (`sha:` mismatch / missing stamp), or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). Matching `sha:` in the ledger → skip sandbox across chats. |
 | Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. |
 | Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
 | Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |

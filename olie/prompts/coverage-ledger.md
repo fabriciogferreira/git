@@ -6,6 +6,8 @@ Gates (see the prompt): always cover the change-set hunks; **new/small** files (
 
 While any changed `app/**/*.php` from the card’s `api-main` diff is missing here or fails those gates, the coverage stack still has work: use **`next coverage`** (one file) or **`correct coverages`** (drain all remaining in parallel); do not run `pre-qa.md` via `next prompt`. On own-card develop handoff this stack runs after mutation and must finish (or be explicitly skipped) before `pre-qa.md`.
 
+Cross-chat skip: a done row with matching `sha:<fp>` in Notes (see `coverage-testing.md` / `bin/workvm-ledger-sha.sh`) is not reopened. Missing `sha:` on a done row means re-measure once and stamp.
+
 | File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `app/Mcp/Tools/IndexProjectsTool.php` | `2026-11-11 13:05 UTC` | `100%` | `—` | `100.0%` | `tests/Feature/Mcp/Tools/IndexProjectsToolTest.php` | DOP-1073. `App\Mcp\Tools\IndexProjectsTool`. In-scope hunks vs `origin/develop`: +L56–61 (docblock), +L62–72 (`ALLOWED_SORTS` + `customer__name`/`contact__name`). Large file (~402 LOC); first ledger row. File raw already `100%` under Via test → in-scope + Large first-row gates closed (no ratchet needed). Temporary `covers()` removed; PCOV in running container. |

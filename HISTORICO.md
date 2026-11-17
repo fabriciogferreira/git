@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation/coverage: ledger por SHA (file@blob)
+
+- **problema:** o budget de re-run evitava repetir no mesmo chat, mas entre chats/colleague o dispatcher ainda reabria sandbox + mutate/coverage no mesmo tip já fechado no ledger (path-only ou “card pass”).
+- **por que é um problema:** 2º pass em arquivos já `100%`/`equivalent` pagava create+mutate+destroy de novo (bench DOP-1258: 3 arquivos → ~227s wall paralelo).
+- **resolvido como:** stamp `sha:<fp>` nas Notes via `bin/workvm-ledger-sha.sh` (blobs do teste + `--class` prod / do `app/` no coverage); skip cross-chat só com Result done **e** fingerprint igual; sem `sha:` → re-roda uma vez e carimba. Prompts mutation/coverage + workflow-policy (Olie/Locav/Televisão). Bench after: skip dos 3 arquivos em ≪1s (sem sandbox).
+
 ## Mutation/coverage: orçamento de re-run (equivalent cedo)
 
 - **problema:** no colleague review o agente re-rodava `pest --mutate` / `--coverage` “para confirmar” ou sem assert novo; no jarvis isso repetia o mesmo score (ex. SafeUrlGuard 54.65% ×4) e queimava minutos por arquivo.
