@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation ledger `sha:`: skip só para retries neste meta-repo
+
+- **problema:** dava para ler o skip por `sha:` como se o autor do card stampasse no handoff e a 1ª colleague review viesse quente.
+- **por que é um problema:** `mutation-ledger.md` é privado deste meta-repo; outros devs da empresa não têm o arquivo — a 1ª review de card de colega continua fria.
+- **resolvido como:** nota **Personal ledger only** em `olie|locav|televisao/prompts/mutation-testing.md`: skip = retries seus (2ª review / try again / outro chat) com tip igual. Bench DOP-1258 (3 arquivos stampados): skip ~70 ms vs cold remutate parede ~29 s (~400×; cold sem create de sandbox).
+
 ## Mutation: `--class` por teste, não o pool inteiro do change-set
 
 - **problema:** `mutation-testing` mandava passar **todas** as FQCN `app/` do change-set em **cada** `*Test.php`; com `--covered-only` classes só tocadas de passagem ainda geravam mutate longo (ex. CloudConnector +171s num teste de templates).

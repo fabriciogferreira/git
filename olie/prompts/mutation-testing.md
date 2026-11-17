@@ -41,6 +41,8 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 **Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <api-main> <test-path> <each --class production path>` (sorted blobs of the test file + every production file you mutated). On later chats / colleague dispatcher passes, **skip** that test (no sandbox, no mutate) when Result is done **and** Notes contain `sha:…` **and** recomputing the fingerprint matches. Done row with **no** `sha:` → re-run once and stamp (legacy rows). Same tip + same blobs across chats must not recreate sandboxes.
 
+**Personal ledger only:** `mutation-ledger.md` lives in this private meta-repo. Other company authors do **not** have it and cannot stamp `sha:` on their machine. A **first** colleague review of someone else’s card is therefore a **cold** mutate (no skip). The fingerprint win is for **your** retries: 2nd review, `try again`, another chat, or a card you already mutated on this host with the tip unchanged. Bench DOP-1258 (3 stamped files): skip ~70 ms vs cold remutate wall ~29 s (~400×; cold measured without sandbox create — real colleague cold is slower).
+
 ## Change-set file list (shared)
 
 Work only in `~/git/olie/api-main`.

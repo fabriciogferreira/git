@@ -29,6 +29,8 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 **Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <LocavApi> <test-path> <each --class production path>`. Later chats skip that test (no sandbox/mutate) when Result is done **and** `sha:` still matches. Done row with **no** `sha:` → re-run once and stamp.
 
+**Personal ledger only:** `mutation-ledger.md` lives in this private meta-repo. Other company authors do **not** have it and cannot stamp `sha:`. A **first** colleague review of someone else’s card is a **cold** mutate. Skip helps **your** retries (2nd review / `try again` / another chat) when the tip is unchanged. Olie bench DOP-1258: skip ~70 ms vs cold remutate wall ~29 s (~400×; without sandbox create).
+
 ## Change-set file list (shared)
 
 Work only in `~/git/locav/LocavApi`.

@@ -47,6 +47,8 @@ A row is **done** when the **Close the file** gates pass (in-scope + ratchet / s
 
 **Cross-chat skip (file@blob):** when closing a row, stamp Notes with `sha:<fingerprint>` from `~/git/bin/workvm-ledger-sha.sh <LocavApi> <production-path>`. Later chats skip that file when the row is done **and** `sha:` matches. Done row with **no** `sha:` → re-measure once and stamp.
 
+**Personal ledger only:** `coverage-ledger.md` lives in this private meta-repo. Other company authors do **not** stamp `sha:`. A **first** colleague review of someone else’s card is a **cold** re-measure. Skip helps **your** retries when the production blob is unchanged.
+
 - **File** — path under `app/` (repo-relative from `LocavApi`).
 - **Last measured** — local VM clock when this row was written (`date '+%Y-%m-%d %H:%M %Z'`).
 - **In-scope** — covered in-scope executable lines ÷ in-scope executable lines. New files: whole file is in-scope.
