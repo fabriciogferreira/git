@@ -130,4 +130,4 @@ After the row is written, report the file, whether it was converted from PHPUnit
 - **Files remain:** say to paste this prompt again (or send `next mutation`) for the next changed test file. Do **not** recommend `pre-qa.md`. Do **not** move a colleague card out of 'QA/CR'.
 - **None remain:**
   - **Develop handoff:** recommend `~/git/locav/prompts/pest-parallel.md` as the next paste (`next prompt` runs it); `pre-qa.md` comes after a green suite.
-  - **Colleague QA/CR stack:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat**; no prompt paths). Recommend `pest-parallel.md` next when applicable; **Colleague review outcome** after that stack (or an explicit skip).
+  - **Colleague QA/CR stack:** keep mutation fixes in Cursor chat for the scoreboard / **reviewer-fix** path (do not bounce for mutation-only). Write into the card only when the combined outcome moves to 'Corrigir' (colleague review fail) and the author still needs those fixes. Recommend `pest-parallel.md` next when applicable; **Colleague review outcome** after that stack (or an explicit skip).

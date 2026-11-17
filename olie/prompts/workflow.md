@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em progresso' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved and the card moves to 'Validação'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only on colleague-core (or non-test-gate) fail; gap/mutation/coverage alone → reviewer may fix in chat. Full pass: PRs approved and the card moves to 'Validação'. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. Use `~/git/olie/prompts/validation.md`. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'concluído' (pass) or 'corrigir' (fail). |
@@ -38,8 +38,9 @@ For each colleague card in 'QA/CR', paste **once** `~/git/olie/prompts/colleague
 2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md`, `mutation-testing.md`, and `coverage-testing.md` when the card changed `api-main` (skip those when there is no backend).
 3. Waits for every applicable gate, then prints one scoreboard.
 4. Applies the funnel outcome (**Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`):
-   - Move to 'Corrigir' only if at least one applicable gate failed.
-   - Approve PRs and move to 'Validação' only on full pass (colleague + gap clean/skipped + mutation clean/skipped).
+   - Move to 'Corrigir' only if colleague core failed (or any failure outside test-gap / mutation / coverage).
+   - Reviewer-fix path: core Pass but gap/mutation/coverage reported work → stay 'QA/CR'; reviewing user may fix in chat.
+   - Approve PRs and move to 'Validação' only on full pass (colleague + gap clean/skipped + mutation clean/skipped + coverage clean/skipped).
 
 Do not paste gap or mutation separately after the dispatcher unless a gate was blocked and the user asks to retry that gate.
 

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Colleague review: gap/mutation/coverage → reviewer-fix, não Corrigir
+
+- **problema:** o outcome do colleague review mandava mover para 'Corrigir' se gap, mutation ou coverage reportassem trabalho — mesmo com o core Pass — e ainda gravava esses resultados no conteúdo do projeto.
+- **por que é um problema:** o revisor fecha esses três gates no próprio chat; bounce e nota no card só fazem sentido quando há fail de produto/aceitação (fora desses três).
+- **resolvido como:** **Colleague review outcome** (Olie/Locav/Televisão): Corrigir só se o colleague core (ou outro fail fora de gap/mutation/coverage) falhar; gap/mutation/coverage sozinhos → QA/CR + reviewer-fix no chat (`add` / `to correct` / `correct mutations` / `correct coverages` / `try again`), **sem** escrever no projeto. Só cola gap/mutation/coverage no card quando o bounce for por fail fora desses gates. `colleague-review`, `workflow`, `test-gap-analysis`, `mutation-testing` alinhados.
+
 ## Correction: plano deve ler comentários dos PRs do card
 
 - **problema:** o correction montava o plano só com o texto do card/retorno e podia omitir threads de review do GitHub (ou listá-los e não fechar o lote).

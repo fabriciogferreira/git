@@ -161,7 +161,7 @@ Report the file, in-scope result, Pest raw score if different, any +1 legacy fix
 
 When **none** remain:
 
-- **Dispatcher mode:** if mutation reported fixes **for the author** (product gaps), write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths, no VM/sandbox/dispatcher/ledger jargon). If the gate is clean or only local test asserts were tightened, **do not** post a process wrap-up to the card — return Clean to `colleague-review.md` in chat only. Do **not** apply the funnel move yourself.
+- **Dispatcher mode:** return Pass/Fixes/Blocked to `colleague-review.md` in chat (findings only — **Card content vs chat**). Do **not** bounce the author for mutation-only work — **reviewer-fix** in **Colleague review outcome**. Write into the card only when the combined outcome moves to 'Corrigir' (colleague core fail) and the author still needs those fixes. If the gate is clean or only local test asserts were tightened, return Clean in chat only. Do **not** apply the funnel move yourself.
 - **Develop handoff** (came from coverage-testing / test-gap-analysis): recommend `~/git/olie/prompts/pest-parallel.md` as the next paste (`next prompt` runs it). Do **not** jump to `pre-qa.md` yet.
 
-- **Alone on colleague stack:** write mutation fixes to the card if any; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel here).
+- **Alone on colleague stack:** keep mutation fixes in Cursor chat; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel or write the card here).

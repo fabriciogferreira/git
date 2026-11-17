@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não Iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em andamento' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only after all applicable gates and if at least one failed; on full pass: PRs approved/merged and status 'Revisado'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only on colleague-core (or non-test-gate) fail; gap/mutation/coverage alone → reviewer may fix in chat. Full pass: PRs approved/merged and status 'Revisado'. |
 | `changes-requested` (normally 'Corrigir') | The person who owns the card | The review failed. Fix it. |
 | 'Validação' | Tech lead | Approve or send it back. Use `~/git/televisao/prompts/validation.md`. |
 | 'Revisão de produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'Concluído' (pass) or 'Corrigir' (fail). |
@@ -39,8 +39,9 @@ For each colleague card in 'QA/CR', paste **once** `~/git/televisao/prompts/coll
 3. Waits for every applicable gate, prints a scoreboard (what ran / passed / failed / skipped).
 4. Applies the funnel outcome (**Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md`):
 
-- Move to 'Corrigir' only after all applicable gates finished **and** at least one failed.
-- Full pass (colleague passed; gap analysis skipped or clean; mutation skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
+- Move to 'Corrigir' only after all applicable gates finished **and** colleague core failed (or any failure outside test-gap / mutation / coverage).
+- Reviewer-fix path: core Pass but gap/mutation/coverage reported work → stay 'QA/CR'; reviewing user may fix in chat.
+- Full pass (colleague passed; gap/mutation/coverage skipped or clean): mark approved PRs (GitHub MCP `APPROVE`), merge when all approved, set status 'Revisado'.
 
 Do not paste gap or mutation separately after the dispatcher unless a gate was blocked and the user asks to retry that gate.
 

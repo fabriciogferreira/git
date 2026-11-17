@@ -15,7 +15,7 @@ Contract for parallel work: `~/git/televisao/sandbox/ORCHESTRATION.md`. Shared o
 2. Detect whether the change set touched `~/git/televisao/televisao-api` (open PRs, form links, branch commits). That flag decides whether gap + mutation + coverage run.
 3. On each company repository the card touches: find the author's branch, check it out (create the name from **Card branch name** in `workflow-policy.md` + base `preview` in `project.md` only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
 4. Record `started_at` (UTC) for the scoreboard.
-5. Do **not** write the colleague verdict, gap list, or mutation fixes yet — workers do that. Do **not** move the funnel or approve/merge until §4.
+5. Do **not** write the colleague verdict, gap list, or mutation/coverage fixes yet — core writes product fail findings; gap/mutation/coverage stay in chat until §4. Do **not** move the funnel or approve/merge until §4.
 
 ## 2. Dispatch (parallel)
 
@@ -51,12 +51,14 @@ Wait until every dispatched gate has finished (or is skipped). Collect:
 
 Apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.md` **once**, after all applicable gates finished (or the user explicitly skips a remaining gate in chat).
 
-- Move to 'Corrigir' only if at least one applicable gate failed (colleague fail **or** gap reported tests to add **or** mutation reported fixes for the author **or** coverage reported fixes for the author).
+- Move to 'Corrigir' only if colleague core failed (or any failure **outside** test-gap / mutation / coverage).
+- **Reviewer-fix path:** colleague core Pass but gap and/or mutation and/or coverage reported work → stay in 'QA/CR'; do **not** move to 'Corrigir'; do **not** write gap/mutation/coverage into the project/card; the reviewing user may fix those gates in this chat. Apply Pass path only after they are clean (or explicitly skipped).
+- When moving to 'Corrigir' for a core (or other non-test-gate) fail, **then** also paste any open gap/mutation/coverage findings onto the card for the author.
 - Pass path (approve / merge / 'Revisado') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean **and** coverage was skipped or clean.
 - Resolve 'Revisado' (and any step id) only via MCP `index-project-funnels-tool` → that board's `funnel_status[]` / `steps[]` by display name, then `edit-project-tool` / move tools. **Do not** call `get-available-steps` or curl the management catalog while that MCP tool works — empty `search`/`id` result means retry unfiltered, not HTTP. See **Resolving funnel steps** in `workflow-policy.md`.
-- Do **not** invent a third path.
+- Do **not** invent another path beyond Corrigir / reviewer-fix / Pass.
 
-Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card).
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card). Never post gap/mutation/coverage process wrap-ups on a Pass or reviewer-fix card.
 
 ## 5. Scoreboard (required final report)
 
@@ -78,7 +80,7 @@ Print one table (or equivalent bullets) covering **everything that ran**. Includ
 | E2E | added/extended commit, or N/A / blocked |
 | Pest on edited API tests | ok / fail file / N/A |
 | PRs | approved+merged / not approved / deferred reason |
-| Funnel | stayed 'QA/CR' / moved 'Corrigir' / status 'Revisado' |
+| Funnel | stayed 'QA/CR' (reviewer-fix) / moved 'Corrigir' / status 'Revisado' |
 | Incidents | tooling failures, restarts, skips |
 
 Also list checks that did **not** run and why.

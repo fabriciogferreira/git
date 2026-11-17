@@ -37,10 +37,10 @@ For each colleague card in 'QA/CR', run the colleague review flow:
 1. Start the review on the card's pull requests.
 2. Run `~/git/locav/prompts/colleague-review.md`.
 3. If the review has comments about what should be fixed, update the card content with them. When `LocavApi` and/or `locav-front` changed, do **not** move the card yet.
-4. Run `~/git/locav/prompts/test-gap-analysis.md` when `LocavApi` and/or `locav-front` changed. Write missing use cases into the card when reported (colleague stack). Keep the card in 'QA/CR'.
-5. Run `~/git/locav/prompts/mutation-testing.md` (personal, only if the card changed `LocavApi`). Skip when the change set has no backend. If the mutation run has comments about what should be fixed, update the card content with them.
+4. Run `~/git/locav/prompts/test-gap-analysis.md` when `LocavApi` and/or `locav-front` changed. Keep gaps in Cursor chat (colleague stack). Keep the card in 'QA/CR'.
+5. Run `~/git/locav/prompts/mutation-testing.md` (personal, only if the card changed `LocavApi`). Skip when the change set has no backend. Keep mutation fixes in Cursor chat unless the combined outcome later moves to 'Corrigir' for a non-test-gate fail.
 
-Combined outcome (see **Colleague review outcome** in `workflow-policy.md`): approve/merge PRs and set 'Revisado' only when every applicable gate passed. Move to 'Corrigir' only after those gates finished and at least one failed. Do not move after the colleague paste alone when the gap/mutation stack still applies.
+Combined outcome (see **Colleague review outcome** in `workflow-policy.md`): approve/merge PRs and set 'Revisado' only when every applicable gate passed. Move to 'Corrigir' only when the colleague review failed (or any failure outside test-gap / mutation / coverage). Gap/mutation/coverage alone → reviewer-fix path (stay 'QA/CR'; reviewing user may fix in chat). Do not move after the colleague paste alone when the gap/mutation stack still applies.
 
 ## 2. Production review
 

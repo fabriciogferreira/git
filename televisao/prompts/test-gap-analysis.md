@@ -10,7 +10,7 @@ This prompt has **exactly two exits**:
 **Where the list goes** depends on the entry point:
 
 - **Own card (develop handoff)** — chat only. Do **not** write the list into the project/card content. The author closes those gaps in the same handoff before `pre-qa.md` / pull requests.
-- **Colleague stack** — also write that same list into the card content through OlieFlowAi (titles and descriptions only).
+- **Colleague stack** — Cursor chat / scoreboard only by default. Write into the project/card **only** when **Colleague review outcome** moves to 'Corrigir' for a failure outside gap/mutation/coverage (see **Project content (gap / mutation / coverage)** in `workflow-policy.md`).
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
@@ -19,7 +19,7 @@ Run this **before** `~/git/televisao/prompts/coverage-testing.md` when that step
 Two entry points:
 
 1. **Own card (develop handoff)** — after `~/git/televisao/prompts/implementation-validation.md` passes and the change set touched `~/git/televisao/televisao-api`. Next paste: `coverage-testing.md` → `mutation-testing.md` → `pest-parallel.md` → `pre-qa.md`. Gaps stay in chat; close them before coverage / PRs.
-2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/colleague-review.md`, when the change set touched `televisao-api`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack (this prompt + mutation when applicable) finishes. Gaps reported here count as “fixes for the author” in **Colleague review outcome** (`~/git/televisao/prompts/workflow-policy.md`) and are written into the card.
+2. **Colleague card in 'QA/CR'** — after `~/git/televisao/prompts/colleague-review.md`, when the change set touched `televisao-api`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack (this prompt + mutation when applicable) finishes. Gaps reported here feed the colleague scoreboard; **Colleague review outcome** decides Corrigir vs **reviewer-fix** (gap/mutation/coverage alone do not bounce the author).
 
 Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands**.
 
@@ -76,6 +76,6 @@ For every **missing** test, draft one list item:
 1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/televisao/prompts/coverage-testing.md` when backend coverage still applies; otherwise follow the handoff (`pre-qa.md` or colleague rules).
 2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. Do **not** approve/merge and do **not** move the funnel in this paste.
    - **Own-card:** chat only — do **not** write into the card. Still recommend mutation next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps (or have the author close them) before pre-QA / PRs.
-   - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR' and continue to `mutation-testing.md` if it still applies; the combined outcome after that stack treats these items like mutation-reported fixes (Corrigir if tests-to-add or mutation fixes remain; Revisado only if colleague passed **and** no tests-to-add **and** mutation clean/skipped).
+   - **Colleague stack:** leave 'QA/CR' and continue to `mutation-testing.md` if it still applies. Keep the list in Cursor chat for the scoreboard / **reviewer-fix** path. Write into the card only when the combined outcome moves to 'Corrigir' (colleague core fail) and the author still needs those tests.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/televisao/prompts/workflow-policy.md`.

@@ -139,6 +139,6 @@ After the row is written, report the file, whether it was converted from PHPUnit
 
 When **none** remain:
 
-- **Dispatcher mode:** if mutation reported fixes, write them into the card content (findings only — **Card content vs chat** in `workflow-policy.md`; no prompt paths). Return the aggregate result to `colleague-review.md`. Do **not** apply the funnel move yourself.
+- **Dispatcher mode:** return Pass/Fixes/Blocked to `colleague-review.md` in chat (findings only — **Card content vs chat**). Do **not** bounce the author for mutation-only work — **reviewer-fix** in **Colleague review outcome**. Write into the card only when the combined outcome moves to 'Corrigir' (colleague core fail) and the author still needs those fixes. Do **not** apply the funnel move yourself.
 - **Develop handoff** (came from coverage-testing): recommend `~/git/televisao/prompts/pest-parallel.md` as the next paste; `pre-qa.md` after a green suite.
-- **Alone on colleague stack:** write mutation fixes to the card if any; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel here).
+- **Alone on colleague stack:** keep mutation fixes in Cursor chat; tell the user to paste `colleague-review.md` for **Colleague review outcome** (do not move the funnel or write the card here).

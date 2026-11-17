@@ -88,9 +88,11 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits until **every** gate that applies has finished:
 
 1. **Colleague review** (`colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
-2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
-3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write coverage-driven test fixes into the card content when that run reports them for the author.
-4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them. **Re-run budget:** after one mutate report, classify in-scope survivors as killable vs `equivalent` immediately; re-mutate only after a real assert change (prefer ≤1 re-run per `--class`); never re-mutate an unchanged tree “to confirm”. Coverage has a matching re-measure budget.
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `LocavApi` and/or `locav-front`. Skip when neither changed. Report in Cursor chat only on this stack (own-card is also chat-only — see `test-gap-analysis.md`).
+3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Report coverage-driven work in Cursor chat only.
+4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `LocavApi`. Skip when there is no backend. Report mutation-driven work in Cursor chat only. **Re-run budget:** after one mutate report, classify in-scope survivors as killable vs `equivalent` immediately; re-mutate only after a real assert change (prefer ≤1 re-run per `--class`); never re-mutate an unchanged tree “to confirm”. Coverage has a matching re-measure budget.
+
+**Project content (gap / mutation / coverage):** do **not** write gap, mutation, or coverage results into the project/card while the reviewing user will fix them (**reviewer-fix**). Paste those three onto the card **only** when the combined outcome moves to 'Corrigir' because of a failure **outside** those gates (colleague review / product / acceptance) — so the author still sees the test debt alongside the bounce.
 
 Own-card stage order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`. Within coverage/mutation the default is **`correct coverages` / `correct mutations`** (parallel drain); `next coverage` / `next mutation` are opt-in one-file.
 
@@ -98,7 +100,9 @@ Order when the stack applies (colleague sequential): colleague-review → test-g
 
 **Do not move to 'Corrigir' or set 'Revisado' after only the colleague paste** when gap analysis, mutation, or coverage still applies. Leave the card in 'QA/CR', recommend `test-gap-analysis.md` then `mutation-testing.md` then `coverage-testing.md` when backend applies **in the Cursor chat only** (never on the card — **Card content vs chat**), and finish that stack first (or the user explicitly skips it). Do **not** approve or merge PRs until the combined outcome below.
 
-**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author and/or coverage reported fixes for the author).
+**Move to 'Corrigir'** only after all applicable gates finished **and** the colleague review failed (or any failure **outside** test-gap / mutation / coverage). Product/acceptance defects bounce to the author.
+
+**Reviewer-fix path** — colleague review **Pass**, but test-gap and/or mutation and/or coverage reported work: leave the card in 'QA/CR'; do **not** move to 'Corrigir'; do **not** write gap/mutation/coverage into the project/card. The reviewing user may fix those gates in this chat (`add` / `to correct` / `correct mutations` / `correct coverages` / `try again` as applicable). When those gates are clean (or the user explicitly skips remaining work), apply the Pass path.
 
 **Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`, merge when all approved, funnel status 'Revisado'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no `LocavApi`) or finished without fixes to send back **and** coverage either was skipped (no `LocavApi`) or finished without fixes to send back. Resolve 'Revisado' with `index-project-funnels-tool` → that board's `funnel_status[]` by display name, then `edit-project-tool` with `funnel_status`; never hard-code the id. Do not use HTTP `get-available-steps` when MCP works. If that funnel has no 'Revisado' status, use the move procedure above for the closest live step and report the available statuses.
 
@@ -230,6 +234,7 @@ When writing to card content through OlieFlowAi (`save-media-tool`, description,
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
 - Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
+- On colleague review, do **not** put gap / mutation / coverage results on the card during **reviewer-fix** (those stay in chat). Include them on the card only when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**.
 
 Recommend the next prompt **only in the Cursor chat** report.
 

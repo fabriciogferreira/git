@@ -10,7 +10,7 @@ This prompt has **exactly two exits**:
 **Where the list goes** depends on the entry point:
 
 - **Own card (develop handoff)** — chat only. Do **not** write the list into the project/card content. The author closes those gaps in the same handoff before `pre-qa.md` / pull requests.
-- **Colleague stack** — also write that same list into the card content through OlieFlowAi (titles and descriptions only).
+- **Colleague stack** — Cursor chat / scoreboard only by default. Write into the project/card **only** when **Colleague review outcome** moves to 'Corrigir' for a failure outside gap/mutation/coverage (see **Project content (gap / mutation / coverage)** in `workflow-policy.md`).
 
 Do **not** invent a third exit. Do **not** implement the missing tests in this paste unless the user explicitly asks. Do not run mutation testing here.
 
@@ -19,7 +19,7 @@ Run this **before** `~/git/olie/prompts/coverage-testing.md` when that step appl
 Two entry points:
 
 1. **Own card (develop handoff)** — after `~/git/olie/prompts/implementation-validation.md` passes and the change set touched `~/git/olie/api-main` (reached via the `implementation.md` handoff chain). Next paste: `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`. If there is no backend change, skip this prompt. Gaps stay in chat; close them before coverage / PRs.
-2. **Colleague card in 'QA/CR'** — after `~/git/olie/prompts/colleague-review.md`, when the change set touched `api-main`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack finishes. Gaps reported here count as “fixes for the author” for the colleague follow-up loop in `~/git/olie/prompts/workflow-policy.md` / `colleague-review.md` and are written into the card.
+2. **Colleague card in 'QA/CR'** — after `~/git/olie/prompts/colleague-review.md`, when the change set touched `api-main`, **before** mutation. Leave the card in 'QA/CR' until the remaining stack finishes. Gaps reported here feed the colleague scoreboard; **Colleague review outcome** decides Corrigir vs **reviewer-fix** (gap/mutation/coverage alone do not bounce the author).
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands**.
 
@@ -84,6 +84,6 @@ For every **missing** test, draft one list item:
 1. **No tests to add** — Say so. In the **Cursor chat** only, recommend `~/git/olie/prompts/coverage-testing.md` when backend coverage still applies; otherwise continue the handoff (`pre-qa.md` or colleague funnel rules).
 2. **Tests to add** — In the chat report, list each missing test as **title** + **description**. Do **not** approve and do **not** move the funnel in this paste. Tell the user they can send `add` to implement those items in this chat, then `try again` to re-run this gap analysis.
    - **Own-card:** chat only — do **not** write into the card. Still recommend coverage next in chat when backend applies; do not open `pre-qa.md` from this prompt. Close the gaps via `add` (or manually) before coverage / PRs.
-   - **Colleague stack:** **also** write that same list into the card content through OlieFlowAi (Brazilian Portuguese; no prompt paths). Leave 'QA/CR' and continue the colleague gates; treat these items like mutation-reported fixes in the follow-up / Corrigir loop.
+   - **Colleague stack:** leave 'QA/CR' and continue the colleague gates. Keep the list in Cursor chat for the scoreboard / **reviewer-fix** path. Write into the card only when the combined outcome moves to 'Corrigir' (colleague core fail) and the author still needs those tests.
 
 Never invent a third exit or funnel path. Shared rules: `~/git/olie/prompts/workflow-policy.md`.
