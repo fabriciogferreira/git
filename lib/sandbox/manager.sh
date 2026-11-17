@@ -13,7 +13,8 @@ workvm_sandbox_default_max() {
     local project="$1"
     case "$project" in
         televisao) printf '2\n' ;;
-        olie) printf '3\n' ;;
+        # 0 = sem teto (igual olie/sandbox/project.sh).
+        olie) printf '0\n' ;;
         *) printf '%s\n' "${WORKVM_SANDBOX_MAX:-3}" ;;
     esac
 }
@@ -76,7 +77,8 @@ workvm_sandbox_create() {
     fi
     local count
     count="$(workvm_sandbox_count)"
-    if [ "$count" -ge "$max" ]; then
+    # max=0 → sem teto (Olie default). Só bloqueia com max > 0.
+    if [ "$max" -gt 0 ] && [ "$count" -ge "$max" ]; then
         workvm_sandbox_log "teto de sandboxes atingido ($count/$max). destroy um antes ou WORKVM_SANDBOX_MAX=…"
         return 1
     fi

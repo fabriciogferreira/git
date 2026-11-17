@@ -67,7 +67,7 @@ paste colleague-review.md          # dispatcher
   │     └── sb-mut-<fileN>
   └── Task: coverage-testing.md          # exclusive → sandboxes
         ├── sb-cov-<app-file1>
-        └── sb-cov-<app-fileN>           # fila se N > WORKVM_SANDBOX_MAX
+        └── sb-cov-<app-fileN>           # todos em paralelo (Olie: sem teto)
   wait → scoreboard → Colleague review outcome
 ```
 
@@ -77,17 +77,18 @@ restantes do change-set nesta corrida (não um `next mutation` /
 `next coverage` = um arquivo por paste; **`correct mutations`** /
 **`correct coverages`** = drenam os restantes nesta corrida (um sandbox
 `profile=mutation` + um subagent por arquivo; pai agrega o ledger) —
-mesmo contrato de shard / `WORKVM_SANDBOX_MAX`. Preferir sandbox para não
-tocar o `testing` da Card VM. Mutation × coverage no **mesmo** sandbox
-**não** (ambos usam Pest/DB).
+mesmo contrato de shard. Preferir sandbox para não tocar o `testing` da
+Card VM. Mutation × coverage no **mesmo** sandbox **não** (ambos usam
+Pest/DB). Olie: **sem teto** por padrão (`WORKVM_SANDBOX_MAX=0`); cap
+opcional com `WORKVM_SANDBOX_MAX=N`.
 
 ---
 
 ## Mutation: shard por arquivo
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria até `WORKVM_SANDBOX_MAX` sandboxes `profile=mutation` (default Olie: 3).
-3. Atribui **um arquivo por sandbox**; quando um termina, pega o próximo da fila.
+2. Cria um sandbox `profile=mutation` **por arquivo** (Olie: todos juntos; só fila se `WORKVM_SANDBOX_MAX` > 0 e N passar do teto).
+3. Atribui **um arquivo por sandbox**; se houver teto e a fila existir, quando um termina pega o próximo.
 4. Em cada sandbox:
 
 ```bash

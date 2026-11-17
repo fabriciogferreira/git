@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Olie sandbox: sem teto de 3
+
+- **problema:** colleague mutation/coverage enfileiravam após 3 sandboxes (`WORKVM_SANDBOX_MAX` default 3), mesmo no jarvis com host-card.
+- **por que é um problema:** N `*Test.php` viravam fila artificial; o usuário pediu paralelismo sem o limite de 3.
+- **resolvido como:** default Olie `0` (= sem teto) em `olie/sandbox/project.sh` + `lib/sandbox/manager.sh` (só bloqueia se `max > 0`); docs/prompts alinhados; cap opcional `WORKVM_SANDBOX_MAX=N`.
+
 ## Host-card Opbed: ensure só abria Cursor
 
 - **problema:** `workvm-host-card ensure --project opbed` clonava repos e abria a janela, sem compose — o board/API não subiam no jarvis.

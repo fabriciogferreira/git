@@ -4,8 +4,9 @@
 # Isola worktree + MySQL/Redis/Mongo por COMPOSE_PROJECT_NAME (como Televisão).
 
 workvm_sandbox_project_max() {
-    # Guest Olie costuma ter 12 GiB — teto inicial 3; calibrar na medição.
-    printf '%s\n' "${WORKVM_SANDBOX_MAX:-3}"
+    # 0 = sem teto (jarvis/host-card: N mutations em paralelo).
+    # Cap explícito: WORKVM_SANDBOX_MAX=N.
+    printf '%s\n' "${WORKVM_SANDBOX_MAX:-0}"
 }
 
 workvm_sandbox_project_mem_limit() {

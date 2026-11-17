@@ -21,8 +21,8 @@ mutation): **[ORCHESTRATION.md](./ORCHESTRATION.md)**.
 ~/git/bin/workvm-sandbox destroy mut-envelope
 ```
 
-Teto padrão: **3** sandboxes (guest ~12 GiB). Override: `WORKVM_SANDBOX_MAX=2`.
-Com N arquivos de mutation > teto, fila (ver ORCHESTRATION).
+Teto padrão: **nenhum** (`WORKVM_SANDBOX_MAX=0`). Cap opcional:
+`WORKVM_SANDBOX_MAX=N` (aí a fila aplica — ver ORCHESTRATION).
 
 Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
 `olie/api-main:latest` se a tag ainda não existir.

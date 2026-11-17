@@ -80,7 +80,7 @@ Own-card / alone chat command. Same prepare → measure → close scoring as a s
 
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. For each remaining file, in parallel up to `WORKVM_SANDBOX_MAX` (queue the rest — `~/git/olie/sandbox/ORCHESTRATION.md`):
+3. For each remaining file, in parallel (Olie: no default cap; queue only if `WORKVM_SANDBOX_MAX` > 0 — `~/git/olie/sandbox/ORCHESTRATION.md`):
    - Prefer `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
    - Sync the card’s dirty `api-main` working tree into that sandbox worktree when needed.
    - Launch **one subagent (Task) per file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id (if any), candidate test paths, and the scoring/ledger rules.
