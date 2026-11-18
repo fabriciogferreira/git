@@ -78,11 +78,11 @@ All PHP runs as `docker exec -w /srv televisao-backend <command>`. Do not run `p
 - If `vendor/pest-plugins.json` is missing inside the container: `composer pest:dump-plugins`.
 - If `php -m` does not list `pcov`: install it in the running container only (`pecl install pcov` and `docker-php-ext-enable pcov` as root). Say that a recreated image drops PCOV. Do not change the image or compose files.
 
-Run the chosen file with the normal suite first:
+Run the chosen file with the normal suite first (prefer sandbox `job run` when draining; own-card fallback below):
 
 `docker exec -w /srv televisao-backend php artisan test --compact <test-path>`
 
-If that fails, stop. Do not mutate a red file.
+**Baseline / infra flake (required before Blocked):** transient MySQL deadlock / lock wait (`Deadlock found`, `Lock wait timeout`, `model_has_permissions`), connection reset, or one-off Pest crash with no product assertion failure → **retry once on the same slot/container**. Retry green → continue. Same flake again → Blocked. Do **not** count this against the mutate re-run budget. Stable red assertions → stop; do not mutate.
 
 ## Mutate
 
@@ -123,6 +123,7 @@ Re-running `pest --mutate` without new killable asserts (or without accepting `e
 - Re-run mutate **only** after you changed the test to kill at least one killable in-scope mutant (or after a tooling fix). Cap: prefer **at most one** re-run per `--class` once killables are addressed; then close with `equivalent` for any remaining behavior-preserving ids.
 - Do **not** re-mutate “to confirm” an unchanged tree, to climb Pest’s class-wide `%`, or to re-check mutants you already marked `equivalent`.
 - Do **not** invent asserts that cannot fail just to avoid `equivalent`.
+- Infra/deadlock retry (Prepare) is separate: at most **one** automatic same-slot retry, then Blocked.
 
 Pest’s overall `%` on a fat class may stay below 100%. That is OK. Ledger Result reflects **in-scope**, not Pest’s class-wide score. Put Pest’s raw score in Notes when it differs.
 

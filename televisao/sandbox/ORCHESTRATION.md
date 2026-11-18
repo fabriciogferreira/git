@@ -105,6 +105,10 @@ No dispatcher colleague, o prompt manda drenar o change-set. Com sandbox:
 3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o slot para o próximo (rsync dirty).
 4. Agrega ledger / findings; o dispatcher só então libera o outcome combinado. Destroy o pool ao fim do dreno.
 
+**Flake / deadlock:** 1 retry do mesmo comando no mesmo slot antes de Blocked (`mutation-testing.md`).
+
+**Watchdog de shard:** baseline **> 15 min** sem exit ou mutate **> 45 min** sem exit (ou stdout parado > 10 min) → Blocked (timeout), libera o slot. Opcional: `timeout 900` / `timeout 2700` em volta do `job run`.
+
 Mutation × `artisan test` no **mesmo** sandbox **não**.
 
 ---

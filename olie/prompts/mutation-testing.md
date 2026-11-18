@@ -76,7 +76,7 @@ Problem this solves: N remaining `*Test.php` files as N× `next mutation` pastes
 4. Drain remaining files with at most **N** in flight: when a slot frees, assign the next file to that **same** sandbox (do not destroy between files of this drain). Launch **one subagent (Task) per in-flight file**. Pass at least: test path, sandbox id, **that file’s** scoped `--class` FQCNs (step 4 — not the whole change-set pool), in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
 5. Each subagent runs baseline Pest → mutate → tighten if needed → returns a **proposed ledger row** (Result + Notes). It may edit **only** that `*Test.php` under the card working tree (or sync assertion edits back). It must **not** write `mutation-ledger.md` itself.
 6. **Parent only** appends rows to `~/git/olie/prompts/mutation-ledger.md` (avoid races). Destroy the **pool** when the drain finishes (or destroy a slot on hard failure after reporting).
-7. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pest-parallel.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
+7. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pest-parallel.md`. If a shard is Blocked (stable red baseline after the one infra retry, product bug, tooling, or watchdog timeout), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
 
 Not for colleague **dispatcher** mode (that drain is already mandatory without this phrase). Do not confuse with `to correct`.
 
@@ -100,7 +100,7 @@ Run the chosen file with the normal suite first (sandbox job, or own-card fallba
 ~/git/bin/workvm-sandbox job run <sandbox-id> -- php artisan test --compact <test-path>
 ```
 
-If that fails, stop. Do not mutate a red file.
+**Baseline / infra flake (required before Blocked):** if the baseline (or a mid-mutate DB error) fails with a **transient** signal — MySQL deadlock / lock wait (`model_has_permissions`, `Deadlock found`, `Lock wait timeout`), connection reset, or a one-off Pest crash with no assertion failure in the product test — **retry the same command once on the same sandbox slot** (no destroy, no new create). If the retry is green, continue. If it fails again with the same class of error → Blocked (tooling/flake) for that file; do not burn more retries. **Do not** count this infra retry against the mutate re-run budget below. **Do not** retry a stable red assertion / real product failure — that is a red baseline; stop and do not mutate.
 
 ## Mutate
 
@@ -148,6 +148,7 @@ Re-running `pest --mutate` without new killable asserts (or without accepting `e
 - Re-run mutate **only** after you changed the test to kill at least one killable in-scope mutant (or after a tooling fix). Cap: prefer **at most one** re-run per `--class` once killables are addressed; then close with `equivalent` for any remaining behavior-preserving ids.
 - Do **not** re-mutate “to confirm” an unchanged tree, to climb Pest’s class-wide `%`, or to re-check mutants you already marked `equivalent`.
 - Do **not** invent asserts that cannot fail just to avoid `equivalent`.
+- Infra/deadlock retry (Prepare) is separate: at most **one** automatic same-slot retry, then Blocked — never an open-ended loop.
 
 Pest’s overall `%` on a fat class may stay below 100%. That is OK. Ledger Result reflects **in-scope**, not Pest’s class-wide score. Put Pest’s raw score in Notes when it differs.
 

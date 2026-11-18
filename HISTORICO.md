@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation: retry de deadlock/baseline flake + watchdog
+
+- **problema:** deadlock MySQL (`model_has_permissions`) / baseline flaky derrubava o shard; mutate sem exit prendia o slot do warm pool.
+- **por que é um problema:** Blocked cedo ou dreno parado (DOP-1281); wall do colleague review sobe sem progresso no ledger.
+- **resolvido como:** prompts mutation (Olie/Locav/Televisão) — **1** retry automático no mesmo slot para flake/deadlock antes de Blocked; ORCHESTRATION — watchdog 15 min baseline / 45 min mutate (libera slot). Sem mudar schema do app.
+
 ## Mutation: quoting canônico de `--class` no `job run`
 
 - **problema:** exemplos com `App\\Foo` dentro de aspas simples faziam o Pest receber `\\` literal → `0 Mutations for 0 Files`.

@@ -126,6 +126,10 @@ coverage o que importa é o `api-main` no tip.
 
 5. Agrega `mutation-ledger.md` / findings; o dispatcher só então libera o outcome.
 
+**Flake / deadlock:** baseline ou erro MySQL transitório (`Deadlock found`, `Lock wait timeout`, `model_has_permissions`) → **1** retry do mesmo comando no **mesmo** slot antes de Blocked (`mutation-testing.md`). Não destroy/recreate por flake.
+
+**Watchdog de shard (pai do dreno):** se um job de baseline ficar **> 15 min** sem exit, ou um `pest --mutate` **> 45 min** sem exit (ou stdout parado > 10 min no mutate), o pai marca o arquivo **Blocked (timeout)**, libera o slot para o próximo da fila e **não** espera o shard eternamente. Preferir `timeout(1)` no host em volta do `job run` quando o CLI não encerrar sozinho (`timeout 900` baseline / `timeout 2700` mutate). Não matar um mutate que ainda imprime progresso dentro do teto.
+
 Mutation × suite Pest no **mesmo** sandbox **não**.
 
 ---
