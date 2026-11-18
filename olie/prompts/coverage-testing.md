@@ -16,7 +16,7 @@ Three entry points:
 
 Chat commands: `~/git/olie/prompts/workflow-policy.md` → **Chat commands** (includes `next coverage` and `correct coverages`).
 
-**Own-card / alone:** default = **`correct coverages`** (drain **all** remaining change-set production files in this turn — sandbox + subagent per file). **`next coverage`** = one file only when the user asks. Prefer `workvm-sandbox` so Card VM `testing` stays untouched.
+**Own-card / alone:** default = **`correct coverages`** (drain **all** remaining change-set production files in this turn — sandbox + subagent per **Via-test batch**). **`next coverage`** = one file only when the user asks. Prefer `workvm-sandbox` so Card VM `testing` stays untouched.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
 
