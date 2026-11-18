@@ -33,16 +33,14 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 ## Change-set file list (shared)
 
-Work only in `~/git/locav/LocavApi`.
+Work only in `~/git/locav/LocavApi`. Resolve paths with **Backend change-set** in `~/git/locav/prompts/workflow-policy.md` (dirty + `<base>...HEAD`; if three-dot empty and the card still has backend, merge-parent / `--grep=<CODE>`).
 
-1. List changed paths (staged + unstaged + untracked):
-
-   `git status --short` and `git diff --name-only HEAD` plus untracked files.
+1. Build the changed-path list from that recipe (not `git diff HEAD` alone on a merged tip).
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats. Skip a file that is a trait or helper and not a test case.
 3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). That list is the **change-set pool** only — **not** the `--class` list for every test.
 4. **Per-test `--class` scope (required):** for each `*Test.php`, mutate **only** the pool FQCNs that test actually exercises. Prefer `use App\…` imports that intersect the pool; add FQCNs the test clearly drives via HTTP/jobs when imports are missing. Do **not** pass the whole pool to every file (Olie bench DOP-1281: heavy test ~1.6× faster scoped; light ~4.7×).
-5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
+5. Compute **in-scope line ranges** per changed `app/` file from the same recipe’s hunk source (added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, stop and say there is nothing to mutate (do not fall back to full-project or `--everything`).
 

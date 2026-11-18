@@ -27,6 +27,15 @@ Do **not** repeat an expensive step when nothing material changed since the last
 
 `try again` means “run again **after** a real change or unblock”, not “repeat the same measurement on an unchanged tree”.
 
+## Backend change-set (when base...HEAD is empty)
+
+Shared recipe for gap / mutation / coverage / colleague bootstrap on `LocavApi` (repository base from `project.md`). Same idea as Olie when the feature is already merged and three-dot is empty.
+
+1. **Always** include dirty paths: `git status --short`, `git diff --name-only HEAD`, and untracked files.
+2. **Primary** branch diff: `git diff --name-only <base>...HEAD` (three-dot). In-scope hunks: `git diff -U0 <base>...HEAD -- <path>`.
+3. If that list is **empty** but the card still has backend work: resolve feature tip vs base; else PR merge commits (`git log --merges --grep='<CODE>'`, skip “merge base into branch” sync merges) → `git diff --name-only M^1...M^2`; else non-merge `--grep='<CODE>'` + `git diff-tree -r`. In-scope hunks from those commit diffs, not bare `HEAD`.
+4. **Never** treat empty three-dot alone as “no backend” when the card/PRs say the API changed.
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:

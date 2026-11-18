@@ -12,8 +12,8 @@ Contract for parallel work: `~/git/televisao/sandbox/ORCHESTRATION.md`. Shared o
 
 0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project televisao --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`). Resume if the unit already exists. Do **not** destroy when this dispatcher ends.
 1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'.
-2. Detect whether the change set touched `~/git/televisao/televisao-api` (open PRs, form links, branch commits). That flag decides whether gap + mutation + coverage run.
-3. On each company repository the card touches: find the author's branch, check it out (create the name from **Card branch name** in `workflow-policy.md` + base `preview` in `project.md` only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them.
+2. Detect whether the change set touched `~/git/televisao/televisao-api` (open PRs, form links, branch commits, notebook). That flag decides whether gap + mutation + coverage run. Resolve the file list with **Backend change-set** in `~/git/televisao/prompts/workflow-policy.md` — if `<base>...HEAD` is empty because the feature is already merged, still pass the merge-parent / `--grep=<CODE>` list to workers; do **not** skip backend gates on empty three-dot alone.
+3. On each company repository the card touches: find the author's branch, check it out (create the name from **Card branch name** in `workflow-policy.md` + base `preview` in `project.md` only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them. When the feature tip is already in the base, keep the host-card worktree tip and still compute the change-set via step 2.
 4. Record `started_at` (UTC) for the scoreboard.
 5. Do **not** write the colleague verdict, gap list, or mutation/coverage fixes yet — core writes product fail findings; gap/mutation/coverage stay in chat until §4. Do **not** move the funnel or approve/merge until §4.
 

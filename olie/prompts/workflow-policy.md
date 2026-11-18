@@ -35,6 +35,19 @@ Do **not** repeat an expensive step when nothing material changed since the last
 
 `try again` means “run again **after** a real change or unblock”, not “repeat the same measurement on an unchanged tree”.
 
+## Backend change-set (when `develop...HEAD` is empty)
+
+Shared recipe for gap / mutation / coverage / colleague bootstrap on `api-main` (base branch `develop` — `project.md`). Locav/Televisão use the same steps on their API clone and base branch.
+
+1. **Always** include dirty paths: `git status --short`, `git diff --name-only HEAD`, and untracked files.
+2. **Primary** branch diff: `git diff --name-only develop...HEAD` (three-dot). In-scope hunks: `git diff -U0 develop...HEAD -- <path>`.
+3. If that three-dot list is **empty** but the card still has backend work (feature already merged, worktree tip ≡ `develop`, or `feature/…` tip already contained in `develop`):
+   1. Prefer a still-existing feature tip: `git diff --name-only develop...<feature-tip>` / `git log develop..<feature-tip> --grep='<CODE>'`.
+   2. Else collect **PR merge commits** for the card (`git log --merges --grep='<CODE>'`, and/or merge SHAs from card PR links). **Skip** sync merges whose subject is “merge develop into the branch” (or equivalent). For each remaining merge `M`, add `git diff --name-only M^1...M^2`.
+   3. Else (or to fill gaps): non-merge commits `git log --no-merges --grep='<CODE>'` → `git diff-tree --no-commit-id --name-only -r <sha>` per commit; union paths.
+   4. In-scope hunks for a path: union `git diff -U0 M^1...M^2 -- <path>` (or the non-merge commit patches) over the commits that touched it — not `git diff HEAD` alone (that is empty on a clean merged tip).
+4. **Never** treat empty `develop...HEAD` alone as “no backend” when the card, PRs, or notebook say `api-main` changed — use step 3 (bench DOP-1281: three-dot 0 files; merge-parent union ≈ 49 paths).
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:

@@ -48,7 +48,7 @@ Do not judge from the title alone.
 
 On `~/git/televisao/televisao-api` (checked-out card branch):
 
-1. List added/modified test files: `*Test.php` under `tests/` in the diff vs the repository base (`preview` in `~/git/televisao/prompts/project.md`), including uncommitted local edits.
+1. Build the change-set with **Backend change-set** in `~/git/televisao/prompts/workflow-policy.md` (dirty + `<base>...HEAD`; if three-dot empty after merge, merge-parent / `--grep=<CODE>`). Keep added/modified `*Test.php` under `tests/`. Do **not** conclude “no tests” from empty three-dot alone when the card has backend.
 2. Skim those files (and only neighboring helpers they use) for scenarios covered: happy path, auth/forbidden, validation, edge cases named in the card.
 3. Optionally run the touched files: `docker exec -w /srv televisao-backend php artisan test --compact <paths>`. If they fail, stop and report; do not invent coverage from red tests.
 

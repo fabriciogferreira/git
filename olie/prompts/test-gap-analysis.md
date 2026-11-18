@@ -56,7 +56,7 @@ Do not judge from the title alone.
 
 On `~/git/olie/api-main` (checked-out card branch):
 
-1. List added/modified `*Test.php` under `tests/` in the diff vs the repository base (`develop` in `~/git/olie/prompts/project.md`), including uncommitted local edits.
+1. Build the change-set with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` (dirty + `develop...HEAD`; if three-dot empty after merge, merge-parent / `--grep=<CODE>`). From that list, keep added/modified `*Test.php` under `tests/`. Do **not** conclude “no tests in change set” from empty three-dot alone when the card has backend.
 2. Skim those files for scenarios covered.
 3. Optionally run touched files: `docker exec olie-api-main php artisan test --compact <paths>`. If they fail, stop and report.
 

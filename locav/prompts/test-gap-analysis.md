@@ -51,9 +51,9 @@ Do not judge from the title alone.
 
 ## 2. Collect tests in the change set
 
-Base branch: `preview` (`~/git/locav/prompts/project.md`).
+Base branch: `preview` (`~/git/locav/prompts/project.md`). Resolve the backend file list with **Backend change-set** in `~/git/locav/prompts/workflow-policy.md` (do not treat empty `<base>...HEAD` alone as no backend).
 
-**Backend** (if touched): added/modified `*Test.php` under `LocavApi/tests/`, including local edits. Optionally `docker exec -w /var/www/html locav-backend php artisan test --compact <paths>`.
+**Backend** (if touched): added/modified `*Test.php` under `LocavApi/tests/` from that recipe, including local edits. Optionally `docker exec -w /var/www/html locav-backend php artisan test --compact <paths>`.
 
 **Frontend** (if touched): added/modified specs under `locav-front/cypress/e2e` (and other front test files in the diff). Do not require a full Cypress run in this paste; skim the specs against the card. If a quick host Cypress for one file is needed and tooling fails, stop and report (prompt-health).
 

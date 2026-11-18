@@ -45,16 +45,14 @@ A row is done when Result is `100%` or `equivalent` for **in-scope** mutations (
 
 ## Change-set file list (shared)
 
-Work only in `~/git/olie/api-main`.
+Work only in `~/git/olie/api-main`. Resolve paths with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` (dirty + `develop...HEAD`; if three-dot empty and the card still has backend, use merge-parent / `--grep=<CODE>` — do **not** skip mutation because three-dot is empty).
 
-1. List changed paths (staged + unstaged + untracked):
-
-   `git status --short` and `git diff --name-only HEAD` plus untracked files.
+1. Build the changed-path list from that recipe (not `git diff HEAD` alone on a merged tip).
 
 2. From that list, keep `*Test.php` under `tests/`. Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on the test + `--class` production paths). Path-only skip without `sha:` is not enough across chats.
 3. Collect production PHP classes from the same change set (`app/**/*.php` added or modified). Map each path to its FQCN (PSR-4 `App\` ← `app/`). That list is the **change-set pool** only — **not** the `--class` list for every test.
 4. **Per-test `--class` scope (required):** for each `*Test.php`, mutate **only** the pool FQCNs that test actually exercises. Prefer `use App\…` imports that intersect the pool; add FQCNs the test clearly drives via HTTP/jobs/observers when imports are missing. Do **not** pass the whole pool to every file — `--covered-only` still burns wall-clock on transitively covered classes (bench DOP-1281: `ChannelMessageTemplatesTest` full pool 21 classes ~657s vs scoped 8 ~416s ≈ **1.6×**; light file ~4.7×).
-5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope.
+5. Compute **in-scope line ranges** per changed `app/` file from the same recipe’s hunk source (`develop...HEAD` or merge-parent / card-commit diffs — added/modified hunks only). New files: the whole file is in-scope.
 
 If the change set has test files but **no** `app/` PHP changes, still run mutation on those tests (coverage may have been empty earlier). If the change set has **no** test files to mutate, say the mutation stack is empty and recommend `~/git/olie/prompts/pest-parallel.md` next.
 

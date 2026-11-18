@@ -59,16 +59,14 @@ A row is **done** when the **Close the file** gates pass (in-scope + ratchet / s
 
 ## Change-set file list (shared)
 
-Work only in `~/git/locav/LocavApi`.
+Work only in `~/git/locav/LocavApi`. Resolve paths with **Backend change-set** in `~/git/locav/prompts/workflow-policy.md` (dirty + `<base>...HEAD`; if three-dot empty and the card still has backend, merge-parent / `--grep=<CODE>`).
 
-1. List changed paths (staged + unstaged + untracked):
-
-   `git status --short` and `git diff --name-only HEAD` plus untracked files.
+1. Build the changed-path list from that recipe (not `git diff HEAD` alone on a merged tip).
 
 2. From that list, keep production PHP under `app/` (`*.php`). Sort by path. Skip a path only when its ledger row is done **and** its `sha:` fingerprint still matches (`workvm-ledger-sha.sh` on that production path). Do not treat “done for this card pass” as a free skip across chats without `sha:`. Re-measure when the user asks.
 3. From the same change set, keep `*Test.php` under `tests/` as candidate runners.
 4. Map each production path to its FQCN (PSR-4 `App\` ← `app/`).
-5. Compute **in-scope line ranges** per changed `app/` file via `git diff -U0 HEAD -- <path>` (added/modified hunks only). New files: the whole file is in-scope. Deleted-only hunks are not coverage targets.
+5. Compute **in-scope line ranges** per changed `app/` file from the same recipe’s hunk source (added/modified hunks only). New files: the whole file is in-scope. Deleted-only hunks are not coverage targets.
 
 If the change set has **no** `app/` PHP changes, stop and say there is nothing to measure for coverage (tests-only diffs do not get production coverage rows). That empty case clears the stack gate for `pre-qa.md` on own-card.
 

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Change-set: feature já mergeada (`develop...HEAD` vazio)
+
+- **problema:** com a branch já em `develop`, `develop...HEAD` vinha vazio; gap/mutation/coverage improvisavam ou pulavam backend.
+- **por que é um problema:** colleague review do DOP-1281 montou a lista à mão via commits `DOP-XXXX`; risco de gate “no backend” falso.
+- **resolvido como:** receita **Backend change-set** em `workflow-policy` (Olie/Locav/Televisão) + ponteiros nos gates: dirty → three-dot → merge `M^1...M^2` / `--grep=<CODE>` (pula sync “merge develop into”). Smoke DOP-1281: three-dot 0 → union ≈ 49 paths.
+
 ## Sandbox: `--from-commit` tip do card (não bare create)
 
 - **problema:** `workvm-sandbox create` sem tip usava `HEAD` do clone (`develop`); coverage/mutation rodavam no SHA errado e recriavam.
