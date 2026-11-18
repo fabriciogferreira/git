@@ -83,13 +83,17 @@ pai agrega o ledger); `next mutation` / `next coverage` = opt-in um
 arquivo. Preferir sandbox para não tocar o `testing` da Card VM.
 Mutation × coverage no **mesmo** sandbox **não** (ambos usam Pest/DB).
 
-**Warm pool (mutation/coverage drain):** `N = min(arquivos_restantes, 4)`.
-Use **`2`** se a RAM estiver apertada (`available` ≲ 8 GiB antes do create).
-Não abrir um sandbox por arquivo só porque o change-set é grande — bench
-DOP-1258 (8 arquivos): pools 2/4/6/8 ≈ **387–406s** de wall; pool **8**
-aumentou o pior shard (~349s vs ~178s) por contenção. O CLI ainda aceita
-`WORKVM_SANDBOX_MAX=0` (sem teto de software); o **prompt** manda o agente
-respeitar esta faixa 2–4 com reuso.
+**Warm pool (mutation/coverage drain):** mutation `N = min(arquivos_restantes, 4)`;
+coverage `N = min(lotes_via-test, 4)`. Use **`2`** se a RAM estiver apertada
+(`available` ≲ 8 GiB antes do create). Não abrir um sandbox por arquivo só
+porque o change-set é grande — bench DOP-1258 (8 arquivos): pools 2/4/6/8 ≈
+**387–406s** de wall; pool **8** aumentou o pior shard (~349s vs ~178s) por
+contenção. O CLI ainda aceita `WORKVM_SANDBOX_MAX=0` (sem teto de software);
+o **prompt** manda o agente respeitar esta faixa 2–4 com reuso.
+
+**Coverage em lote por Via test:** um `pest --coverage` por Via fecha todos os
+`app/` do change-set presentes no relatório (não um job por arquivo). Bench
+DOP-1183 (quente): 5 arquivos / 1 Via ~34s→~6s; 8 arquivos / 2 Vias ~53s→~13s.
 
 **`--from-commit` obrigatório (host-card):** resolve o tip do worktree do
 card (`meta.json` → `api_worktree` / `…/worktree/api-main`, `git rev-parse HEAD`)

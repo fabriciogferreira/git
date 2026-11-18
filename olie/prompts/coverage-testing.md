@@ -28,20 +28,20 @@ Never walk the whole `app/` tree for suite Total. Never treat Pest’s suite-wid
 
 ### Chat commands (this stack)
 
-| Command | Do this |
-| --- | --- |
-| `next coverage` | Opt-in: one changed `app/**/*.php` only. Prefer the default parallel drain. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`. |
+| Command             | Do this                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next coverage`     | Opt-in: one changed `app/**/*.php` only. Prefer the default parallel drain. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`.                                                                                                                                                                                                             |
 | `correct coverages` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed production file in this turn. Warm sandbox pool + one subagent per **in-flight** file; parent writes the ledger. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
-| `next prompt` | **Blocked** while the change-set stack still has remaining production files. Refuse, list how many files remain (and the next path), and tell the user to send `next coverage` or `correct coverages`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/mutation-testing.md`. |
-| `try again` | Resume or re-run coverage on the **current** (last attempted) production file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct coverages` shard, retry that file (or re-send `correct coverages` for all still-missing rows). |
+| `next prompt`       | **Blocked** while the change-set stack still has remaining production files. Refuse, list how many files remain (and the next path), and tell the user to send `next coverage` or `correct coverages`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/mutation-testing.md`.                                                       |
+| `try again`         | Resume or re-run coverage on the **current** (last attempted) production file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct coverages` shard, retry that file (or re-send `correct coverages` for all still-missing rows).                                                                                     |
 
 ## Ledger
 
 Progress lives only in `~/git/olie/prompts/coverage-ledger.md` (meta-repo). Create that file if it is missing, with a table:
 
-| File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `app/...` | `YYYY-MM-DD HH:MM TZ` | `100%` | `—` or `29` | `12.5%` | `tests/...` | `sha:<fp>`; FQCN; hunks; +1 legacy |
+| File      | Last measured         | In-scope | Uncovered (in-scope) | File raw | Via test    | Notes                              |
+| --------- | --------------------- | -------- | -------------------- | -------- | ----------- | ---------------------------------- |
+| `app/...` | `YYYY-MM-DD HH:MM TZ` | `100%`   | `—` or `29`          | `12.5%`  | `tests/...` | `sha:<fp>`; FQCN; hunks; +1 legacy |
 
 A row is **done** when the **Close the file** gates pass (in-scope + ratchet / small-file rules below). Update the same row on re-measure (do not duplicate paths). The previous **File raw** on that row is the baseline for the next card’s +1pp ratchet.
 
@@ -78,17 +78,20 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 ## `correct coverages` (parallel drain)
 
-**Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same prepare → measure → close scoring as a single file; different orchestration.
+**Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same Close gates per production file; orchestration is **by Via-test batch**, not one Pest job per `app/` path.
 
-**Warm pool size:** same rule as mutation — `N = min(remaining_files, 4)`, or **`2`** if RAM is tight. Reuse slots across files; do not open one sandbox per production file when remaining ≫ 4. See `~/git/olie/sandbox/ORCHESTRATION.md`.
+**Batch by Via test (required):** assign each remaining production file a Via test (Prepare rules). Group files that share the same Via path into one **batch**. One baseline + one `pest --coverage` per batch closes **every** change-set `app/` line present in that report (bench DOP-1183 warm: 5 files / 1 Via ~34s → ~6s ≈ **5×**; 8 files across 2 Vias ~53s → ~13s). Do **not** re-run the same Via once per `app/` file.
+
+**Warm pool size:** `N = min(remaining_batches, 4)`, or **`2`** if RAM is tight. Reuse slots across batches; do not open one sandbox per production file. See `~/git/olie/sandbox/ORCHESTRATION.md`.
 
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `mutation-testing.md` (`next prompt`).
-2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. Create a **warm pool** of `N` sandboxes. Resolve the card’s `api-main` tip and **always** pass `--from-commit <tip>`: `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation --from-commit <tip>`. **Forbidden:** bare create (lands on clone `develop` HEAD — coverage recreate incident). Sync dirty `api-main` into each pool worktree once; prefer rsync dirty on reuse.
-4. Drain with at most **N** in flight: reuse a free slot for the next file. Launch **one subagent (Task) per in-flight file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id, candidate test paths, and the scoring/ledger rules.
-5. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
-6. **Parent only** appends/updates rows in `~/git/olie/prompts/coverage-ledger.md` (avoid races). Destroy the **pool** when the drain finishes (or a slot on hard failure after reporting).
-7. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `mutation-testing.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
+2. Map Via tests and form batches (same Via → one batch). Sort batches by path of the Via test.
+3. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one batch remains.
+4. Create a **warm pool** of `N` sandboxes. Resolve the card’s `api-main` tip and **always** pass `--from-commit <tip>`: `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation --from-commit <tip>`. **Forbidden:** bare create. Sync dirty `api-main` into each pool worktree once; prefer rsync dirty on reuse.
+5. Drain with at most **N** batches in flight: reuse a free slot for the next batch. Launch **one subagent (Task) per in-flight batch**. Pass: Via test path, list of production paths + FQCNs + in-scope hunks in the batch, sandbox id, scoring/ledger rules.
+6. Each subagent: baseline Pest once for the Via → **one** `pest --coverage` (Measure: no per-FQCN `covers()` in batch mode) → for **each** batch `app/` file, read that file’s report line, apply Close gates, tighten the Via (or sibling) if needed, re-measure the **batch** only after a real test edit → returns **proposed ledger rows** (one per production path). It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
+7. **Parent only** appends/updates rows in `~/git/olie/prompts/coverage-ledger.md` (avoid races). Destroy the **pool** when the drain finishes (or a slot on hard failure after reporting).
+8. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `mutation-testing.md`. If a shard is Blocked, leave those paths incomplete and list retries (`try again` / `correct coverages`).
 
 ## Prepare
 
@@ -119,7 +122,9 @@ If that fails, stop. Do not measure coverage on a red file.
 
 ## Measure
 
-Focus Pest’s coverage report on the target class with a **temporary** `covers(<FQCN>::class);` at the top of the Via test. Remove it before finishing the paste. Never leave it staged or committed.
+**Batch / dispatcher / `correct coverages`:** run **without** temporary `covers()`. One report lists every class the Via exercised — parse each change-set `app/` path in the batch from that single output (ignore suite Total and unrelated 0% noise).
+
+**`next coverage` (single file) only:** optional temporary `covers(<FQCN>::class);` at the top of the Via test to narrow the table. Remove it before finishing. Never leave it staged or committed. Prefer no `covers()` when you still want sibling change-set lines from the same run.
 
 Run:
 
@@ -129,7 +134,7 @@ Run:
   <test-path>
 ```
 
-Read the report line for the target path (e.g. `Services/AI/Credits/ConvertCostToCredits .... 29 / 83.3%`):
+For each target path in the batch (e.g. `Services/AI/Credits/ConvertCostToCredits .... 29 / 83.3%`):
 
 - **File raw** = that whole-file % (`83.3%`).
 - Pest’s red line list = uncovered executable lines in the file.
@@ -139,8 +144,6 @@ Then intersect with **in-scope** hunks from the shared list:
 - In-scope uncovered = uncovered lines whose numbers sit inside the diff hunks.
 - In-scope covered = in-scope executable lines not in that uncovered set.
 - **In-scope %** = covered ÷ (covered + uncovered) among in-scope executable lines. If the hunk only touched comments/whitespace/non-executable tokens Pest does not count, treat as In-scope `100%` with Notes `no executable in-scope lines`.
-
-If `covers()` is unavailable or ignored, run without it and pick the target file’s line from the report manually (ignore suite Total and unrelated 0% noise).
 
 Do **not** use Pest `--min` / `--exactly` against suite Total. File raw is scored by the **Close the file** ratchet / small-file rules, not by Pest’s `--min` flag.
 
@@ -159,11 +162,11 @@ Do **not** use Pest `--min` / `--exactly` against suite Total. File raw is score
 
 Count **executable** lines Pest considers for that file (from the coverage report: covered + uncovered). Choose one band:
 
-| Band | When | Extra gate after in-scope `100%` |
-| --- | --- | --- |
-| **New file** | Path did not exist at `HEAD` (untracked or added) | File raw **`100%`** (same as in-scope). |
-| **Small** | ≤ **80** executable lines | File raw **`100%`**. Cheap enough to finish in one touch. |
-| **Large** | \> **80** executable lines | **Ratchet** below (do **not** demand whole-file `100%` this paste). |
+| Band         | When                                              | Extra gate after in-scope `100%`                                    |
+| ------------ | ------------------------------------------------- | ------------------------------------------------------------------- |
+| **New file** | Path did not exist at `HEAD` (untracked or added) | File raw **`100%`** (same as in-scope).                             |
+| **Small**    | ≤ **80** executable lines                         | File raw **`100%`**. Cheap enough to finish in one touch.           |
+| **Large**    | \> **80** executable lines                        | **Ratchet** below (do **not** demand whole-file `100%` this paste). |
 
 80 is a WorkVM heuristic (roughly one focused service/action). If the file is a known fat God-object just under 80 but finishing it would be a multi-hour suite, treat it as **Large** and say so in Notes.
 
@@ -186,12 +189,12 @@ On the **first** ledger row for a Large file, after in-scope `100%`, you may cov
 
 ### Done criteria (summary)
 
-| Situation | Done when |
-| --- | --- |
-| New or Small file | In-scope `100%` **and** File raw `100%` |
-| Large, first ledger row | In-scope `100%` (optional +1 legacy) |
-| Large, ledger already had File raw `prev` | In-scope `100%` **and** File raw ≥ `min(100, prev + 1)` |
-| No related test | In-scope `n/a` + Notes `no related test` (stack incomplete for that path until a test exists or the user skips) |
+| Situation                                 | Done when                                                                                                       |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| New or Small file                         | In-scope `100%` **and** File raw `100%`                                                                         |
+| Large, first ledger row                   | In-scope `100%` (optional +1 legacy)                                                                            |
+| Large, ledger already had File raw `prev` | In-scope `100%` **and** File raw ≥ `min(100, prev + 1)`                                                         |
+| No related test                           | In-scope `n/a` + Notes `no related test` (stack incomplete for that path until a test exists or the user skips) |
 
 Remove temporary `covers()` before writing the ledger row.
 

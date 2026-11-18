@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Coverage: lote por Via test (não 1 Pest por `app/`)
+
+- **problema:** `correct coverages` / dispatcher rodava um `pest --coverage` por arquivo `app/`; o mesmo Via era repetido.
+- **por que é um problema:** wall do measure sobe linear com o número de `app/` mesmo quando um relatório já lista todos.
+- **resolvido como:** prompts Olie/Locav/Televisão + ORCHESTRATION — batch por Via; um coverage fecha o lote; pool `N = min(lotes, 4)`. Bench DOP-1183 (quente): 5/1 Via ~34s→~6s; 8/2 Vias ~53s→~13s.
+
 ## Change-set: feature já mergeada (`develop...HEAD` vazio)
 
 - **problema:** com a branch já em `develop`, `develop...HEAD` vinha vazio; gap/mutation/coverage improvisavam ou pulavam backend.
