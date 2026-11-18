@@ -303,62 +303,27 @@ code = os.environ.get("WORKVM_HC_CODE") or ""
 project = os.environ.get("WORKVM_HC_PROJECT") or ""
 raw = json.loads(src.read_text(encoding="utf-8"))
 clones = []
-meta = []
 for ent in raw.get("folders", []):
     rel = ent.get("path") or ""
     name = ent.get("name") or rel
     if not rel or rel == ".":
         continue
+    # Host-card: NÃO incluir meta-repo (`..`). Ele puxa ~/git/olie/api-main
+    # (clone shared) pro SCM e, com git.ignoredRepositories nesse path, o
+    # Cursor esconde também o worktree do card (Explorer ok, SCM sem api-main).
+    if rel in ("..", "../"):
+        continue
     target = (project_dir / rel).resolve()
     if not target.exists():
         continue
-    if rel in ("..", "../"):
-        label = f"meta-repo ({project} {code})".strip()
-        meta.append({"name": label, "path": rel})
-    else:
-        clones.append({"name": name, "path": rel})
-raw["folders"] = clones + meta
-# Meta-repo (`~/git`) lista todos os produtos; sem exclude o explorer
-# mostra televisao/, locav/, … numa janela Olie.
-product_dirs = [
-    "olie",
-    "televisao",
-    "locav",
-    "opbed",
-    "da-o-play",
-    "boilerplate-laravel",
-    "boilerplate-next",
-    "vid2agent-code",
-    "use-url-query",
-]
+    clones.append({"name": name, "path": rel})
+# Prompts do produto (sem abrir o meta-repo inteiro).
+prompts = project_dir / "prompts"
+if prompts.is_dir():
+    clones.append({"name": "prompts", "path": "prompts"})
+raw["folders"] = clones
 settings = raw.setdefault("settings", {})
-exclude = dict(settings.get("files.exclude") or {})
-scan_ignore = list(settings.get("git.repositoryScanIgnoredFolders") or [])
-ignored_repos = list(settings.get("git.ignoredRepositories") or [])
-meta_repo = project_dir.parent  # ~/git (workspace fonte em ~/git/<project>/)
-for name in product_dirs:
-    if name == project:
-        continue
-    exclude[name] = True
-    if name not in scan_ignore:
-        scan_ignore.append(name)
-    other = meta_repo / name
-    if not other.is_dir():
-        continue
-    # SCM auto-detecta clones sob o meta-repo mesmo com files.exclude
-    candidates = [other]
-    try:
-        candidates.extend(p for p in other.iterdir() if p.is_dir())
-    except OSError:
-        pass
-    for cand in candidates:
-        if (cand / ".git").exists():
-            path = str(cand.resolve())
-            if path not in ignored_repos:
-                ignored_repos.append(path)
-settings["files.exclude"] = exclude
-settings["git.repositoryScanIgnoredFolders"] = scan_ignore
-settings["git.ignoredRepositories"] = ignored_repos
+# Sem meta-repo não precisamos exclude/ignore de outros produtos aqui.
 text = json.dumps(raw, indent=2) + "\n"
 # Só grava se mudou — rewrite a cada ensure faz o Cursor recarregar o workspace.
 if dest.is_file() and dest.read_text(encoding="utf-8") == text:
@@ -402,13 +367,31 @@ for ent in raw.get("folders", []):
         folders.append({"name": "api-main", "path": str(wt)})
         continue
     folders.append(ent)
+# Cursor SCM: worktree "órfão" (kind=worktree sem o repo pai aberto) NÃO
+# aparece na lista — o Git abre, o painel omite. Incluir o clone shared com
+# nome explícito para o worktree mostrar; editar sempre o worktree (1º).
+has_shared = any(
+    (e.get("name") or "").lower() in ("api-main (shared)", "api-main-shared")
+    or Path(e.get("path") or "").resolve() == shared
+    for e in folders
+)
+if shared.is_dir() and not has_shared:
+    folders.append({"name": "api-main (shared)", "path": str(shared)})
 raw["folders"] = folders
 settings = raw.setdefault("settings", {})
-ignored = list(settings.get("git.ignoredRepositories") or [])
-shared_s = str(shared)
-if shared_s not in ignored:
-    ignored.append(shared_s)
+# Nunca ignorar o shared: ignore esconde o worktree no SCM também.
+ignored = [
+    p
+    for p in (settings.get("git.ignoredRepositories") or [])
+    if Path(p).resolve() != shared
+]
 settings["git.ignoredRepositories"] = ignored
+# Pai (shared) já é pasta do workspace — não auto-descobrir outros worktrees.
+settings["git.detectWorktrees"] = False
+settings.pop("git.repositoryScanIgnoredFolders", None)
+exclude = dict(settings.get("files.exclude") or {})
+exclude.pop("olie/api-main", None)
+settings["files.exclude"] = exclude
 text = json.dumps(raw, indent=2) + "\n"
 old = ws.read_text(encoding="utf-8") if ws.is_file() else None
 if old == text:
@@ -416,6 +399,152 @@ if old == text:
 else:
     ws.write_text(text, encoding="utf-8")
     print(f"workvm-host-card: workspace api-main → {wt}", file=__import__("sys").stderr, flush=True)
+PY
+}
+
+# Garante que o worktree api-main aparece no Source Control.
+# Problema: ao trocar a pasta do clone compartilhado pelo worktree, o Cursor
+# mantinha scm:view:visibleRepositories sem o índice 0 (worktree) — Explorer
+# listava a pasta, SCM não. Chamar com a janela do card fechada (senão o WAL
+# do state.vscdb pode ignorar o write).
+workvm_host_card_ensure_scm_repos_visible() {
+    local workspace="${1:-}"
+    local wt_api="${2:-}"
+    local storage
+
+    [ -n "$workspace" ] || return 0
+    storage="${XDG_CONFIG_HOME:-$HOME/.config}/Cursor/User/workspaceStorage"
+    [ -d "$storage" ] || return 0
+    workspace="$(realpath -m "$workspace" 2>/dev/null || echo "$workspace")"
+    [ -n "$wt_api" ] && wt_api="$(realpath -m "$wt_api" 2>/dev/null || echo "$wt_api")"
+
+    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_API="${wt_api:-}" python3 - "$storage" <<'PY'
+import json, os, sqlite3, sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+ws = Path(os.environ["WORKVM_HC_WS"]).resolve()
+wt = (os.environ.get("WORKVM_HC_WT_API") or "").strip()
+ws_uri = "file://" + str(ws)
+wt_uri = ("file://" + wt) if wt else ""
+want_key = f"git:Git:{wt_uri}" if wt_uri else ""
+
+def find_storage():
+    for d in root.iterdir():
+        if not d.is_dir():
+            continue
+        for name in ("meta.json", "workspace.json"):
+            p = d / name
+            if not p.is_file():
+                continue
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            conf = data.get("configuration") or data.get("workspace") or ""
+            if conf.rstrip("/") == ws_uri.rstrip("/"):
+                return d
+    return None
+
+d = find_storage()
+if d is None:
+    sys.exit(0)
+db = d / "state.vscdb"
+if not db.is_file():
+    sys.exit(0)
+
+con = sqlite3.connect(str(db), timeout=5)
+cur = con.cursor()
+# Sem isto o WAL da sessão anterior (isHidden=true) sobrescreve o write no reopen.
+try:
+    cur.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+except Exception:
+    pass
+changed = False
+row = cur.execute(
+    "SELECT value FROM ItemTable WHERE key = ?",
+    ("scm:view:visibleRepositories",),
+).fetchone()
+if row:
+    try:
+        data = json.loads(row[0])
+    except Exception:
+        data = None
+    if isinstance(data, dict):
+        all_repos = list(data.get("all") or [])
+        # Tirar o clone compartilhado ~/git/olie/api-main (segundo "api-main").
+        shared_suffix = "/olie/api-main"
+        all_repos = [
+            r
+            for r in all_repos
+            if not (
+                r.endswith(shared_suffix)
+                or r.endswith(shared_suffix + "/")
+            )
+            or (want_key and r == want_key)
+        ]
+        if want_key and want_key not in all_repos:
+            all_repos.insert(0, want_key)
+        # Mostrar todos os restantes — o bug era o worktree fora de visible.
+        visible = list(range(len(all_repos)))
+        new = {
+            "all": all_repos,
+            "sortKey": data.get("sortKey") or "discoveryTime",
+            "visible": visible,
+        }
+        if new != data:
+            cur.execute(
+                "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+                ("scm:view:visibleRepositories", json.dumps(new, separators=(",", ":"))),
+            )
+            changed = True
+else:
+    if want_key:
+        new = {
+            "all": [want_key],
+            "sortKey": "discoveryTime",
+            "visible": [0],
+        }
+        cur.execute(
+            "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+            ("scm:view:visibleRepositories", json.dumps(new, separators=(",", ":"))),
+        )
+        changed = True
+
+# Painel SCM vazio: após close/reopen o Cursor grava workbench.scm* com
+# isHidden=true. Apagar o state faz o default (views visíveis); só setar
+# isHidden=false era revertido no startup.
+cur.execute(
+    "DELETE FROM ItemTable WHERE key IN (?, ?, ?, ?)",
+    (
+        "workbench.scm.views.state",
+        "workbench.view.scm.numberOfVisibleViews",
+        "scm.viewState2",
+        "workbench.panel.hidden",
+    ),
+)
+cur.execute(
+    "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+    ("workbench.sidebar.activeviewletid", "workbench.view.scm"),
+)
+cur.execute(
+    "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+    ("workbench.sideBar.hidden", "false"),
+)
+changed = True
+
+if changed:
+    con.commit()
+    try:
+        cur.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except Exception:
+        pass
+    print(
+        f"workvm-host-card: SCM visible + views unhide → worktree api-main ({d.name})",
+        file=sys.stderr,
+        flush=True,
+    )
+con.close()
 PY
 }
 
@@ -582,6 +711,53 @@ workvm_host_card_ensure_clones() {
     workvm_clone_project_repos "${CLONE_REPOS[@]}"
 }
 
+# open PROJECT CODE: ensure + foca/abre o .code-workspace do card (não o clone ~/git/olie/api-main).
+workvm_host_card_open() {
+    local project="" code=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --project) project="$2"; shift 2 ;;
+            --code) code="$2"; shift 2 ;;
+            *)
+                workvm_host_card_log "uso: open --project <…> --code <CODE>"
+                return 2
+                ;;
+        esac
+    done
+    [ -n "$project" ] && [ -n "$code" ] || {
+        workvm_host_card_log "uso: open --project <…> --code <CODE>"
+        return 2
+    }
+    # ensure sem Cursor: fecha → conserta SCM visible → abre uma vez (evita 2× --new-window).
+    WORKVM_HOST_CARD_OPEN_CURSOR=0 workvm_host_card_ensure --project "$project" --code "$code" || return $?
+    local id workspace wt_api
+    id="$(workvm_host_card_id "$project" "$code")"
+    workspace="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('workspace') or '')" 2>/dev/null || true)"
+    wt_api="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('api_worktree') or '')" 2>/dev/null || true)"
+    if [ -n "$workspace" ] && [ -f "$workspace" ]; then
+        # shellcheck source=session.sh
+        source "$(workvm_host_card_meta_repo)/lib/session.sh"
+        workvm_close_cursor_workspace "$workspace" || true
+        # Espera a janela sumir — senão o WAL do Cursor vivo anula o unhide do SCM.
+        local _i
+        for _i in 1 2 3 4 5 6 7 8 9 10; do
+            if ! workvm_cursor_workspace_open "$workspace"; then
+                break
+            fi
+            workvm_close_cursor_workspace "$workspace" || true
+            sleep 0.3
+        done
+        workvm_host_card_ensure_scm_repos_visible "$workspace" "${wt_api:+$wt_api/api-main}"
+        if [ "$project" = "olie" ]; then
+            workvm_host_card_set_boost_container "$id"
+            workvm_host_card_set_e2e_container "$id" 2>/dev/null || true
+        fi
+        workvm_open_cursor "$workspace" --new-window || true
+        printf 'workspace=%s\n' "$workspace"
+        printf 'api_worktree=%s\n' "${wt_api}"
+    fi
+}
+
 workvm_host_card_ensure() {
     local project="" code=""
     while [ $# -gt 0 ]; do
@@ -643,6 +819,9 @@ workvm_host_card_ensure() {
             workvm_host_card_set_boost_container "$id"
             workvm_host_card_set_e2e_container "$id" 2>/dev/null || true
         fi
+        # SCM: worktree fora de visibleRepositories (Explorer ok, Source Control vazio).
+        workvm_close_cursor_workspace "$workspace" || true
+        workvm_host_card_ensure_scm_repos_visible "$workspace" "${dir}/worktree/api-main"
         # --new-window: two cards share front clones; without -n Cursor reuses one window.
         workvm_open_cursor "$workspace" --new-window \
             || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"

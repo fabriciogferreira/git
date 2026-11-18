@@ -13,12 +13,14 @@ usage() {
 workvm-host-card — unidade card/projeto no host (sem WorkVM)
 
   ensure  --project <olie|locav|televisao|opbed> --code <CODE>
+  open    --project <…> --code <CODE>
   status  --project <…> --code <CODE>
   destroy --project <…> --code <CODE>
   list
 
-ensure é idempotente: cria ou retoma (multi-dia). destroy limpa estado,
-workspace gerado e containers com label compose do card.
+ensure é idempotente: cria ou retoma (multi-dia). open = ensure + foca/abre
+o .code-workspace do card (api-main = worktree do host-card, não o clone).
+destroy limpa estado, workspace gerado e containers com label compose do card.
 
 Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/host-cards/
 EOF
@@ -33,6 +35,7 @@ shift || true
 
 case "$cmd" in
     ensure) workvm_host_card_ensure "$@" ;;
+    open) workvm_host_card_open "$@" ;;
     status) workvm_host_card_status "$@" ;;
     destroy) workvm_host_card_destroy "$@" ;;
     list) workvm_host_card_list "$@" ;;

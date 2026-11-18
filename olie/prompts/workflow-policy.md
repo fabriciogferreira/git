@@ -165,7 +165,9 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
 ```
 
-- **Shell permissions (required):** call `ensure` / `destroy` **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”.
+User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-card open` (= ensure + **focus/open** the card `.code-workspace`). Always print `workspace=` and `api_worktree=`. Rebases/edits belong in that worktree’s `api-main`, **not** `~/git/olie/api-main`. Do not leave the user on the meta-repo `~/git` Cursor window.
+
+- **Shell permissions (required):** call `ensure` / `open` / `destroy` **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”.
   - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same ensure succeeds with `all` when the host is fine.
   - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure in a terminal unless `all` already ran and still failed for a real host reason.
   - Do **not** stop the prompt declaring tooling/host broken while only the sandboxed shell failed.
@@ -175,7 +177,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
   - Front: `http://devframe.{slug}.olie.localhost`
   - API: `http://api.{slug}.olie.localhost`
   - Do **not** use bare `devframe.olie.localhost` for a host-card (colide entre cards).
-- Later day / re-paste → **resume** the same id (compose up again; do not destroy); worktree checkout runs again on resume.
+- Later day / re-paste → **resume** the same id (compose up again; do not destroy); worktree checkout runs again on resume; if Cursor already has the card window → **focus** it (do not silent-skip while the user stays on `~/git`).
 - Report `id`, `port_base`, `front_dns` / `api_dns`, and `workspace` in chat.
 - Requires clones + `vendor` on the host. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
 
@@ -369,6 +371,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `add` | After **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`: implement every listed missing test (title + description from that report) only. Do not open coverage / mutation / Pest parallel / pre-QA in the same turn. When done, recommend `try again` to re-run gap analysis. Not for validation **Needs code fixes** (`to correct`) and not `correct mutations`. |
 | `to correct` | Fix the latest corrective list in this chat: **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or failures from `pest-parallel.md`. Implement those items only; then recommend `try again` on that same pass. For gap **Tests to add**, use `add` instead. Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
+| `open olie CODE` / `open PROJECT CODE` | `~/git/bin/workvm-host-card open --project olie --code <CODE>` (or `locav` / `televisao` / `opbed`). Ensure + **open/focus** the card’s `~/git/<project>/<id>.code-workspace` (api-main = host-card **worktree**, not `~/git/olie/api-main`). Print `workspace=` and `api_worktree=`. Do not keep editing in the meta-repo `~/git` window. |
 | `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (compose/sandbox + fecha a janela Cursor + clones compartilhados de volta à branch base do `project.conf`, ex. `develop`). Do **not** ask about or move the board to 'concluído' — that is a separate explicit request. Do not destroy other cards. |
 | `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
 | `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |

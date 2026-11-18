@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: SCM sem `api-main` (worktree órfão)
+
+- **problema:** Explorer ok (conflito); Source Control sem `api-main`. Ignore do shared piorava; sem o repo pai o Git abria o worktree (`kind: worktree`) e o painel omitia.
+- **por que é um problema:** rebase/UU invisíveis no SCM.
+- **resolvido como:** (1) Sem meta-repo `..` no `.code-workspace` do card (+ pasta `prompts/`). (2) **Não** `git.ignoredRepositories` no shared. (3) Incluir pasta `api-main (shared)` → `~/git/olie/api-main` para o pai existir no SCM; editar o 1º `api-main` (worktree). (4) `git.detectWorktrees: false` para não puxar worktrees de outros cards. (5) `ensure_scm_repos_visible` no open.
+
+## Host-card: `open` foca o workspace do card (não o meta-repo)
+
+- **problema:** `ensure` com a janela do card já aberta fazia skip; o usuário ficava no chat/`~/git` e não via rebase/conflitos no worktree.
+- **por que é um problema:** correção/colleague edita `…/host-cards/…/worktree/api-main` enquanto a UI mostra o clone ou o meta-repo.
+- **resolvido como:** `workvm_focus_cursor_workspace` + ensure/open focam a janela existente; CLI `workvm-host-card open`; chat command `open PROJECT CODE` nas workflow-policy. Hyprland 0.56: focus via `hl.dsp.focus({ window = "address:…" })` (o `focuswindow` antigo quebra como o `closewindow`).
+
 ## Mutation: discovery R7 (por que o wall ainda é alto)
 
 - **problema:** mesmo com `--class` scoped / warm pool / R1–R6, o mutate ainda domina o colleague review (~54 min no DOP-1281).

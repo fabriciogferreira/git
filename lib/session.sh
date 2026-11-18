@@ -290,12 +290,16 @@ workvm_open_cursor() {
     fi
 
     # Já aberto: não reabra (ensure do pest-parallel etc. resetava a janela).
+    # Ainda assim **foca** a janela — open/ensure no chat do meta-repo deixava
+    # o usuário olhando `~/git` enquanto o card já existia em background.
     if workvm_cursor_workspace_open "$workspace"; then
-        echo "workvm: Cursor já aberto para $(basename "$workspace") — skip" >&2
+        workvm_focus_cursor_workspace "$workspace" || true
+        echo "workvm: Cursor já aberto para $(basename "$workspace") — focus" >&2
         return 0
     fi
     if [ "$new_window" -eq 0 ] && pgrep -f "cursor\\.mjs ${workspace}" >/dev/null 2>&1; then
-        echo "workvm: Cursor already open for $workspace" >&2
+        workvm_focus_cursor_workspace "$workspace" || true
+        echo "workvm: Cursor already open for $workspace — focus" >&2
         return 0
     fi
 
@@ -309,6 +313,59 @@ workvm_open_cursor() {
     pid=$!
     echo "$pid" >/tmp/workvm-cursor.pid
     echo "workvm: Cursor pid $pid → $workspace ${extra_args[*]+(${extra_args[*]})} (log /tmp/workvm-cursor.log)" >&2
+}
+
+# Traz a janela Cursor deste .code-workspace para frente (Hyprland).
+# Problema: ensure/open “já aberto — skip” deixava o usuário no chat do meta-repo.
+workvm_focus_cursor_workspace() {
+    local workspace="${1:-}"
+    local needle addr selector
+
+    [ -n "$workspace" ] || return 1
+    needle="$(basename "$workspace")"
+    needle="${needle%.code-workspace}"
+    [ -n "$needle" ] || return 1
+    command -v hyprctl >/dev/null 2>&1 || return 1
+
+    workvm_ensure_session_env
+    if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && [ -d "${XDG_RUNTIME_DIR:-}/hypr" ]; then
+        HYPRLAND_INSTANCE_SIGNATURE="$(find "${XDG_RUNTIME_DIR}/hypr" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | head -n1 || true)"
+        export HYPRLAND_INSTANCE_SIGNATURE
+    fi
+
+    addr="$(
+        hyprctl clients -j 2>/dev/null | WORKVM_HC_NEEDLE="$needle" python3 -c '
+import json, os, sys
+needle = os.environ["WORKVM_HC_NEEDLE"]
+markers = (f"{needle} (Workspace)", f"{needle}.code-workspace")
+try:
+    clients = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for c in clients:
+    title = c.get("title") or ""
+    cls = (c.get("class") or "").lower()
+    if "cursor" not in cls and "cursor" not in title.lower():
+        continue
+    if not any(m in title for m in markers):
+        continue
+    addr = c.get("address") or ""
+    if addr:
+        print(addr)
+        break
+'
+    )"
+    [ -n "$addr" ] || return 1
+    case "$addr" in
+        address:*) selector="$addr" ;;
+        *) selector="address:$addr" ;;
+    esac
+    # Hyprland 0.56 (Lua): `dispatch focuswindow address:…` quebra como o closewindow;
+    # usar hl.dsp.focus({ window = "address:…" }).
+    if ! hyprctl dispatch "hl.dsp.focus({ window = \"${selector}\" })" >/dev/null 2>&1; then
+        return 1
+    fi
+    echo "workvm: foquei Cursor ($needle) ${selector}" >&2
 }
 
 # Fecha só a janela Cursor do host-card (Hyprland), não o processo nem outras apps.
