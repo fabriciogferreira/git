@@ -5,7 +5,7 @@ Use this when the card changed `~/git/olie/api-main`. Skip entirely when the cha
 Three entry points:
 
 1. **Own card (develop handoff)** — after `~/git/olie/prompts/coverage-testing.md` (which follows gap analysis when backend changed). **Default:** drain every remaining changed `*Test.php` in this paste (`correct mutations` / parallel sandboxes). Use **`next mutation`** only when the user asks for one file. When this mutation stack is finished (or the user stops), the next recommended prompt is `~/git/olie/prompts/pest-parallel.md` (`next prompt` runs it) — then `pre-qa.md` after a green suite.
-2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with `colleague-review-core.md` and `test-gap-analysis.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run. **Must** shard via `~/git/bin/workvm-sandbox create --project olie --profile mutation` (one file per sandbox; run all in parallel — Olie has no default sandbox cap; only queue if `WORKVM_SANDBOX_MAX` > 0) — see `~/git/olie/sandbox/ORCHESTRATION.md`. Do **not** run baseline Pest or `pest --mutate` with `docker exec olie-api-main` (that is the Card VM DB). Do **not** stop after one file. Do **not** recommend `next mutation` / `correct mutations` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
+2. **Colleague card via dispatcher** — launched **in parallel** by `~/git/olie/prompts/colleague-review.md` with `colleague-review-core.md` and `test-gap-analysis.md`. **Dispatcher mode:** drain **every** remaining changed `*Test.php` in this run. **Must** shard via `~/git/bin/workvm-sandbox create --project olie --profile mutation` using a **warm pool** (`N = min(remaining, 4)`, or `2` if RAM is tight) — see `~/git/olie/sandbox/ORCHESTRATION.md`. Do **not** run baseline Pest or `pest --mutate` with `docker exec olie-api-main` (that is the Card VM DB). Do **not** stop after one file. Do **not** recommend `next mutation` / `correct mutations` / `next prompt`. Do **not** apply the funnel move — return Pass/Fixes/Blocked to the dispatcher; it applies **Colleague review outcome**.
 3. **Colleague card pasted alone** — same default as own-card (parallel drain); **`next mutation`** only if the user asks for one file; when none remain, tell the user to paste `colleague-review.md` (or finish the dispatcher they already started) so the combined outcome runs. Do not move 'Corrigir' / 'Validação' yourself when the dispatcher owns the card.
 
 **Stack gate (develop handoff / alone):** while any changed `*Test.php` under `tests/` is still missing from the ledger (or has no `100%` / `equivalent` row), this stack is **incomplete**. Do **not** recommend or run `~/git/olie/prompts/pest-parallel.md` or `~/git/olie/prompts/pre-qa.md`. Do **not** treat `next prompt` as permission to leave mutation early. Only when every remaining file is closed (or the user explicitly stops / skips the personal stack) may you recommend `pest-parallel.md`.
@@ -25,7 +25,7 @@ Personal workflow on this VM. Pest mutation testing is not an Olie team practice
 | Command | Do this |
 | --- | --- |
 | `next mutation` | Opt-in: one changed `*Test.php` only. Prefer the default parallel drain. Do not open `pest-parallel.md` or `pre-qa.md`. |
-| `correct mutations` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed `*Test.php` in this turn. One `workvm-sandbox` `--profile mutation` **and** one subagent per file; parent orchestrates. Not `to correct`. Do not open `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
+| `correct mutations` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed `*Test.php` in this turn. Warm sandbox pool + one subagent per **in-flight** file; parent orchestrates. Not `to correct`. Do not open `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
 | `next prompt` | **Blocked** while the change-set stack still has remaining test files. Refuse, list how many files remain (and the next path), and tell the user to send `next mutation` or `correct mutations`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/pest-parallel.md`. |
 | `try again` | Resume or re-run mutation on the **current** (last attempted) test file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct mutations` shard, retry that file (or re-send `correct mutations` for all still-missing rows). |
 
@@ -70,15 +70,15 @@ If the change set has test files but **no** `app/` PHP changes, still run mutati
 
 Problem this solves: N remaining `*Test.php` files as N× `next mutation` pastes dominated wall-clock (bench DOP-1258: ~472s sequential → ~230s parallel for 3 files).
 
+**Warm pool size:** `N = min(remaining_files, 4)`. Use **`2`** when host RAM is tight (`free` available ≲ 8 GiB before create, or another heavy card/compose already up). Do **not** open one sandbox per file when remaining ≫ 4 — bench DOP-1258 (8 files, tip `cc57e847`): pools **2 / 4 / 6 / 8** all ~**387–406s** wall; **8** made the heaviest shard slower (~349s vs ~178s) via contention. Reuse pays more as file count grows (2nd+ wave on a warm slot ~4–20s vs ~150–180s cold).
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pest-parallel.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do **not** process every file serially in one giant context when more than one remains.
-3. For each remaining file, in parallel (Olie: no default cap; queue only if `WORKVM_SANDBOX_MAX` > 0 — `~/git/olie/sandbox/ORCHESTRATION.md`):
-   - Create `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
-   - Sync the card’s dirty `api-main` working tree into that sandbox worktree (sandboxes start from HEAD; uncommitted DOP changes must be copied in).
-   - Launch **one subagent (Task) per file**. Pass at least: test path, sandbox id, **that file’s** scoped `--class` FQCNs (step 4 — not the whole change-set pool), in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
-4. Each subagent runs baseline Pest → mutate → tighten if needed → returns a **proposed ledger row** (Result + Notes). It may edit **only** that `*Test.php` under the card working tree (or sync assertion edits back). It must **not** write `mutation-ledger.md` itself.
-5. **Parent only** appends rows to `~/git/olie/prompts/mutation-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
-6. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pest-parallel.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
+3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`). Optionally set `WORKVM_SANDBOX_MAX=N` for this drain. Sync the card’s dirty `api-main` into each pool worktree once (sandboxes start from HEAD; uncommitted DOP changes must be copied in). Prefer **rsync dirty** on reuse, not full recreate.
+4. Drain remaining files with at most **N** in flight: when a slot frees, assign the next file to that **same** sandbox (do not destroy between files of this drain). Launch **one subagent (Task) per in-flight file**. Pass at least: test path, sandbox id, **that file’s** scoped `--class` FQCNs (step 4 — not the whole change-set pool), in-scope hunk summary (or instruct the worker to compute `git diff -U0` in the synced tree), scoring rules (in-scope only; tighten tests not production; `equivalent` with mutation ids).
+5. Each subagent runs baseline Pest → mutate → tighten if needed → returns a **proposed ledger row** (Result + Notes). It may edit **only** that `*Test.php` under the card working tree (or sync assertion edits back). It must **not** write `mutation-ledger.md` itself.
+6. **Parent only** appends rows to `~/git/olie/prompts/mutation-ledger.md` (avoid races). Destroy the **pool** when the drain finishes (or destroy a slot on hard failure after reporting).
+7. When every remaining file has a `100%` / `equivalent` row (or the user stops), report the aggregate and — if complete — recommend `pest-parallel.md`. If a shard is Blocked (red baseline, product bug, tooling), leave that path out of the ledger, keep the stack incomplete, and list retries (`try again` on that file or `correct mutations` again).
 
 Not for colleague **dispatcher** mode (that drain is already mandatory without this phrase). Do not confuse with `to correct`.
 
@@ -86,8 +86,8 @@ Not for colleague **dispatcher** mode (that drain is already mandatory without t
 
 **Dispatcher / exclusive:** run PHP inside the sandbox app container via
 `~/git/bin/workvm-sandbox job run <id> -- <command>` (working dir is already
-`/var/www/html`). Create the sandbox first (`--project olie --profile mutation`).
-Destroy it when the file’s ledger row is done (or reuse until the shard finishes).
+`/var/www/html`). Use the warm pool (`N = min(remaining, 4)`, or `2` if RAM-tight) —
+reuse slots across files; destroy the pool when the drain finishes.
 
 **Own-card fallback only** (no sandbox create possible): `docker exec -w /var/www/html olie-api-main <command>`. Do not use that path while colleague gates run in parallel on the Card VM.
 

@@ -62,14 +62,14 @@ Opt-in one-file path (user asked for `next mutation`).
 
 **Default** for own-card / alone when this prompt opens (or the user sends `correct mutations`).
 
+**Warm pool size:** `N = min(remaining_files, 4)` (Televisão CLI default cap is often `2` — stay in **2–4**; use **`2`** if RAM is tight). Reuse slots across files. See `~/git/televisao/sandbox/ORCHESTRATION.md`. Olie bench DOP-1258: pools 2/4/6/8 ≈ same wall; 8 hurt the heaviest shard.
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say complete and recommend `pest-parallel.md`.
 2. Parent orchestrates — do not serialize every file in one giant context when more than one remains.
-3. For each remaining file, in parallel (respect `WORKVM_SANDBOX_MAX` — `~/git/televisao/sandbox/ORCHESTRATION.md`):
-   - Create `~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation` when available; else `docker exec -w /srv televisao-backend` (own-card fallback only).
-   - Sync dirty `televisao-api` into the sandbox worktree when needed.
-   - One subagent (Task) per file (Drift that file if still PHPUnit; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
-4. Parent only appends ledger rows; destroy each sandbox when the row is accepted.
-5. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.
+3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation`) when available; else `docker exec -w /srv televisao-backend` (own-card fallback only). Sync dirty `televisao-api` once; rsync dirty on reuse.
+4. Drain with at most **N** in flight: one subagent (Task) per in-flight file (Drift if still PHPUnit; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
+5. Parent only appends ledger rows; destroy the **pool** when the drain finishes.
+6. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.
 
 ## Prepare
 

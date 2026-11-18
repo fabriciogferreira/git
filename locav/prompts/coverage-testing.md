@@ -82,11 +82,11 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 **Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same prepare → measure → close scoring as a single file; different orchestration.
 
+**Concurrency:** at most `N = min(remaining_files, 4)` in flight (or **`2`** if the shared DB/host is loaded) — same warm-pool idea as Olie.
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. For each remaining file, fan out with care (serialize Pest on the shared `locav-backend` DB):
-   - Launch **one subagent (Task) per file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), candidate test paths, and the scoring/ledger rules.
-   - Each subagent uses `docker exec -w /var/www/html locav-backend` (no Locav sandbox profile yet).
+3. Fan out with care (serialize Pest on the shared `locav-backend` DB when needed): one subagent (Task) per **in-flight** file (queue the rest). Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), candidate test paths, and the scoring/ledger rules. Each subagent uses `docker exec -w /var/www/html locav-backend` (no Locav sandbox profile yet).
 4. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
 5. **Parent only** appends/updates rows in `~/git/locav/prompts/coverage-ledger.md` (avoid races).
 6. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `pre-qa.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).

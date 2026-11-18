@@ -31,7 +31,7 @@ Never walk the whole `app/` tree for suite Total. Never treat Pest’s suite-wid
 | Command | Do this |
 | --- | --- |
 | `next coverage` | Opt-in: one changed `app/**/*.php` only. Prefer the default parallel drain. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`. |
-| `correct coverages` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed production file in this turn. Prefer one sandbox **and** one subagent per file; parent writes the ledger. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
+| `correct coverages` | **Default own-card / alone drain** (also what opening this prompt does when files remain): process **every** remaining changed production file in this turn. Warm sandbox pool + one subagent per **in-flight** file; parent writes the ledger. Do not open `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md` until the drain finishes. Details below. |
 | `next prompt` | **Blocked** while the change-set stack still has remaining production files. Refuse, list how many files remain (and the next path), and tell the user to send `next coverage` or `correct coverages`. Only after the stack is complete may `next prompt` run `~/git/olie/prompts/mutation-testing.md`. |
 | `try again` | Resume or re-run coverage on the **current** (last attempted) production file after a stop or fix. Do not skip ahead to another file or to pre-QA. After a failed `correct coverages` shard, retry that file (or re-send `correct coverages` for all still-missing rows). |
 
@@ -82,15 +82,15 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 **Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same prepare → measure → close scoring as a single file; different orchestration.
 
+**Warm pool size:** same rule as mutation — `N = min(remaining_files, 4)`, or **`2`** if RAM is tight. Reuse slots across files; do not open one sandbox per production file when remaining ≫ 4. See `~/git/olie/sandbox/ORCHESTRATION.md`.
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `mutation-testing.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. For each remaining file, in parallel (Olie: no default cap; queue only if `WORKVM_SANDBOX_MAX` > 0 — `~/git/olie/sandbox/ORCHESTRATION.md`):
-   - Prefer `~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`.
-   - Sync the card’s dirty `api-main` working tree into that sandbox worktree when needed.
-   - Launch **one subagent (Task) per file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id (if any), candidate test paths, and the scoring/ledger rules.
-4. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
-5. **Parent only** appends/updates rows in `~/git/olie/prompts/coverage-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
-6. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `mutation-testing.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
+3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project olie --profile mutation`). Sync dirty `api-main` into each pool worktree once; prefer rsync dirty on reuse.
+4. Drain with at most **N** in flight: reuse a free slot for the next file. Launch **one subagent (Task) per in-flight file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id, candidate test paths, and the scoring/ledger rules.
+5. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
+6. **Parent only** appends/updates rows in `~/git/olie/prompts/coverage-ledger.md` (avoid races). Destroy the **pool** when the drain finishes (or a slot on hard failure after reporting).
+7. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `mutation-testing.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
 
 ## Prepare
 

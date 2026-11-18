@@ -59,8 +59,10 @@ Opt-in one-file path (user asked for `next mutation`).
 
 **Default** for own-card / alone when this prompt opens (or the user sends `correct mutations`). Locav has no mutation sandbox profile yet — use parallel **subagents** and `docker exec -w /var/www/html locav-backend` (serialize only if the shared testing DB cannot take concurrent Pest mutate).
 
+**Concurrency:** keep at most `N = min(remaining_files, 4)` mutate jobs in flight (or **`2`** if the shared DB / host is already loaded). Same warm-pool idea as Olie sandboxes: more than ~4 concurrent mutates rarely shortens wall and can thrash. Olie bench DOP-1258: pools 2/4/6/8 ≈ same wall.
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say complete and recommend `pest-parallel.md`.
-2. Parent orchestrates. Prefer one subagent (Task) per remaining file (Drift if needed; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
+2. Parent orchestrates. Prefer one subagent (Task) per **in-flight** file (queue the rest; Drift if needed; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
 3. Parent only appends ledger rows.
 4. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.
 

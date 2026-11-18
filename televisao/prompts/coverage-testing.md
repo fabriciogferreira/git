@@ -82,15 +82,15 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 **Default** for own-card / alone when this prompt opens (or the user sends `correct coverages`). Same prepare → measure → close scoring as a single file; different orchestration.
 
+**Warm pool size:** `N = min(remaining_files, 4)` (respect Televisão `WORKVM_SANDBOX_MAX`, often **2**; use **2** if RAM is tight). Reuse slots across files — `~/git/televisao/sandbox/ORCHESTRATION.md`.
+
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. For each remaining file, in parallel up to `WORKVM_SANDBOX_MAX` (queue the rest — `~/git/televisao/sandbox/ORCHESTRATION.md`):
-   - Prefer `~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation`.
-   - Sync the card’s dirty `televisao-api` working tree into that sandbox worktree when needed.
-   - Launch **one subagent (Task) per file**. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id (if any), candidate test paths, and the scoring/ledger rules.
-4. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
-5. **Parent only** appends/updates rows in `~/git/televisao/prompts/coverage-ledger.md` (avoid races). Destroy each sandbox when that shard’s row is accepted (or on hard failure after reporting).
-6. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `pre-qa.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
+3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation`). Sync dirty `televisao-api` once; rsync dirty on reuse.
+4. Drain with at most **N** in flight; one subagent (Task) per in-flight file. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id, candidate test paths, and the scoring/ledger rules.
+5. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
+6. **Parent only** appends/updates rows in `~/git/televisao/prompts/coverage-ledger.md` (avoid races). Destroy the **pool** when the drain finishes.
+7. When every remaining file has a done row (or the user stops), report the aggregate and — if complete — recommend `pre-qa.md`. If a shard is Blocked, leave that path incomplete and list retries (`try again` / `correct coverages`).
 
 ## Prepare
 

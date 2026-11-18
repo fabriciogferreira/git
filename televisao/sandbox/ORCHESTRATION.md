@@ -96,16 +96,15 @@ coverage/testes correm (paralelo em sandboxes), não a regra de outcome.
 
 ---
 
-## Mutation: shard por arquivo
+## Mutation: warm pool + fila por arquivo
 
 No dispatcher colleague, o prompt manda drenar o change-set. Com sandbox:
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria até `WORKVM_SANDBOX_MAX` sandboxes `profile=mutation` (padrão Televisão: 2).
-3. Atribui **um arquivo por sandbox**; quando um termina, pega o próximo da fila.
-4. Agrega ledger / findings; o dispatcher só então libera o outcome combinado.
+2. Cria um **warm pool** de `N` sandboxes `profile=mutation`: `N = min(restantes, WORKVM_SANDBOX_MAX)` com padrão Televisão **2**, faixa útil **2–4** (baixar para 2 se RAM apertada; não abrir um por arquivo só porque o lote é grande — bench Olie DOP-1258: 2/4/6/8 ≈ mesmo wall).
+3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o slot para o próximo (rsync dirty).
+4. Agrega ledger / findings; o dispatcher só então libera o outcome combinado. Destroy o pool ao fim do dreno.
 
-N sandboxes de mutation (arquivos distintos) **podem** rodar juntos.
 Mutation × `artisan test` no **mesmo** sandbox **não**.
 
 ---

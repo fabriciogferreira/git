@@ -21,8 +21,9 @@ mutation): **[ORCHESTRATION.md](./ORCHESTRATION.md)**.
 ~/git/bin/workvm-sandbox destroy mut-envelope
 ```
 
-Teto padrão: **nenhum** (`WORKVM_SANDBOX_MAX=0`). Cap opcional:
-`WORKVM_SANDBOX_MAX=N` (aí a fila aplica — ver ORCHESTRATION).
+CLI default: **sem teto** (`WORKVM_SANDBOX_MAX=0`). No dreno de mutation/coverage
+o prompt manda **warm pool** `N = min(arquivos, 4)` (ou `2` se RAM apertada) e
+reuso de slot — ver ORCHESTRATION. Cap explícito: `WORKVM_SANDBOX_MAX=N`.
 
 Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
 `olie/api-main:latest` se a tag ainda não existir.

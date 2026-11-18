@@ -78,30 +78,34 @@ nesta corrida — um sandbox `profile=mutation` + um subagent por arquivo;
 pai agrega o ledger); `next mutation` / `next coverage` = opt-in um
 arquivo. Preferir sandbox para não tocar o `testing` da Card VM.
 Mutation × coverage no **mesmo** sandbox **não** (ambos usam Pest/DB).
-Olie: **sem teto** por padrão (`WORKVM_SANDBOX_MAX=0`); cap opcional com
-`WORKVM_SANDBOX_MAX=N`.
+
+**Warm pool (mutation/coverage drain):** `N = min(arquivos_restantes, 4)`.
+Use **`2`** se a RAM estiver apertada (`available` ≲ 8 GiB antes do create).
+Não abrir um sandbox por arquivo só porque o change-set é grande — bench
+DOP-1258 (8 arquivos): pools 2/4/6/8 ≈ **387–406s** de wall; pool **8**
+aumentou o pior shard (~349s vs ~178s) por contenção. O CLI ainda aceita
+`WORKVM_SANDBOX_MAX=0` (sem teto de software); o **prompt** manda o agente
+respeitar esta faixa 2–4 com reuso.
 
 ---
 
-## Mutation: shard por arquivo
+## Mutation: warm pool + fila por arquivo
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria um sandbox `profile=mutation` **por arquivo** (Olie: todos juntos; só fila se `WORKVM_SANDBOX_MAX` > 0 e N passar do teto).
-3. Atribui **um arquivo por sandbox**; se houver teto e a fila existir, quando um termina pega o próximo.
-4. Em cada sandbox: `--class` só das FQCN do **pool do change-set que aquele teste exercita** (não o pool inteiro em todo arquivo — ver `mutation-testing.md`; bench DOP-1281 ~1.6× no pesado).
+2. Cria **N** sandboxes `profile=mutation` (`N = min(restantes, 4)`, ou `2` se RAM apertada). Opcional: `WORKVM_SANDBOX_MAX=N`.
+3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o mesmo sandbox para o próximo (rsync dirty; sem destroy entre arquivos do dreno).
+4. Em cada job: `--class` só das FQCN do **pool do change-set que aquele teste exercita** (não o pool inteiro em todo arquivo — ver `mutation-testing.md`; bench DOP-1281 ~1.6× no pesado).
 
 ```bash
-~/git/bin/workvm-sandbox create --name "mut-$(basename "$file" .php | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | cut -c1-40)" \
-  --project olie --profile mutation
+# create pool once (example N=4), then for each file on a free slot:
 ~/git/bin/workvm-sandbox job run "$id" -- php artisan test --compact "$file"
 ~/git/bin/workvm-sandbox job run "$id" -- vendor/bin/pest --mutate --covered-only --min=100 \
   --ignore-min-score-on-zero-mutations --class=App\\... "$file"
-~/git/bin/workvm-sandbox destroy "$id"
+# destroy the pool after the drain
 ```
 
 5. Agrega `mutation-ledger.md` / findings; o dispatcher só então libera o outcome.
 
-N sandboxes de mutation (arquivos distintos) **podem** rodar juntos.
 Mutation × suite Pest no **mesmo** sandbox **não**.
 
 ---

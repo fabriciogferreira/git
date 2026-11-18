@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation/coverage: warm pool 2–4 (não 1 sandbox por arquivo)
+
+- **problema:** o dreno criava um sandbox (ou job) por `*Test.php` / `app/` file; com N grande o wall não caía e o shard pesado sofria contenção.
+- **por que é um problema:** create+rsync e CPU/IO compartilhados; no jarvis, 8 mutates frios juntos alongam o pior arquivo sem encurtar o lote.
+- **resolvido como:** regra **warm pool** em `olie` (`mutation-testing` / `coverage-testing` / `sandbox/ORCHESTRATION.md` + README), espelho Televisão/Locav: `N = min(restantes, 4)`, **`2`** se RAM apertada; reusar slot (rsync dirty); não abrir um por arquivo só porque o change-set é grande. Bench DOP-1258 (8 arquivos, tip `cc57e847`): pools **2/4/6/8** ≈ **387–406s** wall; pool 8 piorou Endpoint (~349s vs ~178s).
+
 ## Mutation ledger `sha:`: skip só para retries neste meta-repo
 
 - **problema:** dava para ler o skip por `sha:` como se o autor do card stampasse no handoff e a 1ª colleague review viesse quente.
