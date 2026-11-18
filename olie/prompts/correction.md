@@ -99,13 +99,15 @@ For each affected repository (excluding `olie/docs`):
 When the user reports that the conflicts are resolved (or asks to continue after resolving them):
 
 1. Verify the rebase is finished in each affected repository (`git status` shows a clean working tree on the card/PR branch, with no rebase in progress). If the rebase is still paused on conflicts or the working tree is dirty for an unrelated reason, stop and report the blocker.
-2. Force-push that branch to its existing remote tracking branch (`git push --force-with-lease`). The rebase rewrites history, so a normal push is refused; `--force-with-lease` updates the PR branch without a blind `--force` if someone else pushed in the meantime.
-3. Confirm the remote branch and open PR reflect the rebased tip. Do not open a new PR or rename the branch.
-4. Only then resume the rest of this workflow (correction plan / non-conflict findings) if the user asked to continue beyond the conflict return.
+2. **Do not force-push yet.** Resume the rest of this workflow on the local rebased branch first: correction plan, non-conflict findings, TDD, and local verification. Pushing before that check is wrong — you would publish an unverified tip and only then discover what still fails.
+3. When this correction pass is otherwise complete (findings addressed or documented as verified non-issue / out-of-scope, relevant tests run, working tree clean aside from intentional uncommitted work the user owns), **then** force-push each rebased card/PR branch (`git push --force-with-lease`). The rebase rewrites history, so a normal push is refused; `--force-with-lease` updates the PR branch without a blind `--force` if someone else pushed in the meantime. **Force-push is the last remote write of this correction pass** — after local verification, not before.
+4. Confirm the remote branch and open PR reflect the rebased tip. Do not open a new PR or rename the branch.
 
-If the return also lists non-conflict findings, still stop after starting the rebase(s). Those findings wait until the user resumes after resolving conflicts (and after the force-push above).
+If the return also lists non-conflict findings, still stop after starting the rebase(s). Those findings wait until the user resumes after resolving conflicts; they are handled **before** the force-push in step 3.
 
-If the rebase starts and completes with no conflicts, force-push the rebased branch with `--force-with-lease` as above, report that outcome, and wait for instructions before continuing other correction work.
+If the rebase starts and completes with no conflicts: report that outcome, continue the correction plan / verification on the local tip, and force-push with `--force-with-lease` only at the end of this pass (same rule as step 3). Do not push an unverified rebased tip “just to unblock the PR”.
+
+If the return was **only** conflicts (no other findings): after the rebase is verified finished, still run the minimal local check that the conflict resolution did not leave the tree broken (at least status clean + the tests/paths touched by conflict resolution when applicable), **then** force-push as the last step.
 
 ## 5. Repository and Branch Preparation
 
@@ -250,7 +252,7 @@ Rules:
 
 ## 11. Completion Criteria
 
-When the return was only for merge conflicts, the first stop is complete when the rebase onto `develop` has been started in each affected repository, conflicts were left unresolved for the user, and the user was told they can resolve them now. Do not claim conflict resolution as done at that stop. After the user resolves the conflicts, this pass is complete when the rebase is finished and each rebased card/PR branch has been force-pushed with `--force-with-lease`.
+When the return was only for merge conflicts, the first stop is complete when the rebase onto `develop` has been started in each affected repository, conflicts were left unresolved for the user, and the user was told they can resolve them now. Do not claim conflict resolution as done at that stop. After the user resolves the conflicts, this pass is complete when the rebase is finished, the minimal local verification for that conflict-only return has run (§4), **and then** each rebased card/PR branch has been force-pushed with `--force-with-lease` (force-push last).
 
 Otherwise, the correction work is complete only when:
 
@@ -263,6 +265,7 @@ Otherwise, the correction work is complete only when:
 - The implementation plan and issue log are up to date.
 - No unrelated user changes have been overwritten.
 - No prohibited CAPTCHA configuration or secrets have been committed, pushed, or included in a pull request.
+- If this pass included a rebase onto the base branch: the force-push (`--force-with-lease`) ran **after** the verification above, not before.
 
 At completion, provide a concise report containing:
 

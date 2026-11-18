@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Prompt `correction`: force-push antes da verificação
+
+- **problema:** `olie/prompts/correction.md` §4 mandava `git push --force-with-lease` logo após o rebase terminar, e só depois retomar findings/TDD/verificação.
+- **por que é um problema:** o tip do PR era publicado sem checar se a resolução de conflito (e o resto da correção) estava correta; falhas só apareciam depois do push.
+- **resolvido como:** §4/§11 — após o rebase local, plano/findings/testes primeiro; force-push é o **último** write remoto da passada. Sync do texto no Opbed `config.prompts`.
+
 ## Meta-repo `~/git`: SCM listava só clones (ex. Televisão)
 
 - **problema:** janela do folder `~/git` no Source Control mostrava `televisao-*` (e outros clones) e não o meta-repo.
