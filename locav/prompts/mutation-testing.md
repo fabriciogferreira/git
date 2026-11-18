@@ -83,11 +83,11 @@ If that fails, stop. Do not mutate a red file.
 
 Pass **only that test’s scoped** production FQCNs via `--class=...` (change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool on every file.
 
-Example (escape `\` for the shell):
+**`--class` quoting (required):** `docker exec` passes argv without an inner shell. Pest must see `App\Services\Foo` (one `\`). Canonical: `'--class=App\Services\Foo'`. **Wrong:** `'--class=App\\Services\\Foo'` (double `\` → often `0 Mutations`); unquoted `App\…` (bash eats `\`).
 
 ```bash
 docker exec -w /var/www/html locav-backend vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
-  --class=App\\Services\\Example\\ExampleAction \
+  '--class=App\Services\Example\ExampleAction' \
   <test-path>
 ```
 

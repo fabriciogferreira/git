@@ -106,12 +106,19 @@ If that fails, stop. Do not mutate a red file.
 
 Pass **only that test’s scoped** production FQCNs via `--class=...` (see change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool “for safety” on every file.
 
-Example (escape `\` for the shell):
+**`--class` quoting (required):** `job run` / `docker exec` pass argv **without** an inner shell. Pest must receive a single `\` between namespace segments (`App\Services\Foo`).
+
+| Form | Argv Pest sees | Result |
+| --- | --- | --- |
+| `'--class=App\Services\Foo'` | `App\Services\Foo` | **Canonical — use this** |
+| `--class=App\\Services\\Foo` (unquoted) | `App\Services\Foo` | OK on bash (host collapses `\\` → `\`) |
+| `'--class=App\\Services\\Foo'` | `App\\Services\\Foo` | **Wrong** → often `0 Mutations for 0 Files` |
+| `--class=App\Services\Foo` (unquoted) | `AppServicesFoo` | **Wrong** (bash eats `\`) |
 
 ```bash
 ~/git/bin/workvm-sandbox job run <sandbox-id> -- \
   vendor/bin/pest --mutate --covered-only --min=100 --ignore-min-score-on-zero-mutations \
-  --class=App\\Services\\Media\\CreateMediaFromFrameAttachment \
+  '--class=App\Services\Media\CreateMediaFromFrameAttachment' \
   <test-path>
 ```
 

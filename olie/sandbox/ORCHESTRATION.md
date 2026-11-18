@@ -118,8 +118,9 @@ coverage o que importa é o `api-main` no tip.
 # create pool once (example N=4), then for each file on a free slot:
 ~/git/bin/workvm-sandbox create --name "$id" --project olie --profile mutation --from-commit "$tip"
 ~/git/bin/workvm-sandbox job run "$id" -- php artisan test --compact "$file"
+# --class: single-quote with ONE backslash (not App\\… inside quotes → 0 Mutations)
 ~/git/bin/workvm-sandbox job run "$id" -- vendor/bin/pest --mutate --covered-only --min=100 \
-  --ignore-min-score-on-zero-mutations --class=App\\... "$file"
+  --ignore-min-score-on-zero-mutations '--class=App\Services\Example' "$file"
 # destroy the pool after the drain
 ```
 

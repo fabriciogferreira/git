@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation: quoting canônico de `--class` no `job run`
+
+- **problema:** exemplos com `App\\Foo` dentro de aspas simples faziam o Pest receber `\\` literal → `0 Mutations for 0 Files`.
+- **por que é um problema:** mutate “vazio” e re-runs; DOP-1281 reportou o escape no `job run`.
+- **resolvido como:** prompts Olie/Locav/Televisão + ORCHESTRATION — forma canônica `'--class=App\Foo'` (um `\`); tabela do que quebra. Smoke argv: quoted `\\` → duplo; quoted `\` → certo; unquoted `\` → bash come.
+
 ## Coverage: lote por Via test (não 1 Pest por `app/`)
 
 - **problema:** `correct coverages` / dispatcher rodava um `pest --coverage` por arquivo `app/`; o mesmo Via era repetido.
