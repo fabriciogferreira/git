@@ -1,0 +1,67 @@
+# Host-card Olie: app/http usam o stack compartilhado (compose.host-data.yml).
+# Problema: o slim traz mysql/redis/mongo por projeto compose; no jarvis isso
+# multiplica instâncias. Aqui desliga os três no card e aponta env + rede
+# externa hc-olie-data. SB_DB_* / SB_MONGO_* / SB_REDIS_PREFIX vêm do .env.
+
+services:
+  # !override nos profiles: senão o merge CONCATENA com slim e o mysql do
+  # card sobe junto no --profile slim (instância por card de novo).
+  mysql:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+  redis:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+  mongo:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+
+  app:
+    networks:
+      sb_net:
+      hc_olie_data:
+    environment:
+      DB_HOST: olie-hc-mysql
+      DB_PORT: "3306"
+      DB_DATABASE: ${SB_DB_DATABASE}
+      DB_USERNAME: sandbox
+      DB_PASSWORD: sandbox
+      MONGODB_HOST: olie-hc-mongo
+      MONGODB_PORT: "27017"
+      MONGODB_DATABASE: ${SB_MONGO_DATABASE}
+      MONGODB_USERNAME: sandbox
+      MONGODB_PASSWORD: sandbox
+      REDIS_HOST: olie-hc-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "null"
+      REDIS_PREFIX: ${SB_REDIS_PREFIX}
+    # Sem depends_on nos data services (estão no stack hc-olie-data).
+    depends_on: !override {}
+
+  http:
+    networks:
+      sb_net:
+      hc_olie_data:
+    environment:
+      DB_HOST: olie-hc-mysql
+      DB_PORT: "3306"
+      DB_DATABASE: ${SB_DB_DATABASE}
+      DB_USERNAME: sandbox
+      DB_PASSWORD: sandbox
+      MONGODB_HOST: olie-hc-mongo
+      MONGODB_PORT: "27017"
+      MONGODB_DATABASE: ${SB_MONGO_DATABASE}
+      MONGODB_USERNAME: sandbox
+      MONGODB_PASSWORD: sandbox
+      REDIS_HOST: olie-hc-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "null"
+      REDIS_PREFIX: ${SB_REDIS_PREFIX}
+    depends_on: !override
+      app:
+        condition: service_started
+
+networks:
+  hc_olie_data:
+    external: true
+    name: hc-olie-data

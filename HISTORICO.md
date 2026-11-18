@@ -2,6 +2,30 @@
 
 Problema resolvido entra aqui.
 
+## Host-card destroy: não fecha a janela Cursor
+
+- **problema:** `finish card` / `destroy` chamava `workvm_close_cursor_workspace` no fim do teardown; o agent ainda estava na janela do card → diálogo “prompts running”.
+- **por que é um problema:** confirmação manual e chat interrompido no finalize.
+- **resolvido como:** destroy não fecha Cursor; imprime `close_cursor=manual` + hint para o usuário fechar à mão; chat command em `workflow-policy.md`.
+
+## Host-card Olie: MySQL/Redis/Mongo compartilhados
+
+- **problema:** cada card subia mysql+redis+mongo próprios (slim) — N cards × 3 serviços no jarvis.
+- **por que é um problema:** RAM/CPU; isolamento real só precisava de database/prefixo.
+- **resolvido como (teste, sem commit):** `compose.host-data.yml` (mysql:8.4, mongo:5, redis-stack como `docker-workspace`) + `compose.host-card-shared-data.yml`; ensure provisiona `api_<slug>` / `testing_<slug>*`; destroy só DROP do card; stack `hc-olie-data` permanece.
+
+## Host-card ensure: não fechar janela já aberta
+
+- **problema:** `ensure` (colleague review passo 0) sempre `close` + reopen do `.code-workspace` por causa do hack SCM; no meio do review a janela/chat do card caía.
+- **por que é um problema:** o dispatcher morre ou o usuário vê a janela fechando em loop.
+- **resolvido como:** se a janela do card já está aberta, ensure só **foca**; close+SCM+reopen fica no `workvm-host-card open`. Prompts: `OPEN_CURSOR=0` quando o chat já é a janela do card.
+
+## Host-card: worktree por repo (Olie)
+
+- **problema:** isolamento do card misturava worktree só do `api-main`, clones shared no workspace e pasta `api-main (shared)` para o SCM — frágil e confuso.
+- **por que é um problema:** edição/SCM no path errado; sujeira do meta-repo shared vaza entre janelas; remendo de UI virava arquitetura.
+- **resolvido como (Olie, sem commit de teste):** `prepare_olie_isolation` — worktree de todos os `CLONE_REPOS` + meta `worktree/git`; reflink/rsync de `vendor` e `node_modules`; workspace só esses paths; compose `SB_FRONTS` / `SB_E2E` no worktree do card. Fases seguintes (repos prováveis; polir heavy) em `host-cards-no-vm.md` §4.
+
 ## Prompt `correction`: force-push antes da verificação
 
 - **problema:** `olie/prompts/correction.md` §4 mandava `git push --force-with-lease` logo após o rebase terminar, e só depois retomar findings/TDD/verificação.

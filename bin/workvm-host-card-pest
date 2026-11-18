@@ -20,7 +20,7 @@ workvm-host-card-pest — Pest no stack do host-card (Olie)
 Defaults: --compact --parallel --recreate-databases --processes=min(nproc,22)
   (teto 22: ≥23 segfaulta no jarvis; override WORKVM_HOST_CARD_PEST_PROCESSES)
 Env forçado no container (não muda o compose do browser):
-  DB_DATABASE=testing
+  DB_DATABASE=<testing_* do card> (shared MySQL; default testing_<slug>)
   APP_ENV=testing
   MANAGEMENT_URL=http://{subdomain}.olie.localhost
   RECAPTCHA_SECRET=host-card-pest-rejects-invalid-tokens
@@ -71,11 +71,15 @@ fi
 
 compose_dir="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_dir') or '')")"
 pname="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_project') or '')")"
+testing_db="$(python3 -c "import json;print(json.load(open('$meta')).get('testing_database') or '')")"
 if [ -z "$compose_dir" ] || [ ! -d "$compose_dir" ]; then
     compose_dir="$(workvm_host_card_dir "$project" "$id")/compose"
 fi
 if [ -z "$pname" ]; then
     pname="hc-${id}"
+fi
+if [ -z "$testing_db" ]; then
+    testing_db="testing"
 fi
 
 nproc_count="$(nproc)"
@@ -106,7 +110,7 @@ workvm_host_card_log "pest $id ($pname) → ${extra[*]}"
     # -e no exec: workers do --parallel herdam o env do PHP pai
     docker compose --profile slim exec -T \
         -e TMPDIR=/tmp/pest-hc \
-        -e DB_DATABASE=testing \
+        -e DB_DATABASE="$testing_db" \
         -e APP_ENV=testing \
         -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
         -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \

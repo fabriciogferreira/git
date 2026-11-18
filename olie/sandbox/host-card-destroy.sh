@@ -4,14 +4,17 @@
 workvm_host_card_destroy_hook() {
     local id="$1"
     local dir="$2"
-    local compose_dir pname meta_repo
+    local compose_dir pname meta_repo dns_slug
 
     meta_repo="$(workvm_host_card_meta_repo)"
     # shellcheck source=/dev/null
     source "${meta_repo}/lib/host-card-proxy.sh"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/olie/sandbox/host-card-shared-data.sh"
 
     compose_dir="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('compose_dir') or '')" 2>/dev/null || true)"
     pname="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('compose_project') or '')" 2>/dev/null || true)"
+    dns_slug="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('dns_slug') or '')" 2>/dev/null || true)"
     if [ -z "$compose_dir" ]; then
         compose_dir="${dir}/compose"
     fi
@@ -19,8 +22,13 @@ workvm_host_card_destroy_hook() {
         pname="hc-${id}"
     fi
 
+    # Drop DBs do card no MySQL/Mongo shared (não derruba olie-hc-*).
+    if [ -n "$dns_slug" ]; then
+        workvm_host_card_olie_drop_card_databases "$dns_slug" || true
+    fi
+
     if [ -d "$compose_dir" ] && [ -f "$compose_dir/compose.yaml" ]; then
-        workvm_host_card_log "compose down -v ($pname)"
+        workvm_host_card_log "compose down -v ($pname) — sem shared data"
         (
             cd "$compose_dir"
             set -a
@@ -36,9 +44,10 @@ workvm_host_card_destroy_hook() {
         docker compose -p "$pname" down -v --remove-orphans 2>/dev/null || true
     fi
 
-    # Worktree/vendor por card (antes do rm -rf do state dir no destroy).
-    workvm_host_card_remove_api_isolation "$dir" || true
+    # Worktrees + vendor por card (antes do rm -rf do state dir no destroy).
+    workvm_host_card_remove_olie_isolation "$dir" || true
 
     # meta.json still present; proxy reload runs after destroy removes dir —
     # call again from destroy() after rm. Soft reload here is a no-op preview.
+    # Shared hc-olie-data fica de pé enquanto houver outros cards (teste).
 }

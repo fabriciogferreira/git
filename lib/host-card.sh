@@ -57,21 +57,43 @@ workvm_host_card_apply_compose_limits() {
     done
 }
 
-# Worktree api-main + cópia do vendor por card.
-# Problema: dois host-cards montavam o mesmo clone/vendor; Pest -p em paralelo
-# corrompia cache/vendor e estourava schema (api_main_test_* sem tabelas).
-# Cursor ainda abre os clones compartilhados; o compose usa estes paths.
+# Isolamento Olie por card: worktree de cada CLONE_REPOS + meta-repo ~/git,
+# reflink/copy de vendor e node_modules a partir da base instalada.
+# Problema: só api-main isolado + clones shared no workspace era frágil (SCM
+# (shared), edição no path errado). Contrato: host-cards-no-vm.md §4.
 # Uso: prepare no ensure; remove no destroy (antes do rm -rf do state dir).
-# Segundo arg opcional: código do card (ex. DOP-1273) → checkout da branch no
-# worktree (não no clone compartilhado). Sem branch ainda → fica em HEAD/develop.
+# Código do card (ex. DOP-1273) → checkout da branch no worktree (não na base).
+
 workvm_host_card_api_src() {
     printf '%s/olie/api-main\n' "$(workvm_host_card_git_root)"
 }
 
-# Resolve a branch do card em api-main (local primeiro, senão origin).
-# Critério: nome contém o código (ex. DOP-1273); desempate = committerdate.
-# Só imprime o nome curto (sem origin/). Exit 1 se não achar.
-workvm_host_card_resolve_api_card_branch() {
+# Reflink (btrfs) ou rsync. $1=src dir $2=dst dir (árvore final).
+# Skip se dst já tem conteúdo (resume barato).
+workvm_host_card_copy_heavy() {
+    local src="$1"
+    local dst="$2"
+
+    if [ ! -d "$src" ]; then
+        return 1
+    fi
+    if [ -d "$dst" ] && [ -n "$(ls -A "$dst" 2>/dev/null || true)" ]; then
+        workvm_host_card_log "heavy já existe: $dst"
+        return 0
+    fi
+    mkdir -p "$(dirname "$dst")"
+    rm -rf "$dst"
+    if cp --reflink=always -a "$src" "$dst" 2>/dev/null; then
+        workvm_host_card_log "reflink $src → $dst"
+        return 0
+    fi
+    workvm_host_card_log "rsync $src → $dst"
+    mkdir -p "$dst"
+    rsync -a "${src}/" "${dst}/" || return 1
+}
+
+# Resolve branch cujo nome contém $code (local, senão origin). Exit 1 se não achar.
+workvm_host_card_resolve_card_branch() {
     local src="$1"
     local code="$2"
     local ref short
@@ -101,94 +123,189 @@ workvm_host_card_resolve_api_card_branch() {
     return 1
 }
 
-# No worktree do card: fetch + checkout da branch que contém $code.
-# Problema: ensure criava worktree --detach em develop; a janela abria sem os
-# arquivos da feature já existente. Não mexe no clone compartilhado.
-workvm_host_card_checkout_api_card_branch() {
-    local dir="$1"
-    local code="$2"
-    local src wt_api branch cur
+# Compat: nome antigo usado em logs/chamadas.
+workvm_host_card_resolve_api_card_branch() {
+    workvm_host_card_resolve_card_branch "$@"
+}
 
-    src="$(workvm_host_card_api_src)"
-    wt_api="${dir}/worktree/api-main"
+# Checkout da branch do card num worktree já existente (não mexe na base).
+workvm_host_card_checkout_worktree_branch() {
+    local wt="$1"
+    local src="$2"
+    local code="$3"
+    local name branch cur
+
     [ -n "$code" ] || return 0
-    if [ ! -d "$wt_api" ] || { [ ! -d "${wt_api}/.git" ] && [ ! -f "${wt_api}/.git" ]; }; then
+    if [ ! -d "$wt" ] || { [ ! -d "${wt}/.git" ] && [ ! -f "${wt}/.git" ]; }; then
         return 0
     fi
+    name="$(basename "$wt")"
 
     git -C "$src" fetch origin --prune --quiet 2>/dev/null \
-        || workvm_host_card_log "fetch origin falhou (seguindo com refs locais)"
+        || workvm_host_card_log "fetch origin falhou em $name (refs locais)"
 
-    branch="$(workvm_host_card_resolve_api_card_branch "$src" "$code" || true)"
+    branch="$(workvm_host_card_resolve_card_branch "$src" "$code" || true)"
     if [ -z "$branch" ]; then
-        workvm_host_card_log "api-main: sem branch com $code — worktree em HEAD/develop"
+        workvm_host_card_log "$name: sem branch com $code — worktree em HEAD"
         return 0
     fi
 
-    cur="$(git -C "$wt_api" branch --show-current 2>/dev/null || true)"
+    cur="$(git -C "$wt" branch --show-current 2>/dev/null || true)"
     if [ "$cur" = "$branch" ]; then
-        workvm_host_card_log "api-main worktree já em $branch"
+        workvm_host_card_log "$name worktree já em $branch"
         return 0
     fi
 
     if git -C "$src" show-ref --verify --quiet "refs/heads/${branch}"; then
-        workvm_host_card_log "api-main worktree → $branch"
-        git -C "$wt_api" -c core.hooksPath=/dev/null checkout "$branch" \
-            || workvm_host_card_log "checkout $branch falhou no worktree (dirty? branch noutro worktree?)"
+        workvm_host_card_log "$name worktree → $branch"
+        git -C "$wt" -c core.hooksPath=/dev/null checkout "$branch" \
+            || workvm_host_card_log "checkout $branch falhou em $name (dirty? branch noutro worktree?)"
     elif git -C "$src" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
-        workvm_host_card_log "api-main worktree → $branch (de origin)"
-        git -C "$wt_api" -c core.hooksPath=/dev/null checkout -B "$branch" "origin/${branch}" \
-            || workvm_host_card_log "checkout -B $branch falhou no worktree"
+        workvm_host_card_log "$name worktree → $branch (de origin)"
+        git -C "$wt" -c core.hooksPath=/dev/null checkout -B "$branch" "origin/${branch}" \
+            || workvm_host_card_log "checkout -B $branch falhou em $name"
     else
-        workvm_host_card_log "branch $branch sumiu após resolve"
+        workvm_host_card_log "$name: branch $branch sumiu após resolve"
     fi
 }
 
-workvm_host_card_prepare_api_isolation() {
+workvm_host_card_checkout_api_card_branch() {
+    local dir="$1"
+    local code="$2"
+    workvm_host_card_checkout_worktree_branch \
+        "${dir}/worktree/api-main" "$(workvm_host_card_api_src)" "$code"
+}
+
+# Cria (ou retoma) um worktree em $wt a partir da base $src.
+# Com $code: tenta a branch do card; se estiver noutro worktree → --detach no tip.
+workvm_host_card_add_repo_worktree() {
+    local src="$1"
+    local wt="$2"
+    local code="${3:-}"
+    local name branch
+    name="$(basename "$wt")"
+
+    if [ ! -d "${src}/.git" ] && [ ! -f "${src}/.git" ]; then
+        workvm_host_card_log "base não é git, skip: $src"
+        return 1
+    fi
+
+    if [ -d "$wt" ] && { [ -d "${wt}/.git" ] || [ -f "${wt}/.git" ]; }; then
+        workvm_host_card_log "worktree já existe: $wt"
+        if [ -n "$code" ]; then
+            workvm_host_card_checkout_worktree_branch "$wt" "$src" "$code"
+        fi
+        return 0
+    fi
+
+    rm -rf "$wt"
+    mkdir -p "$(dirname "$wt")"
+    branch=""
+    if [ -n "$code" ]; then
+        git -C "$src" fetch origin --prune --quiet 2>/dev/null || true
+        branch="$(workvm_host_card_resolve_card_branch "$src" "$code" || true)"
+    fi
+
+    # Hooks do clone podem chamar docker exec olie-api-main (ausente no host).
+    if [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/heads/${branch}"; then
+        if git -C "$src" -c core.hooksPath=/dev/null worktree add "$wt" "$branch" 2>/dev/null; then
+            workvm_host_card_log "worktree add $name → $branch"
+            return 0
+        fi
+        workvm_host_card_log "worktree add --detach $name @ $branch (branch noutro worktree)"
+        git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" "$branch" || return 1
+        return 0
+    fi
+    if [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+        if git -C "$src" -c core.hooksPath=/dev/null worktree add -b "$branch" "$wt" "origin/${branch}" 2>/dev/null; then
+            workvm_host_card_log "worktree add -b $name → $branch (origin)"
+            return 0
+        fi
+        workvm_host_card_log "worktree add --detach $name @ origin/$branch"
+        git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" "origin/${branch}" || return 1
+        return 0
+    fi
+
+    workvm_host_card_log "worktree add --detach $name (HEAD)"
+    git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
+}
+
+# Meta-repo: sempre --detach (a branch de ~/git fica no clone “ao vivo”).
+workvm_host_card_add_meta_worktree() {
+    local dir="$1"
+    local src wt
+    src="$(workvm_host_card_meta_repo)"
+    wt="${dir}/worktree/git"
+
+    if [ ! -d "${src}/.git" ] && [ ! -f "${src}/.git" ]; then
+        workvm_host_card_log "meta-repo não é git: $src"
+        return 1
+    fi
+    if [ -d "$wt" ] && { [ -d "${wt}/.git" ] || [ -f "${wt}/.git" ]; }; then
+        workvm_host_card_log "meta worktree já existe: $wt"
+        return 0
+    fi
+    rm -rf "$wt"
+    mkdir -p "$(dirname "$wt")"
+    workvm_host_card_log "worktree add --detach git (meta) @ HEAD"
+    git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
+}
+
+# Lista "basename src_abs" dos CLONE_REPOS do project.conf Olie (+ meta).
+workvm_host_card_olie_repo_bases() {
+    local meta_repo git_root conf
+    meta_repo="$(workvm_host_card_meta_repo)"
+    git_root="$(workvm_host_card_git_root)"
+    conf="${meta_repo}/olie/project.conf"
+    # shellcheck source=/dev/null
+    source "$conf"
+    local entry url path branch name
+    for entry in "${CLONE_REPOS[@]}"; do
+        # shellcheck disable=SC2086
+        set -- $entry
+        path="${2:-}"
+        [ -n "$path" ] || continue
+        name="$(basename "$path")"
+        printf '%s %s\n' "$name" "${git_root}/${path}"
+    done
+}
+
+workvm_host_card_prepare_olie_isolation() {
     local dir="$1"
     local code="${2:-}"
-    local src wt_root wt_api vendor_dst branch
-    src="$(workvm_host_card_api_src)"
+    local wt_root wt_api vendor_dst src_api fronts_base fronts_wt line name src
+    local nm_src nm_dst pkg
+
     wt_root="${dir}/worktree"
     wt_api="${wt_root}/api-main"
     vendor_dst="${dir}/vendor"
-
-    if [ ! -d "${src}/.git" ] && [ ! -f "${src}/.git" ]; then
-        workvm_host_card_log "api-main não é git: $src"
-        return 1
-    fi
-    if [ ! -f "${src}/vendor/autoload.php" ]; then
-        workvm_host_card_log "vendor ausente em ${src}/vendor (composer install)"
-        return 1
-    fi
+    src_api="$(workvm_host_card_api_src)"
+    fronts_base="$(workvm_host_card_git_root)/olie/olie-fronts"
+    fronts_wt="${wt_root}/olie-fronts"
 
     mkdir -p "$wt_root"
-    if [ -d "$wt_api" ] && { [ -d "${wt_api}/.git" ] || [ -f "${wt_api}/.git" ]; }; then
-        workvm_host_card_log "api worktree já existe: $wt_api"
-    else
-        # Hooks do clone podem chamar docker exec olie-api-main (ausente no host).
-        # Se a branch do card já existe, cria o worktree nela; senão detach em HEAD.
-        rm -rf "$wt_api"
-        branch=""
-        if [ -n "$code" ]; then
-            git -C "$src" fetch origin --prune --quiet 2>/dev/null || true
-            branch="$(workvm_host_card_resolve_api_card_branch "$src" "$code" || true)"
-        fi
-        if [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/heads/${branch}"; then
-            workvm_host_card_log "git worktree add $wt_api → $branch"
-            git -C "$src" -c core.hooksPath=/dev/null worktree add "$wt_api" "$branch" || return 1
-        elif [ -n "$branch" ] && git -C "$src" show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
-            workvm_host_card_log "git worktree add -b $branch $wt_api (origin)"
-            git -C "$src" -c core.hooksPath=/dev/null worktree add -b "$branch" "$wt_api" "origin/${branch}" || return 1
-        else
-            workvm_host_card_log "git worktree add --detach $wt_api"
-            git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt_api" HEAD || return 1
-        fi
-    fi
 
-    # Resume / create sem branch no add: garante checkout se a feature já existir.
-    if [ -n "$code" ]; then
-        workvm_host_card_checkout_api_card_branch "$dir" "$code"
+    workvm_host_card_add_meta_worktree "$dir" || return 1
+
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        name="${line%% *}"
+        src="${line#* }"
+        if [ ! -d "$src" ]; then
+            workvm_host_card_log "clone ausente, skip worktree: $src"
+            continue
+        fi
+        workvm_host_card_add_repo_worktree "$src" "${wt_root}/${name}" "$code" \
+            || workvm_host_card_log "worktree falhou: $name"
+    done < <(workvm_host_card_olie_repo_bases)
+
+    if [ ! -d "$wt_api" ] || { [ ! -d "${wt_api}/.git" ] && [ ! -f "${wt_api}/.git" ]; }; then
+        workvm_host_card_log "api-main worktree obrigatório ausente: $wt_api"
+        return 1
+    fi
+    if [ ! -f "${src_api}/vendor/autoload.php" ]; then
+        workvm_host_card_log "vendor ausente na base: ${src_api}/vendor (composer install)"
+        return 1
     fi
 
     mkdir -p \
@@ -198,37 +315,82 @@ workvm_host_card_prepare_api_isolation() {
         "${wt_api}/storage/framework/views" \
         "${wt_api}/bootstrap/cache" \
         "${wt_api}/vendor"
-    # Placeholder: o vendor real entra via bind SB_API_VENDOR (cópia por card).
+    # Placeholder: vendor real via bind SB_API_VENDOR (cópia por card).
     if [ ! -f "${wt_api}/vendor/README.host-card.md" ]; then
         printf '# vendor montado em runtime (SB_API_VENDOR → /var/www/html/vendor)\n' \
             >"${wt_api}/vendor/README.host-card.md"
     fi
 
-    workvm_host_card_log "rsync vendor → $vendor_dst"
-    mkdir -p "$vendor_dst"
-    rsync -a --delete "${src}/vendor/" "${vendor_dst}/" || return 1
-
-    # .env do card (não o do clone compartilhado)
-    if [ -f "${src}/.env" ]; then
-        cp -f "${src}/.env" "${wt_api}/.env"
-    elif [ -f "${src}/.env.example" ]; then
-        cp -f "${src}/.env.example" "${wt_api}/.env"
+    # vendor do card (compose bind); resume não re-copia se já populado.
+    if [ -f "${vendor_dst}/autoload.php" ]; then
+        workvm_host_card_log "vendor do card já existe: $vendor_dst"
     else
-        printf 'APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n' >"${wt_api}/.env"
+        workvm_host_card_copy_heavy "${src_api}/vendor" "$vendor_dst" || return 1
+    fi
+
+    # .env do card (não o da base)
+    if [ ! -f "${wt_api}/.env" ]; then
+        if [ -f "${src_api}/.env" ]; then
+            cp -f "${src_api}/.env" "${wt_api}/.env"
+        elif [ -f "${src_api}/.env.example" ]; then
+            cp -f "${src_api}/.env.example" "${wt_api}/.env"
+        else
+            printf 'APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n' >"${wt_api}/.env"
+        fi
+    fi
+
+    # node_modules da base → worktree olie-fronts (compose monta o worktree).
+    if [ -d "$fronts_wt" ] && [ -d "${fronts_base}/node_modules" ]; then
+        workvm_host_card_copy_heavy "${fronts_base}/node_modules" "${fronts_wt}/node_modules" \
+            || workvm_host_card_log "copy node_modules root falhou"
+        for pkg in "${fronts_base}/packages"/*/node_modules; do
+            [ -d "$pkg" ] || continue
+            nm_src="$pkg"
+            nm_dst="${fronts_wt}/packages/$(basename "$(dirname "$pkg")")/node_modules"
+            mkdir -p "$(dirname "$nm_dst")"
+            workvm_host_card_copy_heavy "$nm_src" "$nm_dst" \
+                || workvm_host_card_log "copy $nm_dst falhou"
+        done
     fi
 }
 
-workvm_host_card_remove_api_isolation() {
+# Compat nome antigo (destroy hook / ensure).
+workvm_host_card_prepare_api_isolation() {
+    workvm_host_card_prepare_olie_isolation "$@"
+}
+
+workvm_host_card_remove_olie_isolation() {
     local dir="$1"
-    local src wt_api
-    src="$(workvm_host_card_api_src)"
-    wt_api="${dir}/worktree/api-main"
-    if [ -d "$wt_api" ]; then
-        workvm_host_card_log "git worktree remove $wt_api"
-        git -C "$src" worktree remove --force "$wt_api" 2>/dev/null \
-            || rm -rf "$wt_api"
+    local wt_root meta_src line name src wt
+
+    wt_root="${dir}/worktree"
+    meta_src="$(workvm_host_card_meta_repo)"
+
+    if [ -d "${wt_root}/git" ]; then
+        workvm_host_card_log "git worktree remove meta ${wt_root}/git"
+        git -C "$meta_src" worktree remove --force "${wt_root}/git" 2>/dev/null \
+            || rm -rf "${wt_root}/git"
     fi
+
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        name="${line%% *}"
+        src="${line#* }"
+        wt="${wt_root}/${name}"
+        [ -d "$wt" ] || continue
+        workvm_host_card_log "git worktree remove $name"
+        if [ -d "$src" ]; then
+            git -C "$src" worktree remove --force "$wt" 2>/dev/null || rm -rf "$wt"
+        else
+            rm -rf "$wt"
+        fi
+    done < <(workvm_host_card_olie_repo_bases)
+
     rm -rf "${dir}/worktree" "${dir}/vendor"
+}
+
+workvm_host_card_remove_api_isolation() {
+    workvm_host_card_remove_olie_isolation "$@"
 }
 
 workvm_host_card_normalize_code() {
@@ -284,13 +446,32 @@ workvm_host_card_write_workspace() {
         workvm_host_card_log "workspace fonte ausente: $src"
         return 1
     fi
-    # Paths relative to the file; keep beside project workspace. Only include
-    # roots that exist. Two cards share the same clones — window isolation is
-    # cursor --new-window, not a fake "card CODE" folder in the explorer.
-    # Meta-repo (`..`) fica por último e com nome explícito: se for o 1º root,
-    # o explorer abre ~/git e o foco cai em televisao/ (ou outro projeto).
     project_dir="$(dirname "$src")"
     dest="${project_dir}/${id}.code-workspace"
+
+    # Olie: stub; bind_workspace_worktree preenche só com worktrees do card
+    # (depois do ensure hook). Evita listar clones shared e o remendo (shared).
+    if [ "$project" = "olie" ]; then
+        WORKVM_HC_DEST="$dest" python3 <<'PY'
+import json, os
+from pathlib import Path
+dest = Path(os.environ["WORKVM_HC_DEST"])
+raw = {
+    "folders": [],
+    "settings": {
+        "git.detectWorktrees": False,
+        "git.autoRepositoryDetection": False,
+    },
+}
+text = json.dumps(raw, indent=2) + "\n"
+if not (dest.is_file() and dest.read_text(encoding="utf-8") == text):
+    dest.write_text(text, encoding="utf-8")
+PY
+        printf '%s\n' "$dest"
+        return 0
+    fi
+
+    # Outros projetos: paths relative; sem meta-repo `..` (foco / SCM).
     WORKVM_HC_SRC="$src" WORKVM_HC_DEST="$dest" \
         WORKVM_HC_PROJECT_DIR="$project_dir" WORKVM_HC_CODE="$code" \
         WORKVM_HC_PROJECT="$project" python3 <<'PY'
@@ -299,8 +480,6 @@ from pathlib import Path
 src = Path(os.environ["WORKVM_HC_SRC"])
 dest = Path(os.environ["WORKVM_HC_DEST"])
 project_dir = Path(os.environ["WORKVM_HC_PROJECT_DIR"])
-code = os.environ.get("WORKVM_HC_CODE") or ""
-project = os.environ.get("WORKVM_HC_PROJECT") or ""
 raw = json.loads(src.read_text(encoding="utf-8"))
 clones = []
 for ent in raw.get("folders", []):
@@ -308,24 +487,18 @@ for ent in raw.get("folders", []):
     name = ent.get("name") or rel
     if not rel or rel == ".":
         continue
-    # Host-card: NÃO incluir meta-repo (`..`). Ele puxa ~/git/olie/api-main
-    # (clone shared) pro SCM e, com git.ignoredRepositories nesse path, o
-    # Cursor esconde também o worktree do card (Explorer ok, SCM sem api-main).
     if rel in ("..", "../"):
         continue
     target = (project_dir / rel).resolve()
     if not target.exists():
         continue
     clones.append({"name": name, "path": rel})
-# Prompts do produto (sem abrir o meta-repo inteiro).
 prompts = project_dir / "prompts"
 if prompts.is_dir():
     clones.append({"name": "prompts", "path": "prompts"})
 raw["folders"] = clones
-settings = raw.setdefault("settings", {})
-# Sem meta-repo não precisamos exclude/ignore de outros produtos aqui.
+raw.setdefault("settings", {})
 text = json.dumps(raw, indent=2) + "\n"
-# Só grava se mudou — rewrite a cada ensure faz o Cursor recarregar o workspace.
 if dest.is_file() and dest.read_text(encoding="utf-8") == text:
     pass
 else:
@@ -334,71 +507,72 @@ PY
     printf '%s\n' "$dest"
 }
 
-# Aponta a pasta api-main do .code-workspace para o worktree do card.
-# Problema: o workspace listava ~/git/olie/api-main (clone compartilhado), mas o
-# compose monta ~/.local/share/.../worktree/api-main — editar o worktree era
-# "fora do workspace" e o Cursor pedia permissão a cada Write.
+# Olie: .code-workspace = só worktrees do card (CLONE_REPOS + meta + e2e).
+# Sem clones shared e sem pasta api-main (shared).
 workvm_host_card_bind_workspace_worktree() {
     local project="$1"
     local workspace="$2"
     local dir="$3"
-    local wt_api shared_api
+    local wt_root
 
     [ "$project" = "olie" ] || return 0
     [ -f "$workspace" ] || return 0
-    wt_api="${dir}/worktree/api-main"
-    [ -d "$wt_api" ] || return 0
-    shared_api="$(workvm_host_card_api_src)"
+    wt_root="${dir}/worktree"
+    [ -d "$wt_root" ] || return 0
 
-    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_API="$wt_api" \
-        WORKVM_HC_SHARED_API="$shared_api" python3 <<'PY'
+    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_ROOT="$wt_root" python3 <<'PY'
 import json, os
 from pathlib import Path
 ws = Path(os.environ["WORKVM_HC_WS"])
-wt = Path(os.environ["WORKVM_HC_WT_API"]).resolve()
-shared = Path(os.environ["WORKVM_HC_SHARED_API"]).resolve()
-raw = json.loads(ws.read_text(encoding="utf-8"))
+root = Path(os.environ["WORKVM_HC_WT_ROOT"]).resolve()
+# Ordem estável: produto primeiro; meta-repo por último (não roubar o foco).
+order = [
+    "api-main",
+    "olie-fronts",
+    "backoffice",
+    "landing",
+    "docker-workspace",
+    "websocket",
+    "docs",
+]
 folders = []
-for ent in raw.get("folders", []):
-    name = (ent.get("name") or "").lower()
-    path = ent.get("path") or ""
-    # Replace shared/relative api-main with absolute card worktree.
-    if name == "api-main" or path.rstrip("/").endswith("api-main"):
-        folders.append({"name": "api-main", "path": str(wt)})
+seen = set()
+for name in order:
+    p = root / name
+    if p.is_dir() and ((p / ".git").exists()):
+        folders.append({"name": name, "path": str(p)})
+        seen.add(name)
+e2e = root / "git" / "olie" / "olie-e2e"
+if e2e.is_dir():
+    folders.append({"name": "olie-e2e", "path": str(e2e)})
+meta = root / "git"
+if meta.is_dir() and ((meta / ".git").exists()):
+    folders.append({"name": "git", "path": str(meta)})
+# Qualquer outro worktree sob root/ (futuro).
+for p in sorted(root.iterdir()):
+    if not p.is_dir() or p.name in seen or p.name == "git":
         continue
-    folders.append(ent)
-# Cursor SCM: worktree "órfão" (kind=worktree sem o repo pai aberto) NÃO
-# aparece na lista — o Git abre, o painel omite. Incluir o clone shared com
-# nome explícito para o worktree mostrar; editar sempre o worktree (1º).
-has_shared = any(
-    (e.get("name") or "").lower() in ("api-main (shared)", "api-main-shared")
-    or Path(e.get("path") or "").resolve() == shared
-    for e in folders
-)
-if shared.is_dir() and not has_shared:
-    folders.append({"name": "api-main (shared)", "path": str(shared)})
+    if (p / ".git").exists():
+        folders.append({"name": p.name, "path": str(p)})
+raw = {}
+if ws.is_file():
+    try:
+        raw = json.loads(ws.read_text(encoding="utf-8"))
+    except Exception:
+        raw = {}
 raw["folders"] = folders
 settings = raw.setdefault("settings", {})
-# Nunca ignorar o shared: ignore esconde o worktree no SCM também.
-ignored = [
-    p
-    for p in (settings.get("git.ignoredRepositories") or [])
-    if Path(p).resolve() != shared
-]
-settings["git.ignoredRepositories"] = ignored
-# Pai (shared) já é pasta do workspace — não auto-descobrir outros worktrees.
 settings["git.detectWorktrees"] = False
+settings["git.autoRepositoryDetection"] = False
+settings["git.ignoredRepositories"] = []
 settings.pop("git.repositoryScanIgnoredFolders", None)
-exclude = dict(settings.get("files.exclude") or {})
-exclude.pop("olie/api-main", None)
-settings["files.exclude"] = exclude
 text = json.dumps(raw, indent=2) + "\n"
 old = ws.read_text(encoding="utf-8") if ws.is_file() else None
 if old == text:
-    print(f"workvm-host-card: workspace api-main já é {wt}", file=__import__("sys").stderr, flush=True)
+    print(f"workvm-host-card: workspace já é só worktrees em {root}", file=__import__("sys").stderr, flush=True)
 else:
     ws.write_text(text, encoding="utf-8")
-    print(f"workvm-host-card: workspace api-main → {wt}", file=__import__("sys").stderr, flush=True)
+    print(f"workvm-host-card: workspace → {len(folders)} worktrees em {root}", file=__import__("sys").stderr, flush=True)
 PY
 }
 
@@ -819,12 +993,19 @@ workvm_host_card_ensure() {
             workvm_host_card_set_boost_container "$id"
             workvm_host_card_set_e2e_container "$id" 2>/dev/null || true
         fi
-        # SCM: worktree fora de visibleRepositories (Explorer ok, Source Control vazio).
-        workvm_close_cursor_workspace "$workspace" || true
-        workvm_host_card_ensure_scm_repos_visible "$workspace" "${dir}/worktree/api-main"
-        # --new-window: two cards share front clones; without -n Cursor reuses one window.
-        workvm_open_cursor "$workspace" --new-window \
-            || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"
+        # Janela já aberta (colleague review / resume no próprio card): só foca.
+        # Fechar+reabrir aqui derrubava o chat no meio do ensure (hack SCM).
+        # O close+SCM fica no `workvm-host-card open`, quando o usuário pede.
+        if workvm_cursor_workspace_open "$workspace"; then
+            workvm_focus_cursor_workspace "$workspace" || true
+            workvm_host_card_log "Cursor já aberto para $(basename "$workspace") — focus (sem close)"
+        else
+            workvm_close_cursor_workspace "$workspace" || true
+            workvm_host_card_ensure_scm_repos_visible "$workspace" "${dir}/worktree/api-main"
+            # --new-window: two cards share front clones; without -n Cursor reuses one window.
+            workvm_open_cursor "$workspace" --new-window \
+                || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"
+        fi
     fi
 
     local dns_slug api_dns front_dns
@@ -942,14 +1123,11 @@ workvm_host_card_destroy() {
     # Colleague review deixa api-main/olie-fronts na branch do card; volta à base.
     workvm_host_card_restore_clone_bases "$project" "$id" || true
 
-    # Depois do teardown: fecha a janela Cursor deste card (Hyprland).
-    # shellcheck source=session.sh
-    source "$(workvm_host_card_meta_repo)/lib/session.sh"
-    if [ -n "$workspace" ]; then
-        workvm_close_cursor_workspace "$workspace" || true
-    else
-        workvm_close_cursor_workspace "${id}.code-workspace" || true
-    fi
+    # Não fecha a janela Cursor: finish/finalize roda dentro dela — close no
+    # meio do prompt dispara o diálogo “prompts running”. O humano fecha à mão.
+    workvm_host_card_log "teardown ok ($id) — pode fechar manualmente a janela Cursor deste card"
+    printf 'close_cursor=manual\n'
+    printf 'hint=Pode fechar a janela Cursor deste card agora (não fechamos automaticamente).\n'
 }
 
 # Volta clones compartilhados à branch do project.conf (ex. develop).

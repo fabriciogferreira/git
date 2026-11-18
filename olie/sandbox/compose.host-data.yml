@@ -1,0 +1,74 @@
+# Dados compartilhados dos host-cards Olie (1 MySQL + 1 Redis + 1 Mongo no jarvis).
+# Problema: N cards × (mysql/redis/mongo) estourava RAM; cada card só precisa de
+# database/prefixo próprio. Imagens e opções espelham
+# olie/docker-workspace/docker-compose.yml (mysql:8.4, mongo:5, redis-stack).
+#
+# Projeto fixo: hc-olie-data. Rede externa: hc-olie-data.
+# Cards entram nessa rede e usam olie-hc-mysql / olie-hc-redis / olie-hc-mongo.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: olie-hc-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: sandbox
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: api_main
+      MYSQL_USER: sandbox
+      MYSQL_PASSWORD: sandbox
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    command:
+      - --log_bin_trust_function_creators=1
+      - --skip-name-resolve
+      - --max_connections=500
+    volumes:
+      - hc_olie_mysql:/var/lib/mysql
+      - ${SB_HOST_DATA_INIT}:/docker-entrypoint-initdb.d:ro
+    networks: [hc_olie_data]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-psandbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo:
+    image: mongo:5
+    container_name: olie-hc-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: sandbox
+      MONGO_INITDB_ROOT_PASSWORD: sandbox
+      MONGO_INITDB_DATABASE: api_main
+    volumes:
+      - hc_olie_mongo:/data/db
+    networks: [hc_olie_data]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    # Mesma família do docker-workspace (redis-stack, não redis:7-alpine do slim).
+    image: redis/redis-stack-server:latest
+    container_name: olie-hc-redis
+    command: redis-server --protected-mode no
+    volumes:
+      - ${SB_HOST_DATA_REDIS_CONF}:/etc/redis-stack.conf:ro
+    networks: [hc_olie_data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+networks:
+  hc_olie_data:
+    name: hc-olie-data
+    driver: bridge
+
+volumes:
+  hc_olie_mysql:
+    name: hc-olie-data_mysql
+  hc_olie_mongo:
+    name: hc-olie-data_mongo

@@ -2,6 +2,7 @@
 # Problema: ensure precisava de API isolada e browser em
 # devframe.{slug}.olie.localhost sem colidir entre cards.
 # Sourced by lib/host-card.sh — define workvm_host_card_ensure_hook.
+# Shared data: olie/sandbox/host-card-shared-data.sh
 
 # Para olie-e2e que ficou Up com o stack do card morto (app não running).
 # Problema: restart unless-stopped / reboot do Docker deixava só o e2e vivo.
@@ -37,12 +38,14 @@ workvm_host_card_ensure_hook() {
     source "${meta_repo}/olie/sandbox/project.sh"
     # shellcheck source=/dev/null
     source "${meta_repo}/lib/host-card-proxy.sh"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/olie/sandbox/host-card-shared-data.sh"
 
     compose_dir="${dir}/compose"
-    # Clone compartilhado só para fronts; api-main/vendor são por card.
-    local clone_root card_wt
+    # Base = clones em ~/git/olie; runtime = worktrees do card (+ vendor/nm).
+    local clone_root card_wt fronts_base
     clone_root="${git_root}/olie"
-    fronts="${clone_root}/olie-fronts"
+    fronts_base="${clone_root}/olie-fronts"
     card_wt="${dir}/worktree"
     port_base="$(python3 -c "import json;print(json.load(open('${dir}/meta.json'))['port_base'])")"
     code="$(python3 -c "import json;print(json.load(open('${dir}/meta.json'))['code'])")"
@@ -52,29 +55,39 @@ workvm_host_card_ensure_hook() {
         workvm_host_card_log "clone ausente: ${clone_root}/api-main (rode project-setup olie no host)"
         return 1
     fi
-    if [ ! -d "$fronts" ]; then
-        workvm_host_card_log "clone ausente: ${fronts}"
+    if [ ! -d "$fronts_base" ]; then
+        workvm_host_card_log "clone ausente: ${fronts_base}"
         return 1
     fi
 
-    # Passa o código para o worktree já nascer/retomar na branch do card.
-    workvm_host_card_prepare_api_isolation "$dir" "$code" || return 1
+    # Worktrees de todos os CLONE_REPOS + meta; vendor/nm a partir da base.
+    workvm_host_card_prepare_olie_isolation "$dir" "$code" || return 1
     wt="$card_wt"
+    fronts="${card_wt}/olie-fronts"
     api_vendor="${dir}/vendor"
+    if [ ! -d "$fronts" ]; then
+        workvm_host_card_log "olie-fronts worktree ausente: $fronts"
+        return 1
+    fi
     if [ ! -f "${api_vendor}/autoload.php" ]; then
         workvm_host_card_log "vendor do card ausente: ${api_vendor}"
         return 1
     fi
 
     workvm_sandbox_olie_ensure_sandbox_image || return 1
+    workvm_host_card_olie_ensure_shared_data || return 1
+    workvm_host_card_olie_provision_card_databases "$dns_slug" || return 1
 
-    # Per-card Vite env (urls DNS); base from .env.development
+    # Per-card Vite env (urls DNS); template from worktree (tracked) or base.
     front_env="${dir}/front.env.development.local"
     WORKVM_HC_SRC="${fronts}/packages/management/.env.development" \
+        WORKVM_HC_SRC_FALLBACK="${fronts_base}/packages/management/.env.development" \
         WORKVM_HC_DEST="$front_env" WORKVM_HC_SLUG="$dns_slug" python3 <<'PY'
 import os
 from pathlib import Path
 src = Path(os.environ["WORKVM_HC_SRC"])
+if not src.is_file():
+    src = Path(os.environ.get("WORKVM_HC_SRC_FALLBACK") or "")
 dest = Path(os.environ["WORKVM_HC_DEST"])
 slug = os.environ["WORKVM_HC_SLUG"]
 lines = src.read_text(encoding="utf-8").splitlines() if src.is_file() else []
@@ -115,9 +128,10 @@ PY
         app_key="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     fi
 
-    local e2e_dir="${meta_repo}/olie/olie-e2e"
+    # e2e no worktree do meta-repo do card (não o ~/git ao vivo).
+    local e2e_dir="${card_wt}/git/olie/olie-e2e"
     if [ ! -d "$e2e_dir" ]; then
-        workvm_host_card_log "olie-e2e ausente: $e2e_dir"
+        workvm_host_card_log "olie-e2e ausente no meta worktree: $e2e_dir"
         return 1
     fi
     # O container grava relatório com outro uid (igual project-start e2e).
@@ -128,12 +142,18 @@ PY
     cp -f "${meta_repo}/olie/sandbox/compose.slim.yml" "$compose_dir/compose.yaml"
     cp -f "${meta_repo}/olie/sandbox/compose.gui.yml" "$compose_dir/compose.gui.yml"
     cp -f "${meta_repo}/olie/sandbox/compose.front.yml" "$compose_dir/compose.front.yml"
-    # MySQL rápido para Pest -p no jarvis (tmpfs + tunings); ver compose.mysql-host.yml
-    cp -f "${meta_repo}/olie/sandbox/compose.mysql-host.yml" "$compose_dir/compose.mysql-host.yml"
+    # Shared MySQL/Redis/Mongo (compose.host-data) — sem mysql por card.
+    cp -f "${meta_repo}/olie/sandbox/compose.host-card-shared-data.yml" \
+        "$compose_dir/compose.host-card-shared-data.yml"
     # Playwright MCP + suite — mesmo image olie/e2e da WorkVM
     cp -f "${meta_repo}/olie/sandbox/compose.e2e-host.yml" "$compose_dir/compose.e2e-host.yml"
 
     local pname="hc-${id}"
+    local db_suffix api_db testing_db redis_prefix
+    db_suffix="$(workvm_host_card_olie_db_suffix "$dns_slug")"
+    api_db="api_${db_suffix}"
+    testing_db="testing_${db_suffix}"
+    redis_prefix="hc_${db_suffix}_"
     {
         printf 'COMPOSE_PROJECT_NAME=%s\n' "$pname"
         printf 'SB_WORKTREE=%s\n' "$wt"
@@ -142,15 +162,18 @@ PY
         printf 'SB_FRONT_ENV=%s\n' "$front_env"
         printf 'SB_E2E=%s\n' "$e2e_dir"
         printf 'SB_DNS_SLUG=%s\n' "$dns_slug"
-        printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/mysql-init"
+        printf 'SB_DB_DATABASE=%s\n' "$api_db"
+        printf 'SB_MONGO_DATABASE=%s\n' "$api_db"
+        printf 'SB_REDIS_PREFIX=%s\n' "$redis_prefix"
+        printf 'SB_TESTING_DATABASE=%s\n' "$testing_db"
+        # Placeholder: slim ainda interpola SB_MYSQL_INIT no serviço mysql
+        # (profile unused); path vazio quebra o compose validate.
+        printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/host-data-init"
         workvm_host_card_write_resource_env
-        printf 'SB_MYSQL_BUFFER=%s\n' "${WORKVM_HOST_CARD_MYSQL_BUFFER:-4G}"
-        printf 'SB_MYSQL_MAX_CONN=%s\n' "${WORKVM_HOST_CARD_MYSQL_MAX_CONN:-500}"
-        printf 'SB_MYSQL_TMPFS_SIZE=%s\n' "${WORKVM_HOST_CARD_MYSQL_TMPFS:-8g}"
         printf 'SB_PORT_API=%s\n' "$port_base"
         printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
         printf 'APP_KEY=%s\n' "$app_key"
-        printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml:compose.e2e-host.yml\n'
+        printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.host-card-shared-data.yml:compose.e2e-host.yml\n'
     } >"$compose_dir/.env"
 
     workvm_host_card_apply_compose_limits "$compose_dir"
@@ -205,18 +228,19 @@ services:
       RECAPTCHA_SECRET: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
 EOF
     # shellcheck disable=SC2016
-    sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.mysql-host.yml:compose.e2e-host.yml:compose.appkey.yml|' \
+    sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.host-card-shared-data.yml:compose.e2e-host.yml:compose.appkey.yml|' \
         "$compose_dir/.env"
 
-    python3 - "$dir/meta.json" "$pname" "$compose_dir" "$dns_slug" "$port_base" "$wt" "$api_vendor" <<'PY'
+    python3 - "$dir/meta.json" "$pname" "$compose_dir" "$dns_slug" "$port_base" "$wt" "$api_vendor" \
+        "$api_db" "$testing_db" "$redis_prefix" <<'PY'
 import json, sys
-path, pname, compose_dir, slug, port_base, wt, vendor = sys.argv[1:8]
+path, pname, compose_dir, slug, port_base, wt, vendor, api_db, testing_db, redis_prefix = sys.argv[1:11]
 port_base = int(port_base)
 with open(path, encoding="utf-8") as f:
     meta = json.load(f)
 meta["compose_project"] = pname
 meta["compose_dir"] = compose_dir
-meta["stack"] = "olie-slim+front"
+meta["stack"] = "olie-slim+front+shared-data"
 meta["dns_slug"] = slug
 meta["api_dns"] = f"http://api.{slug}.olie.localhost"
 meta["front_dns"] = f"http://devframe.{slug}.olie.localhost"
@@ -224,6 +248,10 @@ meta["api_url"] = f"http://127.0.0.1:{port_base}"
 meta["front_url"] = f"http://127.0.0.1:{port_base + 1}"
 meta["api_worktree"] = wt
 meta["api_vendor"] = vendor
+meta["db_database"] = api_db
+meta["testing_database"] = testing_db
+meta["redis_prefix"] = redis_prefix
+meta["shared_data"] = "hc-olie-data"
 with open(path, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
     f.write("\n")
@@ -291,25 +319,28 @@ workvm_host_card_olie_migrate_seed() {
         set +a
         export COMPOSE_PROJECT_NAME="$pname"
 
-        workvm_host_card_log "aguardando MySQL…"
+        workvm_host_card_log "aguardando MySQL compartilhado (olie-hc-mysql)…"
         for i in $(seq 1 60); do
-            if docker compose --profile slim exec -T mysql \
-                mysqladmin ping -h 127.0.0.1 -psandbox --silent 2>/dev/null; then
+            if docker exec olie-hc-mysql mysqladmin ping -h 127.0.0.1 -psandbox --silent 2>/dev/null; then
                 break
             fi
             sleep 2
             if [ "$i" -eq 60 ]; then
-                workvm_host_card_log "MySQL não ficou healthy a tempo"
+                workvm_host_card_log "olie-hc-mysql não ficou healthy a tempo"
                 exit 1
             fi
         done
 
+        # Shared DB novo pode estar vazio mesmo com meta db_seeded=1 (migração do modelo antigo).
+        db_name="${SB_DB_DATABASE:-api_main}"
+        tables="$(docker exec olie-hc-mysql mysql -uroot -psandbox -N -e \
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${db_name}'" 2>/dev/null || echo 0)"
         seeded="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('db_seeded') or 0)" 2>/dev/null || echo 0)"
-        if [ "$seeded" = "1" ]; then
-            workvm_host_card_log "migrate (banco já seedado)"
+        if [ "$seeded" = "1" ] && [ "${tables:-0}" -gt 0 ] 2>/dev/null; then
+            workvm_host_card_log "migrate (banco já seedado: $db_name)"
             docker compose --profile slim exec -T app php artisan migrate --force
         else
-            workvm_host_card_log "migrate --seed (banco vazio; memory_limit=1G)"
+            workvm_host_card_log "migrate --seed (banco vazio: $db_name; memory_limit=1G)"
             docker compose --profile slim exec -T app \
                 php -d memory_limit=1G artisan migrate --seed --force
             python3 - "$dir/meta.json" <<'PY'

@@ -62,14 +62,30 @@ Sem destroy automático confiável, a política de limpeza manual **não** basta
 ### 4. Uma janela Cursor por unidade
 
 - Abrir `cursor <workspace-do-card-ou-projeto>` (mesmo espírito de `workvm_open_cursor`).
-- Roots do workspace apontam meta-repo + clones compartilhados (edição).
-- **Runtime Olie:** cada card tem `state_dir/worktree/api-main` (git worktree) +
-  `state_dir/vendor` (rsync do vendor). Compose/`Pest -p` usam esses paths —
-  dois cards podem rodar a suite em paralelo sem corromper o clone.
-  No `ensure`, se já existir branch local/remota cujo nome contém o código do
-  card (ex. `feature/DOP-1273-…`), o worktree faz checkout nela; o clone
-  compartilhado `~/git/olie/api-main` permanece na base (`develop`).
 - Janelas distintas isolam chat/foco; **não** isolam sozinhas `~/.cursor/mcp.json` — ver §5.
+
+#### Worktrees e workspace (contrato)
+
+**Alvo:** um **git worktree por repositório por card**, mais um worktree do
+meta-repo `~/git`. O `.code-workspace` do card abre **só** esses worktrees
+(nenhum clone “pai” / `(shared)` só para o SCM).
+
+| Fase | O quê |
+| --- | --- |
+| **Hoje (Olie)** | Worktree de **todos** os `CLONE_REPOS` + meta-repo `~/git` por card; workspace **só** esses paths (sem `(shared)`). `vendor` / `node_modules` via reflink (btrfs) ou rsync a partir da base em `~/git/olie/…`. Compose monta worktree `api-main` + `olie-fronts` + e2e do meta worktree. **Dados:** 1× MySQL/Redis/Mongo compartilhados (`hc-olie-data`, imagens ≈ `docker-workspace`); por card só `api_<slug>` / `testing_<slug>` / `REDIS_PREFIX`. |
+| **Depois** | Restringir worktree aos repos **prováveis** do card (não o fan-out inteiro). Lista/heurística TBD. |
+| **Mais tarde** | Polir isolamento `vendor` / `node_modules` (golden, skip yarn no front se já copiado, etc.). |
+
+Regras estáveis:
+
+- No `ensure`, se já existir branch local/remota cujo nome contém o código do
+  card (ex. `feature/DOP-1273-…`), o worktree desse repo faz checkout nela; os
+  clones sob `~/git/<projeto>/…` e o `~/git` “ao vivo” ficam na branch base
+  (ex. `develop` / `main`) e não são roots do workspace do card.
+- A mesma branch git só pode estar checked out em **um** worktree — cards em
+  paralelo usam cada um a sua `feature/…` (ou detached), não todos em `develop`.
+- Compose / Pest no Olie já montam o worktree + vendor do card; os demais
+  projetos seguem o mesmo espírito quando ganharem hook.
 
 ### 5. MCP: roteamento, não token por janela
 
@@ -159,7 +175,7 @@ falsos) é sandbox do agente, não chmod — ver **Host card environment** nos
 | Início de qualquer trigger acima | `ensure` **antes** de git/stage/review pesado |
 | Fim de um dia / fechar o chat | **não** destroy — o estado fica |
 | Card em `done` / 'concluído' (ex. production-review Pass + yes) | `destroy` depois do move confirmado |
-| Chat `finish card` / `finalize card` | `destroy` + fecha janela Cursor + clones compartilhados → branch base (`develop`/…) (não mexe no board) |
+| Chat `finish card` / `finalize card` | `destroy` + clones → branch base; **não** fecha Cursor (usuário fecha à mão após o hint) |
 | Colleague-review / correction terminam o paste | **não** destroy — o card ainda vive no funil |
 
 Não misturar domain libvirt do mesmo código com host-card sem regra explícita.
@@ -182,11 +198,16 @@ Hooks (compose slim + Cursor):
 `WORKVM_HOST_CARD_OPEN_CURSOR=0` pula abrir o Cursor. Default: abre
 `<id>.code-workspace` com `cursor --new-window`. No Olie, a pasta `api-main`
 do workspace é o **worktree do card** (não o clone compartilhado), para o
-agente editar in-workspace o mesmo path que o compose monta.
+agente editar in-workspace o mesmo path que o compose monta. Transição:
+ver §4 — worktree de todos os repos + meta-repo; depois só os prováveis;
+`vendor` / `node_modules` depois.
 
 `ensure` faz **clone/pull** dos `CLONE_REPOS` do `project.conf` (igual à
 WorkVM: fronts, backoffice, landing, …) e monta o workspace só com os
 roots que existem (mesma lista do `workspace.code-workspace` do projeto).
+Clones sob `~/git/<projeto>/` continuam a fonte dos `git worktree add`; o
+workspace do card deve apontar para `state_dir/worktree/…`, não para esses
+clones (alvo §4).
 
 Mutation/Pest exclusive **continuam** em `workvm-sandbox` filho (worktree
 detach) — o host-card não substitui o shard.
@@ -196,7 +217,10 @@ detach) — o host-card não substitui o shard.
 1. ~~Formalizar id + port_base~~ (CLI `ensure`).  
 2. ~~Hook compose slim (Olie + Televisão)~~ + Cursor no ensure.  
 3. Hook Locav (quando houver compose slim).  
-4. Segundo card em paralelo (smoke de colisão).  
-5. Sandbox filho (mutation) em cima do card host.  
-6. ~~Opbed como unidade projeto (`--project opbed`)~~ + compose host.  
-7. Desligar Card VM no agent quando §9 estiver verde.
+4. ~~**Worktree de todos os `CLONE_REPOS` + meta-repo `~/git` por card** (Olie)~~; workspace só esses paths; sem `(shared)`.  
+5. Restringir worktree aos repos **prováveis** do card (heurística TBD).  
+6. Polir `vendor` / `node_modules` (golden / skip install redundante).  
+7. Segundo card em paralelo (smoke de colisão).  
+8. Sandbox filho (mutation) em cima do card host.  
+9. ~~Opbed como unidade projeto (`--project opbed`)~~ + compose host.  
+10. Desligar Card VM no agent quando §9 estiver verde.
