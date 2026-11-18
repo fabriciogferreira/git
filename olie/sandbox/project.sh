@@ -72,6 +72,12 @@ workvm_sandbox_olie_write_env() {
     else
         printf 'APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n' >"$dest_env"
     fi
+    # KEY= vazio: Laravel trata env() como setado → config perde o default
+    # (ex. META_GRAPH_URL= → graph_url '' em vez de graph.facebook.com).
+    # Só na cópia do sandbox; não mexe no .env do clone/card.
+    if [ -f "$dest_env" ]; then
+        sed -i -E '/^[A-Z][A-Z0-9_]*=[[:space:]]*$/d' "$dest_env"
+    fi
     # Força hosts do compose slim (não o stack da Card VM).
     local key val
     for key in \

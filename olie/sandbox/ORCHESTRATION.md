@@ -13,6 +13,10 @@ Card (`olie-{code}`), sem clonar outra VM.
 CLI: `~/git/bin/workvm-sandbox`. Compose slim: `olie/sandbox/` (mesmo contrato
 da Televisão em `televisao/sandbox/`).
 
+**`.env` do sandbox:** `workvm_sandbox_olie_write_env` remove linhas `KEY=`
+vazias na cópia (ex. `META_GRAPH_URL=`). Laravel trata env vazio como setado e
+o default de `config()` some — baselines vermelhas no dispatcher.
+
 Prompts: `colleague-review.md` (disparador) → paralelo
 `colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
 `coverage-testing.md` (quando há backend). Scoreboard + **Colleague review

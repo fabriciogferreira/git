@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Sandbox: strip `KEY=` vazio no `.env` (META_GRAPH_URL=)
+
+- **problema:** `.env` do card com `META_GRAPH_URL=` (e outras `KEY=`) ia para o sandbox; `env()` via como setado → `graph_url` `''` em vez do default Meta.
+- **por que é um problema:** baselines Pest vermelhas no colleague review; minutos de strip manual (DOP-1281 ~2 min + re-runs).
+- **resolvido como:** `sed` em `workvm_sandbox_olie_write_env` remove `^[A-Z][A-Z0-9_]*=\s*$` só na cópia do sandbox. Bench DOP-1183: before fail (`''` vs `https://graph.facebook.com`, ~96s); after 1ª baseline verde sem intervenção.
+
 ## Host-card: olie-e2e não fica Up com o card morto
 
 - **problema:** `olie-e2e` tinha `restart: unless-stopped`; após reboot/kill do Docker o app ficava Exited e o e2e voltava sozinho.
