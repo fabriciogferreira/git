@@ -86,6 +86,9 @@ Regras estáveis:
   paralelo usam cada um a sua `feature/…` (ou detached), não todos em `develop`.
 - Compose / Pest no Olie já montam o worktree + vendor do card; os demais
   projetos seguem o mesmo espírito quando ganharem hook.
+- Playwright privado: gravar só na pasta **`olie-e2e` do workspace** (meta
+  worktree do card). `~/git/olie/olie-e2e` fica fora da janela e dispara
+  aprovação de escrita; ensure injeta rule `host-card-e2e-path.mdc`.
 
 ### 5. MCP: roteamento, não token por janela
 

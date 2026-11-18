@@ -42,13 +42,13 @@ Before deciding pass or fail, **review the card's media**. Do not judge from tex
 
 Do not edit product repositories. That includes `olie-fronts`, `api-main`, `backoffice`, `landing`, `docker-workspace`, and `websocket`.
 
-You may change only `~/git/olie/olie-e2e`. That tree is not part of the company remotes.
+You may change only the private Playwright suite (resolve the root per **Private E2E suites** / path resolution in `workflow-policy.md`: workspace folder `olie-e2e` on host-card, else `~/git/olie/olie-e2e`). That tree is not part of the company remotes.
 
 - If the author changed `olie-fronts`, add end-to-end tests there for the frontend behavior the card requested.
 - If those tests already exist and a requested point is uncovered, add the missing tests.
 - Do not rewrite tests that already cover the card.
 
-For `~/git/`, do not create a card branch. Commit and push the e2e changes (and new card media analyses under `olie/cards/`) directly to 'main'.
+For the meta-repo that owns that suite, do not create a card branch. Commit and push the e2e changes (and new card media analyses under `olie/cards/`) directly to 'main' (host-card: commit in the card’s meta `git` worktree, then push).
 
 Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy.md`.
 

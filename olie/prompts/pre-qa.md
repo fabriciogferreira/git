@@ -171,7 +171,7 @@ This pre-QA pass **must** commit and push meta-repo updates that belong to the c
 
 - `olie/prompts/` (including `mutation-ledger.md`)
 - `olie/cards/{CARD_CODE}/` media analyses
-- `olie/olie-e2e/` specs or helpers added for the card (commit them here; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
+- Private Playwright specs/helpers for the card (resolved `olie-e2e` root — workspace folder on host-card, else `olie/olie-e2e/`; commit them there; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
 - `HISTORICO.md` / other meta-repo docs touched for the same work
 
 Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.

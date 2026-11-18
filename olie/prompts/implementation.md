@@ -88,7 +88,7 @@ Document the findings that are relevant to implementation and testing. Do not mo
 
 ### 4.2. Test Coverage
 
-Before implementing the card, inspect the E2E test suite located at `~/git/olie/olie-e2e`.
+Before implementing the card, inspect the private E2E suite (resolve the root per **Private E2E suites** / path resolution in `workflow-policy.md`: workspace folder `olie-e2e` on host-card, else `~/git/olie/olie-e2e`).
 
 Determine whether the existing tests adequately cover the current behavior and the scenarios affected by the proposed changes.
 

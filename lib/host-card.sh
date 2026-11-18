@@ -449,23 +449,24 @@ workvm_host_card_write_workspace() {
     project_dir="$(dirname "$src")"
     dest="${project_dir}/${id}.code-workspace"
 
-    # Olie: stub; bind_workspace_worktree preenche só com worktrees do card
-    # (depois do ensure hook). Evita listar clones shared e o remendo (shared).
+    # Olie: stub só se o arquivo ainda não existe. Nunca zerar folders num
+    # resume — o Cursor hot-reloada o stub vazio com a janela aberta e o
+    # bind_workspace_worktree (depois do hook) preenche o disco sem a UI
+    # recarregar → Explorer/SCM vazios. Bind é a única escrita de folders.
     if [ "$project" = "olie" ]; then
         WORKVM_HC_DEST="$dest" python3 <<'PY'
 import json, os
 from pathlib import Path
 dest = Path(os.environ["WORKVM_HC_DEST"])
-raw = {
-    "folders": [],
-    "settings": {
-        "git.detectWorktrees": False,
-        "git.autoRepositoryDetection": False,
-    },
-}
-text = json.dumps(raw, indent=2) + "\n"
-if not (dest.is_file() and dest.read_text(encoding="utf-8") == text):
-    dest.write_text(text, encoding="utf-8")
+if not dest.is_file():
+    raw = {
+        "folders": [],
+        "settings": {
+            "git.detectWorktrees": False,
+            "git.autoRepositoryDetection": False,
+        },
+    }
+    dest.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
 PY
         printf '%s\n' "$dest"
         return 0
@@ -505,6 +506,59 @@ else:
     dest.write_text(text, encoding="utf-8")
 PY
     printf '%s\n' "$dest"
+}
+
+# Rule alwaysApply no meta/e2e do card: specs vão no worktree, não em ~/git/olie/olie-e2e
+# (fora do workspace → pedido de permissão). Arquivo local + exclude; sem commit.
+workvm_host_card_write_olie_e2e_path_rule() {
+    local dir="$1"
+    local meta_wt e2e_wt rule_rel rule_body dest parent exclude
+
+    meta_wt="${dir}/worktree/git"
+    e2e_wt="${meta_wt}/olie/olie-e2e"
+    rule_rel=".cursor/rules/host-card-e2e-path.mdc"
+    rule_body="$(cat <<'EOF'
+---
+description: Host-card — write private Playwright under workspace olie-e2e, not ~/git/olie/olie-e2e
+alwaysApply: true
+---
+
+# Host-card: olie-e2e path
+
+This window is a **host-card** workspace. The private Playwright suite is the
+workspace folder named **`olie-e2e`** (this card’s meta worktree), not
+`~/git/olie/olie-e2e`.
+
+- Create/update specs only under that `olie-e2e` folder (e.g. `tests/features/…`).
+- Do **not** write to `~/git/olie/olie-e2e` or `/home/**/git/olie/olie-e2e` —
+  those paths are outside this workspace and trigger permission prompts.
+- When a prompt says `~/git/olie/olie-e2e`, resolve it to this workspace
+  `olie-e2e` folder instead (**Private E2E suites** / path resolution in
+  `workflow-policy.md`).
+EOF
+)"
+
+    for parent in "$e2e_wt" "$meta_wt"; do
+        [ -d "$parent" ] || continue
+        dest="${parent}/${rule_rel}"
+        mkdir -p "$(dirname "$dest")"
+        if [ ! -f "$dest" ] || [ "$(cat "$dest")" != "$rule_body" ]; then
+            printf '%s\n' "$rule_body" >"$dest"
+        fi
+        exclude="${parent}/.git/info/exclude"
+        if [ -f "${parent}/.git" ]; then
+            # worktree: .git is a file → info/exclude lives in the main repo; use
+            # the worktree's git dir from `git rev-parse --git-dir`.
+            exclude="$(git -C "$parent" rev-parse --git-dir 2>/dev/null)/info/exclude"
+        fi
+        if [ -n "$exclude" ] && [ -d "$(dirname "$exclude")" ]; then
+            mkdir -p "$(dirname "$exclude")"
+            if [ ! -f "$exclude" ] || ! grep -qxF "$rule_rel" "$exclude" 2>/dev/null; then
+                printf '%s\n' "$rule_rel" >>"$exclude"
+            fi
+        fi
+    done
+    workvm_host_card_log "rule host-card-e2e-path → worktree olie-e2e/meta"
 }
 
 # Olie: .code-workspace = só worktrees do card (CLONE_REPOS + meta + e2e).
@@ -983,7 +1037,12 @@ workvm_host_card_ensure() {
     fi
 
     # Depois do worktree: api-main no .code-workspace = path do card (não o clone).
-    workvm_host_card_bind_workspace_worktree "$project" "$workspace" "$dir" || true
+    if [ "$project" = "olie" ]; then
+        workvm_host_card_write_olie_e2e_path_rule "$dir" || true
+    fi
+    if ! workvm_host_card_bind_workspace_worktree "$project" "$workspace" "$dir"; then
+        workvm_host_card_log "bind_workspace_worktree falhou (workspace pode ficar sem folders)"
+    fi
 
     if [ "${WORKVM_HOST_CARD_OPEN_CURSOR:-1}" != "0" ] && [ -f "$workspace" ]; then
         # shellcheck source=session.sh
@@ -996,7 +1055,11 @@ workvm_host_card_ensure() {
         # Janela já aberta (colleague review / resume no próprio card): só foca.
         # Fechar+reabrir aqui derrubava o chat no meio do ensure (hack SCM).
         # O close+SCM fica no `workvm-host-card open`, quando o usuário pede.
-        if workvm_cursor_workspace_open "$workspace"; then
+        # Exceção: folders[] no disco (bug antigo / bind atrasado) — reabre senão
+        # Explorer/SCM ficam vazios até o próximo `open`.
+        local _folders_n=0
+        _folders_n="$(python3 -c "import json;print(len(json.load(open('$workspace')).get('folders') or []))" 2>/dev/null || echo 0)"
+        if workvm_cursor_workspace_open "$workspace" && [ "${_folders_n:-0}" -gt 0 ]; then
             workvm_focus_cursor_workspace "$workspace" || true
             workvm_host_card_log "Cursor já aberto para $(basename "$workspace") — focus (sem close)"
         else

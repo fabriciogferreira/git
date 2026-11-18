@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: e2e fora do workspace pedia permissão
+
+- **problema:** prompts apontavam `~/git/olie/olie-e2e`; no host-card essa pasta não é root do `.code-workspace` (só o worktree `…/worktree/git/olie/olie-e2e`) → create de spec pedia approve “fora do workspace”.
+- **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
+- **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
+
+## Host-card Olie: workspace vazio no resume (Explorer/SCM)
+
+- **problema:** `write_workspace` no ensure reescrevia o stub com `folders: []`; com a janela já aberta o Cursor hot-reloada o vazio; `bind_workspace_worktree` preenchia o disco depois e o ensure só focava → Explorer/SCM sem repos (ex. DOP-1276).
+- **por que é um problema:** card “aberto” sem worktrees na UI; parece isolamento quebrado.
+- **resolvido como:** stub só se o `.code-workspace` ainda não existe; bind continua sendo a escrita de folders; se folders ainda estiver vazio com janela aberta, ensure reabre.
+
 ## Host-card destroy: não fecha a janela Cursor
 
 - **problema:** `finish card` / `destroy` chamava `workvm_close_cursor_workspace` no fim do teardown; o agent ainda estava na janela do card → diálogo “prompts running”.

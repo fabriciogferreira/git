@@ -333,11 +333,20 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 ## Private E2E suites (olie-e2e — owner only)
 
-`~/git/olie/olie-e2e` is **personal WorkVM tooling**. It is not on the company remotes and other developers do not have those specs. Locav is the exception among EnterScience products: Cypress lives **inside** `locav-front` on the company branch, so Locav may cite its e2e in repos, PRs, and card content.
+The private Playwright suite is **personal WorkVM / host-card tooling**. It is not on the company remotes and other developers do not have those specs. Locav is the exception among EnterScience products: Cypress lives **inside** `locav-front` on the company branch, so Locav may cite its e2e in repos, PRs, and card content.
+
+### Path resolution (write here — avoid permission prompts)
+
+Prompts may still say `~/git/olie/olie-e2e`. **Resolve the writable root** before create/edit:
+
+1. If the open workspace has a folder named **`olie-e2e`**, use **that** folder (host-card: meta worktree under `~/.local/share/workvm/host-cards/olie/<id>/worktree/git/olie/olie-e2e`).
+2. Else use `~/git/olie/olie-e2e` (classic WorkVM multi-root with `~/git`).
+
+Never create specs under `~/git/olie/olie-e2e` when that path is **outside** the open workspace folders — Cursor will ask to approve a write outside the workspace. Prefer the in-workspace `olie-e2e` / meta `git` worktree so edits need no extra permission.
 
 For **Olie** (and any product whose Playwright suite lives only under the meta-repo):
 
-- Agents **may** add/run/commit Playwright under `~/git/olie/olie-e2e` on meta-repo `main` and mention results **only in Cursor chat**.
+- Agents **may** add/run/commit Playwright under the resolved e2e root (WorkVM: on meta-repo `main`; host-card: commit in the card’s meta worktree) and mention results **only in Cursor chat**.
 - Do **not** cite `olie-e2e`, Playwright meta specs, `~/git/olie/olie-e2e/...`, or “e2e coverage added in the meta-repo” in:
   - Olie project/card content (`save-media-tool`, description, form answers, tags notes)
   - Caderno / notebook pages
