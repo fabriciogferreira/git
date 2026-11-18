@@ -111,7 +111,7 @@ coverage o que importa é o `api-main` no tip.
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
 2. Cria **N** sandboxes `profile=mutation` (`N = min(restantes, 4)`, ou `2` se RAM apertada) **com** `--from-commit <tip do api-main do card>`. Opcional: `WORKVM_SANDBOX_MAX=N`.
 3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o mesmo sandbox para o próximo (rsync dirty; sem destroy entre arquivos do dreno).
-4. Em cada job: `--class` só das FQCN do **pool do change-set que aquele teste exercita** (não o pool inteiro em todo arquivo — ver `mutation-testing.md`; bench DOP-1281 ~1.6× no pesado).
+4. Em cada job: **um** `--class` por run (FQCN do pool que aquele teste exercita — não o pool inteiro; bench DOP-1281 ~1.6×). Multi-`--class` no mesmo `pest --mutate` é não confiável (R7: 0 files / só 1 file).
 
 ```bash
 # tip = git -C "$api_worktree/api-main" rev-parse HEAD  (host-card meta.json)

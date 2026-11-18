@@ -102,7 +102,7 @@ No dispatcher colleague, o prompt manda drenar o change-set. Com sandbox:
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
 2. Cria um **warm pool** de `N` sandboxes `profile=mutation`: `N = min(restantes, WORKVM_SANDBOX_MAX)` com padrão Televisão **2**, faixa útil **2–4** (baixar para 2 se RAM apertada; não abrir um por arquivo só porque o lote é grande — bench Olie DOP-1258: 2/4/6/8 ≈ mesmo wall).
-3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o slot para o próximo (rsync dirty).
+3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o slot para o próximo (rsync dirty). Em cada job: **um** `--class` (multi-`--class` não confiável — R7).
 4. Agrega ledger / findings; o dispatcher só então libera o outcome combinado. Destroy o pool ao fim do dreno.
 
 **Flake / deadlock:** 1 retry do mesmo comando no mesmo slot antes de Blocked (`mutation-testing.md`).

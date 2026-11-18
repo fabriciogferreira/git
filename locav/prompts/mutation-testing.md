@@ -81,7 +81,7 @@ Run the chosen file with the normal suite first:
 
 ## Mutate
 
-Pass **only that test’s scoped** production FQCNs via `--class=...` (change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool on every file.
+Pass **only that test’s scoped** production FQCNs via `--class=...` (change-set step 4). Prefer **one `--class` per mutate run** — multi-`--class` is unreliable (Olie R7 bench: 3→0 files; 2→often 1 file). Do **not** use `--everything`. Do **not** re-run the full change-set pool on every file. Wall ≈ mutant count; in-scope scoring does not shrink Pest’s covered set.
 
 **`--class` quoting (required):** `docker exec` passes argv without an inner shell. Pest must see `App\Services\Foo` (one `\`). Canonical: `'--class=App\Services\Foo'`. **Wrong:** `'--class=App\\Services\\Foo'` (double `\` → often `0 Mutations`); unquoted `App\…` (bash eats `\`).
 

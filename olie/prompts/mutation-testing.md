@@ -104,7 +104,7 @@ Run the chosen file with the normal suite first (sandbox job, or own-card fallba
 
 ## Mutate
 
-Pass **only that test’s scoped** production FQCNs via `--class=...` (see change-set step 4). Prefer **one `--class` per mutate run** when a prior multi-`--class` run produced `0 Mutations for 0 Files` (Pest quirk). Do **not** use `--everything`. Do **not** re-run the full change-set pool “for safety” on every file.
+Pass **only that test’s scoped** production FQCNs via `--class=...` (see change-set step 4). Prefer **one `--class` per mutate run** — multi-`--class` is unreliable (bench DOP-1183 / R7: three classes → `0 Mutations for 0 Files`; two classes → often only **one** file mutated). Do **not** use `--everything`. Do **not** re-run the full change-set pool “for safety” on every file. Wall scales with **mutant count** (~0.3s/mutant warm); in-scope ledger scoring does **not** shrink Pest’s covered-mutant set (R7).
 
 **`--class` quoting (required):** `job run` / `docker exec` pass argv **without** an inner shell. Pest must receive a single `\` between namespace segments (`App\Services\Foo`).
 

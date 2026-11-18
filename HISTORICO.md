@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Mutation: discovery R7 (por que o wall ainda é alto)
+
+- **problema:** mesmo com `--class` scoped / warm pool / R1–R6, o mutate ainda domina o colleague review (~54 min no DOP-1281).
+- **por que é um problema:** risco de gastar mais prompts “otimizando discovery” sem ganho.
+- **resolvido como:** bench DOP-1183 (`/tmp/dop1183-r7-mutate-discovery`): wall ≈ **~0,3s/mutante** quente; class gorda coberta (`AutomationRunInstance`) ~48s / 134 mutantes; multi-`--class` **quebrado** (3→0 files, 2→1 file) → obriga 1 class por run; `--covered-only` ≠ filtro in-scope (Pest ainda avalia todos os covered da class). **Sem** fix de prompt/CLI — alavanca real seria filtro por linha no Pest (upstream). Nota nos prompts mutation + ORCHESTRATION.
+
 ## Mutation: retry de deadlock/baseline flake + watchdog
 
 - **problema:** deadlock MySQL (`model_has_permissions`) / baseline flaky derrubava o shard; mutate sem exit prendia o slot do warm pool.
