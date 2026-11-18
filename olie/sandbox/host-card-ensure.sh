@@ -3,6 +3,26 @@
 # devframe.{slug}.olie.localhost sem colidir entre cards.
 # Sourced by lib/host-card.sh — define workvm_host_card_ensure_hook.
 
+# Para olie-e2e que ficou Up com o stack do card morto (app não running).
+# Problema: restart unless-stopped / reboot do Docker deixava só o e2e vivo.
+workvm_host_card_olie_stop_orphan_e2e() {
+    local root id meta app_st e2e_st
+    root="$(workvm_host_card_root)/olie"
+    [ -d "$root" ] || return 0
+    command -v docker >/dev/null 2>&1 || return 0
+
+    for meta in "$root"/*/meta.json; do
+        [ -f "$meta" ] || continue
+        id="$(basename "$(dirname "$meta")")"
+        app_st="$(docker inspect "hc-${id}-app-1" --format '{{.State.Running}}' 2>/dev/null || printf 'false')"
+        e2e_st="$(docker inspect "hc-${id}-olie-e2e-1" --format '{{.State.Running}}' 2>/dev/null || printf 'false')"
+        if [ "$e2e_st" = "true" ] && [ "$app_st" != "true" ]; then
+            workvm_host_card_log "e2e órfão (app down) → stop hc-${id}-olie-e2e-1"
+            docker stop "hc-${id}-olie-e2e-1" >/dev/null 2>&1 || true
+        fi
+    done
+}
+
 workvm_host_card_ensure_hook() {
     local id="$1"
     local dir="$2"
@@ -209,6 +229,9 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n")
 PY
 
+    # Outros cards: e2e não pode ficar Up se o app deles morreu.
+    workvm_host_card_olie_stop_orphan_e2e || true
+
     workvm_host_card_log "compose up ($pname profile=slim + front + olie-e2e)"
     (
         cd "$compose_dir"
@@ -220,6 +243,22 @@ PY
         # Sem --build: Compose V2 constrói olie/e2e só se a image não existir
         docker compose --profile slim up -d --remove-orphans
     ) || return 1
+
+    # Container antigo pode ainda ter unless-stopped — recreate só nesse caso.
+    local e2e_pol
+    e2e_pol="$(docker inspect "hc-${id}-olie-e2e-1" --format '{{.HostConfig.RestartPolicy.Name}}' 2>/dev/null || true)"
+    if [ "$e2e_pol" = "unless-stopped" ]; then
+        workvm_host_card_log "olie-e2e ainda unless-stopped → recreate (restart: no)"
+        (
+            cd "$compose_dir"
+            set -a
+            # shellcheck disable=SC1091
+            source .env
+            set +a
+            export COMPOSE_PROJECT_NAME="$pname"
+            docker compose --profile slim up -d --force-recreate --no-deps olie-e2e
+        ) || true
+    fi
 
     # MySQL do slim nasce vazio — login no front falha sem migrate/seed
     # (mesma ideia do post-clone.sh da WorkVM).

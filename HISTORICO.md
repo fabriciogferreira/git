@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: olie-e2e não fica Up com o card morto
+
+- **problema:** `olie-e2e` tinha `restart: unless-stopped`; após reboot/kill do Docker o app ficava Exited e o e2e voltava sozinho.
+- **por que é um problema:** RAM e Playwright MCP apontando para card sem stack; “finalizei o card” sem `destroy` deixava e2e vivo.
+- **resolvido como:** `restart: "no"` em `compose.e2e-host.yml`; `workvm_host_card_olie_stop_orphan_e2e` no ensure (para e2e Up com app down); recreate do e2e se o container antigo ainda tiver `unless-stopped`.
+
 ## Mutation/coverage: warm pool 2–4 (não 1 sandbox por arquivo)
 
 - **problema:** o dreno criava um sandbox (ou job) por `*Test.php` / `app/` file; com N grande o wall não caía e o shard pesado sofria contenção.

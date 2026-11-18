@@ -3,6 +3,8 @@
 # jarvis e o MCP/suite ficavam sem container (Connecting... / sem alvo).
 # network_mode: host — alcança Caddy :80 e *.olie.localhost como o browser.
 # Serviço separado de `e2e` do slim (profile sandbox) para não misturar paths.
+# restart: "no" — unless-stopped deixava o e2e de pé sozinho após reboot do
+# Docker com app/http Exited (card “morto” ainda comia RAM).
 services:
   olie-e2e:
     profiles: ["slim"]
@@ -13,7 +15,7 @@ services:
     network_mode: host
     ipc: host
     user: "0:0"
-    restart: unless-stopped
+    restart: "no"
     working_dir: /app
     environment:
       E2E_BASE_URL: http://devframe.${SB_DNS_SLUG}.olie.localhost
