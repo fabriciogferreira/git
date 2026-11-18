@@ -1,0 +1,15 @@
+{
+  "git.autoRepositoryDetection": false,
+  "git.repositoryScanIgnoredFolders": [
+    "olie",
+    "televisao",
+    "locav",
+    "opbed",
+    "da-o-play",
+    "boilerplate-laravel",
+    "boilerplate-next",
+    "vid2agent-code",
+    "use-url-query",
+    "base-vm-dev"
+  ]
+}

@@ -9,6 +9,9 @@
 !vm-setup.sh
 !vm.local.conf.example
 !.shellcheckrc
+# Folder ~/git: SCM só o meta-repo (não clones olie/televisao/…).
+!.vscode/
+!.vscode/settings.json
 # Nome e e-mail desta máquina — não versionar
 vm.local.conf
 !bin/

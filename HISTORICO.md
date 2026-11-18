@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Meta-repo `~/git`: SCM listava só clones (ex. Televisão)
+
+- **problema:** janela do folder `~/git` no Source Control mostrava `televisao-*` (e outros clones) e não o meta-repo.
+- **por que é um problema:** chat/edição no meta-repo; SCM poluído e o `git` da raiz some da lista.
+- **resolvido como:** `~/git/.vscode/settings.json` com `git.autoRepositoryDetection: false` + `repositoryScanIgnoredFolders` dos produtos; state SCM do folder com `visible` só `~/git`.
+
 ## Host-card: SCM sem `api-main` (worktree órfão)
 
 - **problema:** Explorer ok (conflito); Source Control sem `api-main`. Ignore do shared piorava; sem o repo pai o Git abria o worktree (`kind: worktree`) e o painel omitia.
