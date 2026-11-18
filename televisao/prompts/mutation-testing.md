@@ -66,7 +66,7 @@ Opt-in one-file path (user asked for `next mutation`).
 
 1. Build the remaining-file list (shared steps 1–2). If empty, say complete and recommend `pest-parallel.md`.
 2. Parent orchestrates — do not serialize every file in one giant context when more than one remains.
-3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation`) when available; else `docker exec -w /srv televisao-backend` (own-card fallback only). Sync dirty `televisao-api` once; rsync dirty on reuse.
+3. Create a **warm pool** of `N` sandboxes when available: resolve the card’s API tip and **always** pass `--from-commit <tip>` (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation --from-commit <tip>`). **Forbidden:** bare create. Else `docker exec -w /srv televisao-backend` (own-card fallback only). Sync dirty `televisao-api` once; rsync dirty on reuse.
 4. Drain with at most **N** in flight: one subagent (Task) per in-flight file (Drift if still PHPUnit; mutate; propose ledger row). Subagent must **not** write `mutation-ledger.md`.
 5. Parent only appends ledger rows; destroy the **pool** when the drain finishes.
 6. When every remaining file has a done row (or the user stops), report the aggregate; if complete, recommend `pest-parallel.md`.

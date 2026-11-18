@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Sandbox: `--from-commit` tip do card (não bare create)
+
+- **problema:** `workvm-sandbox create` sem tip usava `HEAD` do clone (`develop`); coverage/mutation rodavam no SHA errado e recriavam.
+- **por que é um problema:** bench DOP-1183 bare → `0b2c8f77` develop vs tip card `4cdc921c`; recreate ≈ +58s wall + risco de mutate no commit errado (DOP-1281).
+- **resolvido como:** prompts Olie/Televisão + `ORCHESTRATION` obrigam `--from-commit <tip do api worktree do card>`; create nu proibido.
+
 ## Sandbox: strip `KEY=` vazio no `.env` (META_GRAPH_URL=)
 
 - **problema:** `.env` do card com `META_GRAPH_URL=` (e outras `KEY=`) ia para o sandbox; `env()` via como setado → `graph_url` `''` em vez do default Meta.

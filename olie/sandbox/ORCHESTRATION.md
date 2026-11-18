@@ -91,17 +91,28 @@ aumentou o pior shard (~349s vs ~178s) por contenção. O CLI ainda aceita
 `WORKVM_SANDBOX_MAX=0` (sem teto de software); o **prompt** manda o agente
 respeitar esta faixa 2–4 com reuso.
 
+**`--from-commit` obrigatório (host-card):** resolve o tip do worktree do
+card (`meta.json` → `api_worktree` / `…/worktree/api-main`, `git rev-parse HEAD`)
+e passa `--from-commit <tip>` em **todo** `workvm-sandbox create`. Create
+“nu” usa o `HEAD` do clone em `~/git/olie/api-main` (souvent `develop`) — bench
+DOP-1183: bare → `0b2c8f77` develop; tip card `4cdc921c` → só com
+`--from-commit`. Recreate após descobrir o SHA errado ≈ **+58s** wall. O
+mesmo SHA pode falhar em `olie-fronts` (ref inexistente); para mutation/
+coverage o que importa é o `api-main` no tip.
+
 ---
 
 ## Mutation: warm pool + fila por arquivo
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria **N** sandboxes `profile=mutation` (`N = min(restantes, 4)`, ou `2` se RAM apertada). Opcional: `WORKVM_SANDBOX_MAX=N`.
+2. Cria **N** sandboxes `profile=mutation` (`N = min(restantes, 4)`, ou `2` se RAM apertada) **com** `--from-commit <tip do api-main do card>`. Opcional: `WORKVM_SANDBOX_MAX=N`.
 3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o mesmo sandbox para o próximo (rsync dirty; sem destroy entre arquivos do dreno).
 4. Em cada job: `--class` só das FQCN do **pool do change-set que aquele teste exercita** (não o pool inteiro em todo arquivo — ver `mutation-testing.md`; bench DOP-1281 ~1.6× no pesado).
 
 ```bash
+# tip = git -C "$api_worktree/api-main" rev-parse HEAD  (host-card meta.json)
 # create pool once (example N=4), then for each file on a free slot:
+~/git/bin/workvm-sandbox create --name "$id" --project olie --profile mutation --from-commit "$tip"
 ~/git/bin/workvm-sandbox job run "$id" -- php artisan test --compact "$file"
 ~/git/bin/workvm-sandbox job run "$id" -- vendor/bin/pest --mutate --covered-only --min=100 \
   --ignore-min-score-on-zero-mutations --class=App\\... "$file"

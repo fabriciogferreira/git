@@ -31,7 +31,7 @@ Open and **run** these prompts **at the same time** (Task / subagents / parallel
 Rules for workers:
 
 - **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` / `next coverage` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste; coverage drains **all** remaining changed `app/**/*.php` files (ledger rows) in this run.
-- **Exclusive work (mutation / coverage / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests`) — see `ORCHESTRATION.md`. Do **not** run `docker exec olie-api-main` Pest/mutation/coverage on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
+- **Exclusive work (mutation / coverage / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests --from-commit <card api-main tip>`) — see `ORCHESTRATION.md`. Bootstrap (or each worker) resolves the tip from the host-card worktree; **never** bare create. Do **not** run `docker exec olie-api-main` Pest/mutation/coverage on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
 - Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve.
 
 If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.

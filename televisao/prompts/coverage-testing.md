@@ -86,7 +86,7 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 
 1. Build the remaining-file list (shared steps 1–2). If empty, say the stack is complete and recommend `pre-qa.md` (`next prompt`).
 2. **Parent (this chat agent) orchestrates.** Do not process every file serially in one giant context when more than one remains.
-3. Create a **warm pool** of `N` sandboxes (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation`). Sync dirty `televisao-api` once; rsync dirty on reuse.
+3. Create a **warm pool** of `N` sandboxes with **`--from-commit <card API tip>`** (`~/git/bin/workvm-sandbox create --name <unique> --project televisao --profile mutation --from-commit <tip>`). **Forbidden:** bare create. Sync dirty `televisao-api` once; rsync dirty on reuse.
 4. Drain with at most **N** in flight; one subagent (Task) per in-flight file. Pass at least: production path, FQCN, in-scope hunks (`git diff -U0`), sandbox id, candidate test paths, and the scoring/ledger rules.
 5. Each subagent runs baseline Pest (if a test is used) → coverage measure → tighten if in-scope gaps remain → returns a **proposed ledger row**. It may edit **only** test files under the card working tree. It must **not** write `coverage-ledger.md` itself.
 6. **Parent only** appends/updates rows in `~/git/televisao/prompts/coverage-ledger.md` (avoid races). Destroy the **pool** when the drain finishes.
