@@ -79,7 +79,6 @@ alwaysApply: true
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
 | `host-cards-no-vm.md` | Card/projeto no jarvis sem WorkVM: checklist de isolamento (porta, DNS, destroy, Cursor, teto RAM) antes de largar a domain. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
-| `olie/presentation/pest-evals-demo/` | Demo de apresentação Pest Evals (Pest 5): suite clássica verde + agent mentindo etapa do funil; evals-gap vermelho / evals-fixed verde. Não é o `api-main` (ainda Pest 4). |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `televisao/prompts/` | Prompts do projeto **Televisão** (colar no agente; ao lado de `televisao/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
