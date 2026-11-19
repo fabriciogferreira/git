@@ -279,6 +279,32 @@ workvm_host_card_add_meta_worktree() {
     git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
 }
 
+# Point the card api-main worktree at host-card CaptainHook hooks.
+# Problem: shared .git/hooks hardcode `docker exec olie-api-main` and pass a
+# host COMMIT_EDITMSG under .git/worktrees/ that is not mounted in hc-*-app-1.
+workvm_host_card_install_api_captainhook() {
+    local dir="$1"
+    local api_wt hooks meta_repo
+    api_wt="${dir}/worktree/api-main"
+    meta_repo="$(workvm_host_card_meta_repo)"
+    hooks="${meta_repo}/lib/host-card-hooks/api-main"
+
+    if [ ! -d "$api_wt" ] || { [ ! -d "${api_wt}/.git" ] && [ ! -f "${api_wt}/.git" ]; }; then
+        return 0
+    fi
+    if [ ! -x "${meta_repo}/bin/workvm-host-card-captainhook" ]; then
+        workvm_host_card_log "captainhook wrapper ausente: ${meta_repo}/bin/workvm-host-card-captainhook"
+        return 0
+    fi
+    if [ ! -x "${hooks}/commit-msg" ]; then
+        workvm_host_card_log "host-card hooks ausentes: $hooks"
+        return 0
+    fi
+
+    git -C "$api_wt" config core.hooksPath "$hooks"
+    workvm_host_card_log "api-main core.hooksPath → $hooks"
+}
+
 # Lista "basename src_abs" dos CLONE_REPOS do project.conf Olie (+ meta).
 workvm_host_card_olie_repo_bases() {
     local meta_repo git_root conf
@@ -380,6 +406,8 @@ workvm_host_card_prepare_olie_isolation() {
                 || workvm_host_card_log "copy $nm_dst falhou"
         done
     fi
+
+    workvm_host_card_install_api_captainhook "$dir" || true
 }
 
 # Compat nome antigo (destroy hook / ensure).

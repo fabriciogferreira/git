@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: CaptainHook / commit-msg quebra no api-main
+
+- **problema:** no pre-QA do DOP-1278, `git commit` no worktree `api-main` falhava: hooks em `.git/hooks` fazem `docker exec olie-api-main` (container inexistente no host-card) e passam o path host de `COMMIT_EDITMSG` sob `.git/worktrees/…`, que o `hc-*-app-1` não monta → `Commit message file not found`.
+- **por que é um problema:** bloqueia commits/PRs em todo card no jarvis; workarounds manuais (`--no-verify` / editar hook) não devem virar hábito.
+- **resolvido como:** `bin/workvm-host-card-captainhook` (resolve `hc-<id>-app-1`, faz pipe do msg file); `lib/host-card-hooks/api-main/*`; `workvm_host_card_install_api_captainhook` no ensure (`core.hooksPath`). `pre-qa.md` / `workflow-policy` documentam o loop CaptainHook no host-card e o commit do meta na branch live (`experiment/host-cards-no-vm`), não só `main`.
+
 ## Host-card ensure: Auto-review aprova Shell sem elevar `all`
 
 - **problema:** no colleague review (DOP-1257) o agente pedia `required_permissions: ["all"]` (e `request_smart_mode_approval`); o Shell rodava mesmo assim no sandbox padrão — `Permission denied` em `~/.cursor/mcp.json`, `/var/run/docker.sock` ausente enquanto `dockerd` estava vivo, DNS/`FETCH_HEAD` falsos. O ensure abortava no merge MCP antes do compose.

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Run api-main CaptainHook inside the right PHP container on host-card (or WorkVM).
+# Problem: .git/hooks hardcode `docker exec olie-api-main` and pass a host
+# COMMIT_EDITMSG path under .git/worktrees/ that is not mounted in the app
+# container → "Commit message file not found" / missing olie-api-main.
+set -euo pipefail
+
+usage() {
+    echo "usage: workvm-host-card-captainhook <hook-name> [hook-args...]" >&2
+    echo "  hook-name: commit-msg | pre-commit | prepare-commit-msg | pre-push | ..." >&2
+    exit 2
+}
+
+[ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ] && usage
+[ "$#" -ge 1 ] || usage
+
+hook="$1"
+shift
+
+workvm_hc_captainhook_resolve_app() {
+    local cwd id dir meta
+    if [ -n "${WORKVM_HOST_CARD_APP:-}" ]; then
+        printf '%s\n' "$WORKVM_HOST_CARD_APP"
+        return 0
+    fi
+    if [ -n "${WORKVM_HOST_CARD_ID:-}" ]; then
+        printf 'hc-%s-app-1\n' "$WORKVM_HOST_CARD_ID"
+        return 0
+    fi
+
+    cwd="$(pwd -P 2>/dev/null || pwd)"
+    # .../host-cards/olie/olie-dop-1278/worktree/api-main → olie-dop-1278
+    if [[ "$cwd" =~ /host-cards/[^/]+/(olie-[^/]+)/ ]]; then
+        id="${BASH_REMATCH[1]}"
+        if docker inspect "hc-${id}-app-1" --format '{{.State.Running}}' 2>/dev/null | grep -qx true; then
+            printf 'hc-%s-app-1\n' "$id"
+            return 0
+        fi
+    fi
+
+    # Walk up for meta.json (card state dir)
+    dir="$cwd"
+    while [ "$dir" != "/" ]; do
+        meta="${dir}/meta.json"
+        if [ -f "$meta" ]; then
+            id="$(python3 -c "import json;print(json.load(open('$meta')).get('id') or '')" 2>/dev/null || true)"
+            if [ -n "$id" ] && docker inspect "hc-${id}-app-1" --format '{{.State.Running}}' 2>/dev/null | grep -qx true; then
+                printf 'hc-%s-app-1\n' "$id"
+                return 0
+            fi
+        fi
+        # worktree/api-main → card dir
+        if [ -f "${dir}/../meta.json" ]; then
+            meta="$(cd "${dir}/.." && pwd)/meta.json"
+            id="$(python3 -c "import json;print(json.load(open('$meta')).get('id') or '')" 2>/dev/null || true)"
+            if [ -n "$id" ] && docker inspect "hc-${id}-app-1" --format '{{.State.Running}}' 2>/dev/null | grep -qx true; then
+                printf 'hc-%s-app-1\n' "$id"
+                return 0
+            fi
+        fi
+        dir="$(dirname "$dir")"
+    done
+
+    # WorkVM fallback
+    if docker inspect olie-api-main --format '{{.State.Running}}' 2>/dev/null | grep -qx true; then
+        printf 'olie-api-main\n'
+        return 0
+    fi
+
+    echo "workvm-host-card-captainhook: no running app container (set WORKVM_HOST_CARD_APP or run from a host-card api-main worktree)" >&2
+    return 1
+}
+
+app="$(workvm_hc_captainhook_resolve_app)" || exit 1
+
+CH=(vendor/bin/captainhook
+    --configuration=/var/www/html/captainhook.json
+    --bootstrap=vendor/autoload.php)
+
+case "$hook" in
+    commit-msg)
+        msg_file="${1:-}"
+        if [ -z "$msg_file" ] || [ ! -f "$msg_file" ]; then
+            echo "workvm-host-card-captainhook: commit-msg file missing: ${msg_file:-<empty>}" >&2
+            exit 1
+        fi
+        # Pipe host-side COMMIT_EDITMSG into the container (path is not mounted).
+        docker exec -i "$app" bash -c 'cat > /tmp/workvm-commit-msg && vendor/bin/captainhook --configuration=/var/www/html/captainhook.json --bootstrap=vendor/autoload.php hook:commit-msg /tmp/workvm-commit-msg' <"$msg_file"
+        ;;
+    *)
+        # Other hooks: argv paths are usually unused or relative to /var/www/html.
+        docker exec -i "$app" "${CH[@]}" "hook:${hook}" "$@"
+        ;;
+esac

@@ -137,7 +137,20 @@ Identify `BASE` (usually `origin/develop`) and `HEAD` of the card branch. Lint *
 
 **`api-main`** — CI workflow `.github/workflows/conventional-commits.yml` runs `vendor/bin/captainhook hook:commit-msg` per commit (same as local commit-msg via `captainhook.json` → `Ramsey\CaptainHook\ValidateConventionalCommit`, including empty `descriptionEndMark` — subject must not end with `.`).
 
-- [ ] From `~/git/olie/api-main`, for each non-merge SHA in `$BASE_SHA..$HEAD_SHA` (mirror the workflow loop):
+- [ ] From the card’s `api-main` worktree (host-card) or `~/git/olie/api-main` (WorkVM), for each non-merge SHA in `$BASE_SHA..$HEAD_SHA` (mirror the workflow loop):
+
+  **Host-card** (preferred — pipes the message file; uses `hc-*-app-1`):
+
+  ```bash
+  msg=$(mktemp)
+  git log -1 --format='%B' "$SHA" > "$msg"
+  ~/git/bin/workvm-host-card-captainhook commit-msg "$msg"
+  rm -f "$msg"
+  ```
+
+  Ensure installs `core.hooksPath` → `lib/host-card-hooks/api-main` on the card worktree so plain `git commit` also goes through that wrapper. Do **not** rely on bare `docker exec olie-api-main` (container name is wrong; `COMMIT_EDITMSG` under `.git/worktrees/` is not mounted).
+
+  **WorkVM fallback** (when `olie-api-main` is the running app):
 
   ```bash
   msg=$(mktemp)
@@ -163,26 +176,34 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 Do not mark Phase 3 complete if local commitlint/CaptainHook failed or the PR’s commit-lint check is red/pending with a known message violation. Stop, fix, re-verify.
 
-### 4.3. Meta-repo (`~/git`) — commit and push on `main`
+### 4.3. Meta-repo (`~/git`) — commit and push on the live branch
 
-Product clones get card branches and PRs. The **meta-repo** does not: ship its card-related changes straight to `main`.
+Product clones get card branches and PRs. The **meta-repo** does not: ship its card-related changes on the **live meta branch** (no product-style PR).
 
 This pre-QA pass **must** commit and push meta-repo updates that belong to the card (or to prompt/workflow fixes done in the same chat), when the working tree has any:
 
-- `olie/prompts/` (including `mutation-ledger.md`)
+- `olie/prompts/` (including `mutation-ledger.md` / `coverage-ledger.md`)
 - `olie/cards/{CARD_CODE}/` media analyses
 - Private Playwright specs/helpers for the card (resolved `olie-e2e` root — workspace folder on host-card, else `olie/olie-e2e/`; commit them there; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
-- `HISTORICO.md` / other meta-repo docs touched for the same work
+- `HISTORICO.md` / `bin/` / `lib/` / other meta-repo docs or tooling touched for the same work
 
 Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.
 
+**Live branch:** use whatever `git -C ~/git branch --show-current` reports when that is the intentional delivery line (today often `experiment/host-cards-no-vm` on jarvis). Prefer `main` only when that is the checked-out live branch. Do **not** stop solely because the branch is not named `main` while an experiment branch is the active line.
+
+**Host-card meta worktree** is detached (`…/worktree/git`). Edits in the card window land there; commits happen on the **live** checkout (`~/git`):
+
+1. Copy/rsync only the card-related dirty paths from the card `worktree/git` into `~/git` (same relative paths).
+2. Commit and push from `~/git` on the live branch.
+3. Optionally re-sync the card meta worktree (`workvm_host_card_sync_meta_worktree` / ensure open) so the window matches.
+
 Checklist:
 
-- [ ] `cd ~/git` and confirm the current branch is `main` (or the meta-repo’s default). If not, stop and report.
-- [ ] `git pull --ff-only` (or fetch + ff-only merge) so local `main` matches `origin/main` before committing. On divergence or non-ff, stop and report (prompt-health).
+- [ ] `cd ~/git` and note the live branch (`git branch --show-current`). Stop only if the checkout is detached or clearly the wrong line for delivery.
+- [ ] `git pull --ff-only` (or fetch + ff-only merge) so local live branch matches its `origin/` remote before committing. On divergence or non-ff, stop and report (prompt-health).
 - [ ] Stage only paths that belong to this work. Exclude secrets, `.env`, WorkVM stubs (`mcp.workvm-user`, skip-worktree noise), and unrelated dirty files. If unrelated dirt blocks a clean commit, stop and report rather than mixing it in.
 - [ ] Create one or more English commits (no Cursor/AI co-author). Message says why (card code when applicable).
-- [ ] `git push origin HEAD` to update remote `main`. Verify with `git status` that the branch is not ahead/behind after the push.
+- [ ] `git push origin HEAD` to update the remote live branch. Verify with `git status` that the branch is not ahead/behind after the push.
 - [ ] If there is nothing to commit for the meta-repo, say so explicitly in the final report.
 
 If commit or push fails, stop before Phase 4 product PRs when the meta-repo change is required for the card (e.g. e2e or media analysis). Prompt-only / ledger updates should still be pushed when possible; if push fails, report and do not claim meta-repo is synced.

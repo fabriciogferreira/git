@@ -1,0 +1,5 @@
+#!/bin/sh
+# Host-card CaptainHook bridge (core.hooksPath). Do not install into shared .git/hooks.
+# Problem: shared hooks hardcode olie-api-main and pass unmounted COMMIT_EDITMSG paths.
+ROOT="$(CDPATH= cd -- "$(dirname "$0")/../../.." && pwd)"
+exec "$ROOT/bin/workvm-host-card-captainhook" commit-msg "$@"
