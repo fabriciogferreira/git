@@ -173,6 +173,8 @@ The title stays English. `gh pr view` must still show the template headings, the
 
 Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal placeholders (`{{ code }}`, and any other `{{ … }}` the file uses). Replacing them with a real card code happens only in the chat paste, never in the versioned file.
 
+**Host-card path:** if this chat is a host-card workspace, edit Locav prompts / `HISTORICO` / overlay only under the workspace **`git/`** folder — never write bare `~/git/locav/…` or `~/git/olie/…` / `~/git/televisao/…` (outside workspace → permission prompts). Resolve `~/git/...` to that `git/` root. Shared rule: `host-card-meta-repo-path.mdc`.
+
 When committing or pushing the meta-repo `~/git`:
 
 - Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. a real `LOC-…` instead of `{{ code }}`).

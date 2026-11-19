@@ -22,7 +22,7 @@ Use the card's content as the source of truth for the intended behavior. Before 
 
 Before the planning phase, **review the card's media**. Spec screenshots, screencasts, and attachments are part of the source of truth — do not plan from text alone when media shows the intended UI or flow.
 
-1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+1. `git pull` the meta-repo if needed, then list media via MCP `get-project-media-tool` with **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`; do not use the tool default `content`).
 2. For each image, video, or audio item that belongs to this card and is part of the specification (or is cited by the description):
    - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
    - If that file is **missing** → analyze now: `olie-project-image-analysis` for images, `olie-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.

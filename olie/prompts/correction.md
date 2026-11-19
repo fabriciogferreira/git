@@ -16,7 +16,7 @@ Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 - The repositories and branches involved.
 - The implementation changes that were reviewed.
 - Any attached specifications, test results, and relevant comments.
-- **Project media** (`get-project-media-tool`): every image, video, and audio on the card that supports the return (screenshots, screencasts, and description-linked attachments).
+- **Project media** (`get-project-media-tool` with **`filter: "default"`**): every image, video, audio, user message, **and** system log on the card that supports the return (including funnel-move logs). See **Project media** in `workflow-policy.md`.
 
 Treat the reviewer's findings and the card's requirements as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
 
@@ -24,7 +24,7 @@ Treat the reviewer's findings and the card's requirements as the source of truth
 
 Before creating the correction plan, **review the card's media**. Do not plan only from text comments when the return includes images or videos.
 
-1. `git pull` the meta-repo if needed, then list media via MCP.
+1. `git pull` the meta-repo if needed, then list media via MCP `get-project-media-tool` with **`filter: "default"`** (required; never omit / never `content` alone).
 2. For each image, video, or audio item that belongs to this card and is part of the return (or is cited by a finding):
    - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
    - If that file is **missing** → analyze now: `olie-project-image-analysis` for images, `olie-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.

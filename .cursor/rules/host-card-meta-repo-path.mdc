@@ -1,0 +1,39 @@
+---
+description: Host-card — edit meta-repo (prompts/HISTORICO/overlay) in workspace git/, never ~/git
+alwaysApply: true
+---
+
+# Host-card: meta-repo path (prompts / HISTORICO / overlay)
+
+This window is a **host-card** workspace. The meta-repo root in the workspace is
+the folder named **`git`** (this card’s meta worktree), not `~/git`.
+
+Edits that would hit `~/git/...` outside the workspace trigger Cursor permission
+prompts. Do **not** write there.
+
+## Resolve paths (Olie, Locav, Televisão)
+
+When a prompt or habit says `~/git/...`, write under this workspace’s **`git/`**
+folder instead:
+
+| Prompt / habit path | Edit here (host-card) |
+| --- | --- |
+| `~/git/olie/prompts/…` | `git/olie/prompts/…` |
+| `~/git/locav/prompts/…` | `git/locav/prompts/…` |
+| `~/git/televisao/prompts/…` | `git/televisao/prompts/…` |
+| `~/git/HISTORICO.md` | `git/HISTORICO.md` |
+| `~/git/olie/overlay/…` (and locav/televisao overlay) | `git/<project>/overlay/…` |
+| `~/git/.cursor/rules/…` | `git/.cursor/rules/…` |
+
+Absolute form to avoid: `/home/**/git/olie/prompts/…`, `/home/**/git/locav/…`,
+`/home/**/git/televisao/…`, bare `~/git/olie/…` while this card workspace is open.
+
+## Still allowed
+
+- **Read** `~/git` if needed for comparison.
+- Run **binaries** from `~/git/bin/…` (`workvm-host-card`, `workvm-sandbox`, …).
+- Edit **product** worktrees that are already workspace roots (`api-main`,
+  `olie-fronts`, …) — those are not the meta-repo path issue.
+
+Same idea as **host-card-e2e-path** (private e2e under workspace `olie-e2e`, not
+`~/git/olie/olie-e2e`).

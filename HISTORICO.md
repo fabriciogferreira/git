@@ -2,6 +2,234 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: prompts em `~/git` pediam permissão (Olie/Locav/Televisão)
+
+- **problema:** no host-card o agente editava `~/git/olie/prompts/…` (e equivalentes Locav/Televisão); esse path não é root do `.code-workspace` (o meta está em `…/worktree/git`) → Cursor pedia approve “fora do workspace”.
+- **por que é um problema:** atrito em todo ajuste de prompt/HISTORICO/overlay; o usuário tem que aprovar edições que deveriam ser locais ao card.
+- **resolvido como:** rule `host-card-meta-repo-path.mdc` (`alwaysApply`) — escrever só em `git/olie|locav|televisao/…` do workspace; nota em `olie`/`locav`/`televisao` `workflow-policy` (Host card / Prompt templates). Mesmo padrão do `host-card-e2e-path` para e2e.
+
+## `get-project-media-tool`: sempre `filter: "default"`
+
+- **problema:** o default da tool é `filter: "content"`, que lista só mensagens/arquivos de usuário e omite logs de sistema (movimentação no funil: de onde saiu / para onde foi).
+- **por que é um problema:** no colleague review do DOP-1257 o agente viu o chat e o vídeo, mas não a trilha de etapas; tratou o card como primeiro QA/CR e deu Pass sem perceber que já tinha ido a Validação/produção e voltado porque o fix não resolveu.
+- **resolvido como:** regra **Project media** em `olie/prompts/workflow-policy.md` — chamar sempre com `filter: "default"`. Cross-refs nos passos de mídia de `colleague-review.md`, `colleague-review-core.md`, `implementation.md`, `correction.md`, `production-review.md`. Skills de image/video analysis no overlay alinhadas.
+
+## Colleague review: bounce pós-produção / merge
+
+- **problema:** cards que já passaram Validação/Revisão produção/Concluído (PR mergeado, deploy feito) e voltam para Corrigir/QA/CR eram revisados como primeiro colleague pass (happy path local → Pass).
+- **por que é um problema:** a evidência que importa é a regressão pós-deploy e o caminho no funil nos logs; “não consegui reproduzir” do autor vira pedido de tentativa, não Pass; sucesso só no host-card não apaga vídeo de produção.
+- **resolvido como:** **Return from production / merged bounce** em `workflow-policy.md`; bootstrap do `colleague-review.md` classifica `bounce` a partir dos logs (`filter: "default"`); `colleague-review-core.md` exige reproduzir o cenário do bounce e Fail se a evidência pós-deploy continuar válida; scoreboard com campo Bounce.
+
+## Prompt health: resolva / documente / resolva permanentemente
+
+- **problema:** atritos repetidos entre cards (tooling/VM); o agente resolvia no silêncio ou só pedia “arrume a tool”, e a solução não ficava para o próximo card.
+- **por que é um problema:** tempo de card gasto em problema já visto; HISTORICO/rules não alimentavam o fluxo.
+- **resolvido como:** rule `stop-on-broken-tooling.mdc` + `workflow-policy` (Olie/Locav/Televisão) — no stop, diagnosticar, checar HISTORICO, e esperar `resolva` | `documente` | `resolva permanentemente`.
+
+## Host-card: e2e fora do workspace pedia permissão
+
+- **problema:** prompts apontavam `~/git/olie/olie-e2e`; no host-card essa pasta não é root do `.code-workspace` (só o worktree `…/worktree/git/olie/olie-e2e`) → create de spec pedia approve “fora do workspace”.
+- **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
+- **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
+
+## Host-card Olie: workspace vazio no resume (Explorer/SCM)
+
+- **problema:** `write_workspace` no ensure reescrevia o stub com `folders: []`; com a janela já aberta o Cursor hot-reloada o vazio; `bind_workspace_worktree` preenchia o disco depois e o ensure só focava → Explorer/SCM sem repos (ex. DOP-1276).
+- **por que é um problema:** card “aberto” sem worktrees na UI; parece isolamento quebrado.
+- **resolvido como:** stub só se o `.code-workspace` ainda não existe; bind continua sendo a escrita de folders; se folders ainda estiver vazio com janela aberta, ensure reabre.
+
+## Host-card destroy: não fecha a janela Cursor
+
+- **problema:** `finish card` / `destroy` chamava `workvm_close_cursor_workspace` no fim do teardown; o agent ainda estava na janela do card → diálogo “prompts running”.
+- **por que é um problema:** confirmação manual e chat interrompido no finalize.
+- **resolvido como:** destroy não fecha Cursor; imprime `close_cursor=manual` + hint para o usuário fechar à mão; chat command em `workflow-policy.md`.
+
+## Host-card Olie: MySQL/Redis/Mongo compartilhados
+
+- **problema:** cada card subia mysql+redis+mongo próprios (slim) — N cards × 3 serviços no jarvis.
+- **por que é um problema:** RAM/CPU; isolamento real só precisava de database/prefixo.
+- **resolvido como (teste, sem commit):** `compose.host-data.yml` (mysql:8.4, mongo:5, redis-stack como `docker-workspace`) + `compose.host-card-shared-data.yml`; ensure provisiona `api_<slug>` / `testing_<slug>*`; destroy só DROP do card; stack `hc-olie-data` permanece.
+
+## Host-card ensure: não fechar janela já aberta
+
+- **problema:** `ensure` (colleague review passo 0) sempre `close` + reopen do `.code-workspace` por causa do hack SCM; no meio do review a janela/chat do card caía.
+- **por que é um problema:** o dispatcher morre ou o usuário vê a janela fechando em loop.
+- **resolvido como:** se a janela do card já está aberta, ensure só **foca**; close+SCM+reopen fica no `workvm-host-card open`. Prompts: `OPEN_CURSOR=0` quando o chat já é a janela do card.
+
+## Host-card: worktree por repo (Olie)
+
+- **problema:** isolamento do card misturava worktree só do `api-main`, clones shared no workspace e pasta `api-main (shared)` para o SCM — frágil e confuso.
+- **por que é um problema:** edição/SCM no path errado; sujeira do meta-repo shared vaza entre janelas; remendo de UI virava arquitetura.
+- **resolvido como (Olie, sem commit de teste):** `prepare_olie_isolation` — worktree de todos os `CLONE_REPOS` + meta `worktree/git`; reflink/rsync de `vendor` e `node_modules`; workspace só esses paths; compose `SB_FRONTS` / `SB_E2E` no worktree do card. Fases seguintes (repos prováveis; polir heavy) em `host-cards-no-vm.md` §4.
+
+## Prompt `correction`: force-push antes da verificação
+
+- **problema:** `olie/prompts/correction.md` §4 mandava `git push --force-with-lease` logo após o rebase terminar, e só depois retomar findings/TDD/verificação.
+- **por que é um problema:** o tip do PR era publicado sem checar se a resolução de conflito (e o resto da correção) estava correta; falhas só apareciam depois do push.
+- **resolvido como:** §4/§11 — após o rebase local, plano/findings/testes primeiro; force-push é o **último** write remoto da passada. Sync do texto no Opbed `config.prompts`.
+
+## Meta-repo `~/git`: SCM listava só clones (ex. Televisão)
+
+- **problema:** janela do folder `~/git` no Source Control mostrava `televisao-*` (e outros clones) e não o meta-repo.
+- **por que é um problema:** chat/edição no meta-repo; SCM poluído e o `git` da raiz some da lista.
+- **resolvido como:** `~/git/.vscode/settings.json` com `git.autoRepositoryDetection: false` + `repositoryScanIgnoredFolders` dos produtos; state SCM do folder com `visible` só `~/git`.
+
+## Host-card: SCM sem `api-main` (worktree órfão)
+
+- **problema:** Explorer ok (conflito); Source Control sem `api-main`. Ignore do shared piorava; sem o repo pai o Git abria o worktree (`kind: worktree`) e o painel omitia.
+- **por que é um problema:** rebase/UU invisíveis no SCM.
+- **resolvido como:** (1) Sem meta-repo `..` no `.code-workspace` do card (+ pasta `prompts/`). (2) **Não** `git.ignoredRepositories` no shared. (3) Incluir pasta `api-main (shared)` → `~/git/olie/api-main` para o pai existir no SCM; editar o 1º `api-main` (worktree). (4) `git.detectWorktrees: false` para não puxar worktrees de outros cards. (5) `ensure_scm_repos_visible` no open.
+
+## Host-card: `open` foca o workspace do card (não o meta-repo)
+
+- **problema:** `ensure` com a janela do card já aberta fazia skip; o usuário ficava no chat/`~/git` e não via rebase/conflitos no worktree.
+- **por que é um problema:** correção/colleague edita `…/host-cards/…/worktree/api-main` enquanto a UI mostra o clone ou o meta-repo.
+- **resolvido como:** `workvm_focus_cursor_workspace` + ensure/open focam a janela existente; CLI `workvm-host-card open`; chat command `open PROJECT CODE` nas workflow-policy. Hyprland 0.56: focus via `hl.dsp.focus({ window = "address:…" })` (o `focuswindow` antigo quebra como o `closewindow`).
+
+## Mutation: discovery R7 (por que o wall ainda é alto)
+
+- **problema:** mesmo com `--class` scoped / warm pool / R1–R6, o mutate ainda domina o colleague review (~54 min no DOP-1281).
+- **por que é um problema:** risco de gastar mais prompts “otimizando discovery” sem ganho.
+- **resolvido como:** bench DOP-1183 (`/tmp/dop1183-r7-mutate-discovery`): wall ≈ **~0,3s/mutante** quente; class gorda coberta (`AutomationRunInstance`) ~48s / 134 mutantes; multi-`--class` **quebrado** (3→0 files, 2→1 file) → obriga 1 class por run; `--covered-only` ≠ filtro in-scope (Pest ainda avalia todos os covered da class). **Sem** fix de prompt/CLI — alavanca real seria filtro por linha no Pest (upstream). Nota nos prompts mutation + ORCHESTRATION.
+
+## Mutation: retry de deadlock/baseline flake + watchdog
+
+- **problema:** deadlock MySQL (`model_has_permissions`) / baseline flaky derrubava o shard; mutate sem exit prendia o slot do warm pool.
+- **por que é um problema:** Blocked cedo ou dreno parado (DOP-1281); wall do colleague review sobe sem progresso no ledger.
+- **resolvido como:** prompts mutation (Olie/Locav/Televisão) — **1** retry automático no mesmo slot para flake/deadlock antes de Blocked; ORCHESTRATION — watchdog 15 min baseline / 45 min mutate (libera slot). Sem mudar schema do app.
+
+## Mutation: quoting canônico de `--class` no `job run`
+
+- **problema:** exemplos com `App\\Foo` dentro de aspas simples faziam o Pest receber `\\` literal → `0 Mutations for 0 Files`.
+- **por que é um problema:** mutate “vazio” e re-runs; DOP-1281 reportou o escape no `job run`.
+- **resolvido como:** prompts Olie/Locav/Televisão + ORCHESTRATION — forma canônica `'--class=App\Foo'` (um `\`); tabela do que quebra. Smoke argv: quoted `\\` → duplo; quoted `\` → certo; unquoted `\` → bash come.
+
+## Coverage: lote por Via test (não 1 Pest por `app/`)
+
+- **problema:** `correct coverages` / dispatcher rodava um `pest --coverage` por arquivo `app/`; o mesmo Via era repetido.
+- **por que é um problema:** wall do measure sobe linear com o número de `app/` mesmo quando um relatório já lista todos.
+- **resolvido como:** prompts Olie/Locav/Televisão + ORCHESTRATION — batch por Via; um coverage fecha o lote; pool `N = min(lotes, 4)`. Bench DOP-1183 (quente): 5/1 Via ~34s→~6s; 8/2 Vias ~53s→~13s.
+
+## Change-set: feature já mergeada (`develop...HEAD` vazio)
+
+- **problema:** com a branch já em `develop`, `develop...HEAD` vinha vazio; gap/mutation/coverage improvisavam ou pulavam backend.
+- **por que é um problema:** colleague review do DOP-1281 montou a lista à mão via commits `DOP-XXXX`; risco de gate “no backend” falso.
+- **resolvido como:** receita **Backend change-set** em `workflow-policy` (Olie/Locav/Televisão) + ponteiros nos gates: dirty → three-dot → merge `M^1...M^2` / `--grep=<CODE>` (pula sync “merge develop into”). Smoke DOP-1281: three-dot 0 → union ≈ 49 paths.
+
+## Sandbox: `--from-commit` tip do card (não bare create)
+
+- **problema:** `workvm-sandbox create` sem tip usava `HEAD` do clone (`develop`); coverage/mutation rodavam no SHA errado e recriavam.
+- **por que é um problema:** bench DOP-1183 bare → `0b2c8f77` develop vs tip card `4cdc921c`; recreate ≈ +58s wall + risco de mutate no commit errado (DOP-1281).
+- **resolvido como:** prompts Olie/Televisão + `ORCHESTRATION` obrigam `--from-commit <tip do api worktree do card>`; create nu proibido.
+
+## Sandbox: strip `KEY=` vazio no `.env` (META_GRAPH_URL=)
+
+- **problema:** `.env` do card com `META_GRAPH_URL=` (e outras `KEY=`) ia para o sandbox; `env()` via como setado → `graph_url` `''` em vez do default Meta.
+- **por que é um problema:** baselines Pest vermelhas no colleague review; minutos de strip manual (DOP-1281 ~2 min + re-runs).
+- **resolvido como:** `sed` em `workvm_sandbox_olie_write_env` remove `^[A-Z][A-Z0-9_]*=\s*$` só na cópia do sandbox. Bench DOP-1183: before fail (`''` vs `https://graph.facebook.com`, ~96s); after 1ª baseline verde sem intervenção.
+
+## Host-card: olie-e2e não fica Up com o card morto
+
+- **problema:** `olie-e2e` tinha `restart: unless-stopped`; após reboot/kill do Docker o app ficava Exited e o e2e voltava sozinho.
+- **por que é um problema:** RAM e Playwright MCP apontando para card sem stack; “finalizei o card” sem `destroy` deixava e2e vivo.
+- **resolvido como:** `restart: "no"` em `compose.e2e-host.yml`; `workvm_host_card_olie_stop_orphan_e2e` no ensure (para e2e Up com app down); recreate do e2e se o container antigo ainda tiver `unless-stopped`.
+
+## Mutation/coverage: warm pool 2–4 (não 1 sandbox por arquivo)
+
+- **problema:** o dreno criava um sandbox (ou job) por `*Test.php` / `app/` file; com N grande o wall não caía e o shard pesado sofria contenção.
+- **por que é um problema:** create+rsync e CPU/IO compartilhados; no jarvis, 8 mutates frios juntos alongam o pior arquivo sem encurtar o lote.
+- **resolvido como:** regra **warm pool** em `olie` (`mutation-testing` / `coverage-testing` / `sandbox/ORCHESTRATION.md` + README), espelho Televisão/Locav: `N = min(restantes, 4)`, **`2`** se RAM apertada; reusar slot (rsync dirty); não abrir um por arquivo só porque o change-set é grande. Bench DOP-1258 (8 arquivos, tip `cc57e847`): pools **2/4/6/8** ≈ **387–406s** wall; pool 8 piorou Endpoint (~349s vs ~178s).
+
+## Mutation ledger `sha:`: skip só para retries neste meta-repo
+
+- **problema:** dava para ler o skip por `sha:` como se o autor do card stampasse no handoff e a 1ª colleague review viesse quente.
+- **por que é um problema:** `mutation-ledger.md` é privado deste meta-repo; outros devs da empresa não têm o arquivo — a 1ª review de card de colega continua fria.
+- **resolvido como:** nota **Personal ledger only** em `olie|locav|televisao/prompts/mutation-testing.md`: skip = retries seus (2ª review / try again / outro chat) com tip igual. Bench DOP-1258 (3 arquivos stampados): skip ~70 ms vs cold remutate parede ~29 s (~400×; cold sem create de sandbox).
+
+## Mutation: `--class` por teste, não o pool inteiro do change-set
+
+- **problema:** `mutation-testing` mandava passar **todas** as FQCN `app/` do change-set em **cada** `*Test.php`; com `--covered-only` classes só tocadas de passagem ainda geravam mutate longo (ex. CloudConnector +171s num teste de templates).
+- **por que é um problema:** a descoberta do colleague review (1ª onda) fica no teto do pior shard; pool largo × N testes paga wall-clock sem fechar survivors úteis.
+- **resolvido como:** escopo **per-test** em `olie|locav|televisao/prompts/mutation-testing.md` (+ nota em `olie/sandbox/ORCHESTRATION.md`): pool do change-set → filtrar FQCN que o teste exercita (`use` + drivers HTTP/jobs). Bench DOP-1281 no host-card: `ChannelMessageTemplatesTest` full 21 classes ~657s vs scoped 8 ~416s (**~1.6×**); leve ~4.7×.
+
+## Colleague review: gap/mutation/coverage → reviewer-fix, não Corrigir
+
+- **problema:** o outcome do colleague review mandava mover para 'Corrigir' se gap, mutation ou coverage reportassem trabalho — mesmo com o core Pass — e ainda gravava esses resultados no conteúdo do projeto.
+- **por que é um problema:** o revisor fecha esses três gates no próprio chat; bounce e nota no card só fazem sentido quando há fail de produto/aceitação (fora desses três).
+- **resolvido como:** **Colleague review outcome** (Olie/Locav/Televisão): Corrigir só se o colleague core (ou outro fail fora de gap/mutation/coverage) falhar; gap/mutation/coverage sozinhos → QA/CR + reviewer-fix no chat (`add` / `to correct` / `correct mutations` / `correct coverages` / `try again`), **sem** escrever no projeto. Só cola gap/mutation/coverage no card quando o bounce for por fail fora desses gates. `colleague-review`, `workflow`, `test-gap-analysis`, `mutation-testing` alinhados.
+
+## Correction: plano deve ler comentários dos PRs do card
+
+- **problema:** o correction montava o plano só com o texto do card/retorno e podia omitir threads de review do GitHub (ou listá-los e não fechar o lote).
+- **por que é um problema:** findings line-level ficam de fora do triage; o revisor vê pendência que o plano “não viu”.
+- **resolvido como:** em `olie`/`locav`/`televisao` `prompts/correction.md` §Analyze — obrigatório carregar review threads de cada PR do formulário/conteúdo **antes** do plano; se houver comentários, entram no triage como qualquer finding; o plano lista PRs checados e threads.
+
+## Correction: marcar thread do PR como Resolved
+
+- **problema:** `correction.md` fechava o trabalho sem marcar “Resolve conversation” nos comentários de review do PR; o código já estava corrigido e o revisor ainda via threads abertas.
+- **por que é um problema:** parecer de pendência falsa e retrabalho de “ainda não resolveu o comentário”.
+- **resolvido como:** §Resolve GitHub PR review threads + critério de conclusão em `olie`/`locav`/`televisao` `prompts/correction.md` — só resolve o thread depois que **todos** os pontos daquele comentário estão feitos (MCP ou `gh` GraphQL `resolveReviewThread`); reporta threads resolvidos e os que ficaram abertos.
+
+## Own-card: drain paralelo por padrão
+
+- **problema:** no handoff próprio, coverage/mutation avançavam com `next coverage` / `next mutation` (um arquivo por paste); N arquivos = N pastes + wall-clock serial, enquanto o colleague dispatcher já drenava em paralelo.
+- **por que é um problema:** bench DOP-1258 (3 arquivos, create+mutate+destroy): sequencial ~472s vs paralelo ~230s (~2×); ainda sem a espera humana entre pastes.
+- **resolvido como:** default own-card = `correct coverages` / `correct mutations` ao abrir o prompt (Olie/Locav/Televisão); `next *` fica opt-in. `workflow-policy` + `olie/sandbox/ORCHESTRATION.md` alinhados.
+
+## Mutation/coverage: ledger por SHA (file@blob)
+
+- **problema:** o budget de re-run evitava repetir no mesmo chat, mas entre chats/colleague o dispatcher ainda reabria sandbox + mutate/coverage no mesmo tip já fechado no ledger (path-only ou “card pass”).
+- **por que é um problema:** 2º pass em arquivos já `100%`/`equivalent` pagava create+mutate+destroy de novo (bench DOP-1258: 3 arquivos → ~227s wall paralelo).
+- **resolvido como:** stamp `sha:<fp>` nas Notes via `bin/workvm-ledger-sha.sh` (blobs do teste + `--class` prod / do `app/` no coverage); skip cross-chat só com Result done **e** fingerprint igual; sem `sha:` → re-roda uma vez e carimba. Prompts mutation/coverage + workflow-policy (Olie/Locav/Televisão). Bench after: skip dos 3 arquivos em ≪1s (sem sandbox).
+
+## Mutation/coverage: orçamento de re-run (equivalent cedo)
+
+- **problema:** no colleague review o agente re-rodava `pest --mutate` / `--coverage` “para confirmar” ou sem assert novo; no jarvis isso repetia o mesmo score (ex. SafeUrlGuard 54.65% ×4) e queimava minutos por arquivo.
+- **por que é um problema:** wall-clock do gate era dominado por re-medida inútil, não por fechar in-scope/+1pp.
+- **resolvido como:** seção **Re-run budget** em `mutation-testing.md` e re-measure budget em `coverage-testing.md` (Olie, Locav, Televisão) + nota em `workflow-policy.md`: classificar killable vs `equivalent` após 1 reporte; re-rodar só após mudança real de teste (≤1 re-mutate por `--class`); proibido re-medir árvore inalterada. Bench local DOP-1258: ~200s (4×) → ~23s (1×) no mesmo score. Depois: tabela **Expensive re-run budget** em `workflow-policy` + bullets nos triggers `colleague-review`(+core), `pest-parallel`, `test-gap-analysis`, `implementation-validation`, `pre-qa`, `production-review`, `correction` nos três produtos.
+
+## Host-card ensure: worktree api-main na branch do card
+
+- **problema:** `open olie DOP-…` criava o worktree em detached HEAD/`develop`; a janela Cursor não mostrava os arquivos já commitados na `feature/DOP-…`.
+- **por que é um problema:** reopen/colleague review dependia de checkout manual (ou do prompt de implementation) só para ver o diff do card.
+- **resolvido como:** `workvm_host_card_prepare_api_isolation` recebe o código; resolve branch local/`origin` pelo nome (contém o código) e faz checkout só no worktree do card (`lib/host-card.sh`); hook Olie passa `$code`. Sem branch → HEAD/develop como antes.
+
+## Olie sandbox: sem teto de 3
+
+- **problema:** colleague mutation/coverage enfileiravam após 3 sandboxes (`WORKVM_SANDBOX_MAX` default 3), mesmo no jarvis com host-card.
+- **por que é um problema:** N `*Test.php` viravam fila artificial; o usuário pediu paralelismo sem o limite de 3.
+- **resolvido como:** default Olie `0` (= sem teto) em `olie/sandbox/project.sh` + `lib/sandbox/manager.sh` (só bloqueia se `max > 0`); docs/prompts alinhados; cap opcional `WORKVM_SANDBOX_MAX=N`.
+
+## Host-card Opbed: ensure só abria Cursor
+
+- **problema:** `workvm-host-card ensure --project opbed` clonava repos e abria a janela, sem compose — o board/API não subiam no jarvis.
+- **por que é um problema:** “open opbed” ficava igual a abrir workspace vazio; Olie/Televisão já tinham hook de stack.
+- **resolvido como:** `opbed/sandbox/compose.host.yml` + `host-card-ensure.sh` / `host-card-destroy.sh` (pgsql + backend + front, portas `port_base`, DNS Caddy, sem cloudflared).
+
+## Host-card ensure: PermissionError em ~/.cursor/mcp.json no chat
+
+- **problema:** `workvm-host-card ensure` no colleague review / prompts falhava com `PermissionError: … ~/.cursor/mcp.json` (e avisos falsos de DNS/`gh`/`docker.sock`); o agente pedia chmod/DNS/`gh auth` ao usuário ou parava o dispatcher como “tooling broken”.
+- **por que é um problema:** o arquivo já era `fabricio` `600` e o host (jarvis) está ok com shell `all`; a falha era o sandbox do Shell no Cursor. Retry sem `all` (ou parar sem approval card) repetia o erro; o stack do card já estava ok no host.
+- **resolvido como:** bullet **Shell permissions** + **Sandbox symptom cluster** em `olie|locav|televisao/prompts/workflow-policy.md` (primeiro `ensure` já com `all`; se Auto-review bloquear → approval card, não chmod); exceção no `colleague-review.md` Olie; allow em `.cursor/permissions.json`; mensagem em `lib/cursor.sh` (`workvm_apply_mcp`); nota em `host-cards-no-vm.md`.
+
+## Host-card Pest: teto de 22 processes no jarvis
+
+- **problema:** `workvm-host-card-pest` usava `nproc` (24 no jarvis); com `--processes` 23 ou 24 o Paratest matava workers com SIGSEGV (exit 139) e a suite abortava sem contagem.
+- **por que é um problema:** o gate `pest-parallel` ficava vermelho por infra, não por regressão; retry manual com menos workers era ad hoc.
+- **resolvido como:** default `min(nproc, 22)` em `bin/workvm-host-card-pest` (2026-11-16; 22 completou a suite). Override `WORKVM_HOST_CARD_PEST_PROCESSES`. Documentado em `olie/prompts/pest-parallel.md`, `host-cards-no-vm.md` §6, `layout.mdc`.
+
+## Gap analysis: comando `add` para fechar testes faltantes
+
+- **problema:** depois de **Tests to add**, o handoff misturava implementação de testes com `to correct` (validação / Needs code fixes); não havia frase curta só para gravar os testes recomendados pelo gap.
+- **por que é um problema:** o autor pedia algo tipo “add” e o agente não tinha contrato; ou usava `to correct` e a intenção ficava ambígua.
+- **resolvido como:** comando **`add`** em `olie/prompts/workflow-policy.md` (Chat commands) + `test-gap-analysis.md`: implementa só a lista título+descrição daquele pass, depois `try again` no gap. `to correct` fica para validation / Pest parallel.
+
+## Host-cards sem WorkVM (jarvis)
+
+- **problema:** cada card virava domain libvirt; N cards × N projetos no host de 32 GiB não cabiam (OS + Hyprland + Cursor + compose por guest). Pest `-p` em dois cards no mesmo clone/vendor corrompia a suite; MySQL default no host (24 threads) engasgava.
+- **por que é um problema:** custo de VM por card e colisão de porta/DB/DNS; dual Pest inválido; suite travava ou falhava em massa.
+- **resolvido como:** `bin/workvm-host-card` + `lib/host-card.sh` / proxy Caddy (`*.olie.localhost`); compose slim+front+MySQL tmpfs (`compose.mysql-host.yml`); worktree `api-main` + vendor rsync **por card**; triggers nos prompts Olie/Locav/Televisão. Contrato: `host-cards-no-vm.md`.
+
 ## Checklist manual Olie → prompts
 
 - **problema:** o checklist antigo (planejamento de impactos, loop front `frame_id`/permissão/i18n, limpeza de comentários de debug, triage de correção) vivia só na cabeça; os prompts cobriam parte disso e deixavam gaps.
@@ -101,9 +329,9 @@ Problema resolvido entra aqui.
 
 ## Prompt `{{ code }}` não vai no commit do meta-repo
 
-- **problema:** o agente substituía `{{ code }}` pelo código do card (ex. `DOP-1262`) dentro de `*/prompts/*.md` e podia subir isso no `git push` do meta-repo.
+- **problema:** o agente (ou o paste manual no editor) substituía `{{ code }}` pelo código do card (ex. `DOP-1262`) dentro de `*/prompts/*.md` e podia subir isso no `git push` do meta-repo; no host-card a sujeira aparece em todas as janelas (meta-repo compartilhado).
 - **por que é um problema:** o arquivo versionado deixa de ser template paste-ready; o próximo card herda um código errado.
-- **resolvido como:** regra em `workflow-policy.md` (**Prompt templates**), `colleague-review.md` §3 e READMEs dos prompts (Olie/Locav/Televisão): placeholder fica no repo; substituição só no paste do chat; dirty com código real → `git checkout --` antes do commit.
+- **resolvido como:** rule `prompt-templates-hands-off.mdc` + chat commands (`colleague review CODE` / `run prompt NAME CODE`) — o agente lê o template, substitui só na memória e executa; `bin/workvm-paste-prompt` opcional (clipboard); dirty → `git checkout --` antes do commit. Worktree de `~/git` por card **não** é a solução (peso e risco de commit no lugar errado).
 
 ## Colleague QA/CR: Validação/Revisado só depois de gap + mutation (Olie / Locav / Televisão)
 
@@ -964,3 +1192,82 @@ resolvido como: o que foi feito e por que dessa forma
 - **problema:** em `APP_ENV=local` o secret real rejeita o token fake do Playwright (`Token inválido`), e a site key de development ainda abre desafio do Google no browser do agente — comentar PHP/`getToken()` era tentador e arriscava commit
 - **por que é um problema:** e2e e login no Cursor param no captcha; bypass em código suja o diff e foge do prompt
 - **resolvido como:** par de teste público do Google só em env — `RECAPTCHA_SECRET` no `.env` do `api-main` (backup em `~/.config/workvm/`) e, para UI, `VITE_APP_RECAPTCHA_SITE_KEY` em `packages/management/.env.development.local` (exclude local); documentado em `olie/prompts/implementation.md` §7; proibido comentar validação
+
+## Host-card Televisão navegável (TV-16)
+
+- **problema:** `ensure` do Televisão subia só o compose slim (`php -S` em `~/git/televisao`); `/` e `/up` davam 404 e não havia front
+- **por que é um problema:** o caso 2 do experimento (card no jarvis sem WorkVM) parecia “não está rodando” ao abrir no browser
+- **resolvido como:** `compose.host.yml` + `Dockerfile.host-api` (pgsql/redis/Laravel/Next namespaced); ensure escreve DNS `api|devframe.{slug}.olie.localhost`; slim fica só para Pest/sandbox
+
+## Pest no host-card Olie (DNS slug + reCAPTCHA)
+
+- **problema:** suite paralela no DOP-1183 falhava 3 testes: URLs com `*.dop-1183.olie.localhost` e `SubmitPublicForm` sem `invalid_token`; re-runs seguintes caíam em massa (`testing_test_*` sem tables)
+- **por que é um problema:** o ensure injeta `MANAGEMENT_URL` com slug (browser multi-card) e o secret reCAPTCHA de teste do Google (login local); `--recreate-databases` esvazia o MySQL mas o checksum do FastRefreshDatabase faz pular `migrate:fresh`
+- **resolvido como:** `bin/workvm-host-card-pest` força no `exec` o env da WorkVM (`MANAGEMENT_URL=http://{subdomain}.olie.localhost`, `DB_DATABASE=testing`, secret que rejeita token fake) e apaga `storage/app/migration-checksum_*.txt` antes do Pest
+
+## Host-card sem olie-flow-ai (colleague review)
+
+- **problema:** no jarvis o colleague review parava em “olie-flow-ai MCP is unavailable”; na WorkVM o board carregava
+- **por que é um problema:** host-card não passa pelo `project-start` — sem merge em `~/.cursor/mcp.json` nem proxy `:47331` o agente não fala com o card
+- **resolvido como:** `workvm_host_card_ensure_olie_mcp` no ensure (olie/locav/televisão com `MCP=olie`): mesmo caminho da VM (`workvm_apply_mcp` + `workvm_sync_olie_mcp_proxy`)
+
+## Host-card sem Laravel Boost MCP
+
+- **problema:** `~/.cursor/mcp.json` no jarvis só tinha `olie-flow-ai` + playwright; Boost não aparecia
+- **por que é um problema:** a VM aplica `overlay/` (mcp.json do api-main → `olie-api-main`) no login; host-card não aplicava overlay e o container do card é `hc-olie-*-app-1`
+- **resolvido como:** ensure aplica overlay + merge; `bin/workvm-host-card-boost-mcp.sh` aponta Boost ao container do card ativo (`host-card-boost-container`)
+
+## finish card fecha a janela Cursor
+
+- **problema:** `finish card` / `destroy` limpava compose e estado, mas a janela do card ficava aberta
+- **por que é um problema:** N janelas mortas no Hyprland depois de revisar vários cards
+- **resolvido como:** `workvm_close_cursor_workspace` fecha só a janela cujo título tem `olie-dop-… (Workspace)` (class Cursor)
+
+## finish card + Hyprland 0.56 não fecha o Cursor
+
+- **problema:** `hyprctl dispatch closewindow address:…` falha no Hyprland 0.56 (config Lua); a mensagem era `falha ao fechar Cursor` e a janela ficava
+- **por que é um problema:** finalize card não limpa a janela; tentar `hl.dsp.window.close()` sem `window=` fecha a ativa (ou outras)
+- **resolvido como:** `hyprctl dispatch 'hl.dsp.window.close({ window = "address:…" })'` só para addresses batidos pelo título do card; sem fallback sem `window=`
+
+## finish card não pergunta Concluído
+
+- **problema:** `finish card` / `finalize card` perguntava se movia o board para Concluído
+- **por que é um problema:** o comando é só teardown local (sandbox + janela); o funil é outro pedido
+- **resolvido como:** policy Olie/Locav/Televisão — destroy sem ask/move de board
+
+## pest-parallel / ensure “resetava” o workspace
+
+- **problema:** ao rodar `pest-parallel.md`, a janela Cursor parecia resetar
+- **por que é um problema:** o prompt manda `ensure`, que reescrevia o `.code-workspace` e abria `--new-window` de novo
+- **resolvido como:** só grava o workspace se o JSON mudou; `workvm_open_cursor` não reabre se a janela do card já existe (Hyprland); pest-parallel pode pular ensure se o stack já está up
+
+## Workspace do card apontava clone, não o worktree
+
+- **problema:** janela host-card listava `~/git/olie/api-main`, mas o compose usa o worktree em `~/.local/share/workvm/host-cards/...`; editar o worktree pedia permissão (fora do workspace)
+- **por que é um problema:** implementação no card vira “Ask every Write”; ou o agente edita o clone e o container não vê
+- **resolvido como:** após o ensure hook, `workvm_host_card_bind_workspace_worktree` troca a pasta `api-main` do `.code-workspace` pelo path absoluto do worktree
+
+## ensure host-card falha no proxy MCP (start-limit)
+
+- **problema:** `workvm-host-card ensure` saía 1 em `workvm_sync_olie_mcp_proxy` com `start-limit-hit` / Address already in use, mesmo com `:47331` já ouvindo
+- **por que é um problema:** correction/colleague param no ensure; o proxy manual ou restart repetido deixa a unit failed
+- **resolvido como:** se a porta já responde → OK; senão `reset-failed` + start; fallback `nohup` do script
+
+## finish card devolve clones para develop
+
+- **problema:** depois do destroy, `api-main` / `olie-fronts` (e outros CLONE_REPOS) ficavam na feature do review
+- **por que é um problema:** o próximo card / workspace compartilhado herdava branch e diffs errados
+- **resolvido como:** `workvm_host_card_restore_clone_bases` no destroy (stash se dirty → checkout da branch do `project.conf`; pula `olie/docs`)
+
+## Host-card Playwright MCP em Connecting…
+
+- **problema:** Playwright ficava em Connecting… no Cursor do jarvis
+- **por que é um problema:** o merge apontava `workvm-playwright-mcp.sh` → container `olie-e2e`, que a WorkVM sobe no compose e o host-card não
+- **resolvido como (1º):** wrapper Chromium + npx no host (paliativo)
+- **resolvido como (atual):** ensure sobe `olie-e2e` por card (`compose.e2e-host.yml`, `network_mode: host`, `E2E_*` → `*.{slug}.olie.localhost`); `workvm-host-card-playwright-mcp.sh` faz `docker exec` nesse container (pointer `host-card-e2e-container`), igual à WorkVM
+
+## Host-card Cursor abria o explorer no Televisão
+
+- **problema:** ensure Olie abria janela com o workspace certo, mas o explorer mostrava `televisao/` (e outros produtos) sob o meta-repo
+- **por que é um problema:** o root `git` → `~/git` lista todos os projetos; só reordenar pastas não esconde os irmãos
+- **resolvido como:** clones primeiro + meta-repo por último; `files.exclude` + `git.repositoryScanIgnoredFolders` + `git.ignoredRepositories` nos clones dos outros produtos (SCM ainda listava `televisao-*` sob `~/git`); limpa `treeViewState` ao reabrir

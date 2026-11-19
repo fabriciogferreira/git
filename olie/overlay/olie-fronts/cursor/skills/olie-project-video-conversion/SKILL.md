@@ -55,7 +55,7 @@ Same convention as `olie-project-image-analysis` (one file per media id).
 
 | Step | Tool |
 | --- | --- |
-| List content | MCP `get-project-media-tool` |
+| List content | MCP `get-project-media-tool` with **`filter: "default"`** (required — user content + system logs; do not use tool default `content`) |
 | Load prior conversion | Read `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` if present |
 | Download | HTTP GET `file_url` |
 | Convert (preferred) | `curl` POST vid2agent API |

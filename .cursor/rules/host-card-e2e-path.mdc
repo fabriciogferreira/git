@@ -1,0 +1,17 @@
+---
+description: Host-card — write private Playwright under workspace olie-e2e, not ~/git/olie/olie-e2e
+alwaysApply: true
+---
+
+# Host-card: olie-e2e path
+
+This window is a **host-card** workspace. The private Playwright suite is the
+workspace folder named **`olie-e2e`** (this card’s meta worktree), not
+`~/git/olie/olie-e2e`.
+
+- Create/update specs only under that `olie-e2e` folder (e.g. `tests/features/…`).
+- Do **not** write to `~/git/olie/olie-e2e` or `/home/**/git/olie/olie-e2e` —
+  those paths are outside this workspace and trigger permission prompts.
+- When a prompt says `~/git/olie/olie-e2e`, resolve it to this workspace
+  `olie-e2e` folder instead (**Private E2E suites** / path resolution in
+  `workflow-policy.md`).

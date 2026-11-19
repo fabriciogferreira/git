@@ -20,6 +20,34 @@ Cursor Auto-review often prompts on `gh` in the shell (network + session credent
 
 Never paste a Bearer token. Never silently swap tools to hide a failure (except `olie-flow-ai` `needsAuth` → **MCP auth** below).
 
+## Expensive re-run budget
+
+Do **not** repeat an expensive step when nothing material changed since the last run of that step in this chat (same code/asserts/env/deploy, same card diff).
+
+| Expensive step | Re-run only when |
+| --- | --- |
+| `pest --mutate` / `pest --coverage` | Test or production blobs under test changed (`sha:` mismatch / missing stamp), or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). Matching `sha:` in the ledger → skip sandbox across chats. |
+| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. |
+| Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
+| Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |
+| Pre-QA checklist / production smoke | Code, PR, or production deploy changed; or a prior check failed and was fixed. |
+| Correction verification | Re-check only what this correction changed — not the whole unrelated suite “for safety”. |
+
+`try again` means “run again **after** a real change or unblock”, not “repeat the same measurement on an unchanged tree”.
+
+## Backend change-set (when `develop...HEAD` is empty)
+
+Shared recipe for gap / mutation / coverage / colleague bootstrap on `api-main` (base branch `develop` — `project.md`). Locav/Televisão use the same steps on their API clone and base branch.
+
+1. **Always** include dirty paths: `git status --short`, `git diff --name-only HEAD`, and untracked files.
+2. **Primary** branch diff: `git diff --name-only develop...HEAD` (three-dot). In-scope hunks: `git diff -U0 develop...HEAD -- <path>`.
+3. If that three-dot list is **empty** but the card still has backend work (feature already merged, worktree tip ≡ `develop`, or `feature/…` tip already contained in `develop`):
+   1. Prefer a still-existing feature tip: `git diff --name-only develop...<feature-tip>` / `git log develop..<feature-tip> --grep='<CODE>'`.
+   2. Else collect **PR merge commits** for the card (`git log --merges --grep='<CODE>'`, and/or merge SHAs from card PR links). **Skip** sync merges whose subject is “merge develop into the branch” (or equivalent). For each remaining merge `M`, add `git diff --name-only M^1...M^2`.
+   3. Else (or to fill gaps): non-merge commits `git log --no-merges --grep='<CODE>'` → `git diff-tree --no-commit-id --name-only -r <sha>` per commit; union paths.
+   4. In-scope hunks for a path: union `git diff -U0 M^1...M^2 -- <path>` (or the non-merge commit patches) over the commits that touched it — not `git diff HEAD` alone (that is empty on a clean merged tip).
+4. **Never** treat empty `develop...HEAD` alone as “no backend” when the card, PRs, or notebook say `api-main` changed — use step 3 (bench DOP-1281: three-dot 0 files; merge-parent union ≈ 49 paths).
+
 ## Board stages
 
 The OlieFlowAi project funnel is the source of truth for stage display names and IDs. Read the card and its funnel before moving a card:
@@ -82,16 +110,43 @@ Verify the card's stage after the call. On non-2xx, missing env, or ambiguous fu
 For a colleague card in 'QA/CR', the board move waits until **every** gate that applies has finished:
 
 1. **Colleague review core** (`colleague-review-core.md`, launched by `colleague-review.md`) — pass or fail; write fail findings into the card content (OlieFlowAi).
-2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. On this colleague stack, write missing use cases into the card content when that run reports them. (Own-card develop handoff lists gaps in chat only — see `test-gap-analysis.md`.)
-3. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Write mutation-driven fixes into the card content when that run reports them.
+2. **Test gap analysis** (`test-gap-analysis.md`) — when the change set touched `api-main`. Skip when there is no backend. Report in Cursor chat only on this stack (own-card is also chat-only — see `test-gap-analysis.md`).
+3. **Coverage testing** (`coverage-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Report coverage-driven work in Cursor chat only.
+4. **Mutation testing** (`mutation-testing.md`) — only when the change set touched `api-main`. Skip when there is no backend. Report mutation-driven work in Cursor chat only. **Re-run budget:** after one mutate report, classify in-scope survivors as killable vs `equivalent` immediately; re-mutate only after a real assert change (prefer ≤1 re-run per `--class`); never re-mutate an unchanged tree “to confirm”. Same rule in Locav/Televisão mutation prompts; coverage has a matching re-measure budget.
 
-**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation **in parallel** (gap/mutation skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. **Require** `~/git/bin/workvm-sandbox` (`--project olie`) to shard exclusive mutation / Pest (one changed test file per sandbox; queue when over `WORKVM_SANDBOX_MAX`) — never `docker exec olie-api-main` for those jobs while gates share the Card VM. Compatible work (core + gap **read-only**) stays on the Card VM. Own-card develop handoff still runs gap → mutation → coverage sequentially by default (`next mutation` / `next coverage` = one file); `correct mutations` / `correct coverages` drain remaining files in parallel (sandbox + subagent per file — same shard contract). Prefer a mutation-profile sandbox so Card VM `testing` stays clean.
+**Project content (gap / mutation / coverage):** do **not** write gap, mutation, or coverage results into the project/card while the reviewing user will fix them (**reviewer-fix**). Paste those three onto the card **only** when the combined outcome moves to 'Corrigir' because of a failure **outside** those gates (colleague core / product / acceptance) — so the author still sees the test debt alongside the bounce.
+
+Own-card sequential order (not the colleague parallel dispatcher): gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
+
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation + coverage **in parallel** (gap/mutation/coverage skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation/coverage after that dispatcher. Contract: `~/git/olie/sandbox/ORCHESTRATION.md`. **Require** `~/git/bin/workvm-sandbox` (`--project olie`) to shard exclusive mutation / coverage / Pest (one changed test or production file per sandbox; Olie has no default sandbox cap — queue only if `WORKVM_SANDBOX_MAX` > 0) — never `docker exec olie-api-main` for those jobs while gates share the Card VM. Compatible work (core + gap **read-only**) stays on the Card VM. Own-card develop handoff still runs gap → coverage → mutation → pest-parallel as **stages**, but within coverage/mutation the default is **`correct coverages` / `correct mutations`** (parallel sandbox drain); `next coverage` / `next mutation` are opt-in one-file (sandbox + subagent per file — same shard contract). Prefer a mutation-profile sandbox so Card VM `testing` stays clean.
 
 **Do not move to 'Corrigir' or 'Validação' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve PRs until the combined outcome below. Workers never move the funnel themselves.
 
-**Move to 'Corrigir'** only after all applicable gates finished **and** at least one failed (colleague fail and/or gap analysis reported missing cases and/or mutation reported fixes for the author).
+**Move to 'Corrigir'** only after all applicable gates finished **and** the colleague core review failed (or any failure **outside** test-gap / mutation / coverage). Product/acceptance defects bounce to the author.
 
-**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back.
+**Reviewer-fix path** — colleague core **Pass**, but test-gap and/or mutation and/or coverage reported work: leave the card in 'QA/CR'; do **not** move to 'Corrigir'; do **not** write gap/mutation/coverage into the project/card. The reviewing user may fix those gates in this chat (`add` / `to correct` / `correct mutations` / `correct coverages` / `try again` as applicable). When those gates are clean (or the user explicitly skips remaining work), apply the Pass path.
+
+**Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back **and** coverage either was skipped (no backend) or finished without fixes to send back.
+
+### Return from production / merged bounce (colleague)
+
+A card in 'QA/CR' (or back from 'Corrigir') is **not** always a first colleague pass. Rebuild its funnel path from **`get-project-media-tool` with `filter: "default"`** (system logs) plus card metrics/forms before deciding how to review.
+
+Treat the card as a **production return** when any of these hold:
+
+- System logs show it already visited **Validação**, **Revisão produção**, and/or **Concluído**, then later **Corrigir** and/or **QA/CR** again.
+- Deploy log / merge messages / closed-merged PRs show the change already shipped.
+- Metrics such as “Quantas vezes voltou para correção” ≥ 1, or user/reviewer media posted **after** deploy describing the defect still present.
+
+On a production return:
+
+- The open question is whether the **shipped** fix failed (or a new regression appeared), not whether a green host-card happy path matches the original write-up alone.
+- Prioritize post-deploy evidence (videos, comments, logs after merge/deploy) over first-pass acceptance text.
+- An author note that they “could not reproduce” is a request for the reviewer to try the bounce scenario — **not** a Pass.
+- Host-card / local success does **not** override unrebutted production evidence that the defect still occurs. Fail (or stay blocked with an honest reproduction attempt) until that conflict is resolved.
+- Scoreboard and core return must state **bounce: yes/no**, the reconstructed step path, and which post-deploy media drove the verdict.
+
+Detail for workers: **Production return** in `colleague-review-core.md`; dispatcher bootstrap classifies bounce before dispatch.
 
 ## Project execution
 
@@ -99,7 +154,7 @@ Do not start or end a project execution. Do not POST `project-executions` and do
 
 ## Reading the project notebook (Caderno)
 
-The card from MCP is not the whole spec. When a prompt requires the project Caderno (older name: forum / threads), read **every page** and the Markdown of each page via MCP — not management HTTP.
+The card from MCP is not the whole spec. Before deciding what to implement, correct, or review, also read **every page** on that project's notebook and the Markdown of each page. Older prompts called this the project **forum** / **threads** — same object, new MCP name.
 
 | Older (management HTTP / UI habit) | MCP `olie-flow-ai` |
 | --- | --- |
@@ -110,23 +165,84 @@ The card from MCP is not the whole spec. When a prompt requires the project Cade
 
 There is **one notebook per project**. **`get-notebook-tool` is the list-all tool**: it returns `pages` plus nested `children`. There is no separate "list forums" MCP tool — walk that tree. Do not stop at `default_page_id`.
 
-1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID.
+1. Call MCP `get-notebook-tool` with `model_type` `project` and `model_id` the card code or UUID (e.g. `DOP-1274` or `CARD_PROJECT_ID` from `get-project-details-tool`).
 2. If `notebook` is `null`, the project has no Caderno yet — note that and continue from card media/description only (not a tooling failure).
 3. Walk every entry in `pages` and every nested `children` array. Collect each page's `id` and `name`, including the default page.
-4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). Empty `blocks` means an empty page — note the name and continue.
-5. A block with `type` `image` (or an image URL in markdown): follow the project's image-analysis skill when the prompt requires it. Do not store signed URL query strings; they expire.
+4. For each page id, call MCP `read-notebook-page-tool` with `page_id`. Read every block's `markdown` (and `type`). That text is part of what the card asks for. Empty `blocks` means an empty page — note the name and continue.
+5. A block with `type` `image` (or an image URL in markdown): follow `olie-project-image-analysis` (notebook page images). Do not store signed URL query strings; they expire.
 
-Do **not** use `~/git/bin/workvm-olie-management-read.sh` while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth**. Never inline Bearer curl for Caderno.
+Do **not** use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-thread` / `get-thread-data`) while MCP notebook tools work. That helper is only **Tool preference** step 3 under **MCP auth** (`needsAuth` / 401 on the notebook tools themselves). Never inline Bearer curl for Caderno.
 
-On MCP error (other than `notebook: null`): stop and report (prompt-health rules).
+On MCP error (other than `notebook: null`): stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the notebook read failed.
+
+## Project media (`get-project-media-tool`)
+
+MCP `get-project-media-tool` lists the card’s channel timeline (user messages, files, and system logs).
+
+**Always pass `filter: "default"`.** Do not omit `filter` and do not use the tool default `content`.
+
+| `filter` | What you get |
+| --- | --- |
+| `content` (tool default — **do not use**) | Only user-sent messages and files. Hides system logs. |
+| `logs` | Only system logs. |
+| `default` (**required**) | User content **and** system logs together. |
+
+System logs include funnel moves (which step the card left, which step it entered) and other board automation. Without them, a colleague review can miss that the card already reached Validação / produção and bounced back — user chat alone looks like a first-pass QA/CR. Colleague review must rebuild that path and apply **Return from production / merged bounce** when the logs show a return.
+
+Other args unchanged: `project_identifier` (required), `page`, optional `channel_id` (omit = MAIN channel).
+
+Every prompt that lists card media (`colleague-review-core`, `implementation`, `correction`, `production-review`, and the colleague dispatcher bootstrap) must call this tool with `filter: "default"`.
+
+## Host card environment
+
+Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
+
+**Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `pest-parallel.md` (suite regression), `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
+
+```bash
+~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
+```
+
+User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-card open` (= ensure + **focus/open** the card `.code-workspace`). Always print `workspace=` and `api_worktree=`. Rebases/edits belong in that worktree’s `api-main`, **not** `~/git/olie/api-main`. Do not leave the user on the meta-repo `~/git` Cursor window.
+
+**Meta-repo edits on host-card (Olie / Locav / Televisão):** when this chat’s workspace is a host-card, edit prompts, `HISTORICO.md`, overlay, and `.cursor/rules` only under the workspace folder **`git/`** (the card meta worktree). Do **not** write `~/git/olie/prompts/…`, `~/git/locav/…`, `~/git/televisao/…`, or other bare `~/git/…` paths — those sit outside the workspace and force permission prompts. Resolve `~/git/...` in prompts to that `git/` root (same pattern as **Private E2E suites** → workspace `olie-e2e`). Rule: `host-card-meta-repo-path.mdc`. Binaries may still run from `~/git/bin/…`.
+
+- **Shell permissions (required):** call `ensure` / `open` / `destroy` **and** `~/git/bin/workvm-sandbox` (`create` / `job run` / `destroy`) / coverage·mutation drains **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”. Host-card workspaces live under `~/.local/share/workvm/host-cards/…`; sandboxes write `~/.local/share/workvm/sandboxes/` (outside those roots) + `docker.sock` — the default agent sandbox always denies both.
+  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json` or `~/.local/share/workvm/`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same command succeeds with `all` when the host is fine.
+  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure/sandbox in a terminal unless `all` already ran and still failed for a real host reason.
+  - Do **not** stop the prompt / mark coverage·mutation **Blocked** declaring tooling/host broken while only the sandboxed shell failed.
+- First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
+- **api-main worktree branch:** if a local or `origin` branch name already contains the card code (ex. `feature/DOP-1273-…`), ensure checks it out **in the card worktree** (not the shared clone). No matching branch yet → worktree stays on `develop`/HEAD until implementation creates one.
+- Browser (slug = código em minúsculas, ex. `dop-1183`):
+  - Front: `http://devframe.{slug}.olie.localhost`
+  - API: `http://api.{slug}.olie.localhost`
+  - Do **not** use bare `devframe.olie.localhost` for a host-card (colide entre cards).
+- Later day / re-paste → **resume** the same id (compose up again; do not destroy); worktree checkout runs again on resume; if Cursor already has the card window → **focus** it (do **not** close/reopen — that killed colleague-review chats mid-ensure). Use `open` when you need the SCM close+reopen dance. From inside the card window with stack already up: `WORKVM_HOST_CARD_OPEN_CURSOR=0` on ensure.
+- Report `id`, `port_base`, `front_dns` / `api_dns`, and `workspace` in chat.
+- Requires clones + `vendor` on the host. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
+
+**Destroy (only when the card is finished):** remove containers/networks for that compose project, generated workspace, and state dir — same spirit as dropping the Card VM domain.
+
+```bash
+~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'
+```
+
+Run destroy when:
+
+1. The card moved to logical `done` ('concluído') after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or
+2. The user sends `finish card` / `finalize card` (see **Chat commands**) — **local teardown only**, no board move.
+
+Do **not** destroy at the end of an implementation/correction/colleague-review paste, when closing the chat for the day, or when the card only moves to QA/CR, Validação, or Corrigir.
+
+Child exclusive jobs (mutation/Pest) still use `~/git/bin/workvm-sandbox --project olie` on top of this host card.
 
 ## Several cards at once
 
-The board shows one project execution. VMs can run several cards at the same time.
+The board shows one project execution. Several **host cards** (or WorkVMs) can run at the same time; each needs its own `workvm-host-card ensure` id / ports.
 
 The Opbed Job page (`/job`) reads `board_executions` and sends the project-execution requests, one card at a time, for each card's 'Tempo que eu acho'. This chat does not send those requests, does not end an execution, and does not ask for the codes.
 
-The user works every listed card in parallel on the VMs.
+The user works every listed card in parallel (one Cursor window / host-card unit per code).
 
 ## Toggling a funnel-step checklist item
 
@@ -218,6 +334,14 @@ If that clone is already mid-rebase or dirty from a mistaken agent pass: abort/r
 
 Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal placeholders (`{{ code }}`, and any other `{{ … }}` the file uses). Replacing them with a real card code happens only in the chat paste, never in the versioned file.
 
+**Do not edit the template in the editor** to swap `{{ code }}` — that dirties the shared meta-repo and shows up in every host-card window. Prefer a chat command (agent reads the file, substitutes in memory, runs — no save):
+
+- `colleague review DOP-1285`
+- `run prompt colleague-review DOP-1285`
+- or `@colleague-review.md` + the card code in the same message
+
+Optional clipboard helper (no agent): `~/git/bin/workvm-paste-prompt olie colleague-review DOP-1285` → clipboard + `@.paste-prompt.md`. Do **not** create a git worktree of `~/git` just to isolate this edit.
+
 When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prompt edits, or any other path):
 
 - Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. `DOP-1262` instead of `{{ code }}`).
@@ -238,21 +362,31 @@ Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on th
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
 - Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
-- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
+- Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 - Do **not** cite private meta-repo E2E (see **Private E2E suites** below).
 - Do **not** cite personal WorkVM / Card VM / sandbox / dispatcher / ledger tooling. That stack exists only for the owner of this meta-repo. Ban on the card (and Caderno): `VM`, `WorkVM`, `Card VM`, `sandbox`, `workvm-sandbox`, `dispatcher`, `ledger`, `mutation-ledger`, `coverage-ledger`, “nesta VM”, “nesta máquina”, hostnames, compose service names used only here, and process notes that only make sense with those tools (“fechamento do gate”, “Pest raw score”, “in-scope hunks”). Put that detail in the Cursor chat scoreboard only.
 - If a gate is clean and there is nothing for the author to change, **do not** post a process wrap-up to the card. Silence on the card is fine; the chat report is enough.
+- On colleague review, do **not** put gap / mutation / coverage results on the card during **reviewer-fix** (those stay in chat). Include them on the card only when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**.
 
 Recommend the next prompt **only in the Cursor chat** report.
 
 ## Private E2E suites (olie-e2e — owner only)
 
-`~/git/olie/olie-e2e` is **personal WorkVM tooling**. It is not on the company remotes and other developers do not have those specs. Locav is the exception among EnterScience products: Cypress lives **inside** `locav-front` on the company branch, so Locav may cite its e2e in repos, PRs, and card content.
+The private Playwright suite is **personal WorkVM / host-card tooling**. It is not on the company remotes and other developers do not have those specs. Locav is the exception among EnterScience products: Cypress lives **inside** `locav-front` on the company branch, so Locav may cite its e2e in repos, PRs, and card content.
+
+### Path resolution (write here — avoid permission prompts)
+
+Prompts may still say `~/git/olie/olie-e2e`. **Resolve the writable root** before create/edit:
+
+1. If the open workspace has a folder named **`olie-e2e`**, use **that** folder (host-card: meta worktree under `~/.local/share/workvm/host-cards/olie/<id>/worktree/git/olie/olie-e2e`).
+2. Else use `~/git/olie/olie-e2e` (classic WorkVM multi-root with `~/git`).
+
+Never create specs under `~/git/olie/olie-e2e` when that path is **outside** the open workspace folders — Cursor will ask to approve a write outside the workspace. Prefer the in-workspace `olie-e2e` / meta `git` worktree so edits need no extra permission.
 
 For **Olie** (and any product whose Playwright suite lives only under the meta-repo):
 
-- Agents **may** add/run/commit Playwright under `~/git/olie/olie-e2e` on meta-repo `main` and mention results **only in Cursor chat**.
+- Agents **may** add/run/commit Playwright under the resolved e2e root (WorkVM: on meta-repo `main`; host-card: commit in the card’s meta worktree) and mention results **only in Cursor chat**.
 - Do **not** cite `olie-e2e`, Playwright meta specs, `~/git/olie/olie-e2e/...`, or “e2e coverage added in the meta-repo” in:
   - Olie project/card content (`save-media-tool`, description, form answers, tags notes)
   - Caderno / notebook pages
@@ -278,25 +412,36 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 
 | Command | Meaning |
 | --- | --- |
-| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — mutation stack:** if `~/git/olie/prompts/mutation-testing.md` is in progress and any changed `api-main` `*Test.php` is still missing a `100%` / `equivalent` ledger row, **refuse** `next prompt` (do not open `coverage-testing.md` or `pre-qa.md`). List what remains and tell the user to send `next mutation` or `correct mutations`. **Exception — coverage stack:** if `~/git/olie/prompts/coverage-testing.md` is in progress and any changed `api-main` `app/**/*.php` is still missing a done `coverage-ledger.md` row, **refuse** `next prompt` (do not open `pre-qa.md`). List what remains and tell the user to send `next coverage` or `correct coverages`. |
-| `next mutation` | Only during the personal mutation stack (`~/git/olie/prompts/mutation-testing.md`): open that prompt and process the **next** changed test file not yet done in `~/git/olie/prompts/mutation-ledger.md` (one file per turn). Same as re-pasting mutation-testing. Do not jump to `coverage-testing.md` or `pre-qa.md`. If the stack is already complete, say so and point at `next prompt` → `coverage-testing.md`. |
-| `correct mutations` | Only during the personal mutation stack: drain **every** remaining changed `*Test.php` in this turn — one `workvm-sandbox` (`--project olie --profile mutation`) **and** one subagent per file; parent writes `mutation-ledger.md`. Not `to correct`. Do not jump to `coverage-testing.md` / `pre-qa.md` until the drain finishes. Detail: `mutation-testing.md` → **`correct mutations` (parallel drain)**. |
-| `next coverage` | Only during the personal coverage stack (`~/git/olie/prompts/coverage-testing.md`): open that prompt and process the **next** changed `app/**/*.php` not yet done in `~/git/olie/prompts/coverage-ledger.md` (one file per turn). Same as re-pasting coverage-testing. Do not jump to `pre-qa.md`. If the stack is already complete, say so and point at `next prompt` → `pre-qa.md`. |
-| `correct coverages` | Only during the personal coverage stack: drain **every** remaining changed production file in this turn — prefer one sandbox **and** one subagent per file; parent writes `coverage-ledger.md`. Do not jump to `pre-qa.md` until the drain finishes. Detail: `coverage-testing.md` → **`correct coverages` (parallel drain)**. |
+| `next prompt` | Open and **run** the next prompt this chat already recommended (path under `~/git/olie/prompts/`). Do not wait for the user to paste that file. If none was recommended yet, say so and stop. **Exception — coverage stack:** if `coverage-testing.md` is in progress and any changed `api-main` `app/**/*.php` is still missing a done `coverage-ledger.md` row, **refuse** `next prompt` (do not open `mutation-testing.md`, `pest-parallel.md`, or `pre-qa.md`). List what remains and tell the user to send `next coverage` or `correct coverages`. **Exception — mutation stack:** if `mutation-testing.md` is in progress and any changed `api-main` `*Test.php` is still missing a `100%` / `equivalent` ledger row, **refuse** `next prompt` (do not open `pest-parallel.md` or `pre-qa.md`). List what remains and tell the user to send `next mutation` or `correct mutations`. |
+| `next mutation` | Opt-in one file during the personal mutation stack. Prefer default `correct mutations`. Do not jump to `pest-parallel.md` or `pre-qa.md`. |
+| `correct mutations` | **Default** personal mutation drain: every remaining changed `*Test.php` in this turn — one `workvm-sandbox` (`--project olie --profile mutation`) **and** one subagent per file; parent writes `mutation-ledger.md`. Opening `mutation-testing.md` with files remaining does this. Not `to correct`. |
+| `next coverage` | Opt-in one file during the personal coverage stack. Prefer default `correct coverages`. Do not jump to `mutation-testing.md` / `pest-parallel.md` / `pre-qa.md`. |
+| `correct coverages` | **Default** personal coverage drain: every remaining changed production file in this turn — prefer one sandbox **and** one subagent per file; parent writes `coverage-ledger.md`. Opening `coverage-testing.md` with files remaining does this. |
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
-| `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
+| `add` | After **Tests to add** from `~/git/olie/prompts/test-gap-analysis.md`: implement every listed missing test (title + description from that report) only. Do not open coverage / mutation / Pest parallel / pre-QA in the same turn. When done, recommend `try again` to re-run gap analysis. Not for validation **Needs code fixes** (`to correct`) and not `correct mutations`. |
+| `to correct` | Fix the latest corrective list in this chat: **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or failures from `pest-parallel.md`. Implement those items only; then recommend `try again` on that same pass. For gap **Tests to add**, use `add` instead. Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
+| `open olie CODE` / `open PROJECT CODE` | `~/git/bin/workvm-host-card open --project olie --code <CODE>` (or `locav` / `televisao` / `opbed`). Ensure + **open/focus** the card’s `~/git/<project>/<id>.code-workspace` (api-main = host-card **worktree**, not `~/git/olie/api-main`). Print `workspace=` and `api_worktree=`. Do not keep editing in the meta-repo `~/git` window. |
+| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (compose/sandbox + clones compartilhados de volta à branch base do `project.conf`, ex. `develop`). **Does not** close the Cursor window (that killed the chat mid-prompt). After destroy succeeds, tell the user explicitly they can close the card window manually. Do **not** ask about or move the board to 'concluído' — that is a separate explicit request. Do not destroy other cards. |
+| `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
+| `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |
+| `resolva` | After a **prompt-health** stop: fix the blocker **in this session only** (local/env/compose). Do not encode a permanent meta-repo solution. Then resume the interrupted prompt. |
+| `documente` | After a **prompt-health** stop: write the problem into `~/git/HISTORICO.md` (and a short rule/prompt note if useful) as a known issue / workaround. Apply a small local unblock if safe; if the real fix is too large for this card, **document only** and stop after writing. |
+| `resolva permanentemente` | After a **prompt-health** stop: unblock now **and** leave a durable fix so the **next card** does not rediscover it — `HISTORICO.md` (`problema` / `por que é um problema` / `resolvido como`) plus the right artifact (`.cursor/rules`, this workflow-policy, `bin/`/`lib/`, overlay, etc.). Prefer rule/script over prose-only when the failure is mechanical. |
 
-When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While mutation-testing still has remaining files, the remembered “continue” commands are `next mutation` or `correct mutations`, not `next prompt`. While coverage-testing still has remaining files, the remembered “continue” commands are `next coverage` or `correct coverages`, not `next prompt`. Own-card develop handoff after mutation recommends `coverage-testing.md` before `pre-qa.md`.
+When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While coverage-testing still has remaining files, the remembered “continue” commands are `next coverage` or `correct coverages`, not `next prompt`. While mutation-testing still has remaining files, the remembered “continue” commands are `next mutation` or `correct mutations`, not `next prompt`. Own-card develop handoff order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, **MCP call** (any configured server), shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop the prompt**. Do not silently work around it, swap tools to hide the break, or keep going. **Ask the user to fix the broken tool** (MCP auth/token, proxy, Docker, env, etc.) and wait before continuing. `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is the **MCP auth** case above, not this stop — do not ask the user to sign in again for that case only.
+If a request, **MCP call** (any configured server), shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** WorkVM/host-card friction burns time on every card — **stop the prompt**. Do not silently work around it, swap tools to hide the break, or keep going. `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is the **MCP auth** case above, not this stop — do not ask the user to sign in again for that case only. Host-card **sandbox permission cluster**: retry with `required_permissions: ["all"]` first (see **Host card environment**); that is not “host broken”.
+
+Diagnose, then **wait** for one of `resolva` / `documente` / `resolva permanentemente` (table above). Do not pick the path yourself.
 
 Report:
 
 1. What you were doing
 2. The objective error (status, short message) or that it hung past a reasonable wait
 3. The most likely cause
-4. That the user should fix the tooling, **or** that this prompt (or its assumptions) may need updating if the failure looks like a bad prompt instruction
+4. Whether `~/git/HISTORICO.md` or an existing rule/prompt **already documents** this — cite it if so
+5. The three commands (`resolva` / `documente` / `resolva permanentemente`) and that you are waiting
 
-Then wait for the user. Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.
+Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.

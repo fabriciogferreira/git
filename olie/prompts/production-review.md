@@ -12,7 +12,7 @@ Verify the card's acceptance criteria in production. A local or staging result i
 
 1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites.
 2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/olie/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
-   1. `git pull` the meta-repo if needed, then list media via MCP (`get-project-media-tool`).
+   1. `git pull` the meta-repo if needed, then list media via MCP `get-project-media-tool` with **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`; do not use the tool default `content`).
    2. For each image, video, or audio that defines expected production behavior:
       - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
       - If that file is **missing** → analyze now: `olie-project-image-analysis` / `olie-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.
