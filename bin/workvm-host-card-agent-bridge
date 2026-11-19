@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Poll host-card worktrees for agent ensure requests and run ensure outside the
+# Cursor agent sandbox (which hides docker.sock and blocks ~/.cursor writes).
+# Problema: Auto-review podia auto-aprovar o Shell do ensure sem conceder
+# required_permissions all → ensure falhava no cluster de sandbox e o card
+# ficava sem compose. Este serviço roda no user systemd (host real).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HOST_CARD_ROOT="${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
+REQUEST_NAME='.workvm-agent-ensure-request.json'
+RESULT_NAME='.workvm-agent-ensure-result.json'
+POLL_SEC="${WORKVM_HOST_CARD_AGENT_BRIDGE_POLL_SEC:-2}"
+
+log() { printf 'workvm-host-card-agent-bridge: %s\n' "$*" >&2; }
+
+process_request() {
+    local req="$1"
+    local dir project code open_cursor result tmp rc=0
+    dir="$(dirname "$req")"
+    result="${dir}/${RESULT_NAME}"
+    tmp="$(mktemp)"
+
+    if ! python3 - "$req" >"$tmp" <<'PY'
+import json, sys
+p = sys.argv[1]
+with open(p, encoding="utf-8") as f:
+    data = json.load(f)
+project = data.get("project") or ""
+code = data.get("code") or ""
+open_cursor = data.get("open_cursor", 0)
+if not project or not code:
+    raise SystemExit("missing project/code")
+print(project)
+print(code)
+print(0 if open_cursor in (0, "0", False, None) else 1)
+PY
+    then
+        log "pedido inválido: $req"
+        rm -f "$tmp"
+        rm -f "$req"
+        return 0
+    fi
+
+    {
+        read -r project
+        read -r code
+        read -r open_cursor
+    } <"$tmp"
+    rm -f "$tmp"
+
+    log "ensure $project $code (open_cursor=$open_cursor) ← $req"
+    set +e
+    if [ "$open_cursor" = "0" ]; then
+        WORKVM_HOST_CARD_OPEN_CURSOR=0 \
+            "$ROOT/bin/workvm-host-card" ensure --project "$project" --code "$code" \
+            >"${result}.log" 2>&1
+        rc=$?
+    else
+        "$ROOT/bin/workvm-host-card" ensure --project "$project" --code "$code" \
+            >"${result}.log" 2>&1
+        rc=$?
+    fi
+    set -e
+
+    python3 - "$result" "$rc" "${result}.log" <<'PY'
+import json, sys, pathlib, datetime
+out, rc, log_path = sys.argv[1], int(sys.argv[2]), pathlib.Path(sys.argv[3])
+tail = ""
+if log_path.is_file():
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    tail = text[-8000:]
+payload = {
+    "ok": rc == 0,
+    "exit_code": rc,
+    "finished_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "log_tail": tail,
+}
+pathlib.Path(out).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+PY
+    rm -f "$req"
+    log "resultado rc=$rc → $result"
+}
+
+log "watching ${HOST_CARD_ROOT} for ${REQUEST_NAME} (poll ${POLL_SEC}s)"
+while true; do
+    while IFS= read -r -d '' req; do
+        process_request "$req" || log "falha ao processar $req"
+    done < <(find "$HOST_CARD_ROOT" -type f -name "$REQUEST_NAME" -print0 2>/dev/null || true)
+    sleep "$POLL_SEC"
+done

@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card ensure: Auto-review aprova Shell sem elevar `all`
+
+- **problema:** no colleague review (DOP-1257) o agente pedia `required_permissions: ["all"]` (e `request_smart_mode_approval`); o Shell rodava mesmo assim no sandbox padrão — `Permission denied` em `~/.cursor/mcp.json`, `/var/run/docker.sock` ausente enquanto `dockerd` estava vivo, DNS/`FETCH_HEAD` falsos. O ensure abortava no merge MCP antes do compose.
+- **por que é um problema:** o allow do Auto-review para `workvm-host-card` auto-aprovava o tool call sem desligar o sandbox; o agente parava o dispatcher achando host quebrado (ou loopava ensure inútil). Stack do card ficava down.
+- **resolvido como:** (1) `permissions.json` — tira ensure/sandbox do allow genérico; **block** pede approval de unrestricted/`all` (não auto-run sandboxed). (2) resume soft-fail de MCP/CLONE quando `~/.cursor/mcp.json` já tem servers / `:47331` escuta; exit `75` + `WORKVM_AGENT_SANDBOX=1` se hook falha com sock oculto e dockerd vivo. (3) bridge: `bin/workvm-host-card-agent-bridge` + unit systemd + `agent-ensure` / `install-agent-bridge` — pedido em `worktree/git/.workvm-agent-ensure-request.json` (gravável no sandbox). (4) `workflow-policy` / `stop-on-broken-tooling`: se o footer do Shell ainda diz SANDBOXING após `all`, usar bridge ou approval card — não chmod/DNS.
+
 ## Host-card: prompts em `~/git` pediam permissão (Olie/Locav/Televisão)
 
 - **problema:** no host-card o agente editava `~/git/olie/prompts/…` (e equivalentes Locav/Televisão); esse path não é root do `.code-workspace` (o meta está em `…/worktree/git`) → Cursor pedia approve “fora do workspace”.
@@ -19,6 +25,12 @@ Problema resolvido entra aqui.
 - **problema:** cards que já passaram Validação/Revisão produção/Concluído (PR mergeado, deploy feito) e voltam para Corrigir/QA/CR eram revisados como primeiro colleague pass (happy path local → Pass).
 - **por que é um problema:** a evidência que importa é a regressão pós-deploy e o caminho no funil nos logs; “não consegui reproduzir” do autor vira pedido de tentativa, não Pass; sucesso só no host-card não apaga vídeo de produção.
 - **resolvido como:** **Return from production / merged bounce** em `workflow-policy.md`; bootstrap do `colleague-review.md` classifica `bounce` a partir dos logs (`filter: "default"`); `colleague-review-core.md` exige reproduzir o cenário do bounce e Fail se a evidência pós-deploy continuar válida; scoreboard com campo Bounce.
+
+## Colleague review: “não consegui reproduzir” virava Pass
+
+- **problema:** no DOP-1257 (e de novo na mesma review) o autor escreveu que não conseguiu reproduzir e deixou o card em QA/CR pra o revisor tentar; o agente Pass-ou / ignorou o comentário mesmo com as regras de bounce já no prompt.
+- **por que é um problema:** handoff explícito de reprodução era lido como “bug sumiu”; produção/vídeo pós-deploy ficava sem resposta; o usuário tinha que corrigir o veredito à mão.
+- **resolvido como:** HARD RULE **Author “não consegui reproduzir” / leave-in-QA handoff** em `workflow-policy.md` (tabela PT/EN + Forbidden); bootstrap do `colleague-review.md` força `bounce=yes` + quote no packet e recusa Pass sem a tríade; `colleague-review-core.md` gate antes de Pass + anti-Pass checklist; scoreboard campo Author reproduce-handoff.
 
 ## Prompt health: resolva / documente / resolva permanentemente
 

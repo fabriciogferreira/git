@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Drop an ensure request for workvm-host-card-agent-bridge and wait for the result.
+# Use from a sandboxed Cursor agent shell when docker.sock / ~/.cursor are denied.
+# Problema: ensure direto no sandbox do agente falha no cluster mcp.json/docker.sock.
+set -euo pipefail
+
+project="" code="" open_cursor=0 timeout_sec=180
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --project) project="$2"; shift 2 ;;
+        --code) code="$2"; shift 2 ;;
+        --open-cursor) open_cursor=1; shift ;;
+        --timeout) timeout_sec="$2"; shift 2 ;;
+        *)
+            echo "uso: workvm-host-card-agent-ensure --project <olie|…> --code <CODE> [--open-cursor] [--timeout N]" >&2
+            exit 2
+            ;;
+    esac
+done
+if [ -z "$project" ] || [ -z "$code" ]; then
+    echo "uso: workvm-host-card-agent-ensure --project <olie|…> --code <CODE>" >&2
+    exit 2
+fi
+
+slug="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')"
+id="${project}-${slug}"
+root="${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
+# Prefer card meta worktree (writable in agent sandbox); fallback state dir.
+dir="${root}/${project}/${id}/worktree/git"
+if [ ! -d "$dir" ]; then
+    dir="${root}/${project}/${id}"
+    mkdir -p "$dir"
+fi
+
+req="${dir}/.workvm-agent-ensure-request.json"
+result="${dir}/.workvm-agent-ensure-result.json"
+rm -f "$result"
+
+python3 - "$req" "$project" "$code" "$open_cursor" <<'PY'
+import json, sys, datetime
+path, project, code, open_cursor = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+payload = {
+    "project": project,
+    "code": code,
+    "open_cursor": int(open_cursor),
+    "requested_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+    f.write("\n")
+print(path)
+PY
+
+echo "workvm-host-card-agent-ensure: pedido → $req (aguardando bridge ≤${timeout_sec}s)" >&2
+deadline=$((SECONDS + timeout_sec))
+while [ "$SECONDS" -lt "$deadline" ]; do
+    if [ -f "$result" ]; then
+        python3 - "$result" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+print(json.dumps(data, indent=2))
+raise SystemExit(0 if data.get("ok") else int(data.get("exit_code") or 1))
+PY
+        exit $?
+    fi
+    sleep 1
+done
+echo "error: timeout aguardando bridge ($result). systemctl --user status workvm-host-card-agent-bridge" >&2
+exit 75

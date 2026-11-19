@@ -14,6 +14,8 @@ The card's requirements, acceptance criteria, and the latest version of every pr
 
 When the dispatcher (or your own media pass) marks **`bounce=yes`** (**Return from production / merged bounce** in `workflow-policy.md`), the primary question shifts: did the **shipped** change fail in Validação / produção (or after Corrigir), as shown by post-deploy evidence? Passing a host-card happy path while ignoring that path is not a pass.
 
+**HARD RULE — author “não consegui reproduzir” / leave-in-QA:** if the card has a comment like “não consegui reproduzir”, “vou deixar em QA/CR pra você tentar”, “dá uma olhada pra ver se consegue reproduzir” (or EN equivalents), that is a **reproduce handoff to you**, not a Pass. Full rule: **Author “não consegui reproduzir”** in `workflow-policy.md`. Ignoring that comment and Pass-ing is a failed review.
+
 ## 2. Context
 
 Load the card through `mcp olie-flow-ai`. Read:
@@ -32,8 +34,9 @@ Do not review from the card title alone.
 Before the verdict, rebuild the card’s step history from **system logs** in the media list (`filter: "default"`):
 
 1. List moves in order (step left → step entered, with timestamps when present).
-2. Decide **`bounce=yes`** if the path already reached Validação, Revisão produção, and/or Concluído and later returned to Corrigir and/or QA/CR — or if deploy/merge + post-deploy defect media make that clear. Otherwise `bounce=no`.
-3. On `bounce=yes`, identify the **bounce package**: post-deploy videos/comments that state the defect still happens, plus any author note asking you to reproduce (e.g. “não consegui reproduzir”). That package overrides a first-pass-only reading of the original description.
+2. Decide **`bounce=yes`** if the path already reached Validação, Revisão produção, and/or Concluído and later returned to Corrigir and/or QA/CR — or if deploy/merge + post-deploy defect media make that clear — **or** if an **author reproduce-handoff** comment is present (step 3). Otherwise `bounce=no`.
+3. Scan comments/card content for an **author reproduce-handoff**. Examples that **must** match: “não consegui reproduzir”, “não reproduzi”, “vou deixar em QA/CR pra você…”, “fica em QA/CR pra vc tentar”, “dá uma olhada pra ver se consegue reproduzir”, “could not reproduce”. On match: force `bounce=yes`, **quote the comment**, and treat it as duty to reproduce — **never** as Pass clearance.
+4. On `bounce=yes`, identify the **bounce package**: post-deploy videos/comments that state the defect still happens, plus the quoted handoff (or “none”). That package overrides a first-pass-only reading of the original description.
 
 ### Card media review (required before the verdict)
 
@@ -93,10 +96,24 @@ Follow **Temporary E2E CAPTCHA** in `~/git/olie/prompts/implementation.md` §7. 
 
 When §2 classified a bounce:
 
-1. **Reproduce the bounce scenario first** (conditions from post-deploy media/comments: viewport, header compact, modal vs card play, production host if that is where the evidence was filmed — or the closest honest local equivalent). Do not skip this because the author could not reproduce.
+1. **Reproduce the bounce scenario first** (conditions from post-deploy media/comments: viewport, header compact, modal vs card play, production host if that is where the evidence was filmed — or the closest honest local equivalent). Do not skip this because the author could not reproduce — their handoff is why you are trying.
 2. If you **reproduce** the defect → **Fail**. Findings must describe the still-broken behavior and cite the bounce media ids / log path. Do not Pass on “the original PR looked correct” or “host-card happy path works under different conditions.”
-3. If you **cannot reproduce** after a real attempt at that scenario → say so explicitly in the return (what you tried, where). Unrebutted production video that still shows the bug after deploy remains a **Fail** unless you can show the shipped build no longer matches that evidence (e.g. a newer fix landed). Local green alone does not clear production evidence.
+3. If you **cannot reproduce** after a real attempt at that scenario → say so explicitly in the return (what you tried, where). Unrebutted production video that still shows the bug after deploy remains a **Fail** unless you can show the shipped build no longer matches that evidence (e.g. a newer fix landed). Local green alone does not clear production evidence. The author’s “não consegui reproduzir” does **not** clear it either.
 4. Merged PRs / empty `develop...HEAD` are normal here — review the **shipped tip**, not “is there an open PR to approve for first merge.”
+
+### Author reproduce-handoff gate (before any Pass)
+
+Before returning **Pass**, answer all three. If any answer is missing, return **Fail** (or blocked with an honest attempt) — do **not** Pass:
+
+1. **Handoff:** quote the author “não consegui reproduzir” / leave-in-QA comment, or write `Author reproduce-handoff: none`.
+2. **Attempt:** what bounce scenario you ran (viewport, route, production vs local) when `bounce=yes` or a handoff exists.
+3. **Media:** for each post-deploy defect media id — reproduced / could not reproduce after attempt / cleared by newer shipped fix (cite evidence).
+
+**Anti-Pass checklist (any yes → cannot Pass):**
+
+- [ ] I treated “não consegui reproduzir” / “deixar em QA/CR pra você” as if the bug were gone.
+- [ ] I passed on host-card happy path without attempting the bounce package.
+- [ ] Unrebutted post-deploy video/comment still shows the defect and I have no newer-fix evidence.
 
 If `olie-fronts` changed, the e2e tests in section 3 cover the requested frontend behavior, or you say which case could not be automated and why. On a bounce, prefer extending e2e to lock the **regression that caused the return**, not only the original happy path.
 
@@ -118,7 +135,8 @@ Do not re-walk media, PRs, or acceptance paths “to confirm” after this core 
 - Assigned owner(s) from the card ('atribuído a').
 - Repositories and branches reviewed.
 - **Bounce:** yes / no — reconstructed funnel path from logs; post-deploy media ids if yes.
-- **Colleague verdict:** Pass or Fail, with the requirement that failed or passed (on bounce: state whether the bounce scenario was reproduced).
+- **Author reproduce-handoff:** yes (quote) / none — required every return; if yes, include the Pass triad (handoff + attempt + media disposition) or Fail.
+- **Colleague verdict:** Pass or Fail, with the requirement that failed or passed (on bounce: state whether the bounce scenario was reproduced). **Never Pass** solely because the author could not reproduce.
 - Contrast result for light and dark themes.
 - E2E tests added or extended, and the 'main' commit if one was pushed — or which case could not be automated and why.
 - Payment / CAPTCHA checks when relevant (ok / N/A / blocked).

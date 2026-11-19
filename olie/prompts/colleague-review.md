@@ -12,11 +12,12 @@ Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcom
 
 0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`; **Shell permissions** → `all` on first try). Resume if the unit already exists. If this chat is already the card’s Cursor window and the stack is up, prefer `WORKVM_HOST_CARD_OPEN_CURSOR=0` (ensure must **not** close/reopen the window mid-review — that kills the chat). Do **not** destroy when this dispatcher ends (card stays in QA/CR, Validação, or Corrigir).
 1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). List project media with `get-project-media-tool` and **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`) so system logs (funnel moves) are visible, not only user `content`. The card's requirements, acceptance criteria, and those notebook page texts are the source of truth — pass that context to the workers. A change that works but does not match the card is not a pass.
-2. **Classify bounce vs first pass** from that timeline (**Return from production / merged bounce** in `workflow-policy.md`):
+2. **Classify bounce vs first pass** from that timeline (**Return from production / merged bounce** + **Author “não consegui reproduzir”** in `workflow-policy.md`):
    - Walk **system logs** chronologically: rebuild the step path (e.g. Em progresso → QA/CR → Validação → Revisão produção → Concluído → Corrigir → QA/CR).
    - Cross-check forms/metrics (deploy date, merged PR links, “voltou para correção”).
-   - If it is a **production return**, mark `bounce=yes`, summarize the path + the post-deploy defect evidence (media ids / comments after merge or deploy), and pass that packet to every worker. Core must treat post-deploy reproduction as the primary gate — not a fresh first-pass of the original PR alone.
-   - If `bounce=no`, proceed as a normal first colleague review.
+   - Scan **card content / comments / media text** for an **author reproduce-handoff** (“não consegui reproduzir”, “deixar em QA/CR pra você tentar”, “dá uma olhada pra ver se consegue reproduzir”, EN equivalents). If present → force `bounce=yes` (or keep `bounce=yes`) and **quote the comment verbatim** in the bounce packet. That handoff is **never** a Pass signal.
+   - If it is a **production return** (or handoff above), mark `bounce=yes`, summarize the path + the post-deploy defect evidence (media ids / comments after merge or deploy) + the quoted handoff (or “none”), and pass that packet to every worker. Core must treat post-deploy reproduction as the primary gate — not a fresh first-pass of the original PR alone, and **not** “author couldn’t reproduce → Pass”.
+   - If `bounce=no` **and** no handoff signal, proceed as a normal first colleague review.
 3. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits, notebook). That flag decides whether gap + mutation + coverage run. Resolve the file list with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` — if `develop...HEAD` is empty because the feature is already merged, still pass the merge-parent / `--grep=<CODE>` list to workers; do **not** skip backend gates on empty three-dot alone. On a bounce, empty three-dot / already-merged PRs are expected — still review the shipped tip against the bounce evidence.
 4. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them. When the feature tip is already in `develop` (typical after merge/deploy bounce), keep the host-card worktree tip and still compute the change-set via step 3.
 5. Record `started_at` (UTC) for the scoreboard.
@@ -60,6 +61,7 @@ Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **
 - **Reviewer-fix path:** colleague core Pass but gap and/or mutation and/or coverage reported work → stay in 'QA/CR'; do **not** move to 'Corrigir'; do **not** write gap/mutation/coverage into the project/card; the reviewing user may fix those gates in this chat. Apply Pass path only after they are clean (or explicitly skipped).
 - When moving to 'Corrigir' for a core (or other non-test-gate) fail, **then** also paste any open gap/mutation/coverage findings onto the card for the author.
 - Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean **and** coverage was skipped or clean.
+- **Refuse Pass** if bootstrap/`bounce=yes` found an author reproduce-handoff **or** unrebutted post-deploy defect media, and core’s return lacks the required triad (quoted handoff or “none” + bounce attempt + media disposition) — send back to core / Fail, do not move to Validação.
 - Do **not** invent another path beyond Corrigir / reviewer-fix / Pass.
 
 Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or clean-gate process wrap-ups on the card). Never post gap/mutation/coverage process wrap-ups on a Pass or reviewer-fix card.
@@ -78,6 +80,7 @@ Print one table (or equivalent bullets) covering **everything that ran**. Includ
 | Gates run | core + gap? + mutation? + coverage? |
 | Colleague core | Pass / Fail — short reason |
 | Bounce | yes / no — reconstructed step path from logs; post-deploy media ids if yes |
+| Author reproduce-handoff | yes / no — quote (“não consegui reproduzir…” / leave-in-QA) or “none”; if yes, Pass is forbidden until bounce triad is complete |
 | Gap analysis | No tests to add / N titles / Skipped / Blocked |
 | Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
 | Coverage | Clean / fixes / Skipped / Blocked — files in ledger |

@@ -142,11 +142,32 @@ On a production return:
 
 - The open question is whether the **shipped** fix failed (or a new regression appeared), not whether a green host-card happy path matches the original write-up alone.
 - Prioritize post-deploy evidence (videos, comments, logs after merge/deploy) over first-pass acceptance text.
-- An author note that they “could not reproduce” is a request for the reviewer to try the bounce scenario — **not** a Pass.
 - Host-card / local success does **not** override unrebutted production evidence that the defect still occurs. Fail (or stay blocked with an honest reproduction attempt) until that conflict is resolved.
-- Scoreboard and core return must state **bounce: yes/no**, the reconstructed step path, and which post-deploy media drove the verdict.
+- Scoreboard and core return must state **bounce: yes/no**, the reconstructed step path, which post-deploy media drove the verdict, and whether an **author reproduce-handoff** comment was present (quote it).
 
-Detail for workers: **Production return** in `colleague-review-core.md`; dispatcher bootstrap classifies bounce before dispatch.
+### Author “não consegui reproduzir” / leave-in-QA handoff (HARD RULE)
+
+This pattern is **common after Corrigir** and is **easy to misread as Pass**. It is **not**.
+
+When the author (or anyone on the card) writes that they **could not reproduce** and/or **leaves the card in QA/CR for the reviewer to try**, that comment is a **reproduce handoff to the colleague reviewer** — never clearance that the bug is gone.
+
+Match any of these (PT/EN, approximate wording counts):
+
+| Signal (examples) | Means |
+| --- | --- |
+| “não consegui reproduzir” / “não reproduzi” / “could not reproduce” | Author failed to see the bug → **you** must try the bounce scenario |
+| “vou deixar em QA/CR pra você …” / “fica em QA/CR pra vc tentar” / “dá uma olhada pra ver se consegue reproduzir” | Explicit handoff → stay on bounce path; **forbidden** to Pass because they handed it off |
+| “não vi o bug” / “aqui não acontece” **plus** unrebutted post-deploy video/comment that still shows the defect | Their local miss does **not** clear production evidence |
+
+**Forbidden interpretations (always Fail or open reproduction duty, never Pass):**
+
+- Treating the handoff as “author says it’s fine / unreproducible → Pass”
+- Passing on a host-card happy path **without** first attempting the bounce package (post-deploy media conditions)
+- Passing while unrebutted production/post-deploy video still shows the defect, just because the author could not reproduce
+
+**Required before any Pass when this signal appears (or `bounce=yes`):** quote the handoff comment (or state “none”), state the bounce scenario you tried, and dispose of each post-deploy media id (reproduced / could not reproduce / newer fix landed). Missing that triad → do **not** Pass.
+
+Detail for workers: **Production return** + **Author reproduce-handoff** in `colleague-review-core.md`; dispatcher bootstrap must extract the handoff into the bounce packet.
 
 ## Project execution
 
@@ -208,8 +229,9 @@ User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-car
 **Meta-repo edits on host-card (Olie / Locav / Televisão):** when this chat’s workspace is a host-card, edit prompts, `HISTORICO.md`, overlay, and `.cursor/rules` only under the workspace folder **`git/`** (the card meta worktree). Do **not** write `~/git/olie/prompts/…`, `~/git/locav/…`, `~/git/televisao/…`, or other bare `~/git/…` paths — those sit outside the workspace and force permission prompts. Resolve `~/git/...` in prompts to that `git/` root (same pattern as **Private E2E suites** → workspace `olie-e2e`). Rule: `host-card-meta-repo-path.mdc`. Binaries may still run from `~/git/bin/…`.
 
 - **Shell permissions (required):** call `ensure` / `open` / `destroy` **and** `~/git/bin/workvm-sandbox` (`create` / `job run` / `destroy`) / coverage·mutation drains **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”. Host-card workspaces live under `~/.local/share/workvm/host-cards/…`; sandboxes write `~/.local/share/workvm/sandboxes/` (outside those roots) + `docker.sock` — the default agent sandbox always denies both.
-  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json` or `~/.local/share/workvm/`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same command succeeds with `all` when the host is fine.
-  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure/sandbox in a terminal unless `all` already ran and still failed for a real host reason.
+  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json` or `~/.local/share/workvm/`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock` **while `pgrep dockerd` is alive**; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same command succeeds with `all` when the host is fine. Ensure may print `WORKVM_AGENT_SANDBOX=1` and exit `75`.
+  - **Silent sandbox after `all`:** if the Shell tool footer still says the command ran sandboxed (or ensure hits the cluster / exit 75) despite `required_permissions: ["all"]`, Auto-review likely auto-approved the tool call **without elevating**. Next: (1) `request_smart_mode_approval` on the **exact** ensure/sandbox command; (2) if still sandboxed, `~/git/bin/workvm-host-card agent-ensure --project … --code …` (bridge systemd outside the agent — install once with `install-agent-bridge` under a real unrestricted shell). Do **not** ask chmod, DNS, or `gh auth`.
+  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure/sandbox in a terminal unless `all` already ran **unrestricted** and still failed for a real host reason.
   - Do **not** stop the prompt / mark coverage·mutation **Blocked** declaring tooling/host broken while only the sandboxed shell failed.
 - First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
 - **api-main worktree branch:** if a local or `origin` branch name already contains the card code (ex. `feature/DOP-1273-…`), ensure checks it out **in the card worktree** (not the shared clone). No matching branch yet → worktree stays on `develop`/HEAD until implementation creates one.
