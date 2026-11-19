@@ -230,6 +230,34 @@ workvm_host_card_add_repo_worktree() {
     git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
 }
 
+# Alinha o meta worktree do card ao HEAD do ~/git ao vivo (detached).
+# Problema: open/ensure em card já criado deixava prompts/sandbox velhos no
+# worktree/git; updates no meta-repo não apareciam na janela do card.
+workvm_host_card_sync_meta_worktree() {
+    local dir="$1"
+    local src wt live short card
+    src="$(workvm_host_card_meta_repo)"
+    wt="${dir}/worktree/git"
+
+    if [ ! -d "$wt" ] || { [ ! -d "${wt}/.git" ] && [ ! -f "${wt}/.git" ]; }; then
+        return 0
+    fi
+    if [ ! -d "${src}/.git" ] && [ ! -f "${src}/.git" ]; then
+        return 0
+    fi
+
+    live="$(git -C "$src" rev-parse HEAD)" || return 1
+    short="$(git -C "$src" log -1 --oneline)"
+    card="$(git -C "$wt" rev-parse HEAD 2>/dev/null || true)"
+    if [ "$card" = "$live" ]; then
+        workvm_host_card_log "meta worktree já em $short"
+        return 0
+    fi
+    workvm_host_card_log "meta worktree → $short (sync do meta ao vivo)"
+    # reset --hard: tracked dirty no card some; untracked (rascunho e2e) fica.
+    git -C "$wt" -c core.hooksPath=/dev/null reset --hard "$live" || return 1
+}
+
 # Meta-repo: sempre --detach (a branch de ~/git fica no clone “ao vivo”).
 workvm_host_card_add_meta_worktree() {
     local dir="$1"
@@ -242,7 +270,7 @@ workvm_host_card_add_meta_worktree() {
         return 1
     fi
     if [ -d "$wt" ] && { [ -d "${wt}/.git" ] || [ -f "${wt}/.git" ]; }; then
-        workvm_host_card_log "meta worktree já existe: $wt"
+        workvm_host_card_sync_meta_worktree "$dir" || return 1
         return 0
     fi
     rm -rf "$wt"
@@ -981,8 +1009,11 @@ workvm_host_card_open() {
     }
     # ensure sem Cursor: fecha → conserta SCM visible → abre uma vez (evita 2× --new-window).
     WORKVM_HOST_CARD_OPEN_CURSOR=0 workvm_host_card_ensure --project "$project" --code "$code" || return $?
-    local id workspace wt_api
+    local id workspace wt_api dir
     id="$(workvm_host_card_id "$project" "$code")"
+    dir="$(workvm_host_card_dir "$project" "$id")"
+    # Belt: ensure/olie já synca via add_meta; open em qualquer projeto com worktree/git.
+    workvm_host_card_sync_meta_worktree "$dir" || true
     workspace="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('workspace') or '')" 2>/dev/null || true)"
     wt_api="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('api_worktree') or '')" 2>/dev/null || true)"
     if [ -n "$workspace" ] && [ -f "$workspace" ]; then

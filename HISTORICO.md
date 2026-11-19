@@ -38,6 +38,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
 - **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
 
+## Host-card open: sync do meta worktree para o HEAD do ~/git
+
+- **problema:** `open`/`ensure` em card já criado só logava “meta worktree já existe”; prompts/sandbox no `worktree/git` ficavam no commit do create.
+- **por que é um problema:** updates no meta-repo (`experiment/…`) não apareciam na janela do card sem recreate.
+- **resolvido como:** `workvm_host_card_sync_meta_worktree` — `reset --hard` no detached worktree para o HEAD do meta ao vivo (add_meta + open). Untracked no card permanece.
+
 ## Sandbox mutation/tests: não sobe `http` (php -S)
 
 - **problema:** profile `mutation`/`tests` no slim incluía o serviço `http` (~256–512 MiB) só para CLI Pest.
