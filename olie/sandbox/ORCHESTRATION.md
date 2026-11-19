@@ -86,7 +86,13 @@ também é **`correct mutations`** / **`correct coverages`** (dreno paralelo
 nesta corrida — um sandbox `profile=mutation` + um subagent por arquivo;
 pai agrega o ledger); `next mutation` / `next coverage` = opt-in um
 arquivo. Preferir sandbox para não tocar o `testing` da Card VM.
-Mutation × coverage no **mesmo** sandbox **não** (ambos usam Pest/DB).
+Mutation × coverage **em paralelo** no mesmo sandbox **não** (ambos escrevem
+Pest/DB). **Own-card sequencial** (coverage → depois mutation): **reaproveitar**
+o warm pool do coverage — rsync dirty + criar só o shortfall se mutation
+precisar de mais slots; destroy só ao fim do mutation (ou se o usuário parar
+antes). Isolamento = um job exclusive por sandbox **em voo**, não “um create
+por estágio”. Colleague **dispatcher** (coverage ∥ mutation): pools **separados**
+(ainda em paralelo).
 
 **Warm pool (mutation/coverage drain):** mutation `N = min(arquivos_restantes, 4)`;
 coverage `N = min(lotes_via-test, 4)`. Use **`2`** se a RAM estiver apertada
@@ -114,19 +120,19 @@ coverage o que importa é o `api-main` no tip.
 ## Mutation: warm pool + fila por arquivo
 
 1. Lista os `*Test.php` do change-set (mesma regra do prompt).
-2. Cria **N** sandboxes `profile=mutation` (`N = min(restantes, 4)`, ou `2` se RAM apertada) **com** `--from-commit <tip do api-main do card>`. Opcional: `WORKVM_SANDBOX_MAX=N`.
+2. Monta pool de **N** slots (`N = min(restantes, 4)`, ou `2` se RAM apertada): own-card **adota** sandboxes ready do coverage e só `create --from-commit <tip>` o shortfall; dispatcher ∥ coverage → pool novo. Opcional: `WORKVM_SANDBOX_MAX=N`.
 3. Atribui no máximo **um arquivo por sandbox** em voo; quando um termina, **reusa** o mesmo sandbox para o próximo (rsync dirty; sem destroy entre arquivos do dreno).
 4. Em cada job: **um** `--class` por run (FQCN do pool que aquele teste exercita — não o pool inteiro; bench DOP-1281 ~1.6×). Multi-`--class` no mesmo `pest --mutate` é não confiável (R7: 0 files / só 1 file).
 
 ```bash
 # tip = git -C "$api_worktree/api-main" rev-parse HEAD  (host-card meta.json)
-# create pool once (example N=4), then for each file on a free slot:
+# adopt coverage leftovers, create shortfall, then for each file on a free slot:
 ~/git/bin/workvm-sandbox create --name "$id" --project olie --profile mutation --from-commit "$tip"
 ~/git/bin/workvm-sandbox job run "$id" -- php artisan test --compact "$file"
 # --class: single-quote with ONE backslash (not App\\… inside quotes → 0 Mutations)
 ~/git/bin/workvm-sandbox job run "$id" -- vendor/bin/pest --mutate --covered-only --min=100 \
   --ignore-min-score-on-zero-mutations '--class=App\Services\Example' "$file"
-# destroy the pool after the drain
+# destroy the pool after the *mutation* drain (own-card kept coverage pool until here)
 ```
 
 5. Agrega `mutation-ledger.md` / findings; o dispatcher só então libera o outcome.

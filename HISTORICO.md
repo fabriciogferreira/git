@@ -38,6 +38,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
 - **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
 
+## Own-card: reaproveitar sandboxes coverage → mutation
+
+- **problema:** após coverage o pool era destruído e mutation recriava N containers (~minutos) só para o estágio seguinte.
+- **por que é um problema:** wall-clock e RAM; isolamento exclusive só exige um job Pest por sandbox **em paralelo**, não destroy entre estágios sequenciais.
+- **resolvido como:** prompts/ORCHESTRATION — own-card não destroy no fim do coverage; mutation adota ready + create shortfall; destroy no fim do mutation. Dispatcher ∥ coverage/mutation continua com pools separados.
+
 ## Host-card open: sync do meta worktree para o HEAD do ~/git
 
 - **problema:** `open`/`ensure` em card já criado só logava “meta worktree já existe”; prompts/sandbox no `worktree/git` ficavam no commit do create.
