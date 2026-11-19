@@ -38,6 +38,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
 - **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
 
+## Auto-review: warm pool sandbox sem card de aprovação a cada create/job
+
+- **problema:** `permissions.json` pedia unrestricted shell antes de todo `workvm-sandbox create/job run/destroy`; no DOP-1278 o dreno de mutation/coverage virava N cards de OK.
+- **por que é um problema:** warm pool 2–4 + job por arquivo = atrito contínuo na janela do card; o agente já pede `required_permissions: ["all"]`.
+- **resolvido como:** `workvm-sandbox` create/job/destroy/list/status/gui passam para **allow** com shell unrestricted; **block** fica só em `workvm-host-card` ensure/open/destroy (+ bridge). Promover `~/.cursor/permissions.json` (ou `workvm_apply_cursor_permissions` após commit).
+
 ## Televisão/Locav: PostgreSQL/Redis compartilhados (hc-*-data)
 
 - **problema:** TV host-card e sandboxes subiam pgsql/redis (ou mysql) por unidade; Locav não tinha sandbox nem shared data.
