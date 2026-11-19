@@ -60,8 +60,13 @@ workvm_sandbox_project_prepare_worktrees() {
                 continue
             fi
             workvm_sandbox_log "worktree $repo → $dest"
-            if [ -n "$from_commit" ]; then
+            # API tip SHAs are not in front/meet clones; fall back to HEAD so
+            # --from-commit still isolates televisao-api for mutation/coverage.
+            if [ -n "$from_commit" ] && git -C "$src" cat-file -e "${from_commit}^{commit}" 2>/dev/null; then
                 git -C "$src" worktree add --detach "$dest" "$from_commit"
+            elif [ -n "$from_commit" ]; then
+                workvm_sandbox_log "from_commit $from_commit absent in $repo; using HEAD"
+                git -C "$src" worktree add --detach "$dest" HEAD
             else
                 git -C "$src" worktree add --detach "$dest" HEAD
             fi

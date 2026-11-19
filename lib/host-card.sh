@@ -879,8 +879,31 @@ workvm_host_card_ensure_olie_mcp() {
 
     workvm_host_card_log "MCP → ~/.cursor/mcp.json + proxy :47331"
     workvm_apply_cursor_permissions "$meta_repo" || true
-    workvm_apply_mcp "$meta_repo" "olie" "$project_dir" || return 1
-    workvm_sync_olie_mcp_proxy "$meta_repo" || return 1
+    # Resume + agent sandbox: MCP merge may fail writing ~/.cursor while olie-flow-ai
+    # already works in the chat. Soft-fail when dest already has servers.
+    if ! workvm_apply_mcp "$meta_repo" "olie" "$project_dir"; then
+        if [ -f "$dest" ] && python3 - "$dest" <<'PY'
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except Exception:
+    raise SystemExit(1)
+servers = data.get("mcpServers") or {}
+raise SystemExit(0 if servers else 1)
+PY
+        then
+            workvm_host_card_log "aviso: MCP merge falhou (sandbox?); mantendo $dest existente"
+        else
+            return 1
+        fi
+    fi
+    if ! workvm_sync_olie_mcp_proxy "$meta_repo"; then
+        if ss -ltn 2>/dev/null | grep -q ':47331'; then
+            workvm_host_card_log "aviso: proxy MCP sync falhou; :47331 já escuta — seguindo"
+        else
+            return 1
+        fi
+    fi
 
     # WorkVM: Boost→olie-api-main, Playwright→olie-e2e. Host-card: wrappers.
     if [ "$project" = "olie" ] && [ -f "$dest" ]; then
@@ -1023,13 +1046,33 @@ workvm_host_card_ensure() {
     fi
 
     # Same clones as WorkVM project-setup (olie-fronts, backoffice, …).
-    workvm_host_card_ensure_clones "$project" || return 1
+    # Clone/pull warnings are non-fatal for resume (agent sandbox often cannot FETCH_HEAD).
+    if ! workvm_host_card_ensure_clones "$project"; then
+        if [ "$resumed" = "1" ]; then
+            workvm_host_card_log "aviso: CLONE_REPOS falhou no resume — seguindo com worktree do card"
+        else
+            return 1
+        fi
+    fi
     # Antes do Cursor: MCP + proxy (VM fazia isso no project-start/login).
-    workvm_host_card_ensure_olie_mcp "$project" "$id" || return 1
+    if ! workvm_host_card_ensure_olie_mcp "$project" "$id"; then
+        if [ "$resumed" = "1" ]; then
+            workvm_host_card_log "aviso: MCP/proxy falhou no resume — seguindo (chat pode já ter olie-flow-ai)"
+        else
+            return 1
+        fi
+    fi
     workspace="$(workvm_host_card_write_workspace "$project" "$id" "$code")" || return 1
 
     workvm_host_card_meta_write "$project" "$code" "$id" "$dir" "$port_base" "$workspace" "$compose_project" || return 1
-    workvm_host_card_run_hook "$project" ensure "$id" "$dir" || return 1
+    # Compose/hook needs docker.sock. Agent sandbox hides it → clear signal for bridge.
+    if ! workvm_host_card_run_hook "$project" ensure "$id" "$dir"; then
+        if [ ! -S /var/run/docker.sock ] && pgrep -x dockerd >/dev/null 2>&1; then
+            workvm_host_card_log "WORKVM_AGENT_SANDBOX=1 docker.sock oculto (dockerd vivo) — use required_permissions all ou workvm-host-card-agent-ensure"
+            return 75
+        fi
+        return 1
+    fi
 
     # Re-read compose_project after hook (olie/televisao may rewrite it).
     if [ -f "$(workvm_host_card_meta_path "$project" "$id")" ]; then

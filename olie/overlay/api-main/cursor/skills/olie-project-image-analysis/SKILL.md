@@ -57,7 +57,7 @@ Do **not** wait for an explicit “run the skill” if you need the images to un
 
 | Step | Tool |
 | --- | --- |
-| List content | MCP `get-project-media-tool` |
+| List content | MCP `get-project-media-tool` with **`filter: "default"`** (required — user content + system logs; do not use tool default `content`) |
 | Load prior analysis | Read `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` if present |
 | Save analysis | Write that path (local only) |
 | Publish to project | **Never** — no `save-media-tool` for this workflow |

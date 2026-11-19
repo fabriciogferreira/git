@@ -11,11 +11,16 @@ Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcom
 ## 1. Bootstrap (serial, once)
 
 0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`; **Shell permissions** → `all` on first try). Resume if the unit already exists. If this chat is already the card’s Cursor window and the stack is up, prefer `WORKVM_HOST_CARD_OPEN_CURSOR=0` (ensure must **not** close/reopen the window mid-review — that kills the chat). Do **not** destroy when this dispatcher ends (card stays in QA/CR, Validação, or Corrigir).
-1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). The card's requirements, acceptance criteria, and those notebook page texts are the source of truth — pass that context to the workers. A change that works but does not match the card is not a pass.
-2. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits, notebook). That flag decides whether gap + mutation + coverage run. Resolve the file list with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` — if `develop...HEAD` is empty because the feature is already merged, still pass the merge-parent / `--grep=<CODE>` list to workers; do **not** skip backend gates on empty three-dot alone.
-3. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them. When the feature tip is already in `develop`, keep the host-card worktree tip and still compute the change-set via step 2.
-4. Record `started_at` (UTC) for the scoreboard.
-5. Do **not** write the colleague verdict, gap list, or mutation/coverage fixes yet — core writes product fail findings; gap/mutation/coverage stay in chat until §4. Do **not** move the funnel or approve until §4.
+1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). List project media with `get-project-media-tool` and **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`) so system logs (funnel moves) are visible, not only user `content`. The card's requirements, acceptance criteria, and those notebook page texts are the source of truth — pass that context to the workers. A change that works but does not match the card is not a pass.
+2. **Classify bounce vs first pass** from that timeline (**Return from production / merged bounce** in `workflow-policy.md`):
+   - Walk **system logs** chronologically: rebuild the step path (e.g. Em progresso → QA/CR → Validação → Revisão produção → Concluído → Corrigir → QA/CR).
+   - Cross-check forms/metrics (deploy date, merged PR links, “voltou para correção”).
+   - If it is a **production return**, mark `bounce=yes`, summarize the path + the post-deploy defect evidence (media ids / comments after merge or deploy), and pass that packet to every worker. Core must treat post-deploy reproduction as the primary gate — not a fresh first-pass of the original PR alone.
+   - If `bounce=no`, proceed as a normal first colleague review.
+3. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits, notebook). That flag decides whether gap + mutation + coverage run. Resolve the file list with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` — if `develop...HEAD` is empty because the feature is already merged, still pass the merge-parent / `--grep=<CODE>` list to workers; do **not** skip backend gates on empty three-dot alone. On a bounce, empty three-dot / already-merged PRs are expected — still review the shipped tip against the bounce evidence.
+4. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them. When the feature tip is already in `develop` (typical after merge/deploy bounce), keep the host-card worktree tip and still compute the change-set via step 3.
+5. Record `started_at` (UTC) for the scoreboard.
+6. Do **not** write the colleague verdict, gap list, or mutation/coverage fixes yet — core writes product fail findings; gap/mutation/coverage stay in chat until §4. Do **not** move the funnel or approve until §4.
 
 ## 2. Dispatch (parallel)
 
@@ -72,13 +77,14 @@ Print one table (or equivalent bullets) covering **everything that ran**. Includ
 | Backend touched | yes / no |
 | Gates run | core + gap? + mutation? + coverage? |
 | Colleague core | Pass / Fail — short reason |
+| Bounce | yes / no — reconstructed step path from logs; post-deploy media ids if yes |
 | Gap analysis | No tests to add / N titles / Skipped / Blocked |
 | Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
 | Coverage | Clean / fixes / Skipped / Blocked — files in ledger |
 | Contrast | light/dark result (from core) |
 | E2E | added/extended commit, or N/A / blocked |
 | Payment / CAPTCHA | ok / N/A / blocked (from core when relevant) |
-| PRs | approved / not approved / deferred reason |
+| PRs | approved / not approved / deferred reason (already merged is normal on bounce) |
 | Funnel | stayed 'QA/CR' (reviewer-fix) / moved 'Corrigir' / moved 'Validação' |
 | Incidents | tooling failures, restarts, skips |
 

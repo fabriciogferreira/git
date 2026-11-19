@@ -2,6 +2,30 @@
 
 Problema resolvido entra aqui.
 
+## Host-card ensure: Auto-review aprova Shell sem elevar `all`
+
+- **problema:** no colleague review (DOP-1257) o agente pedia `required_permissions: ["all"]` (e `request_smart_mode_approval`); o Shell rodava mesmo assim no sandbox padrão — `Permission denied` em `~/.cursor/mcp.json`, `/var/run/docker.sock` ausente enquanto `dockerd` estava vivo, DNS/`FETCH_HEAD` falsos. O ensure abortava no merge MCP antes do compose.
+- **por que é um problema:** o allow do Auto-review para `workvm-host-card` auto-aprovava o tool call sem desligar o sandbox; o agente parava o dispatcher achando host quebrado (ou loopava ensure inútil). Stack do card ficava down.
+- **resolvido como:** (1) `permissions.json` — tira ensure/sandbox do allow genérico; **block** pede approval de unrestricted/`all` (não auto-run sandboxed). (2) resume soft-fail de MCP/CLONE quando `~/.cursor/mcp.json` já tem servers / `:47331` escuta; exit `75` + `WORKVM_AGENT_SANDBOX=1` se hook falha com sock oculto e dockerd vivo. (3) bridge: `bin/workvm-host-card-agent-bridge` + unit systemd + `agent-ensure` / `install-agent-bridge` — pedido em `worktree/git/.workvm-agent-ensure-request.json` (gravável no sandbox). (4) `workflow-policy` / `stop-on-broken-tooling`: se o footer do Shell ainda diz SANDBOXING após `all`, usar bridge ou approval card — não chmod/DNS.
+
+## Host-card: prompts em `~/git` pediam permissão (Olie/Locav/Televisão)
+
+- **problema:** no host-card o agente editava `~/git/olie/prompts/…` (e equivalentes Locav/Televisão); esse path não é root do `.code-workspace` (o meta está em `…/worktree/git`) → Cursor pedia approve “fora do workspace”.
+- **por que é um problema:** atrito em todo ajuste de prompt/HISTORICO/overlay; o usuário tem que aprovar edições que deveriam ser locais ao card.
+- **resolvido como:** rule `host-card-meta-repo-path.mdc` (`alwaysApply`) — escrever só em `git/olie|locav|televisao/…` do workspace; nota em `olie`/`locav`/`televisao` `workflow-policy` (Host card / Prompt templates). Mesmo padrão do `host-card-e2e-path` para e2e.
+
+## `get-project-media-tool`: sempre `filter: "default"`
+
+- **problema:** o default da tool é `filter: "content"`, que lista só mensagens/arquivos de usuário e omite logs de sistema (movimentação no funil: de onde saiu / para onde foi).
+- **por que é um problema:** no colleague review do DOP-1257 o agente viu o chat e o vídeo, mas não a trilha de etapas; tratou o card como primeiro QA/CR e deu Pass sem perceber que já tinha ido a Validação/produção e voltado porque o fix não resolveu.
+- **resolvido como:** regra **Project media** em `olie/prompts/workflow-policy.md` — chamar sempre com `filter: "default"`. Cross-refs nos passos de mídia de `colleague-review.md`, `colleague-review-core.md`, `implementation.md`, `correction.md`, `production-review.md`. Skills de image/video analysis no overlay alinhadas.
+
+## Colleague review: bounce pós-produção / merge
+
+- **problema:** cards que já passaram Validação/Revisão produção/Concluído (PR mergeado, deploy feito) e voltam para Corrigir/QA/CR eram revisados como primeiro colleague pass (happy path local → Pass).
+- **por que é um problema:** a evidência que importa é a regressão pós-deploy e o caminho no funil nos logs; “não consegui reproduzir” do autor vira pedido de tentativa, não Pass; sucesso só no host-card não apaga vídeo de produção.
+- **resolvido como:** **Return from production / merged bounce** em `workflow-policy.md`; bootstrap do `colleague-review.md` classifica `bounce` a partir dos logs (`filter: "default"`); `colleague-review-core.md` exige reproduzir o cenário do bounce e Fail se a evidência pós-deploy continuar válida; scoreboard com campo Bounce.
+
 ## Prompt health: resolva / documente / resolva permanentemente
 
 - **problema:** atritos repetidos entre cards (tooling/VM); o agente resolvia no silêncio ou só pedia “arrume a tool”, e a solução não ficava para o próximo card.

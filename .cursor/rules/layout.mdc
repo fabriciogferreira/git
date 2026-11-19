@@ -26,7 +26,6 @@ alwaysApply: true
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
 | `olie/docs` (clone) | Só espelho de `olie-ai/docs` (docs.olie.ai). Agente **não** edita, rebaseia nem abre PR — ver `olie-docs-hands-off.mdc` / `olie/prompts/workflow-policy.md`. |
 | `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace, `config-vm.xml`). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
-| `opbed/sandbox/` | Host-card Opbed no jarvis: `compose.host.yml` + ensure/destroy (sem WorkVM). |
 | `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e, `config-vm.xml`, prompts, overlay). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts, overlay). Clones `LocavApi/` / `locav-front/` fora do git. |
@@ -51,15 +50,6 @@ alwaysApply: true
 | `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
 | `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
 | `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
-| `bin/workvm-host-card` / `lib/host-card.sh` | Card/projeto no jarvis sem WorkVM: ensure (multi-dia) / destroy (só ao finalizar). Contrato: `host-cards-no-vm.md`. Ensure Olie também sobe MCP `olie-flow-ai` + proxy `:47331` e Boost (na VM isso era o login/`project-start`). |
-| `bin/workvm-host-card-boost-mcp.sh` | Overlay aponta Boost a `olie-api-main`; no jarvis o app é `hc-olie-*-app-1`. Resolve o container do card ativo para o `boost:mcp`. |
-| `bin/workvm-host-card-playwright-mcp.sh` | Playwright MCP no jarvis: `docker exec` no `hc-olie-*-olie-e2e-1` do card ativo (pointer), via `workvm-playwright-mcp.sh`. |
-| `bin/workvm-paste-prompt` | Atalho opcional: clipboard + `.paste-prompt.md`. Preferir chat `colleague review CODE` (agente substitui na memória). |
-| `.cursor/rules/prompt-templates-hands-off.mdc` | Agente/humano editava `{{ code }}` no disco e sujava todas as janelas. Proíbe gravar; manda rodar com código só no chat. |
-| `.cursor/rules/stop-on-broken-tooling.mdc` | Tooling/atrito recorrente: parar, diagnosticar, oferecer `resolva` / `documente` / `resolva permanentemente` (não reinventar em todo card). |
-| `olie/sandbox/compose.e2e-host.yml` | Host-card sem `olie-e2e` → sem MCP/suite. Sobe image `olie/e2e` no ensure (`network_mode: host` + DNS do card). |
-| `bin/workvm-host-card-pest` | Pest no host-card Olie: o ensure injeta DNS/slug e reCAPTCHA de teste; a suite espera WorkVM (`*.olie.localhost` + `invalid_token`). Teto `--processes=22` (23+ = SIGSEGV no jarvis). |
-| `lib/host-card-proxy.sh` | N cards no host: Caddy roteia `api|devframe.{slug}.olie.localhost` → portas do card. |
 | `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
 | `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
 | `olie/sandbox/` | Isolamento exclusive (mutation/Pest/e2e) na Card VM Olie: `project.sh` + compose slim + PCOV; contrato em `ORCHESTRATION.md`. |
@@ -69,7 +59,9 @@ alwaysApply: true
 | `bin/workvm-playwright-mcp.sh` | `@playwright/mcp@latest` pede chrome-for-testing e sandbox; a imagem e2e só tem Chromium em `/ms-playwright`. Espera o container e sobe o MCP headless com esse binário e `--no-sandbox`. |
 | `bin/workvm-olie-mcp-proxy.py` | O Cursor ignora o Bearer do `olie-flow-ai` porque `api.olie.ai` publica OAuth. O agente do prompt fica `needsAuth` com o desktop já autenticado. Em `127.0.0.1:47331` responde 404 na descoberta e encaminha o MCP com o token. |
 | `bin/workvm-olie-management-read.sh` | Fallback HTTP do Caderno quando MCP notebook está `needsAuth`/401. Preferir `get-notebook-tool` + `read-notebook-page-tool`. Card/funil: MCP. |
-| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado (blob HEAD); `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start`. |
+| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado (blob HEAD); `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start`. Ensure/sandbox: **block** pede `all` (não allow sandboxed). |
+| `bin/workvm-host-card-agent-bridge` + `systemd/workvm-host-card-agent-bridge.service` | Shell do agente pode “aprovar” ensure sem elevar `all` (sock oculto). Bridge no user systemd processa `.workvm-agent-ensure-request.json` no meta worktree. |
+| `bin/workvm-host-card-agent-ensure` / `workvm-host-card agent-ensure` | Agente sandboxed grava o pedido e espera o resultado do bridge. |
 | `systemd/workvm-olie-mcp-proxy.service` | Sem o proxy no login o Cursor abre a URL local e o MCP não conecta. `WantedBy=default.target`, só com `MCP=olie`. |
 | `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |
 | `bin/workvm-open-project-vm.sh` | Projeto sem card não tem clone. Liga a domain que já tem o nome do projeto e publica o SSH do chat. Não clona. |
@@ -77,7 +69,6 @@ alwaysApply: true
 | `bin/workvm-shutdown-card-vm.sh` | O chat acaba e o clone do card continua ligado. Desliga `projeto-codigo` sem apagar a domain nem o disco; a modelo fica. |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
-| `host-cards-no-vm.md` | Card/projeto no jarvis sem WorkVM: checklist de isolamento (porta, DNS, destroy, Cursor, teto RAM) antes de largar a domain. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |

@@ -1,5 +1,5 @@
 ---
-description: Falha repetida de tooling/VM — parar, diagnosticar e oferecer resolva / documente / resolva permanentemente
+description: Tooling/atrito recorrente — parar, diagnosticar, oferecer resolva/documente/resolva permanentemente
 alwaysApply: true
 ---
 
@@ -23,7 +23,7 @@ Este meta-repo existe para a VM / host-card e o fluxo de desenvolvimento já est
    - o que estava fazendo
    - erro objetivo (status, mensagem curta) ou hang
    - hipótese mais provável
-   - se `~/git/HISTORICO.md` / rule / prompt **já documenta** isso — cite o path e use essa solução como base
+   - se `HISTORICO.md` / rule / prompt **já documenta** isso — cite o path e use essa solução como base
 3. Ofereça **exatamente** estes três comandos de chat e **espere** (não escolha sozinho):
 
 | Comando | Significado |
@@ -43,4 +43,4 @@ Este meta-repo existe para a VM / host-card e o fluxo de desenvolvimento já est
 ## Exceção
 
 - Falha **esperada** do pedido atual (ex.: testar um caso de erro) — reporte e siga se ainda fizer sentido
-- Cluster de **sandbox do agent** (Permission denied em `~/.cursor` / `workvm`, DNS/`gh`/`docker.sock` falsos): primeiro retry com `required_permissions: ["all"]` — ver **Host card environment** no `workflow-policy`; não é “host quebrado”
+- Cluster de **sandbox do agent** (Permission denied em `~/.cursor` / `workvm`, DNS/`gh`/`docker.sock` falsos, ou footer do Shell ainda “SANDBOXING” depois de pedir `all`): (1) retry com `required_permissions: ["all"]`; (2) se o footer continuar sandboxed → `request_smart_mode_approval` no mesmo comando; (3) se ainda falhar → `workvm-host-card agent-ensure` (bridge) ou `install-agent-bridge` sob shell unrestricted de verdade. Ver **Host card environment** / **Silent sandbox after `all`** no `workflow-policy`. Não é “host quebrado”; não peça chmod/DNS/`gh auth`

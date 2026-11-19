@@ -128,6 +128,26 @@ Own-card sequential order (not the colleague parallel dispatcher): gap → cover
 
 **Pass path** (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move the card to the live funnel step 'Validação'): only when the colleague review passed **and** gap analysis was skipped or clean **and** mutation either was skipped (no backend) or finished without fixes to send back **and** coverage either was skipped (no backend) or finished without fixes to send back.
 
+### Return from production / merged bounce (colleague)
+
+A card in 'QA/CR' (or back from 'Corrigir') is **not** always a first colleague pass. Rebuild its funnel path from **`get-project-media-tool` with `filter: "default"`** (system logs) plus card metrics/forms before deciding how to review.
+
+Treat the card as a **production return** when any of these hold:
+
+- System logs show it already visited **Validação**, **Revisão produção**, and/or **Concluído**, then later **Corrigir** and/or **QA/CR** again.
+- Deploy log / merge messages / closed-merged PRs show the change already shipped.
+- Metrics such as “Quantas vezes voltou para correção” ≥ 1, or user/reviewer media posted **after** deploy describing the defect still present.
+
+On a production return:
+
+- The open question is whether the **shipped** fix failed (or a new regression appeared), not whether a green host-card happy path matches the original write-up alone.
+- Prioritize post-deploy evidence (videos, comments, logs after merge/deploy) over first-pass acceptance text.
+- An author note that they “could not reproduce” is a request for the reviewer to try the bounce scenario — **not** a Pass.
+- Host-card / local success does **not** override unrebutted production evidence that the defect still occurs. Fail (or stay blocked with an honest reproduction attempt) until that conflict is resolved.
+- Scoreboard and core return must state **bounce: yes/no**, the reconstructed step path, and which post-deploy media drove the verdict.
+
+Detail for workers: **Production return** in `colleague-review-core.md`; dispatcher bootstrap classifies bounce before dispatch.
+
 ## Project execution
 
 Do not start or end a project execution. Do not POST `project-executions` and do not call an MCP tool that starts one. The Opbed Job page (`/job`) owns that request. Continue the card work without waiting for an execution to start.
@@ -155,6 +175,24 @@ Do **not** use `~/git/bin/workvm-olie-management-read.sh` (`get-forum` / `get-th
 
 On MCP error (other than `notebook: null`): stop and report (prompt-health rules). Do not implement from the card title or the MCP card alone when the notebook read failed.
 
+## Project media (`get-project-media-tool`)
+
+MCP `get-project-media-tool` lists the card’s channel timeline (user messages, files, and system logs).
+
+**Always pass `filter: "default"`.** Do not omit `filter` and do not use the tool default `content`.
+
+| `filter` | What you get |
+| --- | --- |
+| `content` (tool default — **do not use**) | Only user-sent messages and files. Hides system logs. |
+| `logs` | Only system logs. |
+| `default` (**required**) | User content **and** system logs together. |
+
+System logs include funnel moves (which step the card left, which step it entered) and other board automation. Without them, a colleague review can miss that the card already reached Validação / produção and bounced back — user chat alone looks like a first-pass QA/CR. Colleague review must rebuild that path and apply **Return from production / merged bounce** when the logs show a return.
+
+Other args unchanged: `project_identifier` (required), `page`, optional `channel_id` (omit = MAIN channel).
+
+Every prompt that lists card media (`colleague-review-core`, `implementation`, `correction`, `production-review`, and the colleague dispatcher bootstrap) must call this tool with `filter: "default"`.
+
 ## Host card environment
 
 Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
@@ -167,9 +205,12 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 
 User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-card open` (= ensure + **focus/open** the card `.code-workspace`). Always print `workspace=` and `api_worktree=`. Rebases/edits belong in that worktree’s `api-main`, **not** `~/git/olie/api-main`. Do not leave the user on the meta-repo `~/git` Cursor window.
 
+**Meta-repo edits on host-card (Olie / Locav / Televisão):** when this chat’s workspace is a host-card, edit prompts, `HISTORICO.md`, overlay, and `.cursor/rules` only under the workspace folder **`git/`** (the card meta worktree). Do **not** write `~/git/olie/prompts/…`, `~/git/locav/…`, `~/git/televisao/…`, or other bare `~/git/…` paths — those sit outside the workspace and force permission prompts. Resolve `~/git/...` in prompts to that `git/` root (same pattern as **Private E2E suites** → workspace `olie-e2e`). Rule: `host-card-meta-repo-path.mdc`. Binaries may still run from `~/git/bin/…`.
+
 - **Shell permissions (required):** call `ensure` / `open` / `destroy` **and** `~/git/bin/workvm-sandbox` (`create` / `job run` / `destroy`) / coverage·mutation drains **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”. Host-card workspaces live under `~/.local/share/workvm/host-cards/…`; sandboxes write `~/.local/share/workvm/sandboxes/` (outside those roots) + `docker.sock` — the default agent sandbox always denies both.
-  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json` or `~/.local/share/workvm/`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same command succeeds with `all` when the host is fine.
-  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure/sandbox in a terminal unless `all` already ran and still failed for a real host reason.
+  - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json` or `~/.local/share/workvm/`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock` **while `pgrep dockerd` is alive**; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same command succeeds with `all` when the host is fine. Ensure may print `WORKVM_AGENT_SANDBOX=1` and exit `75`.
+  - **Silent sandbox after `all`:** if the Shell tool footer still says the command ran sandboxed (or ensure hits the cluster / exit 75) despite `required_permissions: ["all"]`, Auto-review likely auto-approved the tool call **without elevating**. Next: (1) `request_smart_mode_approval` on the **exact** ensure/sandbox command; (2) if still sandboxed, `~/git/bin/workvm-host-card agent-ensure --project … --code …` (bridge systemd outside the agent — install once with `install-agent-bridge` under a real unrestricted shell). Do **not** ask chmod, DNS, or `gh auth`.
+  - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure/sandbox in a terminal unless `all` already ran **unrestricted** and still failed for a real host reason.
   - Do **not** stop the prompt / mark coverage·mutation **Blocked** declaring tooling/host broken while only the sandboxed shell failed.
 - First day → creates state, `port_base`, `~/git/olie/<id>.code-workspace`, opens Cursor, brings up **compose slim + Vite front**, and registers DNS via Caddy (`lib/host-card-proxy.sh`).
 - **api-main worktree branch:** if a local or `origin` branch name already contains the card code (ex. `feature/DOP-1273-…`), ensure checks it out **in the card worktree** (not the shared clone). No matching branch yet → worktree stays on `develop`/HEAD until implementation creates one.
