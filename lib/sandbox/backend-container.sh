@@ -1,4 +1,5 @@
-# Backend container: um compose project por sandbox (rede/volumes/DB/Redis próprios).
+# Backend container: um compose project por sandbox (rede/volumes próprios;
+# Olie: MySQL/Redis/Mongo via hc-olie-data + DB/prefixo — ver olie/sandbox/project.sh).
 # Problema: container_name e portas fixas impediam N stacks no mesmo guest.
 
 # shellcheck source=common.sh

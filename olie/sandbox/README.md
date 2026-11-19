@@ -40,8 +40,8 @@ Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
 | Recurso | Como |
 | --- | --- |
 | Código | worktree sob `~/git/olie/.sandboxes/<id>/` (`api-main`, `olie-fronts`); `vendor` bind-mount da Card VM (`SB_API_VENDOR`) |
-| DB / Redis / Mongo | instâncias + volumes por `COMPOSE_PROJECT_NAME` |
-| Rede | bridge `sb-<id>_sb_net` (e2e **sem** `network_mode: host`) |
+| DB / Redis / Mongo | stack compartilhado `hc-olie-data` (mesmo dos host-cards); por sandbox: `api_sb_<id>` / `testing_sb_<id>`(+`_test_*`) + `REDIS_PREFIX`; `phpunit.xml` do worktree aponta para o testing próprio. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0` (volta instância slim por sandbox) |
+| Rede | bridge `sb-<id>_sb_net` + externa `hc-olie-data` (e2e **sem** `network_mode: host`) |
 | Portas host | só após `gui attach` (`compose.gui.yml`) |
 
 ## Arquivos

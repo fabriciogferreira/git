@@ -11,6 +11,11 @@ do Card (`televisao-{code}`), sem clonar outra VM.
 
 CLI / estado: `~/git/bin/workvm-sandbox`, `~/git/televisao/sandbox/README.md`.
 
+**Data compartilhada:** sandboxes e host-cards reusam `hc-televisao-data`
+(`televisao-hc-pgsql` / `televisao-hc-redis`) com DB/prefixo por id
+(`db_sb_<id>` / `db_<dns_slug>`). Exclusive continua (DBs distintos).
+Opt-out sandbox: `WORKVM_SANDBOX_SHARED_DATA=0`.
+
 Prompts: `colleague-review.md` (disparador) → paralelo
 `colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
 `coverage-testing.md` (quando há backend). Scoreboard + **Colleague review

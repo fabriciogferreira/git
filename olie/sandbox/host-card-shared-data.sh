@@ -1,7 +1,8 @@
-# Shared MySQL/Redis/Mongo para host-cards Olie.
-# Problema: N cards × instâncias de data estourava RAM no jarvis.
-# Uma stack hc-olie-data (imagens ≈ docker-workspace); card só muda DB/prefixo.
-# Sourced por host-card-ensure.sh / host-card-destroy.sh.
+# Shared MySQL/Redis/Mongo para host-cards e sandboxes Olie.
+# Problema: N cards × instâncias de data (+ N sandboxes × mysql/redis/mongo)
+# estourava RAM no jarvis. Uma stack hc-olie-data (imagens ≈ docker-workspace);
+# card/sandbox só muda DB/prefixo.
+# Sourced por host-card-ensure.sh / host-card-destroy.sh e olie/sandbox/project.sh.
 
 workvm_host_card_olie_db_suffix() {
     printf '%s' "$1" | tr '-' '_'

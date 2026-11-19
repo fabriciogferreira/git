@@ -1,11 +1,14 @@
-# Host-card Olie: app/http usam o stack compartilhado (compose.host-data.yml).
+# Host-card e sandbox Olie: app/http(/e2e) usam o stack compartilhado
+# (compose.host-data.yml → olie-hc-mysql/redis/mongo).
 # Problema: o slim traz mysql/redis/mongo por projeto compose; no jarvis isso
-# multiplica instâncias. Aqui desliga os três no card e aponta env + rede
-# externa hc-olie-data. SB_DB_* / SB_MONGO_* / SB_REDIS_PREFIX vêm do .env.
+# multiplica instâncias (N cards × 3 + N sandboxes × 3). Isolamento real só
+# precisa de database/prefixo. Desliga os três no compose do card/sandbox e
+# aponta env + rede externa hc-olie-data.
+# SB_DB_* / SB_MONGO_* / SB_REDIS_PREFIX vêm do .env.
 
 services:
   # !override nos profiles: senão o merge CONCATENA com slim e o mysql do
-  # card sobe junto no --profile slim (instância por card de novo).
+  # card/sandbox sobe junto no --profile slim|tests|mutation|e2e.
   mysql:
     profiles: !override ["__host_card_unused__"]
     volumes: !override []
@@ -59,6 +62,15 @@ services:
       REDIS_PREFIX: ${SB_REDIS_PREFIX}
     depends_on: !override
       app:
+        condition: service_started
+
+  # Sandbox profile=e2e: slim ainda depends_on mysql/redis (serviço unused).
+  e2e:
+    networks:
+      sb_net:
+      hc_olie_data:
+    depends_on: !override
+      http:
         condition: service_started
 
 networks:

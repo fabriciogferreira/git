@@ -57,6 +57,11 @@ Regra prática: **escreve** no mesmo recurso mutável → exclusive; **read-only
 (e qualquer Pest baseline) **não** usa `docker exec olie-api-main`. Usa
 `workvm-sandbox create --project olie --profile mutation|tests`.
 
+**Data compartilhada:** sandboxes Olie **não** sobem mysql/redis/mongo
+próprios — reusam `hc-olie-data` (`olie-hc-*`) com DB/prefixo por id
+(`api_sb_<id>` / `testing_sb_<id>`). Exclusive continua válido (DBs
+distintos); o ganho é RAM no warm pool. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0`.
+
 ---
 
 ## Dispatcher + fan-out

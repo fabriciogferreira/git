@@ -1,7 +1,9 @@
 # Plugin Olie para o Sandbox Manager.
 # Problema: mutation/Pest no Card VM compartilhavam MySQL `testing` e
 # corrompiam `api_main` quando o colleague-review disparava gates em paralelo.
-# Isola worktree + MySQL/Redis/Mongo por COMPOSE_PROJECT_NAME (como Televisão).
+# Isola worktree por sandbox; MySQL/Redis/Mongo vêm do stack compartilhado
+# hc-olie-data (mesmo dos host-cards) com DB/prefixo por id — sem N× instâncias.
+# Opt-out: WORKVM_SANDBOX_SHARED_DATA=0 (volta mysql/redis/mongo do slim).
 
 workvm_sandbox_project_max() {
     # 0 = sem teto (jarvis/host-card: N mutations em paralelo).
@@ -30,6 +32,39 @@ workvm_sandbox_project_cpus() {
 workvm_sandbox_project_repos() {
     # Paths relative to ~/git/olie/ (clones da empresa).
     printf '%s\n' api-main olie-fronts
+}
+
+# Prefixo sb_ evita colisão com api_<dns_slug> dos host-cards no mesmo MySQL.
+workvm_sandbox_olie_db_slug() {
+    local id="$1"
+    local s
+    s="$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]' | tr '-' '_' | tr -c 'a-z0-9_' '_' | sed 's/__*/_/g; s/^_//; s/_$//')"
+    printf 'sb_%s\n' "$s"
+}
+
+workvm_sandbox_olie_shared_data_enabled() {
+    case "${WORKVM_SANDBOX_SHARED_DATA:-1}" in
+        0|false|no|off) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+# host-card-shared-data.sh precisa de workvm_host_card_{root,meta_repo,log}.
+workvm_sandbox_olie_load_shared_data() {
+    local meta_repo
+    meta_repo="$(workvm_sandbox_meta_repo)"
+    if declare -F workvm_host_card_olie_ensure_shared_data >/dev/null; then
+        return 0
+    fi
+    if ! declare -F workvm_host_card_root >/dev/null; then
+        workvm_host_card_root() {
+            printf '%s\n' "${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
+        }
+        workvm_host_card_meta_repo() { workvm_sandbox_meta_repo; }
+        workvm_host_card_log() { printf 'workvm-host-card: %s\n' "$*" >&2; }
+    fi
+    # shellcheck source=/dev/null
+    source "${meta_repo}/olie/sandbox/host-card-shared-data.sh"
 }
 
 workvm_sandbox_olie_ensure_sandbox_image() {
@@ -64,9 +99,36 @@ workvm_sandbox_olie_link_vendor() {
     fi
 }
 
+# Patch phpunit.xml do worktree: Pest usa DB_DATABASE=testing por default;
+# no shared MySQL cada sandbox precisa de testing_sb_<id> (+ _test_N).
+workvm_sandbox_olie_patch_phpunit_db() {
+    local phpunit="$1"
+    local testing_db="$2"
+    [ -f "$phpunit" ] || return 0
+    if grep -q 'name="DB_DATABASE"' "$phpunit"; then
+        sed -i -E "s|(name=\"DB_DATABASE\"[[:space:]]+value=\")[^\"]*\"|\\1${testing_db}\"|" "$phpunit"
+    fi
+    if grep -q 'name="CACHE_PREFIX"' "$phpunit"; then
+        sed -i -E "s|(name=\"CACHE_PREFIX\"[[:space:]]+value=\")[^\"]*\"|\\1${testing_db}_env\"|" "$phpunit"
+    fi
+}
+
 workvm_sandbox_olie_write_env() {
     local src_env="$1"
     local dest_env="$2"
+    local api_db="${3:-api_main}"
+    local redis_prefix="${4:-}"
+    local db_host=mysql
+    local mongo_host=mongo
+    local redis_host=redis
+
+    if workvm_sandbox_olie_shared_data_enabled; then
+        db_host=olie-hc-mysql
+        mongo_host=olie-hc-mongo
+        redis_host=olie-hc-redis
+        [ -n "$redis_prefix" ] || redis_prefix="${api_db}_"
+    fi
+
     if [ -f "$src_env" ]; then
         cp -f "$src_env" "$dest_env"
     else
@@ -78,22 +140,22 @@ workvm_sandbox_olie_write_env() {
     if [ -f "$dest_env" ]; then
         sed -i -E '/^[A-Z][A-Z0-9_]*=[[:space:]]*$/d' "$dest_env"
     fi
-    # Força hosts do compose slim (não o stack da Card VM).
     local key val
     for key in \
-        DB_HOST=mysql \
+        "DB_HOST=${db_host}" \
         DB_PORT=3306 \
-        DB_DATABASE=api_main \
+        "DB_DATABASE=${api_db}" \
         DB_USERNAME=sandbox \
         DB_PASSWORD=sandbox \
-        MONGODB_HOST=mongo \
+        "MONGODB_HOST=${mongo_host}" \
         MONGODB_PORT=27017 \
-        MONGODB_DATABASE=api_main \
+        "MONGODB_DATABASE=${api_db}" \
         MONGODB_USERNAME=sandbox \
         MONGODB_PASSWORD=sandbox \
-        REDIS_HOST=redis \
+        "REDIS_HOST=${redis_host}" \
         REDIS_PORT=6379 \
-        REDIS_PASSWORD=null
+        REDIS_PASSWORD=null \
+        "REDIS_PREFIX=${redis_prefix}"
     do
         val="${key#*=}"
         key="${key%%=*}"
@@ -110,8 +172,13 @@ workvm_sandbox_project_prepare_worktrees() {
     local wt="$2"
     local from_commit="${3:-}"
     local git_root project_root repo src dest
+    local db_slug api_db testing_db redis_prefix
     git_root="$(workvm_sandbox_git_root)"
     project_root="${git_root}/olie"
+    db_slug="$(workvm_sandbox_olie_db_slug "$id")"
+    api_db="api_${db_slug}"
+    testing_db="testing_${db_slug}"
+    redis_prefix="${db_slug}_"
 
     mkdir -p "$wt/e2e"
     printf 'sandbox=%s\n' "$id" >"$wt/.sandbox-id"
@@ -157,7 +224,10 @@ workvm_sandbox_project_prepare_worktrees() {
                 "${dest}/storage/framework/views" \
                 "${dest}/bootstrap/cache"
             if [ "$repo" = "api-main" ]; then
-                workvm_sandbox_olie_write_env "${src}/.env" "${dest}/.env"
+                workvm_sandbox_olie_write_env "${src}/.env" "${dest}/.env" "$api_db" "$redis_prefix"
+                if workvm_sandbox_olie_shared_data_enabled; then
+                    workvm_sandbox_olie_patch_phpunit_db "${dest}/phpunit.xml" "$testing_db"
+                fi
             fi
         else
             mkdir -p "$dest"
@@ -179,9 +249,18 @@ workvm_sandbox_project_prepare_worktrees() {
 workvm_sandbox_project_remove_worktrees() {
     local id="$1"
     local wt="$2"
-    local git_root project_root repo src dest
+    local git_root project_root repo src dest db_slug
     git_root="$(workvm_sandbox_git_root)"
     project_root="${git_root}/olie"
+
+    if workvm_sandbox_olie_shared_data_enabled; then
+        db_slug="$(workvm_sandbox_olie_db_slug "$id")"
+        workvm_sandbox_olie_load_shared_data || true
+        if declare -F workvm_host_card_olie_drop_card_databases >/dev/null; then
+            workvm_sandbox_log "drop shared DBs for $db_slug"
+            workvm_host_card_olie_drop_card_databases "$db_slug" || true
+        fi
+    fi
 
     while IFS= read -r repo; do
         [ -n "$repo" ] || continue
@@ -215,15 +294,30 @@ workvm_sandbox_project_render_compose() {
     local cpus="${7:-1.0}"
     local gui="${WORKVM_SANDBOX_GUI:-0}"
     local meta_repo tmpl
+    local db_slug api_db testing_db redis_prefix shared=0
 
     meta_repo="$(workvm_sandbox_meta_repo)"
     tmpl="${meta_repo}/olie/sandbox/compose.slim.yml"
+    db_slug="$(workvm_sandbox_olie_db_slug "$id")"
+    api_db="api_${db_slug}"
+    testing_db="testing_${db_slug}"
+    redis_prefix="${db_slug}_"
 
     workvm_sandbox_olie_ensure_sandbox_image || return 1
 
     mkdir -p "$compose_dir/artifacts" "$wt/e2e" "$wt/api-main"
     cp -f "$tmpl" "$compose_dir/compose.yaml"
     cp -f "${meta_repo}/olie/sandbox/compose.gui.yml" "$compose_dir/compose.gui.yml"
+
+    if workvm_sandbox_olie_shared_data_enabled; then
+        shared=1
+        workvm_sandbox_olie_load_shared_data || return 1
+        workvm_sandbox_log "shared data (hc-olie-data) para sandbox $id → $api_db / $testing_db"
+        workvm_host_card_olie_ensure_shared_data || return 1
+        workvm_host_card_olie_provision_card_databases "$db_slug" || return 1
+        cp -f "${meta_repo}/olie/sandbox/compose.host-card-shared-data.yml" \
+            "$compose_dir/compose.host-card-shared-data.yml"
+    fi
 
     local api_port=$((port_base + 0))
     local pname
@@ -240,15 +334,42 @@ workvm_sandbox_project_render_compose() {
         printf 'COMPOSE_PROJECT_NAME=%s\n' "$pname"
         printf 'SB_WORKTREE=%s\n' "$wt"
         printf 'SB_API_VENDOR=%s\n' "$api_vendor"
-        printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/mysql-init"
+        if [ "$shared" = "1" ]; then
+            # Placeholder: slim ainda interpola SB_MYSQL_INIT no serviço mysql
+            # (profile unused); path vazio quebra o compose validate.
+            printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/host-data-init"
+            printf 'SB_DB_DATABASE=%s\n' "$api_db"
+            printf 'SB_MONGO_DATABASE=%s\n' "$api_db"
+            printf 'SB_REDIS_PREFIX=%s\n' "$redis_prefix"
+            printf 'SB_TESTING_DATABASE=%s\n' "$testing_db"
+        else
+            printf 'SB_MYSQL_INIT=%s\n' "${meta_repo}/olie/sandbox/mysql-init"
+        fi
         printf 'SB_MEM=%s\n' "$mem"
         printf 'SB_CPUS=%s\n' "$cpus"
         printf 'SB_PORT_API=%s\n' "$api_port"
         printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
-        if [ "$gui" = "1" ] || [ "$gui" = "true" ]; then
+        if [ "$shared" = "1" ]; then
+            if [ "$gui" = "1" ] || [ "$gui" = "true" ]; then
+                printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.host-card-shared-data.yml\n'
+            else
+                printf 'COMPOSE_FILE=compose.yaml:compose.host-card-shared-data.yml\n'
+            fi
+        elif [ "$gui" = "1" ] || [ "$gui" = "true" ]; then
             printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml\n'
         else
             printf 'COMPOSE_FILE=compose.yaml\n'
         fi
     } >"$compose_dir/.env"
+
+    if declare -F workvm_sandbox_meta_set >/dev/null; then
+        if [ "$shared" = "1" ]; then
+            workvm_sandbox_meta_set "$id" shared_data hc-olie-data
+            workvm_sandbox_meta_set "$id" db_slug "$db_slug"
+            workvm_sandbox_meta_set "$id" db_database "$api_db"
+            workvm_sandbox_meta_set "$id" testing_database "$testing_db"
+        else
+            workvm_sandbox_meta_set "$id" shared_data ""
+        fi
+    fi
 }

@@ -1,0 +1,49 @@
+# Sandbox Televisão → stack compartilhado hc-televisao-data.
+# Problema: slim subia mysql+redis por sandbox. Desliga data local e aponta
+# app para televisao-hc-pgsql/redis (pgsql real da TV).
+# SB_DB_DATABASE / SB_REDIS_PREFIX vêm do .env.
+
+services:
+  mysql:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+  redis:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+
+  app:
+    networks:
+      sb_net:
+      hc_televisao_data:
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: televisao-hc-pgsql
+      DB_PORT: "5432"
+      DB_DATABASE: ${SB_DB_DATABASE:-db_televisao}
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      REDIS_HOST: televisao-hc-redis
+      REDIS_PORT: "6379"
+      REDIS_PREFIX: ${SB_REDIS_PREFIX:-}
+    depends_on: !override {}
+
+  http:
+    networks:
+      sb_net:
+      hc_televisao_data:
+    depends_on: !override
+      app:
+        condition: service_started
+
+  e2e:
+    networks:
+      sb_net:
+      hc_televisao_data:
+    depends_on: !override
+      http:
+        condition: service_started
+
+networks:
+  hc_televisao_data:
+    external: true
+    name: hc-televisao-data

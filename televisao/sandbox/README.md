@@ -34,14 +34,16 @@ Com N arquivos de mutation > teto, fila (ver ORCHESTRATION).
 | Recurso | Como |
 | --- | --- |
 | Código | worktree sob `~/git/televisao/.sandboxes/<id>/` |
-| DB / Redis | instâncias + volumes por `COMPOSE_PROJECT_NAME` |
-| Rede | bridge `sb-<id>_sb_net` (e2e **sem** `network_mode: host`) |
+| DB / Redis | stack compartilhado `hc-televisao-data` (mesmo dos host-cards); por sandbox: `db_sb_<id>` / `db_sb_<id>_test` + `REDIS_PREFIX`. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0` |
+| Rede | bridge `sb-<id>_sb_net` + externa `hc-televisao-data` (e2e **sem** `network_mode: host`) |
 | Portas host | só após `gui attach` (`compose.gui.yml`) |
 
 ## Arquivos
 
 - `ORCHESTRATION.md` — fan-out do colleague review / economia vs pastes sequenciais
-- `compose.slim.yml` — stack slim (piloto; TV real usa pgsql — slim ainda traz mysql ocioso a cortar)
+- `compose.host-data.yml` / `host-card-shared-data.sh` — shared pgsql+redis
+- `compose.slim.yml` + `compose.sandbox-shared-data.yml` — sandbox (mysql local fica unused com shared)
+- `compose.host.yml` + `compose.host-shared-data.yml` — host-card
 - `compose.gui.yml` — publish da porta API
 - `project.sh` — hooks do Manager
 

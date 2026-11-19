@@ -40,7 +40,7 @@ workvm_sandbox_create() {
     done
 
     if [ -z "$id" ]; then
-        workvm_sandbox_log "uso: create --name <id> [--project olie|televisao] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
+        workvm_sandbox_log "uso: create --name <id> [--project olie|televisao|locav] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
         return 2
     fi
     if ! workvm_sandbox_id_ok "$id"; then

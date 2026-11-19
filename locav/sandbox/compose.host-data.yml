@@ -1,0 +1,54 @@
+# Dados compartilhados dos host-cards e sandboxes Locav
+# (1 PostgreSQL + 1 Redis no jarvis).
+# Problema: N cards/sandboxes × (pgsql/redis) estourava RAM; isolamento real
+# só precisa de database/prefixo. Imagens ≈ Sail LocavApi (postgres:18.4,
+# redis:8.6.3-alpine).
+#
+# Projeto fixo: hc-locav-data. Rede: hc-locav-data.
+# Clientes: locav-hc-pgsql / locav-hc-redis.
+
+services:
+  postgresql:
+    image: postgres:18.4-trixie
+    container_name: locav-hc-pgsql
+    environment:
+      POSTGRES_DB: locav
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    command:
+      - postgres
+      - -c
+      - max_connections=300
+    volumes:
+      - hc_locav_pgsql:/var/lib/postgresql
+    networks: [hc_locav_data]
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d locav -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:8.6.3-alpine
+    container_name: locav-hc-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - hc_locav_redis:/data
+    networks: [hc_locav_data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+networks:
+  hc_locav_data:
+    name: hc-locav-data
+    driver: bridge
+
+volumes:
+  hc_locav_pgsql:
+    name: hc-locav-data_pgsql
+  hc_locav_redis:
+    name: hc-locav-data_redis

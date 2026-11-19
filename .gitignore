@@ -125,7 +125,7 @@ da-o-play/*
 !da-o-play/post-clone.sh
 !da-o-play/workspace.code-workspace
 
-# locav: definição + prompts + overlay; clones LocavApi / locav-front ficam fora.
+# locav: definição + prompts + overlay + sandbox; clones LocavApi / locav-front ficam fora.
 !locav/
 locav/*
 !locav/README.md
@@ -138,6 +138,8 @@ locav/*
 !locav/prompts/**
 !locav/overlay/
 !locav/overlay/**
+!locav/sandbox/
+!locav/sandbox/**
 !locav/cards/
 !locav/cards/*/
 !locav/cards/*/*.md

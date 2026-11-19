@@ -1,13 +1,19 @@
 # Hook Televisão: derruba o compose do host-card (host ou slim legado).
+# Shared data: só DROP dos DBs do card; hc-televisao-data permanece.
 # Sourced by lib/host-card.sh — define workvm_host_card_destroy_hook.
 
 workvm_host_card_destroy_hook() {
     local id="$1"
     local dir="$2"
-    local compose_dir pname
+    local compose_dir pname meta_repo dns_slug
+
+    meta_repo="$(workvm_host_card_meta_repo)"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/televisao/sandbox/host-card-shared-data.sh"
 
     compose_dir="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('compose_dir') or '')" 2>/dev/null || true)"
     pname="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('compose_project') or '')" 2>/dev/null || true)"
+    dns_slug="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('dns_slug') or '')" 2>/dev/null || true)"
     if [ -z "$compose_dir" ]; then
         compose_dir="${dir}/compose"
     fi
@@ -15,8 +21,12 @@ workvm_host_card_destroy_hook() {
         pname="hc-${id}"
     fi
 
+    if [ -n "$dns_slug" ]; then
+        workvm_host_card_televisao_drop_card_databases "$dns_slug" || true
+    fi
+
     if [ -d "$compose_dir" ] && [ -f "$compose_dir/compose.yaml" ]; then
-        workvm_host_card_log "compose down -v ($pname)"
+        workvm_host_card_log "compose down -v ($pname) — sem shared data"
         (
             cd "$compose_dir"
             set -a

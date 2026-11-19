@@ -1,6 +1,7 @@
 # Hook Televisão: sobe API Laravel + Next namespaced no host (sem WorkVM).
 # Problema: o slim (php -S no meta-dir) respondia 404 em /; o card precisa
 # do stack de login (pgsql + backend + front) com portas/DNS por código.
+# Shared data: pgsql/redis em hc-televisao-data (DB/prefixo por card).
 # Sourced by lib/host-card.sh — define workvm_host_card_ensure_hook.
 
 workvm_host_card_ensure_hook() {
@@ -8,12 +9,14 @@ workvm_host_card_ensure_hook() {
     local dir="$2"
     local meta_repo git_root compose_dir port_base wt api front
     local code dns_slug front_env pname app_url front_url
-    local host_uid host_gid
+    local host_uid host_gid db_suffix api_db testing_db redis_prefix
 
     meta_repo="$(workvm_host_card_meta_repo)"
     git_root="$(workvm_host_card_git_root)"
     # shellcheck source=/dev/null
     source "${meta_repo}/lib/host-card-proxy.sh"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/televisao/sandbox/host-card-shared-data.sh"
 
     compose_dir="${dir}/compose"
     wt="${git_root}/televisao"
@@ -41,11 +44,24 @@ workvm_host_card_ensure_hook() {
         workvm_host_card_log "televisao-api/.env ausente — copiando de .env.example"
         cp -n "${api}/.env.example" "${api}/.env" || true
     fi
+    workvm_host_card_televisao_ensure_shared_data || return 1
+    db_suffix="$(workvm_host_card_televisao_db_suffix "$dns_slug")"
+    api_db="db_${db_suffix}"
+    testing_db="db_${db_suffix}_test"
+    redis_prefix="hc_${db_suffix}_"
+    workvm_host_card_televisao_provision_card_databases "$dns_slug" || return 1
+
     if [ -f "${api}/.env" ]; then
         _hc_tv_set_env "${api}/.env" HOST_UID "$host_uid"
         _hc_tv_set_env "${api}/.env" HOST_GID "$host_gid"
-        _hc_tv_set_env "${api}/.env" DB_HOST postgresql
-        _hc_tv_set_env "${api}/.env" REDIS_HOST redis
+        _hc_tv_set_env "${api}/.env" DB_CONNECTION pgsql
+        _hc_tv_set_env "${api}/.env" DB_HOST televisao-hc-pgsql
+        _hc_tv_set_env "${api}/.env" DB_PORT 5432
+        _hc_tv_set_env "${api}/.env" DB_DATABASE "$api_db"
+        _hc_tv_set_env "${api}/.env" DB_USERNAME root
+        _hc_tv_set_env "${api}/.env" DB_PASSWORD password
+        _hc_tv_set_env "${api}/.env" REDIS_HOST televisao-hc-redis
+        _hc_tv_set_env "${api}/.env" REDIS_PREFIX "$redis_prefix"
         _hc_tv_set_env "${api}/.env" APP_URL "$app_url"
         _hc_tv_set_env "${api}/.env" FRONTEND_URL "${front_url}/"
         _hc_tv_set_env "${api}/.env" BROADCAST_CONNECTION log
@@ -65,6 +81,8 @@ EOF
 
     mkdir -p "$compose_dir/artifacts"
     cp -f "${meta_repo}/televisao/sandbox/compose.host.yml" "$compose_dir/compose.yaml"
+    cp -f "${meta_repo}/televisao/sandbox/compose.host-shared-data.yml" \
+        "$compose_dir/compose.host-shared-data.yml"
     # Dockerfile precisa estar no context do build (BuildKit recusa path fora)
     cp -f "${meta_repo}/televisao/sandbox/Dockerfile.host-api" "${api}/Dockerfile.host-card"
     if [ -d "${api}/.git" ] || [ -f "${api}/.git" ]; then
@@ -87,28 +105,36 @@ EOF
         printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
         printf 'HOST_UID=%s\n' "$host_uid"
         printf 'HOST_GID=%s\n' "$host_gid"
-        printf 'DB_DATABASE=db_televisao\n'
+        printf 'DB_DATABASE=%s\n' "$api_db"
         printf 'DB_USERNAME=root\n'
         printf 'DB_PASSWORD=password\n'
+        printf 'SB_DB_DATABASE=%s\n' "$api_db"
+        printf 'SB_TESTING_DATABASE=%s\n' "$testing_db"
+        printf 'SB_REDIS_PREFIX=%s\n' "$redis_prefix"
         printf 'APP_URL=%s\n' "$app_url"
         printf 'FRONTEND_URL=%s/\n' "$front_url"
         printf 'HC_BACKEND_IMAGE=televisao-backend:host-card\n'
         workvm_host_card_write_resource_env
-        printf 'COMPOSE_FILE=compose.yaml\n'
+        printf 'COMPOSE_FILE=compose.yaml:compose.host-shared-data.yml\n'
     } >"$compose_dir/.env"
 
     workvm_host_card_apply_compose_limits "$compose_dir"
 
-    python3 - "$dir/meta.json" "$pname" "$compose_dir" "$dns_slug" "$port_base" <<'PY'
+    python3 - "$dir/meta.json" "$pname" "$compose_dir" "$dns_slug" "$port_base" \
+        "$api_db" "$testing_db" "$redis_prefix" <<'PY'
 import json, sys
-path, pname, compose_dir, slug, port_base = sys.argv[1:6]
+path, pname, compose_dir, slug, port_base, api_db, testing_db, redis_prefix = sys.argv[1:9]
 port_base = int(port_base)
 with open(path, encoding="utf-8") as f:
     meta = json.load(f)
 meta["compose_project"] = pname
 meta["compose_dir"] = compose_dir
 meta["stack"] = "televisao-host"
+meta["shared_data"] = "hc-televisao-data"
 meta["dns_slug"] = slug
+meta["db_database"] = api_db
+meta["testing_database"] = testing_db
+meta["redis_prefix"] = redis_prefix
 meta["api_dns"] = f"http://api.{slug}.olie.localhost"
 meta["front_dns"] = f"http://devframe.{slug}.olie.localhost"
 meta["api_url"] = f"http://127.0.0.1:{port_base}"

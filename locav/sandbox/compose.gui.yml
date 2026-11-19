@@ -1,0 +1,5 @@
+# Publish da porta API do sandbox Locav (gui attach).
+services:
+  http:
+    ports:
+      - "${SB_PORT_API}:8000"

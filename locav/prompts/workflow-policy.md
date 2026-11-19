@@ -159,7 +159,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 - First day → creates state, `port_base`, and `~/git/locav/<id>.code-workspace` (opens Cursor when a graphical session exists).
 - Later day / re-paste → **resume** the same id (do not destroy; do not recreate from scratch).
 - Report `id`, `port_base`, URLs, and `workspace` in chat. Prefer that workspace window for the card.
-- Compose slim hook for Locav is **not** wired yet (unlike olie/televisao) — local stack stays the project compose until `locav/sandbox/host-card-ensure.sh` exists. If the CLI fails after an unrestricted re-run, stop (prompt-health).
+- Shared PostgreSQL/Redis (`hc-locav-data`) sobe no `ensure` via `locav/sandbox/host-card-ensure.sh`. App compose namespaced (Sail → card) ainda TBD — browser/API do card continuam no Sail do clone até isso. Sandboxes: `workvm-sandbox --project locav`. If the CLI fails after an unrestricted re-run, stop (prompt-health).
 
 **Destroy (only when the card is finished):**
 

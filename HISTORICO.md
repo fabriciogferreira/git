@@ -38,6 +38,18 @@ Problema resolvido entra aqui.
 - **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
 - **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
 
+## Televisão/Locav: PostgreSQL/Redis compartilhados (hc-*-data)
+
+- **problema:** TV host-card e sandboxes subiam pgsql/redis (ou mysql) por unidade; Locav não tinha sandbox nem shared data.
+- **por que é um problema:** mesma pressão de RAM do Olie; Locav mutation batia no Sail único.
+- **resolvido como:** `televisao/sandbox/compose.host-data.yml` + shared overlays (host + sandbox); `locav/sandbox/` (shared + slim + project.sh + ensure/destroy só data). DB/prefixo por id; destroy só DROP. Opt-out sandbox: `WORKVM_SANDBOX_SHARED_DATA=0`.
+
+## Sandbox Olie: MySQL/Redis/Mongo compartilhados (hc-olie-data)
+
+- **problema:** cada `workvm-sandbox create` subia mysql+redis+mongo no slim — warm pool 2–4 × ~1.75 GiB de data além do app.
+- **por que é um problema:** mesma pressão de RAM que N host-cards com data próprio; isolamento exclusive só precisa de database/prefixo.
+- **resolvido como:** create/destroy Olie reusa `hc-olie-data` + `compose.host-card-shared-data.yml`; provisiona `api_sb_<id>` / `testing_sb_<id>`(+`_test_*`); patch `phpunit.xml` do worktree; destroy só DROP. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0`.
+
 ## Host-card Olie: workspace vazio no resume (Explorer/SCM)
 
 - **problema:** `write_workspace` no ensure reescrevia o stub com `folders: []`; com a janela já aberta o Cursor hot-reloada o vazio; `bind_workspace_worktree` preenchia o disco depois e o ensure só focava → Explorer/SCM sem repos (ex. DOP-1276).
