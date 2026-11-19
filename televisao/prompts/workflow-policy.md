@@ -309,18 +309,24 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/televisao/prompts/implementation-validation.md`, or **Tests to add** from `~/git/televisao/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
 | `open televisao CODE` / `open PROJECT CODE` | `~/git/bin/workvm-host-card open --project televisao --code <CODE>`. Ensure + focus/open the card `.code-workspace` (not the shared clone). Print `workspace=` / `api_worktree=`. |
 | `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project televisao --code <CODE>` (compose/sandbox + fecha a janela Cursor + clones → branch base do `project.conf`). Do **not** ask about or move the board to concluído — that is a separate explicit request. |
+| `resolva` | After a **prompt-health** stop: fix the blocker **in this session only**. Do not encode a permanent meta-repo solution. Then resume the interrupted prompt. |
+| `documente` | After a **prompt-health** stop: write the problem into `~/git/HISTORICO.md` (and a short rule/prompt note if useful). Small local unblock if safe; if the real fix is too large for this card, **document only**. |
+| `resolva permanentemente` | After a **prompt-health** stop: unblock now **and** leave a durable fix for the next card (`HISTORICO.md` + rule / workflow-policy / `bin`/`lib` / overlay as needed). |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste.
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop.
+If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** WorkVM/host-card friction burns time on every card — **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop. Host-card sandbox permission cluster: retry with `required_permissions: ["all"]` first.
+
+Diagnose, then **wait** for `resolva` / `documente` / `resolva permanentemente` (table above). Do not pick the path yourself.
 
 Report:
 
 1. What you were doing
 2. The objective error (status, short message) or that it hung past a reasonable wait
 3. The most likely cause
-4. That this likely means **this prompt (or its assumptions) needs to be updated**
+4. Whether `~/git/HISTORICO.md` or an existing rule/prompt **already documents** this — cite it if so
+5. The three commands and that you are waiting
 
-Then wait for the user. Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.
+Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.

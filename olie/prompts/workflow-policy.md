@@ -384,18 +384,24 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (compose/sandbox + clones compartilhados de volta à branch base do `project.conf`, ex. `develop`). **Does not** close the Cursor window (that killed the chat mid-prompt). After destroy succeeds, tell the user explicitly they can close the card window manually. Do **not** ask about or move the board to 'concluído' — that is a separate explicit request. Do not destroy other cards. |
 | `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
 | `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |
+| `resolva` | After a **prompt-health** stop: fix the blocker **in this session only** (local/env/compose). Do not encode a permanent meta-repo solution. Then resume the interrupted prompt. |
+| `documente` | After a **prompt-health** stop: write the problem into `~/git/HISTORICO.md` (and a short rule/prompt note if useful) as a known issue / workaround. Apply a small local unblock if safe; if the real fix is too large for this card, **document only** and stop after writing. |
+| `resolva permanentemente` | After a **prompt-health** stop: unblock now **and** leave a durable fix so the **next card** does not rediscover it — `HISTORICO.md` (`problema` / `por que é um problema` / `resolvido como`) plus the right artifact (`.cursor/rules`, this workflow-policy, `bin/`/`lib/`, overlay, etc.). Prefer rule/script over prose-only when the failure is mechanical. |
 
 When a prompt finishes and names a next paste, remember that path so `next prompt` can load it without a new paste. While coverage-testing still has remaining files, the remembered “continue” commands are `next coverage` or `correct coverages`, not `next prompt`. While mutation-testing still has remaining files, the remembered “continue” commands are `next mutation` or `correct mutations`, not `next prompt`. Own-card develop handoff order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, **MCP call** (any configured server), shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long, **stop the prompt**. Do not silently work around it, swap tools to hide the break, or keep going. **Ask the user to fix the broken tool** (MCP auth/token, proxy, Docker, env, etc.) and wait before continuing. `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is the **MCP auth** case above, not this stop — do not ask the user to sign in again for that case only.
+If a request, **MCP call** (any configured server), shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** WorkVM/host-card friction burns time on every card — **stop the prompt**. Do not silently work around it, swap tools to hide the break, or keep going. `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is the **MCP auth** case above, not this stop — do not ask the user to sign in again for that case only. Host-card **sandbox permission cluster**: retry with `required_permissions: ["all"]` first (see **Host card environment**); that is not “host broken”.
+
+Diagnose, then **wait** for one of `resolva` / `documente` / `resolva permanentemente` (table above). Do not pick the path yourself.
 
 Report:
 
 1. What you were doing
 2. The objective error (status, short message) or that it hung past a reasonable wait
 3. The most likely cause
-4. That the user should fix the tooling, **or** that this prompt (or its assumptions) may need updating if the failure looks like a bad prompt instruction
+4. Whether `~/git/HISTORICO.md` or an existing rule/prompt **already documents** this — cite it if so
+5. The three commands (`resolva` / `documente` / `resolva permanentemente`) and that you are waiting
 
-Then wait for the user. Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.
+Expected failures of the current task (e.g. testing an error path) can be reported and continued when that still makes sense.

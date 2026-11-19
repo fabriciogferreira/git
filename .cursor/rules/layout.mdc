@@ -56,6 +56,7 @@ alwaysApply: true
 | `bin/workvm-host-card-playwright-mcp.sh` | Playwright MCP no jarvis: `docker exec` no `hc-olie-*-olie-e2e-1` do card ativo (pointer), via `workvm-playwright-mcp.sh`. |
 | `bin/workvm-paste-prompt` | Atalho opcional: clipboard + `.paste-prompt.md`. Preferir chat `colleague review CODE` (agente substitui na memória). |
 | `.cursor/rules/prompt-templates-hands-off.mdc` | Agente/humano editava `{{ code }}` no disco e sujava todas as janelas. Proíbe gravar; manda rodar com código só no chat. |
+| `.cursor/rules/stop-on-broken-tooling.mdc` | Tooling/atrito recorrente: parar, diagnosticar, oferecer `resolva` / `documente` / `resolva permanentemente` (não reinventar em todo card). |
 | `olie/sandbox/compose.e2e-host.yml` | Host-card sem `olie-e2e` → sem MCP/suite. Sobe image `olie/e2e` no ensure (`network_mode: host` + DNS do card). |
 | `bin/workvm-host-card-pest` | Pest no host-card Olie: o ensure injeta DNS/slug e reCAPTCHA de teste; a suite espera WorkVM (`*.olie.localhost` + `invalid_token`). Teto `--processes=22` (23+ = SIGSEGV no jarvis). |
 | `lib/host-card-proxy.sh` | N cards no host: Caddy roteia `api|devframe.{slug}.olie.localhost` → portas do card. |
@@ -78,6 +79,7 @@ alwaysApply: true
 | `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
 | `host-cards-no-vm.md` | Card/projeto no jarvis sem WorkVM: checklist de isolamento (porta, DNS, destroy, Cursor, teto RAM) antes de largar a domain. |
 | `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
+| `olie/presentation/pest-evals-demo/` | Demo de apresentação Pest Evals (Pest 5): suite clássica verde + agent mentindo etapa do funil; evals-gap vermelho / evals-fixed verde. Não é o `api-main` (ainda Pest 4). |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
 | `televisao/prompts/` | Prompts do projeto **Televisão** (colar no agente; ao lado de `televisao/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |

@@ -1,32 +1,46 @@
 ---
-description: Não engolir falha de comando/MCP/tool que deveria funcionar — parar e avisar
+description: Falha repetida de tooling/VM — parar, diagnosticar e oferecer resolva / documente / resolva permanentemente
 alwaysApply: true
 ---
 
-# Parar quando a ferramenta falha
+# Parar quando a ferramenta (ou atrito recorrente) falha
 
-Este meta-repo existe para a VM e o fluxo de desenvolvimento já estarem prontos. Se algo que **deveria funcionar** falha, não contorne em silêncio nem invente workaround longo: **pare o prompt e avise**.
+Este meta-repo existe para a VM / host-card e o fluxo de desenvolvimento já estarem prontos. Se algo que **deveria funcionar** falha, ou o mesmo atrito **reaparece em todo card**, não contorne em silêncio nem reinvente a roda: **pare o prompt, diagnostique e espere o comando do usuário**.
 
 ## O que conta
 
 - Comando de shell, script de bootstrap (`vm-setup`, `project-setup`, `project-start`)
-- MCP (auth, conexão, tool ausente ou erro)
+- MCP (auth, conexão, tool ausente ou erro) — exceto o caso **MCP auth** `olie-flow-ai` `needsAuth` já documentado no `workflow-policy`
 - Docker / compose / URL de wait do projeto
 - Git remoto, gh, ou integração que o setup assume disponível
 - Env esperado (`environment.d`, token, path do projeto ativo)
+- Atritos **recorrentes** entre cards (reCAPTCHA local, permissões do agent shell / sandbox, path de worktree host-card, Pest/MySQL no jarvis, e2e fora do workspace, etc.) — inclusive se já houver entrada no `HISTORICO.md`
 
 ## O que fazer
 
-1. Pare a tarefa em curso (não “siga em frente” como se estivesse ok).
-2. Avise com: o que falhou, o erro objetivo (status, mensagem curta), e a hipótese mais provável.
-3. Se souber o próximo passo óbvio (um comando, um arquivo a checar), diga — sem executar correção grande sem o usuário pedir, salvo fix trivial que ele já pediu.
+1. **Pare** a tarefa em curso (não “siga em frente” como se estivesse ok).
+2. **Diagnostique** em poucas linhas:
+   - o que estava fazendo
+   - erro objetivo (status, mensagem curta) ou hang
+   - hipótese mais provável
+   - se `~/git/HISTORICO.md` / rule / prompt **já documenta** isso — cite o path e use essa solução como base
+3. Ofereça **exatamente** estes três comandos de chat e **espere** (não escolha sozinho):
+
+| Comando | Significado |
+| --- | --- |
+| `resolva` | Corrige **só nesta sessão** (env/compose/comando local). Não grava solução permanente no meta-repo. Depois retoma o prompt. |
+| `documente` | Escreve o problema no `HISTORICO.md` (e nota curta em rule/prompt se ajudar) como issue conhecida / workaround. Se o fix for pequeno, desbloqueia agora; se for grande demais para este card, **só documenta** e para. |
+| `resolva permanentemente` | Desbloqueia agora **e** deixa a solução durável para o **próximo card**: `HISTORICO.md` (`problema` / `por que é um problema` / `resolvido como`) + artefato certo (`.cursor/rules`, `*/prompts/workflow-policy.md`, `bin/`/`lib/`, overlay, etc.). Prefira rule/script a prosa solta quando o erro for mecânico. |
 
 ## O que não fazer
 
 - Engolir 401/timeout/exit ≠ 0 e continuar a feature
 - Trocar de ferramenta só para mascarar (ex.: outro MCP, outro path) sem dizer que a principal quebrou
 - Tratar falha de infra da VM como “limitação normal do chat”
+- Aplicar `resolva permanentemente` sem o usuário ter pedido esse comando
+- Redocumentar do zero sem olhar o `HISTORICO.md` / rules existentes
 
 ## Exceção
 
-Falha **esperada** do pedido atual (ex.: testar um caso de erro, comando exploratório que pode falhar) — reporte o resultado e siga se ainda fizer sentido. Não é o caso de MCP/auth/compose que o login deveria ter deixado de pé.
+- Falha **esperada** do pedido atual (ex.: testar um caso de erro) — reporte e siga se ainda fizer sentido
+- Cluster de **sandbox do agent** (Permission denied em `~/.cursor` / `workvm`, DNS/`gh`/`docker.sock` falsos): primeiro retry com `required_permissions: ["all"]` — ver **Host card environment** no `workflow-policy`; não é “host quebrado”

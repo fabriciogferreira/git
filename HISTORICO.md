@@ -2,6 +2,18 @@
 
 Problema resolvido entra aqui.
 
+## Prompt health: resolva / documente / resolva permanentemente
+
+- **problema:** atritos repetidos entre cards (tooling/VM); o agente resolvia no silêncio ou só pedia “arrume a tool”, e a solução não ficava para o próximo card.
+- **por que é um problema:** tempo de card gasto em problema já visto; HISTORICO/rules não alimentavam o fluxo.
+- **resolvido como:** rule `stop-on-broken-tooling.mdc` + `workflow-policy` (Olie/Locav/Televisão) — no stop, diagnosticar, checar HISTORICO, e esperar `resolva` | `documente` | `resolva permanentemente`.
+
+## Apresentação: demo Pest Evals (qualidade de agent Olie)
+
+- **problema:** explicar Evals sem ter Pest 5 no `api-main`; mostrar suite clássica verde com resposta errada.
+- **por que é um problema:** plugin oficial exige Pest 5; wiring tests não pegam alucinação.
+- **resolvido como (temporário):** `olie/presentation/pest-evals-demo` — Pest 5 + `pest-plugin-evals` + `laravel/ai` Agents reais (OpenRouter). `WrongCapitalAgent` (Lyon) → classic verde / evals-gap vermelho; `CapitalCityAgent` (doc) → evals-fixed verde. Descartar após a talk.
+
 ## Host-card: e2e fora do workspace pedia permissão
 
 - **problema:** prompts apontavam `~/git/olie/olie-e2e`; no host-card essa pasta não é root do `.code-workspace` (só o worktree `…/worktree/git/olie/olie-e2e`) → create de spec pedia approve “fora do workspace”.
