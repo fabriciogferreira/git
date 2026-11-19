@@ -68,6 +68,17 @@ if [[ -z "${E2E_SUPPORT_CHAT_ISOLATION_MARKER:-}" ]] || [[ "${E2E_SEED_SUPPORT_C
     echo "  isolation marker: ${E2E_SUPPORT_CHAT_ISOLATION_MARKER}"
 fi
 
+# TV-255 cancel prescription dialog + cancelled badge on consultation view.
+if [[ -z "${E2E_CANCEL_PRESCRIPTION_CONSULTATION_ID:-}" ]] || [[ -z "${E2E_CANCEL_PRESCRIPTION_ID:-}" ]] || [[ "${E2E_SEED_CANCEL_PRESCRIPTION:-1}" == "1" ]]; then
+    echo "→ seeding active prescription for TV-255 cancel E2E"
+    cancel_seed="$(./scripts/seed-cancel-prescription.sh)"
+    E2E_CANCEL_PRESCRIPTION_CONSULTATION_ID="${cancel_seed%% *}"
+    E2E_CANCEL_PRESCRIPTION_ID="${cancel_seed##* }"
+    export E2E_CANCEL_PRESCRIPTION_CONSULTATION_ID E2E_CANCEL_PRESCRIPTION_ID
+    echo "  consultation: ${E2E_CANCEL_PRESCRIPTION_CONSULTATION_ID}"
+    echo "  prescription: ${E2E_CANCEL_PRESCRIPTION_ID}"
+fi
+
 docker compose up -d --build
 docker compose exec -T -u pwuser \
     -e TZ=America/Sao_Paulo \
@@ -78,6 +89,8 @@ docker compose exec -T -u pwuser \
     -e E2E_AUTENTIQUE_LINK_CONSULTATION_ID \
     -e E2E_AUTENTIQUE_LINK_PRESCRIPTION_ID \
     -e E2E_SUPPORT_CHAT_ISOLATION_MARKER \
+    -e E2E_CANCEL_PRESCRIPTION_CONSULTATION_ID \
+    -e E2E_CANCEL_PRESCRIPTION_ID \
     -e E2E_DOCTOR_USER="${E2E_DOCTOR_USER:-doctor1@doctor.test}" \
     -e E2E_DOCTOR_PASSWORD="${E2E_DOCTOR_PASSWORD:-password}" \
     -e E2E_CLINIC_ADMIN_USER="${E2E_CLINIC_ADMIN_USER:-clinic-admin@clinic.com}" \
