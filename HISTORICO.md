@@ -38,6 +38,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** fricção a cada card sem e2e; risco de gravar no meta shared em vez do worktree do card.
 - **resolvido como:** path resolution em `workflow-policy` + prompts/overlay; ensure escreve rule `host-card-e2e-path.mdc` no meta/e2e do card (exclude local).
 
+## Sandbox mutation/tests: não sobe `http` (php -S)
+
+- **problema:** profile `mutation`/`tests` no slim incluía o serviço `http` (~256–512 MiB) só para CLI Pest.
+- **por que é um problema:** warm pool × N sandboxes gastava RAM sem servir mutation/coverage.
+- **resolvido como:** `http` só nos profiles `e2e` e `slim` (Olie/TV/Locav). Host-card continua com `slim` (API no browser).
+
 ## Auto-review: warm pool sandbox sem card de aprovação a cada create/job
 
 - **problema:** `permissions.json` pedia unrestricted shell antes de todo `workvm-sandbox create/job run/destroy`; no DOP-1278 o dreno de mutation/coverage virava N cards de OK.

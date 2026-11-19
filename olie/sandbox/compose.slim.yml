@@ -106,10 +106,11 @@ services:
       mongo:
         condition: service_healthy
 
-  # HTTP só na rede do sandbox (sem publish). GUI attach usa compose.gui.yml.
+  # HTTP só para e2e/slim/gui — mutation/tests são CLI no `app` (sem php -S).
+  # Host-card usa profile slim (precisa da API no browser).
   http:
     image: olie/api-main-sandbox:latest
-    profiles: ["tests", "mutation", "e2e", "slim"]
+    profiles: ["e2e", "slim"]
     working_dir: /var/www/html
     entrypoint: []
     command: ["php", "-S", "0.0.0.0:8080", "-t", "public"]

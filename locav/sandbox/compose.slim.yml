@@ -66,9 +66,10 @@ services:
         condition: service_healthy
     command: ["sleep", "infinity"]
 
+  # HTTP só para e2e/slim/gui — mutation/tests são CLI no `app`.
   http:
     image: php:8.3-cli
-    profiles: ["tests", "mutation", "e2e", "slim"]
+    profiles: ["e2e", "slim"]
     working_dir: /work
     volumes:
       - ${SB_WORKTREE}:/work
