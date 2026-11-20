@@ -9,6 +9,12 @@
 
 Problema resolvido entra aqui.
 
+## boilerplate-laravel: prompts + sandboxes (estilo Opbed)
+
+- **problema:** o meta só tinha `project.conf`/post-clone; sem prompts pre-deploy nem `workvm-sandbox --project boilerplate-laravel`, mutation/coverage não tinham isolamento.
+- **por que é um problema:** mesmo atrito do Opbed antes do sandbox — Pest no Postgres do Card; fluxo de feature sem prompts alinhados (sem card/PR, push em `main`).
+- **resolvido como:** `boilerplate-laravel/prompts/` (`{{ feature }}`); `boilerplate-laravel/sandbox/` (slim + `hc-boilerplate-laravel-data` + testing-db-cache + host-card); CLI/manager aceitam o projeto; `.gitignore` libera prompts/sandbox.
+
 ## Opbed: sandboxes para mutation/coverage
 
 - **problema:** `pest --mutate` / coverage no Card Opbed usavam o mesmo Postgres `opbed_local` do compose namespaced; um mutate órfão corrompia migrations e derrubava a suite.

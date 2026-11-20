@@ -1,0 +1,32 @@
+# Sandbox boilerplate-laravel → stack compartilhado hc-boilerplate-laravel-data.
+# Problema: slim subia pgsql+redis por sandbox. Desliga data local e aponta
+# backend para bl-hc-pgsql/redis.
+
+services:
+  postgresql:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+  redis:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+
+  backend:
+    networks:
+      sb_net:
+      hc_bl_data:
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: bl-hc-pgsql
+      DB_PORT: "5432"
+      DB_DATABASE: ${SB_DB_DATABASE:-boilerplate}
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+      REDIS_HOST: bl-hc-redis
+      REDIS_PORT: "6379"
+      REDIS_PREFIX: ${SB_REDIS_PREFIX:-}
+    depends_on: !override {}
+
+networks:
+  hc_bl_data:
+    external: true
+    name: hc-boilerplate-laravel-data

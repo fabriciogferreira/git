@@ -153,6 +153,10 @@ boilerplate-laravel/*
 !boilerplate-laravel/project.conf
 !boilerplate-laravel/post-clone.sh
 !boilerplate-laravel/workspace.code-workspace
+!boilerplate-laravel/sandbox/
+!boilerplate-laravel/sandbox/**
+!boilerplate-laravel/prompts/
+!boilerplate-laravel/prompts/**
 
 # boilerplate-next: definição; clone em boilerplate-next/boilerplate-next/ fica fora.
 !boilerplate-next/

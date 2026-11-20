@@ -1,0 +1,88 @@
+# Stack slim do sandbox boilerplate-laravel.
+# Problema: Pest/mutation no mesmo Postgres do Card corrompiam o DB.
+# Data real: hc-boilerplate-laravel-data via compose.sandbox-shared-data.yml.
+#
+# Profiles: tests | mutation | e2e | slim
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE, SB_API_VENDOR, SB_BACKEND_IMAGE
+
+services:
+  postgresql:
+    image: postgres:18
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    environment:
+      POSTGRES_DB: bl_sandbox
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - sb_pgsql:/var/lib/postgresql
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d bl_sandbox -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:alpine
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - sb_redis:/data
+    networks: [sb_net]
+    mem_limit: 256m
+    cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # CLI Pest/mutation — image = workspace Dockerfile do clone (tag SB_BACKEND_IMAGE).
+  backend:
+    image: ${SB_BACKEND_IMAGE:-boilerplate-laravel-workspace:sandbox}
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /var/www
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: []
+    command: ["sleep", "infinity"]
+    volumes:
+      - ${SB_WORKTREE}/boilerplate-laravel:/var/www
+      - ${SB_API_VENDOR}:/var/www/vendor
+      - sb_artifacts:/artifacts
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgresql
+      DB_PORT: "5432"
+      DB_DATABASE: bl_sandbox
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  sb_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_sb_net
+
+volumes:
+  sb_pgsql:
+    name: ${COMPOSE_PROJECT_NAME}_pgsql
+  sb_redis:
+    name: ${COMPOSE_PROJECT_NAME}_redis
+  sb_artifacts:
+    name: ${COMPOSE_PROJECT_NAME}_artifacts

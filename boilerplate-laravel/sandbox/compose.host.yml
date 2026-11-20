@@ -1,0 +1,98 @@
+# Stack host-card boilerplate-laravel (navegável no jarvis, sem WorkVM).
+# Problema: ensure só abria Cursor; o compose.dev da empresa usa
+# container_name fixo e portas 80/5173/5432. Aqui: portas SB_PORT_*,
+# sem container_name, paths absolutos no clone.
+#
+# Serviços alinhados ao compose.dev.yaml (web + php-fpm + workspace + postgres + redis).
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-boilerplate_local}
+      POSTGRES_USER: ${DB_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - hc_pgsql:/var/lib/postgresql
+    networks: [hc_net]
+    shm_size: 256mb
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-root} -d ${DB_DATABASE:-boilerplate_local}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:alpine
+    networks: [hc_net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  php-fpm:
+    build:
+      context: ${SB_APP}
+      dockerfile: ./docker/common/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+        XDEBUG_ENABLED: "false"
+    image: ${HC_PHPFPM_IMAGE:-boilerplate-laravel-php-fpm:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    env_file:
+      - ${SB_APP}/.env
+    volumes:
+      - ${SB_APP}:/var/www
+    networks: [hc_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: nginx:latest
+    volumes:
+      - ${SB_APP}:/var/www
+      - ${SB_APP}/docker/development/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "127.0.0.1:${SB_PORT_WEB}:80"
+    networks: [hc_net]
+    depends_on:
+      - php-fpm
+
+  workspace:
+    build:
+      context: ${SB_APP}
+      dockerfile: ./docker/development/workspace/Dockerfile
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+        XDEBUG_ENABLED: "false"
+    image: ${HC_WORKSPACE_IMAGE:-boilerplate-laravel-workspace:sandbox}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    tty: true
+    stdin_open: true
+    env_file:
+      - ${SB_APP}/.env
+    volumes:
+      - ${SB_APP}:/var/www
+    ports:
+      - "127.0.0.1:${SB_PORT_VITE}:5173"
+    networks: [hc_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  hc_net:
+    driver: bridge
+
+volumes:
+  hc_pgsql:
+EOF

@@ -482,7 +482,7 @@ workvm_host_card_port_base() {
 
 workvm_host_card_project_ok() {
     case "$1" in
-        olie|locav|televisao|opbed) return 0 ;;
+        olie|locav|televisao|opbed|boilerplate-laravel) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -1089,7 +1089,7 @@ workvm_host_card_ensure() {
         esac
     done
     if [ -z "$project" ] || [ -z "$code" ]; then
-        workvm_host_card_log "uso: ensure --project <olie|locav|televisao|opbed> --code <CODE> [--groups back|front|back,front]"
+        workvm_host_card_log "uso: ensure --project <olie|locav|televisao|opbed|boilerplate-laravel> --code <CODE> [--groups back|front|back,front]"
         return 2
     fi
     if ! workvm_host_card_project_ok "$project"; then
