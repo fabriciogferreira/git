@@ -2,11 +2,11 @@
 
 Problema resolvido entra aqui.
 
-## Olie: tabelas JS→TS na evidência de Implementation
+## Olie: tabelas JS→TS e Options→Composition na evidência
 
-- **problema:** fronts ainda são majoritariamente JS; a migração gradual para TypeScript não deixava rastro no card quando um arquivo mexido não era convertido ou um arquivo novo nascia em JS.
-- **por que é um problema:** revisor não via o motivo; agentes seguintes repetiam JS sem justificativa.
-- **resolvido como:** em `olie/prompts/workflow-policy.md` (**JS → TypeScript** + template da evidence table) duas tabelas no bloco Implementation/Correção — mexidos não convertidos e novos em JS, cada uma com path + motivo; checklist em `implementation.md` / `pre-qa.md`; nota no overlay `management.mdc`.
+- **problema:** fronts ainda são majoritariamente JS/Options API; a migração gradual para TypeScript e Composition API não deixava rastro no card quando um arquivo mexido não era convertido ou um arquivo novo nascia no estilo legado.
+- **por que é um problema:** revisor não via o motivo; agentes seguintes repetiam JS/Options sem justificativa.
+- **resolvido como:** em `olie/prompts/workflow-policy.md` quatro tabelas no bloco Implementation/Correção (JS→TS + Options→Composition), cada uma com path + motivo; checklist em `implementation.md` / `pre-qa.md` / `correction.md`; notas no overlay `management.mdc`.
 
 ## Evidence table no conteúdo do card (triggers)
 

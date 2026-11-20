@@ -439,10 +439,21 @@ Applies to front repos touched on the card (typically `olie-fronts`, and other f
 
 On **`### Evidência — Implementation`** and **`### Evidência — {N}º Correção`** (when any front JS/TS surface was touched), after the Front checks table, include the two tables below when they have rows. Omit a table entirely when it would be empty. Omit both when no front JS/TS files were added or modified.
 
-1. **Arquivos mexidos mas não convertidos** — every modified file that was already JS (or Vue SFC without `lang="ts"`) and **stayed** JS after the change. One row per path; **motivo** required (Brazilian Portuguese, concrete — e.g. arquivo grande demais para o escopo do card; dependências JS em cascata que forçariam converter N módulos fora do card). Do **not** list files that were converted (`.js` → `.ts` / `lang="ts"`) or that were already TypeScript.
+1. **Arquivos mexidos mas não convertidos para TypeScript** — every modified file that was already JS (or Vue SFC without `lang="ts"`) and **stayed** JS after the change. One row per path; **motivo** required (Brazilian Portuguese, concrete — e.g. arquivo grande demais para o escopo do card; dependências JS em cascata que forçariam converter N módulos fora do card). Do **not** list files that were converted (`.js` → `.ts` / `lang="ts"`) or that were already TypeScript.
 2. **Novos arquivos que nasceram em JavaScript** — every **new** front file added as `.js` / `.jsx` / `.vue` without TypeScript. One row per path; **motivo** required. Default expectation is new files in `.ts` / `.tsx` / `<script setup lang="ts">`; a JS birth needs an explicit reason (e.g. as funções que ele usa ainda são JS e converter a cadeia não compensa neste card).
 
 Converted files and new TypeScript files do **not** need a success table on the card — chat report is enough.
+
+### Options API → Composition API (Olie Vue — Implementation / Correção)
+
+Many Vue SFCs still use Options API (`export default { data, methods, … }`). Policy: **migrate gradually**; **new Vue components use Composition API** (`<script setup>` preferred; Composition without `setup` only when required). When editing an Options-API `.vue`, convert it to Composition in the same change when the blast radius fits the card.
+
+Same scope as JS→TS (**Olie fronts only**). On Implementation / Correção evidence blocks, after the JS→TS tables (if any), include the two tables below when they have rows. Omit a table when empty. Omit both when no `.vue` files were added or modified.
+
+1. **Arquivos Vue mexidos mas não convertidos para Composition API** — every modified `.vue` that was Options API (or hybrid that remained Options-primary) and **stayed** Options after the change. One row per path; **motivo** required (e.g. SFC grande demais para o escopo; mixins/`map*`/legado que forçariam reescrever módulos fora do card). Do **not** list files converted to `<script setup>` / Composition, or that were already Composition.
+2. **Novos arquivos Vue que nasceram em Options API** — every **new** `.vue` added with Options API. One row per path; **motivo** required. Default is Composition (`<script setup>`). Options birth needs an explicit reason (rare — e.g. cópia mínima de um padrão Options adjacente que converteria uma árvore inteira fora do card).
+
+A temporary Options + Composition dual-script while migrating a legacy SFC is fine; do **not** put that file in either table if the change moved it toward Composition (`<script setup>` present for the new/changed parts). Converted and new Composition SFCs need no success table on the card.
 
 ### Template (Olie)
 
@@ -457,7 +468,7 @@ Converted files and new TypeScript files do **not** need a success table on the 
 | tsc | ok / falhou / n/a |
 | lint | ok / falhou / n/a |
 
-**Arquivos mexidos mas não convertidos**
+**Arquivos mexidos mas não convertidos para TypeScript**
 | arquivo | motivo |
 | --- | --- |
 | packages/management/src/…/Foo.vue | arquivo grande demais para o escopo deste card |
@@ -467,6 +478,16 @@ Converted files and new TypeScript files do **not** need a success table on the 
 | arquivo | motivo |
 | --- | --- |
 | packages/management/src/…/useX.js | as funções que ele usa ainda são JS; converter a cadeia não compensa neste card |
+
+**Arquivos Vue mexidos mas não convertidos para Composition API**
+| arquivo | motivo |
+| --- | --- |
+| packages/management/src/…/LegacyForm.vue | SFC grande com mixins; converter estoura o escopo do card |
+
+**Novos arquivos Vue que nasceram em Options API**
+| arquivo | motivo |
+| --- | --- |
+| packages/management/src/…/CopyPattern.vue | cópia mínima de irmão Options; converter a árvore não compensa neste card |
 
 **Back**
 diff: abc1234..def5678 (sem commit Pint)
@@ -479,7 +500,7 @@ diff: abc1234..def5678 (sem commit Pint)
 | all test | X% (ou N passed / M total) |
 ```
 
-Colleague / Correção / Revisão produção use the same Front/Back tables under their heading (production review may be mostly Front + production smoke; use `n/a` where a check does not apply). Correção also includes the two JS→TS tables when front JS/TS was touched. Colleague and production review omit the JS→TS tables unless the reviewer themselves changed front files in that paste (rare — usually n/a / omit).
+Colleague / Correção / Revisão produção use the same Front/Back tables under their heading (production review may be mostly Front + production smoke; use `n/a` where a check does not apply). Correção also includes the JS→TS and Options→Composition tables when front Vue/JS/TS was touched. Colleague and production review omit those migration tables unless the reviewer themselves changed front files in that paste (rare — usually omit).
 
 ## Private E2E suites (olie-e2e — owner only)
 
