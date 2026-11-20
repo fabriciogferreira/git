@@ -18,6 +18,7 @@ Vue 3 + TS SPA, Vite 6, PrimeVue, Vuex, TanStack Query. Consumes `@olie/ui`. Det
 
 ## New code (required)
 
+- **JS → TS (gradual):** new files in TypeScript (`.ts` / `.tsx` / `lang="ts"`). Prefer converting a touched `.js` / Vue-without-ts in the same PR when the blast radius fits the card; otherwise leave JS and record the reason for the card evidence tables (`workflow-policy` **JS → TypeScript**)
 - **Only** Composition API + `<script setup>` (+ `lang="ts"` when it fits). Options API forbidden for new code
 - When editing legacy Options: migrate if it fits the PR; new parts already in Composition (`<script>` + `<script setup>` is ok)
 - Store/router/i18n: `useStore` / `useRoute` / `useI18n` — not `map*` / `this.$`

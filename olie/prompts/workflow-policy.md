@@ -431,6 +431,19 @@ Mutation / coverage % = **changed production / test surface in that diff** (same
 - **E2E (Olie):** do **not** name `olie-e2e` / Playwright meta. Use e.g. `verificado localmente (ok)` / `criados e ok` / `falhou` / `n/a` — **Private E2E suites**.
 - Chat scoreboard stays detailed; the card table is the compact public summary.
 
+### JS → TypeScript (Olie fronts — Implementation / Correção)
+
+Olie front packages are mostly JavaScript today. Policy: **migrate gradually**; **new code is TypeScript**; when editing a `.js` / `.jsx` / `.vue` without `lang="ts"`, convert that file in the same change when the blast radius is proportional to the card.
+
+Applies to front repos touched on the card (typically `olie-fronts`, and other front packages when present). **Olie only** — not Locav/Televisão evidence tables.
+
+On **`### Evidência — Implementation`** and **`### Evidência — {N}º Correção`** (when any front JS/TS surface was touched), after the Front checks table, include the two tables below when they have rows. Omit a table entirely when it would be empty. Omit both when no front JS/TS files were added or modified.
+
+1. **Arquivos mexidos mas não convertidos** — every modified file that was already JS (or Vue SFC without `lang="ts"`) and **stayed** JS after the change. One row per path; **motivo** required (Brazilian Portuguese, concrete — e.g. arquivo grande demais para o escopo do card; dependências JS em cascata que forçariam converter N módulos fora do card). Do **not** list files that were converted (`.js` → `.ts` / `lang="ts"`) or that were already TypeScript.
+2. **Novos arquivos que nasceram em JavaScript** — every **new** front file added as `.js` / `.jsx` / `.vue` without TypeScript. One row per path; **motivo** required. Default expectation is new files in `.ts` / `.tsx` / `<script setup lang="ts">`; a JS birth needs an explicit reason (e.g. as funções que ele usa ainda são JS e converter a cadeia não compensa neste card).
+
+Converted files and new TypeScript files do **not** need a success table on the card — chat report is enough.
+
 ### Template (Olie)
 
 ```markdown
@@ -444,6 +457,17 @@ Mutation / coverage % = **changed production / test surface in that diff** (same
 | tsc | ok / falhou / n/a |
 | lint | ok / falhou / n/a |
 
+**Arquivos mexidos mas não convertidos**
+| arquivo | motivo |
+| --- | --- |
+| packages/management/src/…/Foo.vue | arquivo grande demais para o escopo deste card |
+| packages/management/src/…/bar.js | converter puxaria a cadeia de helpers JS fora do card |
+
+**Novos arquivos que nasceram em JavaScript**
+| arquivo | motivo |
+| --- | --- |
+| packages/management/src/…/useX.js | as funções que ele usa ainda são JS; converter a cadeia não compensa neste card |
+
 **Back**
 diff: abc1234..def5678 (sem commit Pint)
 | check | resultado |
@@ -455,7 +479,7 @@ diff: abc1234..def5678 (sem commit Pint)
 | all test | X% (ou N passed / M total) |
 ```
 
-Colleague / Correção / Revisão produção use the same Front/Back tables under their heading (production review may be mostly Front + production smoke; use `n/a` where a check does not apply).
+Colleague / Correção / Revisão produção use the same Front/Back tables under their heading (production review may be mostly Front + production smoke; use `n/a` where a check does not apply). Correção also includes the two JS→TS tables when front JS/TS was touched. Colleague and production review omit the JS→TS tables unless the reviewer themselves changed front files in that paste (rare — usually n/a / omit).
 
 ## Private E2E suites (olie-e2e — owner only)
 
