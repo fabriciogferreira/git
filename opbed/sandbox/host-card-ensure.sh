@@ -13,6 +13,12 @@ workvm_host_card_ensure_hook() {
     git_root="$(workvm_host_card_git_root)"
     # shellcheck source=/dev/null
     source "${meta_repo}/lib/host-card-proxy.sh"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/opbed/sandbox/host-card-shared-data.sh"
+
+    # Shared pgsql/redis for workvm-sandbox (mutation/coverage); Card keeps
+    # its own namespaced pgsql in compose.host.yml.
+    workvm_host_card_opbed_ensure_shared_data || workvm_host_card_log "hc-opbed-data falhou — sandboxes sem shared data"
 
     compose_dir="${dir}/compose"
     api="${git_root}/opbed/opbed-backend"

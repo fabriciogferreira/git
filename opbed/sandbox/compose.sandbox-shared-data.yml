@@ -1,0 +1,32 @@
+# Sandbox Opbed → stack compartilhado hc-opbed-data.
+# Problema: slim subia pgsql+redis por sandbox. Desliga data local e aponta
+# backend para opbed-hc-pgsql/redis. SB_DB_* / SB_REDIS_PREFIX vêm do .env.
+
+services:
+  postgresql:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+  redis:
+    profiles: !override ["__host_card_unused__"]
+    volumes: !override []
+
+  backend:
+    networks:
+      sb_net:
+      hc_opbed_data:
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: opbed-hc-pgsql
+      DB_PORT: "5432"
+      DB_DATABASE: ${SB_DB_DATABASE:-opbed}
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      REDIS_HOST: opbed-hc-redis
+      REDIS_PORT: "6379"
+      REDIS_PREFIX: ${SB_REDIS_PREFIX:-}
+    depends_on: !override {}
+
+networks:
+  hc_opbed_data:
+    external: true
+    name: hc-opbed-data

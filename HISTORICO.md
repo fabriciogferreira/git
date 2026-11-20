@@ -1,6 +1,19 @@
 # Histórico
 
+
+## Opbed: prompts sem card / PR (pre-deploy)
+
+- **problema:** prompts Olie-style (card, colleague review, pre-QA/PR) não batem com o Opbed — não há cards nem PR; push em `main` já faz deploy.
+- **por que é um problema:** o agente abre funil/PR/host-card e atrasa o fluxo real (implementar → gates → commit → produção).
+- **resolvido como:** `opbed/prompts/` com `implementation` / `correction` / `production-review` / `pre-deploy` (+ mutation/coverage); `{{ feature }}` no lugar de `{{ code }}`; sync `config.prompts` projeto 7.
+
 Problema resolvido entra aqui.
+
+## Opbed: sandboxes para mutation/coverage
+
+- **problema:** `pest --mutate` / coverage no Card Opbed usavam o mesmo Postgres `opbed_local` do compose namespaced; um mutate órfão corrompia migrations e derrubava a suite.
+- **por que é um problema:** N jobs exclusive no mesmo DB/compose; sem workvm-sandbox `--project opbed` o agente só tinha `docker exec hc-opbed-…-backend-1`.
+- **resolvido como:** `opbed/sandbox/` estilo Locav (`project.sh`, slim, `hc-opbed-data`, testing-db-cache, ORCHESTRATION); CLI `workvm-sandbox` aceita `opbed`; job default `backend`; prompts `opbed/prompts/` com drain + subagentes. Mutation/coverage proibidos no backend do Card.
 
 ## Correction: não fechar review no GitHub antes das validações
 

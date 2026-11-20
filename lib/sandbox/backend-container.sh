@@ -126,17 +126,29 @@ workvm_sandbox_container_destroy() {
     fi
 }
 
+workvm_sandbox_container_default_service() {
+    local id="$1"
+    local service
+    service="${WORKVM_SANDBOX_SERVICE:-}"
+    if [ -z "$service" ]; then
+        service="$(workvm_sandbox_meta_get "$id" default_service 2>/dev/null || true)"
+    fi
+    printf '%s\n' "${service:-app}"
+}
+
 workvm_sandbox_container_exec() {
     local id="$1"
     shift
-    local service="${WORKVM_SANDBOX_SERVICE:-app}"
+    local service
+    service="$(workvm_sandbox_container_default_service "$id")"
     workvm_sandbox_container_compose "$id" exec -T "$service" "$@"
 }
 
 workvm_sandbox_container_run() {
     local id="$1"
     shift
-    local service="${WORKVM_SANDBOX_SERVICE:-app}"
+    local service
+    service="$(workvm_sandbox_container_default_service "$id")"
     workvm_sandbox_container_compose "$id" run --rm --no-deps "$service" "$@"
 }
 

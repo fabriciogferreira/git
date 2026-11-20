@@ -1,0 +1,89 @@
+# Stack slim do sandbox Opbed.
+# Problema: o compose host-card usa um único pgsql (opbed_local) — mutation ×
+# Pest no Card corrompiam o DB. Este arquivo é autônomo; data real vem de
+# hc-opbed-data via compose.sandbox-shared-data.yml.
+#
+# Profiles: tests | mutation | e2e | slim
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE, SB_API_VENDOR, SB_BACKEND_IMAGE
+
+services:
+  postgresql:
+    image: postgres:18.4-trixie
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    environment:
+      POSTGRES_DB: opbed_sandbox
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    volumes:
+      - sb_pgsql:/var/lib/postgresql
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d opbed_sandbox -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8.6.3-alpine
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - sb_redis:/data
+    networks: [sb_net]
+    mem_limit: 256m
+    cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # CLI Pest/mutation — sem entrypoint de serve do host-card.
+  backend:
+    image: ${SB_BACKEND_IMAGE:-opbed-backend:host-card}
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /srv
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: []
+    command: ["sleep", "infinity"]
+    volumes:
+      - ${SB_WORKTREE}/opbed-backend:/srv
+      - ${SB_API_VENDOR}:/srv/vendor
+      - sb_artifacts:/artifacts
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgresql
+      DB_PORT: "5432"
+      DB_DATABASE: opbed_sandbox
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  sb_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_sb_net
+
+volumes:
+  sb_pgsql:
+    name: ${COMPOSE_PROJECT_NAME}_pgsql
+  sb_redis:
+    name: ${COMPOSE_PROJECT_NAME}_redis
+  sb_artifacts:
+    name: ${COMPOSE_PROJECT_NAME}_artifacts

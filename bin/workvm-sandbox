@@ -16,13 +16,13 @@ usage() {
     cat <<'EOF'
 workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
 
-  create --name <id> [--project olie|televisao|locav] [--profile tests|mutation|e2e]
+  create --name <id> [--project olie|televisao|locav|opbed] [--profile tests|mutation|e2e]
          [--from-commit SHA] [--backend container|vm] [--mem 1g] [--cpus 1.0]
   list
   status <id>
   destroy <id>
 
-  job run <id> [--service app] -- <comando…>
+  job run <id> [--service app|backend] -- <comando…>
   job status <id> <job-id>
   job logs <id> <job-id> [stdout|stderr|both]
   job artifacts <id> <job-id>
@@ -31,7 +31,7 @@ workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
   gui detach <id>
 
 Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/sandboxes/
-Projetos: olie/sandbox/ | televisao/sandbox/ | locav/sandbox/
+Projetos: olie/sandbox/ | televisao/sandbox/ | locav/sandbox/ | opbed/sandbox/
 EOF
 }
 

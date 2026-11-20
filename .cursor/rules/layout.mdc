@@ -26,6 +26,8 @@ alwaysApply: true
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
 | `olie/docs` (clone) | Só espelho de `olie-ai/docs` (docs.olie.ai). Agente **não** edita, rebaseia nem abre PR — ver `olie-docs-hands-off.mdc` / `olie/prompts/workflow-policy.md`. |
 | `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace, `config-vm.xml`). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
+| `opbed/sandbox/` | Isolamento exclusive (mutation/Pest) na Card Opbed: `project.sh` + compose slim + `hc-opbed-data`; contrato em `ORCHESTRATION.md`. |
+| `opbed/prompts/` | Prompts Opbed (implementation/correction/pre-deploy/production-review + mutation/coverage); sem cards/PRs; sync `config.prompts` via `opbed-prompts.mdc`. |
 | `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e, `config-vm.xml`, prompts, overlay, `sandbox/` + `hc-televisao-data`). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts, overlay, `sandbox/` + `hc-locav-data`). Clones `LocavApi/` / `locav-front/` fora do git. |

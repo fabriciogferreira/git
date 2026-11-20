@@ -88,6 +88,8 @@ opbed/*
 !opbed/workspace.code-workspace
 !opbed/sandbox/
 !opbed/sandbox/**
+!opbed/prompts/
+!opbed/prompts/**
 !opbed/config-vm.xml
 opbed/**/.env
 opbed/**/.cursor/mcp.workvm-user

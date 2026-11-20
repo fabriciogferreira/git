@@ -12,7 +12,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/backend-vm.sh"
 workvm_sandbox_default_max() {
     local project="$1"
     case "$project" in
-        televisao) printf '2\n' ;;
+        televisao|opbed|locav) printf '2\n' ;;
         # 0 = sem teto (igual olie/sandbox/project.sh).
         olie) printf '0\n' ;;
         *) printf '%s\n' "${WORKVM_SANDBOX_MAX:-3}" ;;
@@ -40,7 +40,7 @@ workvm_sandbox_create() {
     done
 
     if [ -z "$id" ]; then
-        workvm_sandbox_log "uso: create --name <id> [--project olie|televisao|locav] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
+        workvm_sandbox_log "uso: create --name <id> [--project olie|televisao|locav|opbed] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
         return 2
     fi
     if ! workvm_sandbox_id_ok "$id"; then
