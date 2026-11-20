@@ -1,0 +1,20 @@
+# Stack host-card use-url-query (sem WorkVM).
+# Problema: ensure só abria Cursor; o docker-compose do clone usa
+# container_name fixo `use-url-query`. Aqui: projeto namespaced, path
+# absoluto no clone, sem porta HTTP (biblioteca).
+
+services:
+  use-url-query:
+    image: oven/bun:1.3.5-slim
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    entrypoint: ["sh", "-c"]
+    command: ["bun install && tail -f /dev/null"]
+    volumes:
+      - ${SB_APP}:/srv
+    networks: [hc_net]
+
+networks:
+  hc_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_hc_net

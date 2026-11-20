@@ -9,6 +9,12 @@
 
 Problema resolvido entra aqui.
 
+## use-url-query: prompts + sandboxes (estilo Opbed/boilerplate)
+
+- **problema:** o meta só tinha `project.conf`/workspace; sem prompts pre-deploy nem `workvm-sandbox --project use-url-query`.
+- **por que é um problema:** coverage/bun test no `container_name` fixo do Card; fluxo de feature sem prompts alinhados (sem card/PR, push em `main`).
+- **resolvido como:** `use-url-query/prompts/` (`{{ feature }}`; mutation N/A); `use-url-query/sandbox/` (slim bun + host-card, sem DB); CLI/manager aceitam o projeto; `.gitignore` libera prompts/sandbox; `COMPOSE_FILE=docker-compose.yml` no conf.
+
 ## boilerplate-laravel: prompts + sandboxes (estilo Opbed)
 
 - **problema:** o meta só tinha `project.conf`/post-clone; sem prompts pre-deploy nem `workvm-sandbox --project boilerplate-laravel`, mutation/coverage não tinham isolamento.

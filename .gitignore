@@ -171,6 +171,10 @@ use-url-query/*
 !use-url-query/README.md
 !use-url-query/project.conf
 !use-url-query/workspace.code-workspace
+!use-url-query/sandbox/
+!use-url-query/sandbox/**
+!use-url-query/prompts/
+!use-url-query/prompts/**
 
 # Gerado por project-setup (projeto desta VM); não versionar
 .cursor/rules/workvm-project.mdc
