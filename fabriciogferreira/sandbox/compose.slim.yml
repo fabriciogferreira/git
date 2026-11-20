@@ -1,0 +1,31 @@
+# Stack slim do sandbox fabriciogferreira.
+# Problema: lint/build no mesmo container_name fixo do Card brigava
+# pelo compose; sem worktree isolado dois jobs pisavam no clone.
+#
+# Profiles: tests | mutation | e2e | slim
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE, SB_NODE_IMAGE
+
+services:
+  # CLI npm lint/build — job default_service=backend (mesmo nome dos outros projetos).
+  backend:
+    image: ${SB_NODE_IMAGE:-node:22.13.1-alpine3.21}
+    profiles: ["tests", "mutation", "e2e", "slim"]
+    working_dir: /srv
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: []
+    command: ["sleep", "infinity"]
+    volumes:
+      - ${SB_WORKTREE}/fabriciogferreira:/srv
+      - sb_artifacts:/artifacts
+    networks: [sb_net]
+    mem_limit: ${SB_MEM:-1g}
+    cpus: ${SB_CPUS:-1.0}
+
+networks:
+  sb_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_sb_net
+
+volumes:
+  sb_artifacts:
+    name: ${COMPOSE_PROJECT_NAME}_artifacts

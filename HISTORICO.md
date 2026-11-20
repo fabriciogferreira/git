@@ -21,6 +21,12 @@
 
 Problema resolvido entra aqui.
 
+## Projeto fabriciogferreira (portfólio Next)
+
+- **problema:** o meta não listava o portfólio pessoal; sem `project.conf`/prompts/sandbox o setup e o host-card não existiam.
+- **por que é um problema:** clone manual fora do fluxo WorkVM/host-card; sem gates pre-deploy alinhados aos outros projetos sem card.
+- **resolvido como:** `fabriciogferreira/` com conf + post-clone (`.env`), prompts (`{{ feature }}`, Vercel), sandbox Node + host-card Next; CLI/manager/gitignore/layout.
+
 ## Host-card: meta worktree `git` em todos os projetos
 
 - **problema:** só Olie criava `worktree/git`; Opbed/boilerplate/use-url-query/Locav/Televisão abriam o `~/git` ao vivo no `.code-workspace`.

@@ -176,6 +176,18 @@ use-url-query/*
 !use-url-query/prompts/
 !use-url-query/prompts/**
 
+# fabriciogferreira: portfólio Next; clone em fabriciogferreira/fabriciogferreira/ fica fora.
+!fabriciogferreira/
+fabriciogferreira/*
+!fabriciogferreira/README.md
+!fabriciogferreira/project.conf
+!fabriciogferreira/post-clone.sh
+!fabriciogferreira/workspace.code-workspace
+!fabriciogferreira/sandbox/
+!fabriciogferreira/sandbox/**
+!fabriciogferreira/prompts/
+!fabriciogferreira/prompts/**
+
 # Gerado por project-setup (projeto desta VM); não versionar
 .cursor/rules/workvm-project.mdc
 # Cópia do MCP do projeto setado (fonte em mcps/)

@@ -1,0 +1,26 @@
+# Stack host-card fabriciogferreira (navegável no jarvis, sem WorkVM).
+# Problema: ensure só abria Cursor; o docker-compose do clone usa
+# container_name/env fixos e porta 3000. Aqui: SB_PORT_WEB namespaced.
+
+services:
+  frontend:
+    image: ${HC_NODE_IMAGE:-node:22.13.1-alpine3.21}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /srv
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ${SB_APP}:/srv
+    ports:
+      - "127.0.0.1:${SB_PORT_WEB}:3000"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        if [ ! -d node_modules ]; then npm ci; fi
+        npm run dev -- -H 0.0.0.0 -p 3000
+    networks: [hc_net]
+
+networks:
+  hc_net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_hc_net

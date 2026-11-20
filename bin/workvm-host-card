@@ -12,7 +12,7 @@ usage() {
     cat <<'EOF'
 workvm-host-card — unidade card/projeto no host (sem WorkVM)
 
-  ensure  --project <olie|locav|televisao|opbed|boilerplate-laravel|use-url-query> --code <CODE> [--groups back|front|back,front]
+  ensure  --project <olie|locav|televisao|opbed|boilerplate-laravel|use-url-query|fabriciogferreira> --code <CODE> [--groups back|front|back,front]
   open    --project <…> --code <CODE> [--groups …]
   add     --project olie --code <CODE> --group front|back
   status  --project <…> --code <CODE>
