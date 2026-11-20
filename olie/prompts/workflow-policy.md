@@ -429,7 +429,19 @@ Mutation / coverage % = **changed production / test surface in that diff** (same
 - Omit the entire **Front** or **Back** section when that surface was not touched in the change set.
 - Values: short facts only (`ok`, `falhou`, `n/a`, `não rodado`, percentages). No prompt filenames, no VM/sandbox/ledger words, no private e2e paths.
 - **E2E (Olie):** do **not** name `olie-e2e` / Playwright meta. Use e.g. `verificado localmente (ok)` / `criados e ok` / `falhou` / `n/a` — **Private E2E suites**.
-- Chat scoreboard stays detailed; the card table is the compact public summary.
+- **UX (Olie Front):** when a UI path was touched, fill the UX rows below (or `n/a` if that check does not apply). Prefer Playwright assertions in the private suite + browser walk on colleague; do **not** use axe / WCAG automated contrast as a gate — the Olie palette may sit below WCAG and still be correct for the team. Judge contrast against the **Olie design system / same screen on develop**, in **light and dark**. Chat scoreboard stays detailed; the card table is the compact public summary.
+
+### UX rows (Olie Front — how to verify)
+
+Omit the whole UX block only when no UI was touched. Otherwise fill each row (`ok` / `falhou` / `n/a` / `não rodado`).
+
+| Row | Meaning | How to catch (no axe) |
+| --- | --- | --- |
+| **contraste** | Texto legível no caminho do card em tema **claro e escuro**, no padrão Olie (não score WCAG) | Toggle dos dois temas; comparar com design system / `develop`; falha = ilegível ou pior que o padrão do app neste fluxo |
+| **feedback** | Request mostra carregando; erro de API aparece para o usuário; sucesso não finje se a API falhou | Atrasar/mockar a API no e2e ou DevTools: spinner/`aria-busy`/botão disabled durante o wait; 4xx/5xx → toast/mensagem; UI não fica em estado de sucesso falso |
+| **comportamento** | Atende o pedido do card; overlays fecham ao clicar fora (quando o design manda); controle clicável não está atrás de outro (z-index) | Aceitação = spec/e2e + mídia do card; dropdown/dialog → click no body / Escape; CTA → `elementFromPoint` no centro ou click real que dispara a ação |
+
+Colleague review and Implementation/Correção evidence include these rows when Front applies. Production review: contraste + comportamento on gui1 when UI was in scope; feedback when an API path is exercised in production-safe form.
 
 ### JS → TypeScript (Olie fronts — Implementation / Correção)
 
@@ -467,6 +479,9 @@ A temporary Options + Composition dual-script while migrating a legacy SFC is fi
 | e2e | verificado localmente (ok) / falhou / n/a |
 | tsc | ok / falhou / n/a |
 | lint | ok / falhou / n/a |
+| contraste | ok claro+escuro (padrão Olie) / falhou / n/a |
+| feedback | loading+erro API ok / falhou / n/a |
+| comportamento | aceite+overlay+clicável ok / falhou / n/a |
 
 **Arquivos mexidos mas não convertidos para TypeScript**
 | arquivo | motivo |

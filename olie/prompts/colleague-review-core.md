@@ -86,7 +86,10 @@ Follow **Temporary E2E CAPTCHA** in `~/git/olie/prompts/implementation.md` §7. 
 - The behavior matches the card, including the edge cases the card states.
 - When the change charges a card or depends on payment authorization, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Cover the outcomes the card requires (success, unauthorized, processing then success, processing then failure).
 - The pull request contains that behavior and does not smuggle unrelated changes.
-- Light and dark theme text contrast both hold on the screens the card changes.
+- **UX (when UI changed)** — verify and report for the evidence table (**UX rows** in `workflow-policy.md`). Do **not** use axe/WCAG automated contrast as a pass/fail gate.
+  - **Contraste:** light and dark on the screens the card changes; legible by the **Olie design system** (same screen on develop / brand tokens), not a WCAG score.
+  - **Feedback:** slow or failing API still shows loading; API errors surface to the user; no false success state.
+  - **Comportamento:** acceptance paths match the card; overlays (dropdown/dialog) dismiss on outside click / Escape when the design expects it; primary controls are actually clickable (not covered by another layer / z-index).
 - Do not edit `en.json`, and do not fail the review for missing or outdated English strings there. English translations are resolved later. A new key in 'pt-br.json' without a matching 'en.json' entry is not a defect.
 
 ### Production return (`bounce=yes`)
@@ -119,7 +122,7 @@ Do not re-walk media, PRs, or acceptance paths “to confirm” after this core 
 - Repositories and branches reviewed.
 - **Bounce:** yes / no — reconstructed funnel path from logs; post-deploy media ids if yes.
 - **Colleague verdict:** Pass or Fail, with the requirement that failed or passed (on bounce: state whether the bounce scenario was reproduced).
-- Contrast result for light and dark themes.
+- UX: contraste (claro+escuro, padrão Olie) / feedback (loading+erro API) / comportamento (aceite+overlay+clicável) — or N/A.
 - E2E tests added or extended, and the 'main' commit if one was pushed — or which case could not be automated and why.
 - Payment / CAPTCHA checks when relevant (ok / N/A / blocked).
 - Checks that did not run, and why.

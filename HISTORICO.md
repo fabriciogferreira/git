@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Olie: UX na evidence table (sem axe)
+
+- **problema:** evidência de Front só tinha deploy/e2e/tsc/lint; contraste, feedback de request e comportamento de overlay/z-index ficavam só no feeling do colleague.
+- **por que é um problema:** regressões de loading/erro API, dropdown que não fecha e CTA atrás de overlay voltavam do QA sem rastro no card; axe/WCAG brigaria com o design system Olie.
+- **resolvido como:** rows `contraste` / `feedback` / `comportamento` no template Front da evidence table + **UX rows** em `workflow-policy.md` (verificação via e2e/browser/`elementFromPoint`, **sem** gate axe); hooks em colleague-review-core / colleague scoreboard / implementation.
+
 ## Olie: tabelas JS→TS e Options→Composition na evidência
 
 - **problema:** fronts ainda são majoritariamente JS/Options API; a migração gradual para TypeScript e Composition API não deixava rastro no card quando um arquivo mexido não era convertido ou um arquivo novo nascia no estilo legado.

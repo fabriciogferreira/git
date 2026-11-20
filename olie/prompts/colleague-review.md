@@ -83,7 +83,9 @@ Print one table (or equivalent bullets) covering **everything that ran**. Includ
 | Gap analysis | No tests to add / N titles / Skipped / Blocked |
 | Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
 | Coverage | Clean / fixes / Skipped / Blocked — files in ledger |
-| Contrast | light/dark result (from core) |
+| Contrast | light/dark vs Olie standard (from core; not axe) |
+| Feedback | loading + API error UX (from core) |
+| Comportamento | acceptance + overlay dismiss + clickable (from core) |
 | E2E | added/extended commit, or N/A / blocked |
 | Payment / CAPTCHA | ok / N/A / blocked (from core when relevant) |
 | PRs | approved / not approved / deferred reason (already merged is normal on bounce) |
