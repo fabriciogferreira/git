@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card Olie: stack seletivo back/front
+
+- **problema:** `ensure`/`open` sempre subiam `app`+`http`+`front-management`+`olie-e2e` (~Vite+e2e) mesmo em cards só de API; N cards no jarvis estouravam RAM.
+- **por que é um problema:** bugfix/backend não precisa de browser; reopen repetia o stack completo; não havia caminho para “ligar o front depois”.
+- **resolvido como:** `meta.stack_groups` — `back`=`app`; `front`=`http`+`front-management`+`olie-e2e` (front implica back). Primeira abertura infere (branch no `olie-fronts` com o CODE → front; senão back) e persiste; reopen reusa. Override `--groups` / `WORKVM_HOST_CARD_GROUPS`; `workvm-host-card add --group front|back` une e re-ensure. Chat: `add front` / `add back` no `workflow-policy`.
+
 ## Sandbox: 1º Pest frio (~migrate:fresh) em todo create
 
 - **problema:** cada sandbox Olie/Televisão/Locav pagava ~70–95s no 1º `artisan test` (migrate:fresh + seed de teste no DB shared vazio), mesmo com warm pool e tip igual.

@@ -863,6 +863,10 @@ if os.path.isfile(path):
     with open(path, encoding="utf-8") as f:
         old = json.load(f)
     meta["created_at"] = old.get("created_at", meta["created_at"])
+    # Preserve hook fields (stack_groups, compose_dir, dns, …) across resume.
+    for k, v in old.items():
+        if k not in meta:
+            meta[k] = v
 with open(path, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
     f.write("\n")
@@ -1020,23 +1024,26 @@ workvm_host_card_ensure_clones() {
 
 # open PROJECT CODE: ensure + foca/abre o .code-workspace do card (não o clone ~/git/olie/api-main).
 workvm_host_card_open() {
-    local project="" code=""
+    local project="" code="" groups=""
     while [ $# -gt 0 ]; do
         case "$1" in
             --project) project="$2"; shift 2 ;;
             --code) code="$2"; shift 2 ;;
+            --groups) groups="$2"; shift 2 ;;
             *)
-                workvm_host_card_log "uso: open --project <…> --code <CODE>"
+                workvm_host_card_log "uso: open --project <…> --code <CODE> [--groups back|front|back,front]"
                 return 2
                 ;;
         esac
     done
     [ -n "$project" ] && [ -n "$code" ] || {
-        workvm_host_card_log "uso: open --project <…> --code <CODE>"
+        workvm_host_card_log "uso: open --project <…> --code <CODE> [--groups back|front|back,front]"
         return 2
     }
     # ensure sem Cursor: fecha → conserta SCM visible → abre uma vez (evita 2× --new-window).
-    WORKVM_HOST_CARD_OPEN_CURSOR=0 workvm_host_card_ensure --project "$project" --code "$code" || return $?
+    local -a ensure_args=(--project "$project" --code "$code")
+    [ -n "$groups" ] && ensure_args+=(--groups "$groups")
+    WORKVM_HOST_CARD_OPEN_CURSOR=0 workvm_host_card_ensure "${ensure_args[@]}" || return $?
     local id workspace wt_api dir
     id="$(workvm_host_card_id "$project" "$code")"
     dir="$(workvm_host_card_dir "$project" "$id")"
@@ -1069,11 +1076,12 @@ workvm_host_card_open() {
 }
 
 workvm_host_card_ensure() {
-    local project="" code=""
+    local project="" code="" groups=""
     while [ $# -gt 0 ]; do
         case "$1" in
             --project) project="$2"; shift 2 ;;
             --code) code="$2"; shift 2 ;;
+            --groups) groups="$2"; shift 2 ;;
             *)
                 workvm_host_card_log "flag desconhecida: $1"
                 return 2
@@ -1081,7 +1089,7 @@ workvm_host_card_ensure() {
         esac
     done
     if [ -z "$project" ] || [ -z "$code" ]; then
-        workvm_host_card_log "uso: ensure --project <olie|locav|televisao|opbed> --code <CODE>"
+        workvm_host_card_log "uso: ensure --project <olie|locav|televisao|opbed> --code <CODE> [--groups back|front|back,front]"
         return 2
     fi
     if ! workvm_host_card_project_ok "$project"; then
@@ -1124,6 +1132,10 @@ workvm_host_card_ensure() {
     workspace="$(workvm_host_card_write_workspace "$project" "$id" "$code")" || return 1
 
     workvm_host_card_meta_write "$project" "$code" "$id" "$dir" "$port_base" "$workspace" "$compose_project" || return 1
+    # Override de stack (Olie): --groups / WORKVM_HOST_CARD_GROUPS → meta antes do hook.
+    if [ -n "$groups" ]; then
+        export WORKVM_HOST_CARD_GROUPS="$groups"
+    fi
     # Compose/hook needs docker.sock. Agent sandbox hides it → clear signal for bridge.
     if ! workvm_host_card_run_hook "$project" ensure "$id" "$dir"; then
         if [ ! -S /var/run/docker.sock ] && pgrep -x dockerd >/dev/null 2>&1; then
@@ -1183,6 +1195,9 @@ workvm_host_card_ensure() {
     api_dns="http://api.${dns_slug}.olie.localhost"
     front_dns="http://devframe.${dns_slug}.olie.localhost"
 
+    local stack_groups_out
+    stack_groups_out="$(python3 -c "import json;print(' '.join(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('stack_groups') or []))" 2>/dev/null || true)"
+
     printf 'id=%s\n' "$id"
     printf 'project=%s\n' "$project"
     printf 'code=%s\n' "$code"
@@ -1195,7 +1210,54 @@ workvm_host_card_ensure() {
     printf 'front_dns=%s\n' "$front_dns"
     printf 'workspace=%s\n' "$workspace"
     printf 'compose_project=%s\n' "$compose_project"
+    printf 'stack_groups=%s\n' "${stack_groups_out:-}"
     printf 'state_dir=%s\n' "$dir"
+}
+
+# add --group front|back: une ao meta.stack_groups e re-ensure (Olie).
+# Problema: card aberto só com back; browser/e2e pedem front sem re-inferir.
+workvm_host_card_add() {
+    local project="" code="" group=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --project) project="$2"; shift 2 ;;
+            --code) code="$2"; shift 2 ;;
+            --group) group="$2"; shift 2 ;;
+            *)
+                workvm_host_card_log "uso: add --project olie --code <CODE> --group front|back"
+                return 2
+                ;;
+        esac
+    done
+    [ -n "$project" ] && [ -n "$code" ] && [ -n "$group" ] || {
+        workvm_host_card_log "uso: add --project olie --code <CODE> --group front|back"
+        return 2
+    }
+    if [ "$project" != "olie" ]; then
+        workvm_host_card_log "add --group só implementado para olie (got $project)"
+        return 2
+    fi
+    case "$group" in
+        front|back|api|frontend) ;;
+        *)
+            workvm_host_card_log "grupo inválido: $group (use front|back)"
+            return 2
+            ;;
+    esac
+    local id meta existing merged
+    id="$(workvm_host_card_id "$project" "$code")"
+    meta="$(workvm_host_card_meta_path "$project" "$id")"
+    if [ ! -f "$meta" ]; then
+        workvm_host_card_log "card ausente: $id — rode ensure/open antes"
+        return 1
+    fi
+    existing="$(python3 -c "import json;print(' '.join(json.load(open('$meta')).get('stack_groups') or ['back']))" 2>/dev/null || echo back)"
+    # shellcheck source=/dev/null
+    source "$(workvm_host_card_meta_repo)/olie/sandbox/host-card-ensure.sh"
+    # shellcheck disable=SC2086
+    merged="$(workvm_host_card_olie_normalize_stack_groups $existing $group)"
+    workvm_host_card_log "add group=$group → stack_groups=$merged"
+    WORKVM_HOST_CARD_OPEN_CURSOR=0 workvm_host_card_ensure --project "$project" --code "$code" --groups "$merged"
 }
 
 workvm_host_card_status() {

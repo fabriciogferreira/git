@@ -12,8 +12,9 @@ usage() {
     cat <<'EOF'
 workvm-host-card — unidade card/projeto no host (sem WorkVM)
 
-  ensure  --project <olie|locav|televisao|opbed> --code <CODE>
-  open    --project <…> --code <CODE>
+  ensure  --project <olie|locav|televisao|opbed> --code <CODE> [--groups back|front|back,front]
+  open    --project <…> --code <CODE> [--groups …]
+  add     --project olie --code <CODE> --group front|back
   status  --project <…> --code <CODE>
   destroy --project <…> --code <CODE>
   list
@@ -22,6 +23,10 @@ workvm-host-card — unidade card/projeto no host (sem WorkVM)
 
 ensure é idempotente: cria ou retoma (multi-dia). open = ensure + foca/abre
 o .code-workspace do card (api-main = worktree do host-card, não o clone).
+Olie stack_groups: back=app; front=http+front-management+olie-e2e (front→back).
+Primeira abertura infere (branch no olie-fronts → front; senão back) e grava
+meta.json; reopen reusa. Override: --groups ou WORKVM_HOST_CARD_GROUPS.
+add une um grupo ao meta e re-ensure (ex.: add front depois de back-only).
 destroy limpa estado, workspace gerado e containers com label compose do card.
 agent-ensure escreve .workvm-agent-ensure-request.json no meta worktree do card
 para o serviço workvm-host-card-agent-bridge (fora do sandbox do Cursor).
@@ -61,6 +66,7 @@ shift || true
 case "$cmd" in
     ensure) workvm_host_card_ensure "$@" ;;
     open) workvm_host_card_open "$@" ;;
+    add) workvm_host_card_add "$@" ;;
     status) workvm_host_card_status "$@" ;;
     destroy) workvm_host_card_destroy "$@" ;;
     list) workvm_host_card_list "$@" ;;
