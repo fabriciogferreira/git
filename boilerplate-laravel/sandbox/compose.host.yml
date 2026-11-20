@@ -92,7 +92,8 @@ services:
 networks:
   hc_net:
     driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}_hc_net
 
 volumes:
   hc_pgsql:
-EOF
+    name: ${COMPOSE_PROJECT_NAME}_pgsql
