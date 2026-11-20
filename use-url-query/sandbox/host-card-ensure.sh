@@ -11,6 +11,8 @@ workvm_host_card_ensure_hook() {
 
     meta_repo="$(workvm_host_card_meta_repo)"
     git_root="$(workvm_host_card_git_root)"
+    # shellcheck source=/dev/null
+    source "${meta_repo}/lib/host-card-proxy.sh"
 
     compose_dir="${dir}/compose"
     app="${git_root}/use-url-query/use-url-query"

@@ -9,6 +9,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: meta worktree `git` em todos os projetos
+
+- **problema:** só Olie criava `worktree/git`; Opbed/boilerplate/use-url-query/Locav/Televisão abriam o `~/git` ao vivo no `.code-workspace`.
+- **por que é um problema:** N janelas Cursor no jarvis viam o mesmo dirty do meta-repo (prompts, HISTORICO, sandbox) umas das outras.
+- **resolvido como:** `ensure` chama `add_meta_worktree` para todo projeto; `bind_workspace_worktree` aponta `git` (+ `prompts`) ao worktree do card; `destroy` remove o meta worktree (helper compartilhado).
+
 ## use-url-query: prompts + sandboxes (estilo Opbed/boilerplate)
 
 - **problema:** o meta só tinha `project.conf`/workspace; sem prompts pre-deploy nem `workvm-sandbox --project use-url-query`.

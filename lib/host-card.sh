@@ -259,6 +259,8 @@ workvm_host_card_sync_meta_worktree() {
 }
 
 # Meta-repo: sempre --detach (a branch de ~/git fica no clone “ao vivo”).
+# Todo host-card (Olie e demais): sem isto, N janelas abrem o mesmo ~/git e
+# o SCM/Explorer mostra dirty de outro card.
 workvm_host_card_add_meta_worktree() {
     local dir="$1"
     local src wt
@@ -277,6 +279,25 @@ workvm_host_card_add_meta_worktree() {
     mkdir -p "$(dirname "$wt")"
     workvm_host_card_log "worktree add --detach git (meta) @ HEAD"
     git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
+}
+
+# Remove o worktree do meta-repo deste card (idempotente).
+workvm_host_card_remove_meta_worktree() {
+    local dir="$1"
+    local src wt
+    src="$(workvm_host_card_meta_repo)"
+    wt="${dir}/worktree/git"
+
+    if [ ! -d "$wt" ]; then
+        return 0
+    fi
+    workvm_host_card_log "git worktree remove meta ${wt}"
+    if [ -d "${src}/.git" ] || [ -f "${src}/.git" ]; then
+        git -C "$src" worktree remove --force "$wt" 2>/dev/null || rm -rf "$wt"
+        git -C "$src" worktree prune 2>/dev/null || true
+    else
+        rm -rf "$wt"
+    fi
 }
 
 # Point the card api-main worktree at host-card CaptainHook hooks.
@@ -417,16 +438,11 @@ workvm_host_card_prepare_api_isolation() {
 
 workvm_host_card_remove_olie_isolation() {
     local dir="$1"
-    local wt_root meta_src line name src wt
+    local wt_root line name src wt
 
     wt_root="${dir}/worktree"
-    meta_src="$(workvm_host_card_meta_repo)"
 
-    if [ -d "${wt_root}/git" ]; then
-        workvm_host_card_log "git worktree remove meta ${wt_root}/git"
-        git -C "$meta_src" worktree remove --force "${wt_root}/git" 2>/dev/null \
-            || rm -rf "${wt_root}/git"
-    fi
+    workvm_host_card_remove_meta_worktree "$dir"
 
     while IFS= read -r line; do
         [ -n "$line" ] || continue
@@ -617,53 +633,88 @@ EOF
     workvm_host_card_log "rule host-card-e2e-path → worktree olie-e2e/meta"
 }
 
-# Olie: .code-workspace = só worktrees do card (CLONE_REPOS + meta + e2e).
-# Sem clones shared e sem pasta api-main (shared).
+# .code-workspace do card: meta-repo = worktree/git (nunca o ~/git ao vivo).
+# Olie: só worktrees do card (CLONE_REPOS + meta + e2e).
+# Outros: clones do projeto (shared) + prompts no meta worktree + git.
 workvm_host_card_bind_workspace_worktree() {
     local project="$1"
     local workspace="$2"
     local dir="$3"
-    local wt_root
+    local wt_root project_dir
 
-    [ "$project" = "olie" ] || return 0
     [ -f "$workspace" ] || return 0
     wt_root="${dir}/worktree"
-    [ -d "$wt_root" ] || return 0
+    [ -d "${wt_root}/git" ] || return 0
+    project_dir="$(workvm_host_card_meta_repo)/${project}"
 
-    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_ROOT="$wt_root" python3 <<'PY'
+    WORKVM_HC_WS="$workspace" WORKVM_HC_WT_ROOT="$wt_root" \
+        WORKVM_HC_PROJECT="$project" WORKVM_HC_PROJECT_DIR="$project_dir" \
+        python3 <<'PY'
 import json, os
 from pathlib import Path
 ws = Path(os.environ["WORKVM_HC_WS"])
 root = Path(os.environ["WORKVM_HC_WT_ROOT"]).resolve()
-# Ordem estável: produto primeiro; meta-repo por último (não roubar o foco).
-order = [
-    "api-main",
-    "olie-fronts",
-    "backoffice",
-    "landing",
-    "docker-workspace",
-    "websocket",
-    "docs",
-]
+project = os.environ["WORKVM_HC_PROJECT"]
+project_dir = Path(os.environ["WORKVM_HC_PROJECT_DIR"]).resolve()
+meta = root / "git"
+
 folders = []
 seen = set()
-for name in order:
-    p = root / name
-    if p.is_dir() and ((p / ".git").exists()):
-        folders.append({"name": name, "path": str(p)})
-        seen.add(name)
-e2e = root / "git" / "olie" / "olie-e2e"
-if e2e.is_dir():
-    folders.append({"name": "olie-e2e", "path": str(e2e)})
-meta = root / "git"
+
+if project == "olie":
+    # Ordem estável: produto primeiro; meta-repo por último (não roubar o foco).
+    order = [
+        "api-main",
+        "olie-fronts",
+        "backoffice",
+        "landing",
+        "docker-workspace",
+        "websocket",
+        "docs",
+    ]
+    for name in order:
+        p = root / name
+        if p.is_dir() and ((p / ".git").exists()):
+            folders.append({"name": name, "path": str(p)})
+            seen.add(name)
+    e2e = meta / "olie" / "olie-e2e"
+    if e2e.is_dir():
+        folders.append({"name": "olie-e2e", "path": str(e2e)})
+        seen.add("olie-e2e")
+    for p in sorted(root.iterdir()):
+        if not p.is_dir() or p.name in seen or p.name == "git":
+            continue
+        if (p / ".git").exists():
+            folders.append({"name": p.name, "path": str(p)})
+            seen.add(p.name)
+else:
+    # Clones shared sob a pasta do projeto; prompts vêm do meta worktree.
+    raw0 = {}
+    if ws.is_file():
+        try:
+            raw0 = json.loads(ws.read_text(encoding="utf-8"))
+        except Exception:
+            raw0 = {}
+    for ent in raw0.get("folders") or []:
+        name = ent.get("name") or ""
+        rel = ent.get("path") or ""
+        if not rel or name in ("git", "prompts") or rel in (".", "..", "../"):
+            continue
+        target = Path(rel)
+        if not target.is_absolute():
+            target = (project_dir / rel).resolve()
+        if not target.exists():
+            continue
+        folders.append({"name": name or target.name, "path": str(target)})
+        seen.add(name or target.name)
+    prompts = meta / project / "prompts"
+    if prompts.is_dir():
+        folders.append({"name": "prompts", "path": str(prompts)})
+        seen.add("prompts")
+
 if meta.is_dir() and ((meta / ".git").exists()):
     folders.append({"name": "git", "path": str(meta)})
-# Qualquer outro worktree sob root/ (futuro).
-for p in sorted(root.iterdir()):
-    if not p.is_dir() or p.name in seen or p.name == "git":
-        continue
-    if (p / ".git").exists():
-        folders.append({"name": p.name, "path": str(p)})
+
 raw = {}
 if ws.is_file():
     try:
@@ -679,10 +730,10 @@ settings.pop("git.repositoryScanIgnoredFolders", None)
 text = json.dumps(raw, indent=2) + "\n"
 old = ws.read_text(encoding="utf-8") if ws.is_file() else None
 if old == text:
-    print(f"workvm-host-card: workspace já é só worktrees em {root}", file=__import__("sys").stderr, flush=True)
+    print(f"workvm-host-card: workspace já com meta worktree em {meta}", file=__import__("sys").stderr, flush=True)
 else:
     ws.write_text(text, encoding="utf-8")
-    print(f"workvm-host-card: workspace → {len(folders)} worktrees em {root}", file=__import__("sys").stderr, flush=True)
+    print(f"workvm-host-card: workspace → {len(folders)} folders (meta={meta})", file=__import__("sys").stderr, flush=True)
 PY
 }
 
@@ -1132,6 +1183,12 @@ workvm_host_card_ensure() {
     workspace="$(workvm_host_card_write_workspace "$project" "$id" "$code")" || return 1
 
     workvm_host_card_meta_write "$project" "$code" "$id" "$dir" "$port_base" "$workspace" "$compose_project" || return 1
+    # Meta worktree para todo projeto (Olie também cria no prepare — idempotente).
+    # Sem isto, Opbed/boilerplate/… abriam o ~/git ao vivo e dirty vazava entre janelas.
+    mkdir -p "$dir"
+    if ! workvm_host_card_add_meta_worktree "$dir"; then
+        workvm_host_card_log "meta worktree falhou — workspace pode apontar ao ~/git ao vivo"
+    fi
     # Override de stack (Olie): --groups / WORKVM_HOST_CARD_GROUPS → meta antes do hook.
     if [ -n "$groups" ]; then
         export WORKVM_HOST_CARD_GROUPS="$groups"
@@ -1154,6 +1211,8 @@ workvm_host_card_ensure() {
     if [ "$project" = "olie" ]; then
         workvm_host_card_write_olie_e2e_path_rule "$dir" || true
     fi
+    # Sync de novo após o hook (Olie prepare pode ter recriado; outros só sync).
+    workvm_host_card_add_meta_worktree "$dir" || true
     if ! workvm_host_card_bind_workspace_worktree "$project" "$workspace" "$dir"; then
         workvm_host_card_log "bind_workspace_worktree falhou (workspace pode ficar sem folders)"
     fi
@@ -1323,6 +1382,9 @@ workvm_host_card_destroy() {
             | grep -E "^${compose_project}" \
             | while read -r net; do docker network rm "$net" >/dev/null 2>&1 || true; done || true
     fi
+
+    # Meta worktree de qualquer projeto (Olie já remove no hook — idempotente).
+    workvm_host_card_remove_meta_worktree "$dir"
 
     if [ -n "$workspace" ] && [ -f "$workspace" ]; then
         rm -f "$workspace"

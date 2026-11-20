@@ -73,6 +73,7 @@ meta-repo `~/git`. O `.code-workspace` do card abre **só** esses worktrees
 | Fase | O quê |
 | --- | --- |
 | **Hoje (Olie)** | Worktree de **todos** os `CLONE_REPOS` + meta-repo `~/git` por card; workspace **só** esses paths (sem `(shared)`). `vendor` / `node_modules` via reflink (btrfs) ou rsync a partir da base em `~/git/olie/…`. Compose monta worktree `api-main` + `olie-fronts` + e2e do meta worktree. **Dados:** 1× MySQL/Redis/Mongo compartilhados (`hc-olie-data`, imagens ≈ `docker-workspace`); por card só `api_<slug>` / `testing_<slug>` / `REDIS_PREFIX`. |
+| **Hoje (todo projeto)** | Meta-repo `worktree/git` em **todo** host-card (Opbed, boilerplate, use-url-query, Locav, Televisão, …). Workspace nunca aponta o `~/git` ao vivo — evita dirty cruzado entre janelas. Clones de produto nos sem-card continuam shared até haver worktree por repo. |
 | **Depois** | Restringir worktree aos repos **prováveis** do card (não o fan-out inteiro). Lista/heurística TBD. |
 | **Mais tarde** | Polir isolamento `vendor` / `node_modules` (golden, skip yarn no front se já copiado, etc.). |
 
