@@ -19,13 +19,17 @@ Do **not** repeat an expensive step when nothing material changed since the last
 | Expensive step | Re-run only when |
 | --- | --- |
 | `pest --mutate` / `pest --coverage` | Test or production blobs under test changed (`sha:` mismatch / missing stamp), or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). Matching `sha:` in the ledger → skip sandbox across chats. |
-| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. |
+| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. Always `--ci` (TIA `locally()` must not shrink the regression suite). |
 | Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
 | Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |
 | Pre-QA checklist / production smoke | Code, PR, or production deploy changed; or a prior check failed and was fixed. |
 | Correction verification | Re-check only what this correction changed — not the whole unrelated suite “for safety”. |
 
 `try again` means “run again **after** a real change or unblock”, not “repeat the same measurement on an unchanged tree”.
+
+## Pest TIA (local, meta only)
+
+Do **not** edit `LocavApi` `tests/Pest.php` / `.gitignore` (company repo). Enable with `PEST_TIA_LOCALLY=1` on the **sandbox** compose when Locav sandboxes exist (meta only). Needs `git` + coverage driver. **Regression** (`pest-parallel`) always passes `--ci`. Opt out once: `--no-tia`.
 
 ## Backend change-set (when base...HEAD is empty)
 

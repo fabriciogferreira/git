@@ -65,6 +65,8 @@ services:
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
+      # Pest TIA sem tocar Pest.php do clone (meta only). Gates full-suite: --ci.
+      PEST_TIA_LOCALLY: "1"
     networks: [sb_net]
     mem_limit: ${SB_MEM:-1g}
     cpus: ${SB_CPUS:-1.0}

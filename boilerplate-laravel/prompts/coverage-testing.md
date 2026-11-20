@@ -11,6 +11,8 @@ Use when the change-set for `{{ feature }}` modified `~/git/boilerplate-laravel/
 
 Do **not** `docker exec` the Card/host backend for coverage. See `~/git/boilerplate-laravel/sandbox/ORCHESTRATION.md`.
 
+Sandbox image includes **PCOV** (preferred over Xdebug here for line-coverage speed — ~2.8× in [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html)). Card keeps Xdebug; do not change the clone Dockerfile for this.
+
 ## Entry
 
 - **Default:** `correct coverages` — drain remaining production files (warm pool + Task).

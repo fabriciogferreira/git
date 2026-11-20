@@ -17,6 +17,12 @@ CLI: `~/git/bin/workvm-sandbox --project boilerplate-laravel`. Compose slim:
 `docker exec` no `workspace`/`php-fpm` do Card. Usam
 `workvm-sandbox create --project boilerplate-laravel --profile mutation|tests`.
 
+**Driver:** imagem `:sandbox` com **PCOV** (ensure no create). Preferível a
+Xdebug nestes jobs por line coverage ~2,8× mais rápido
+([PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html));
+Pest aceita os dois. Card/compose.dev fica com Xdebug — não alterar o
+Dockerfile do clone só por mutation.
+
 Day-to-day tests/PHPStan/CS Fixer: `docker compose exec workspace …`
 (ou o container workspace do host-card ativo).
 

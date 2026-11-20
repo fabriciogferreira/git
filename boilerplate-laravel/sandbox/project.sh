@@ -70,6 +70,33 @@ workvm_bl_load_testing_db_cache() {
     source "${meta_repo}/boilerplate-laravel/sandbox/testing-db-cache.sh"
 }
 
+# Garante boilerplate-laravel-workspace:sandbox com PCOV (Pest --mutate/--coverage).
+# Problema: host-card/:sandbox vinha com XDEBUG_ENABLED=false e sem PCOV;
+# o Card (compose.dev) já tem Xdebug — não mexer no Dockerfile do clone.
+workvm_sandbox_bl_ensure_sandbox_image() {
+    local meta_repo
+    local tag=boilerplate-laravel-workspace:sandbox
+    local base=boilerplate-laravel-workspace:latest
+    meta_repo="$(workvm_sandbox_meta_repo)"
+
+    if docker image inspect "$tag" >/dev/null 2>&1; then
+        if docker run --rm --entrypoint php "$tag" -m 2>/dev/null | grep -qi pcov; then
+            return 0
+        fi
+        workvm_sandbox_log "${tag} sem PCOV — rebuild"
+    fi
+
+    if ! docker image inspect "$base" >/dev/null 2>&1; then
+        workvm_sandbox_log "imagem ${base} ausente; suba o compose.dev (ou host-card) antes"
+        return 1
+    fi
+
+    workvm_sandbox_log "build ${tag} (PCOV via Dockerfile.workspace)"
+    docker build -t "$tag" \
+        -f "${meta_repo}/boilerplate-laravel/sandbox/Dockerfile.workspace" \
+        "${meta_repo}/boilerplate-laravel/sandbox"
+}
+
 workvm_sandbox_project_after_up() {
     local id="$1"
     local wt="$2"
@@ -288,6 +315,8 @@ workvm_sandbox_project_render_compose() {
     backend_image="${HC_BACKEND_IMAGE:-boilerplate-laravel-workspace:sandbox}"
     host_uid="$(id -u)"
     host_gid="$(id -g)"
+
+    workvm_sandbox_bl_ensure_sandbox_image || return 1
 
     mkdir -p "$compose_dir/artifacts" "$wt/e2e"
     if [ ! -d "$vendor_src" ]; then

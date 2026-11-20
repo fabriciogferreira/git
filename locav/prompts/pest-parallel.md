@@ -31,7 +31,7 @@ Confirm the **whole** backend suite is green (and front lint when the front chan
 ## 2. Backend (`LocavApi` in the change set)
 
 ```bash
-docker exec -w /var/www/html locav-backend php artisan test --compact --parallel
+docker exec -w /var/www/html locav-backend php artisan test --compact --parallel --ci
 ```
 
 - Do **not** pass a path filter or `--filter`.

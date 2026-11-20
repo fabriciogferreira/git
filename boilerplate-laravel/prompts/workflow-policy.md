@@ -30,6 +30,10 @@ Do **not** `docker exec hc-boilerplate-laravel-*-backend-1` for mutate/coverage.
 
 Day-to-day `php artisan test`, PHPStan, and PHP CS Fixer run on the normal local compose (`docker compose exec workspace …` or the running host-card `workspace` if that is the active stack).
 
+## Pest TIA (local)
+
+Owned clone: `tests/Pest.php` has `pest()->tia()->locally()` + `directory('.pest/tia')`; `/.pest/` is gitignored; workspace image includes `git`. **Full-suite gates** (`pre-deploy`) pass `--ci`. Opt out once: `--no-tia`. Sandbox compose also sets `PEST_TIA_LOCALLY=1` as belt-and-suspenders.
+
 ## Chat commands
 
 | Command | Meaning |

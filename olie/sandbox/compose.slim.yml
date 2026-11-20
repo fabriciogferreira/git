@@ -95,6 +95,8 @@ services:
       CACHE_DRIVER: array
       QUEUE_CONNECTION: sync
       TELESCOPE_ENABLED: "false"
+      # Pest TIA sem tocar Pest.php do api-main (meta only). Regressão: --ci.
+      PEST_TIA_LOCALLY: "1"
     networks: [sb_net]
     mem_limit: ${SB_MEM:-1g}
     cpus: ${SB_CPUS:-1.0}

@@ -1,0 +1,18 @@
+# Imagem CLI do sandbox boilerplate-laravel (Pest / mutation / coverage).
+# Problema: host-card/:sandbox com XDEBUG_ENABLED=false e sem PCOV; Pest
+# --mutate/--coverage exigem Xdebug 3+ ou PCOV. Preferimos PCOV no sandbox
+# (~2,8× line coverage vs Xdebug — https://phpunit.expert/articles/pcov-or-xdebug.html).
+# git: Pest TIA (PEST_TIA_LOCALLY no compose slim) exige o binário.
+# Não alterar o Dockerfile do clone (Card continua com Xdebug).
+FROM boilerplate-laravel-workspace:latest
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/* \
+    && (php -m | grep -qi pcov \
+        || (pecl install pcov && docker-php-ext-enable pcov)) \
+    && php -m | grep -qi pcov \
+    && command -v git >/dev/null
+
+USER www
+WORKDIR /var/www

@@ -17,7 +17,7 @@ Commit and push **only** when this checklist’s applicable checks are green (or
 Run inside the Docker `workspace` service (from `COMPOSE_DIR` / compose.dev or the host-card project):
 
 ```bash
-docker compose exec workspace php artisan test --compact
+docker compose exec workspace php artisan test --compact --ci
 docker compose exec workspace vendor/bin/phpstan analyse --memory-limit=1G
 docker compose exec workspace vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
 ```

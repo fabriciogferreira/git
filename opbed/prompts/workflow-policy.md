@@ -31,6 +31,10 @@ Do **not** `docker exec hc-opbed-*-backend-1` for mutate/coverage. Contract: `~/
 
 Day-to-day `php artisan test`, PHPStan, and PHP CS Fixer run on the normal local compose (`docker compose exec backend …` or the running host-card backend if that is the active stack).
 
+## Pest TIA (local)
+
+Owned clone: `tests/Pest.php` has `pest()->tia()->locally()` + `directory('.pest/tia')`; `/.pest/` is gitignored; backend image includes `git` (+ PCOV). **Full-suite gates** (`pre-deploy`) pass `--ci`. Opt out once: `--no-tia`. Sandbox compose also sets `PEST_TIA_LOCALLY=1` as belt-and-suspenders.
+
 ## Chat commands
 
 | Command | Meaning |

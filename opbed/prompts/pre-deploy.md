@@ -17,7 +17,7 @@ Commit and push **only** when this checklist’s applicable checks are green (or
 Run inside the Docker `backend` service (project Environment rule):
 
 ```bash
-docker compose exec backend php artisan test --compact
+docker compose exec backend php artisan test --compact --ci
 docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G
 docker compose exec backend vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
 ```

@@ -15,8 +15,21 @@ Teto padrão: **2**. Override: `WORKVM_SANDBOX_MAX=N`.
 
 Service default do job: `backend`. Prefira `--service backend` nos prompts.
 
-Antes do primeiro sandbox: `composer install` no clone e imagem
-`boilerplate-laravel-workspace:sandbox` (host-card/`compose up --build` cria).
+Antes do primeiro sandbox: `composer install` no clone e imagem base
+`boilerplate-laravel-workspace:latest` (compose.dev). O create garante
+`boilerplate-laravel-workspace:sandbox` **com PCOV** via
+`Dockerfile.workspace` (o Dockerfile do clone / Card não muda — Xdebug no
+Card basta para o dia a dia; mutation/coverage usam o sandbox).
+
+### Por que PCOV no sandbox (não só Xdebug)
+
+Pest aceita **Xdebug 3+ ou PCOV** para `--mutate` / `--coverage`. Nos
+sandboxes preferimos **PCOV** por velocidade de **line coverage**: no
+benchmark de [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html)
+(Sebastian Bergmann), coletar line coverage ficou ~**2,8×** mais lento com
+Xdebug (~53s) do que com PCOV (~19s) na mesma suite. Mutation reusa o
+driver muitas vezes — o gap se multiplica. Card continua com Xdebug para
+debug/smoke; exclusive mutate/coverage → imagem `:sandbox` com PCOV.
 
 ## O que isola
 
@@ -35,8 +48,9 @@ Antes do primeiro sandbox: `composer install` no clone e imagem
 - `compose.host-data.yml` — shared pgsql+redis
 - `host-card-shared-data.sh` — ensure/provision/drop
 - `compose.slim.yml` + `compose.sandbox-shared-data.yml` — sandbox
+- `Dockerfile.workspace` — base workspace + PCOV → tag `:sandbox`
 - `testing-db-cache.sh` — dump/import Postgres
-- `project.sh` — hooks do Manager
+- `project.sh` — hooks do Manager (incl. ensure da imagem com PCOV)
 - `ORCHESTRATION.md` — exclusive vs compatible + warm pool
 - `host-card-ensure.sh` / `host-card-destroy.sh` — Card + shared data
 - `compose.host.yml` — stack navegável no host-card

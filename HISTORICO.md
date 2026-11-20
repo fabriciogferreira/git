@@ -1,6 +1,18 @@
 # Histórico
 
 
+## Pest TIA: owned repos vs empresa
+
+- **problema:** TIA ajuda em suites grandes; `Pest.php` + `/.pest/` precisa de commit — ok em repos próprios, impossível em Olie/Locav/Televisão.
+- **por que é um problema:** patch local em clone da empresa suja o worktree; sem `--ci` a regressão full-suite encolheria.
+- **resolvido como:** **próprios** (`boilerplate-laravel`, `opbed-backend`): `pest()->tia()->locally()` + `directory('.pest/tia')`, `/.pest/` no `.gitignore`, `git` na imagem CLI. **Empresa:** sem tocar `Pest.php`; `PEST_TIA_LOCALLY=1` só no compose sandbox do meta + `git` nas imagens sandbox do meta. Gates de regressão passam `--ci`.
+
+## boilerplate-laravel: PCOV na imagem do sandbox (não no Card)
+
+- **problema:** host-card/`compose.host.yml` buildava `boilerplate-laravel-workspace:sandbox` com `XDEBUG_ENABLED=false` e sem PCOV; Pest `--mutate` / `--coverage` exigem Xdebug 3+ ou PCOV. O Card (compose.dev) já tinha Xdebug — mexer no Dockerfile do clone era escopo errado.
+- **por que é um problema:** o caminho oficial (exclusive) é `workvm-sandbox`; sem driver na tag `:sandbox` mutation/coverage quebram. Xdebug no Card basta para smoke, mas line coverage com Xdebug é bem mais lento que PCOV (Bergmann: ~53s vs ~19s na mesma suite — ~2,8×; mutation multiplica o custo do driver).
+- **resolvido como:** `sandbox/Dockerfile.workspace` + `workvm_sandbox_bl_ensure_sandbox_image` no create (PCOV só na tag `:sandbox`). Card/Dockerfile do clone intactos. Preferência PCOV nos sandboxes documentada com [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html) (números de line coverage; Pest aceita os dois).
+
 ## Opbed: prompts sem card / PR (pre-deploy)
 
 - **problema:** prompts Olie-style (card, colleague review, pre-QA/PR) não batem com o Opbed — não há cards nem PR; push em `main` já faz deploy.
