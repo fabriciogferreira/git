@@ -351,6 +351,23 @@ When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prom
 - If a prompt is dirty that way, restore it (`git checkout -- path`) before the commit.
 - Intentional prompt wording changes are fine; leave `{{ code }}` (and the other placeholders) intact.
 
+## Closing PR review feedback
+
+GitHub exposes review feedback in two shapes. Agents must close both; chat-only “done” is not enough.
+
+| Shape | How it appears | How to close |
+| --- | --- | --- |
+| **Inline thread** | Line/file conversation; has **Resolve** | After the fix (or verified non-issue / agreed out-of-scope): mark the thread **Resolved** (`resolveReviewThread` / MCP). |
+| **Review body** | Summary on `CHANGES_REQUESTED` / substantive `COMMENTED` with **no** inline threads | GitHub has **no** Resolve on the body. After every actionable point is addressed: post **one** public PR audit comment listing each point (`✅` / `⬜` + reason) with commit SHAs. Do **not** dismiss the review to fake closure. |
+
+Loading feedback for correction / return to 'QA/CR':
+
+1. Resolve associated PR URLs (**Code review form** / card PR fields / project content).
+2. Read **threads** (`get_review_comments` / `reviewThreads`) **and** **reviews** (`get_reviews`). Empty threads alone ≠ “no PR feedback”.
+3. Triage every actionable thread comment and every actionable body bullet like any other finding.
+
+`correction.md` §10b owns the close steps during a correction pass. `pre-qa.md` §5.0 gates the move back to 'QA/CR' until threads are Resolved and review bodies have an audit comment when applicable.
+
 ## Pull request links on the card
 
 Olie cards often have fewer form fields for PR URLs than repositories that can change on one card (`olie-fronts`, `api-main`, `backoffice`, `landing`, `websocket`, … — never `docs`). After each required PR exists and is verified:
@@ -364,15 +381,81 @@ Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on th
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
-- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Evidence table on project content** below (allowed exception).
 - Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 - Do **not** cite private meta-repo E2E (see **Private E2E suites** below).
 - Do **not** cite personal WorkVM / Card VM / sandbox / dispatcher / ledger tooling. That stack exists only for the owner of this meta-repo. Ban on the card (and Caderno): `VM`, `WorkVM`, `Card VM`, `sandbox`, `workvm-sandbox`, `dispatcher`, `ledger`, `mutation-ledger`, `coverage-ledger`, “nesta VM”, “nesta máquina”, hostnames, compose service names used only here, and process notes that only make sense with those tools (“fechamento do gate”, “Pest raw score”, “in-scope hunks”). Put that detail in the Cursor chat scoreboard only.
-- If a gate is clean and there is nothing for the author to change, **do not** post a process wrap-up to the card. Silence on the card is fine; the chat report is enough.
-- On colleague review, do **not** put gap / mutation / coverage results on the card during **reviewer-fix** (those stay in chat). Include them on the card only when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**.
+- If a gate is clean and there is nothing for the author to change, **do not** post a prose process wrap-up to the card. The **Evidence table** still applies when the trigger says to write it; silence otherwise is fine; the chat report remains required.
+- On colleague review, do **not** dump gap / mutation / coverage **findings lists** onto the card during **reviewer-fix** (those stay in chat). Include author-facing findings when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**. The **Evidence table** on Pass or Corrigir bounce is separate and **required** (see below).
 
 Recommend the next prompt **only in the Cursor chat** report.
+
+## Evidence table on project content
+
+At the **end** of each trigger below, upsert a short Brazilian Portuguese **evidence table** into the card description (`get-project-details-tool` → `edit-project-tool`). Keep all other description text. Never wipe the prior description. This is human evidence for the board — not a prompt path, not sandbox jargon.
+
+### When to write
+
+| Trigger | When | Heading (exact `###` line) |
+| --- | --- | --- |
+| Implementation handoff | End of **`pre-qa.md`**, after a successful move to 'QA/CR' (or after the report if the move was blocked — still write what ran) | `### Evidência — Implementation` |
+| Correction | End of **`correction.md`** when that paste’s correction work is complete (not the conflict-only first stop). Upsert again at the end of the following **`pre-qa.md`** that returns the card to 'QA/CR' | `### Evidência — {N}º Correção` |
+| Colleague review | End of **`colleague-review.md`** combined outcome on **Pass** or **Corrigir** bounce — **not** while stuck in **reviewer-fix** with open gap/mutation/coverage | `### Evidência — {N}º QA/CR pelo {Nome}` |
+| Production review | End of **`production-review.md`** after Pass/Fail/Blocked is reported (before or after the yes/no move) | `### Evidência — {N}º Revisão produção` |
+
+`{N}` = count of existing headings of that kind in the description + 1 (1º, 2º, 3º…). `{Nome}` = reviewer display name (e.g. Fabrício Ferreira from 'atribuído a' / form). Do **not** invent a round number.
+
+### Upsert (do not append forever)
+
+1. Read the current project description.
+2. If a block with the **same exact** `###` heading already exists, **replace that block only** (from that `###` through the line before the next `###` or end of description).
+3. Otherwise append the new block at the end (blank line before it).
+4. Do not edit other evidence blocks.
+
+### Diff range for mutation / coverage / all-test %
+
+Use the product PR (or card branch) range **`A..B`** where:
+
+- **A** = merge-base with the repo base branch (`develop` / project default).
+- **B** = last **non-formatting** commit on the card branch.
+
+**Exclude** the dedicated formatting commit(s) from **B** (Olie: Pint; Locav: PHP CS Fixer; Televisão: Pint and/or dedicated Scribe output). If the tip is only formatting, set **B** to the parent of that commit. State `diff: A..B` (short SHAs) on one line under the heading when back rows include %.
+
+Mutation / coverage % = **changed production / test surface in that diff** (same scope as the mutation/coverage prompts), not the whole repository. Report whether the agreed **~1 percentage-point** progress on that scope was met (`sim` / `não` / `n/a` if no prior baseline).
+
+### Row rules
+
+- Omit the entire **Front** or **Back** section when that surface was not touched in the change set.
+- Values: short facts only (`ok`, `falhou`, `n/a`, `não rodado`, percentages). No prompt filenames, no VM/sandbox/ledger words, no private e2e paths.
+- **E2E (Olie):** do **not** name `olie-e2e` / Playwright meta. Use e.g. `verificado localmente (ok)` / `criados e ok` / `falhou` / `n/a` — **Private E2E suites**.
+- Chat scoreboard stays detailed; the card table is the compact public summary.
+
+### Template (Olie)
+
+```markdown
+### Evidência — Implementation
+
+**Front**
+| check | resultado |
+| --- | --- |
+| deploy | ok / falhou / n/a |
+| e2e | verificado localmente (ok) / falhou / n/a |
+| tsc | ok / falhou / n/a |
+| lint | ok / falhou / n/a |
+
+**Back**
+diff: abc1234..def5678 (sem commit Pint)
+| check | resultado |
+| --- | --- |
+| pint | ok / n/a |
+| phpstan | ok / falhou / n/a |
+| mutation | X% no diff; +Y pp; meta 1 pp: sim/não/n/a |
+| coverage | X% no diff; +Y pp; meta 1 pp: sim/não/n/a |
+| all test | X% (ou N passed / M total) |
+```
+
+Colleague / Correção / Revisão produção use the same Front/Back tables under their heading (production review may be mostly Front + production smoke; use `n/a` where a check does not apply).
 
 ## Private E2E suites (olie-e2e — owner only)
 

@@ -260,6 +260,17 @@ If a required reviewer, assignee, label, or other setting is unavailable, report
 
 **Proceed only after the required pull request or pull requests have been created and verified, and all applicable checks in Phases 1–4 have passed.**
 
+### 5.0. Prior review feedback closed (return to 'QA/CR')
+
+When this card is returning to 'QA/CR' after a review bounce (correction / `CHANGES_REQUESTED`), close the GitHub feedback loop **before** the board move. Shared rules: **Closing PR review feedback** in `~/git/olie/prompts/workflow-policy.md` (and `correction.md` §10b).
+
+- [ ] For each associated open PR: load inline **threads** and **reviews** (`get_review_comments` + `get_reviews`). Do not treat empty threads as “no feedback” if a review body still lists blockers.
+- [ ] Every fully addressed inline thread is marked **Resolved** on GitHub.
+- [ ] Every fully addressed **review body** (no Resolve button) has a public **audit comment** on that PR that lists each point as done / deferred / non-issue with commit evidence. Do **not** dismiss the review to fake closure.
+- [ ] If a blocker from the latest `CHANGES_REQUESTED` is still open, **stop** — do not move to 'QA/CR'.
+
+Skip this subsection only when there was no prior PR review feedback to close (first handoff to 'QA/CR' with no `CHANGES_REQUESTED` / open threads).
+
 - [ ] Open card `{{ code }}` through the MCP OlieFlowAi.
 - [ ] Check off the funnel checklist item **Pull Request criado** / **Pull request created** via management HTTP `toggle-funnel-checklist`. Resolve `step_checklist_id` from the project payload (`get-project-details-tool` → `funnels[].steps[].checklists[]` on the QA/CR step; if MCP omits that array, one `GET /api/management/projects/{uuid}` — see **Toggling a funnel-step checklist item** in `~/git/olie/prompts/workflow-policy.md`). Use `${OLIE_MANAGEMENT_TOKEN}`, the card UUID, and that id — never paste a Bearer token. Confirm `{"response":true}`.
 - [ ] Resolve **incoming restrictions** for the destination 'QA/CR' step **before** moving. In particular, answer the step form that asks whether api-main Postman documentation must be updated (`Sim` / `Não`) from the Phase 2 determination — use `get-model-dynamic-forms-tool` / `get-form-answers-tool` then `set-form-answers-tool` (see **Moving a card on the board** in `~/git/olie/prompts/workflow-policy.md`). Do not call the move while a required destination-step field is still empty.
@@ -301,6 +312,11 @@ After completing the applicable workflow, provide a concise report containing:
 - Whether an API documentation update is required.
 - The status of the 'Pull request created' checklist item.
 - Whether the card was moved to 'QA/CR' and the verified stage after the move.
+- Whether prior PR review threads were Resolved and/or review-body audit comments were posted (or that §5.0 was skipped because there was no prior review feedback).
 - Any unresolved issues, skipped checks, or outstanding actions.
 
 Clearly distinguish completed actions from pending work. Do not claim that the card is fully ready for QA/CR if any mandatory check remains unresolved or the stage move did not succeed.
+
+### Evidence table (required)
+
+After the final report above, upsert the **Implementation** (or **{N}º Correção** when this pre-QA returns a card from Corrigir) evidence table into the project description per **Evidence table on project content** in `~/git/olie/prompts/workflow-policy.md`. Use Front/Back rows only for surfaces touched; mutation/coverage/all-test % on diff `A..B` excluding the Pint commit.

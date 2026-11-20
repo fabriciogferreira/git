@@ -59,3 +59,5 @@ When yes: resolve the live step id by display name via MCP / `~/git/olie/prompts
 ## Done when
 
 The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.
+
+**Evidence table (required):** after the Pass/Fail/Blocked report, upsert `### Evidência — {N}º Revisão produção` into the project description per **Evidence table on project content** in `~/git/olie/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply).

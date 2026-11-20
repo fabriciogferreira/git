@@ -58,7 +58,9 @@ Apply **Colleague review outcome** in `~/git/televisao/prompts/workflow-policy.m
 - Resolve 'Revisado' (and any step id) only via MCP `index-project-funnels-tool` → that board's `funnel_status[]` / `steps[]` by display name, then `edit-project-tool` / move tools. **Do not** call `get-available-steps` or curl the management catalog while that MCP tool works — empty `search`/`id` result means retry unfiltered, not HTTP. See **Resolving funnel steps** in `workflow-policy.md`.
 - Do **not** invent another path beyond Corrigir / reviewer-fix / Pass.
 
-Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card). Never post gap/mutation/coverage process wrap-ups on a Pass or reviewer-fix card.
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths on the card). Never post gap/mutation/coverage **findings lists** on a Pass or reviewer-fix card.
+
+**Evidence table (required on Pass or Corrigir):** upsert `### Evidência — {N}º QA/CR pelo {Nome}` into the project description per **Evidence table on project content** in `workflow-policy.md`. Do **not** write that table while still in **reviewer-fix** with open gap/mutation/coverage.
 
 ## 5. Scoreboard (required final report)
 

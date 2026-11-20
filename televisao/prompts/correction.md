@@ -74,13 +74,19 @@ Before modifying code, load the card and its live funnel through MCP `olie-flow-
 
 Before creating the correction plan, inspect the reviewer's feedback and the affected implementation.
 
-**Pull request review comments (required before the plan).** Resolve the card's associated PR URLs (code-review form **Pull Request (front)** / **Pull Request (back)** and any PR URLs in the project content — **Code review form** in `~/git/televisao/prompts/workflow-policy.md`). For **each** of those PRs, load the review conversation threads (GitHub MCP `pull_request_read` method `get_review_comments`, or `gh` when MCP is unavailable — **Tool preference**). Do this even when the card content / return text already lists findings: PR threads are a source of truth and often carry line-level detail the card text omits.
+**Pull request review feedback (required before the plan).** Resolve the card's associated PR URLs (code-review form **Pull Request (front)** / **Pull Request (back)** and any PR URLs in the project content — **Code review form** / **Closing PR review feedback** in `~/git/televisao/prompts/workflow-policy.md`). For **each** of those PRs, load **both**:
 
-- If a PR has review comments or unresolved threads, treat every actionable point in those threads as a finding for analysis and for the correction plan (same triage as card/forum findings).
-- If a PR has no review comments, say so in the plan and continue with card/forum findings only.
-- Do not build or present the plan until those PRs have been checked for comments.
+1. **Inline conversation threads** — GitHub MCP `pull_request_read` method `get_review_comments` (or `gh` / GraphQL `reviewThreads` when MCP is unavailable — **Tool preference**).
+2. **Review bodies** — GitHub MCP `pull_request_read` method `get_reviews` (or equivalent). Treat actionable points in `CHANGES_REQUESTED` and substantive `COMMENTED` review **bodies** as findings even when there are **zero** inline threads. A review that lists blockers only in the summary body is still a source of truth (GitHub has no Resolve button on that body).
 
-For every reported issue (card, forum/notebook, **and** PR review thread):
+Do this even when the card content / return text already lists findings: PR threads and review bodies often carry line-level or blocker detail the card text omits.
+
+- If a PR has review comments, unresolved threads, **or** actionable review-body points, treat every actionable item as a finding for analysis and for the correction plan (same triage as card/forum findings).
+- If a PR has neither threads nor actionable review-body points, say so in the plan and continue with card/forum findings only.
+- Do not build or present the plan until those PRs have been checked for **threads and reviews**.
+- Do not conclude “no PR feedback” from empty `get_review_comments` alone.
+
+For every reported issue (card, forum/notebook, **PR review thread, and PR review body**):
 
 1. Identify the criterion that failed, if specified by the reviewer.
 2. Locate the relevant code in the correct repository and branch.
@@ -129,8 +135,8 @@ Before implementing any fix, create the plan in the agent's native planning mech
 The plan must include:
 
 - Card code and objective.
-- Which associated PRs were checked for review comments, and whether each had threads (list unresolved threads by repo + PR number + short subject when any exist).
-- The reviewer's findings (**including every actionable PR review comment**) and the root cause of each issue. Do not drop a PR comment from triage because it was labeled nit/suggestion/padrão — classify it (in-scope / simple / out-of-scope) like any other finding.
+- Which associated PRs were checked for review **threads** and **review bodies**, and whether each had unresolved threads and/or actionable `CHANGES_REQUESTED`/`COMMENTED` body points (list by repo + PR number + short subject).
+- The reviewer's findings (**including every actionable PR review comment and every actionable review-body point**) and the root cause of each issue. Do not drop a PR comment or body blocker from triage because it was labeled nit/suggestion/padrão — classify it (in-scope / simple / out-of-scope) like any other finding.
 - The relevant repository, branch, files, and code locations.
 - The expected behavior and acceptance criteria for each correction.
 - Existing test coverage and missing scenarios.
@@ -224,25 +230,54 @@ For each issue, describe the evidence, impact, status, and resolution or next ac
 
 Do not silently dismiss review findings or mark unresolved problems as completed.
 
-## 8b. Resolve GitHub PR review threads
+## 8b. Close GitHub PR review feedback
 
-When a finding lives as a **pull request review comment / conversation thread** on an associated PR, mark that thread **Resolved** on GitHub after the correction for that comment is done — not before.
+Close every associated PR finding on GitHub in a way the reviewer (and the next agent) can see. There are **two shapes** of feedback — do not treat them the same.
+
+### A) Inline conversation threads (Resolve exists)
+
+When a finding lives as a **pull request review comment / conversation thread**, mark that thread **Resolved** on GitHub after the correction for that comment is done — not before.
 
 Rules:
 
 - Resolve a thread only when **every** actionable point in that comment (and its replies in the same thread) is fixed with supporting evidence, or documented as a verified non-issue / out-of-scope with the user’s agreement where required.
 - Do **not** resolve a thread that still has an open point, a failing regression for that finding, or a pending product decision.
 - Do **not** leave threads open after the fix is verified just because the paste is ending: unresolved open threads after a completed correction are a miss.
-- Card/forum text findings without a GitHub thread are unchanged — there is nothing to click Resolve on.
 - Prefer GitHub MCP when a resolve-thread tool exists; otherwise use `gh api graphql` with `resolveReviewThread` (thread id from the PR’s `reviewThreads`). Follow **Tool preference** in `~/git/televisao/prompts/workflow-policy.md`.
-- In the completion report, list which threads were resolved (repo + PR number + short subject) and any left open with why.
+
+### B) Review bodies without threads (no Resolve button)
+
+A `CHANGES_REQUESTED` (or substantive `COMMENTED`) **review summary** often lists blockers only in the review body. GitHub does **not** offer Resolve on that body. Do **not** dismiss the review to fake closure. Do **not** claim “resolved” in chat only.
+
+When every actionable point from that review body is fixed (or verified non-issue / agreed out-of-scope):
+
+1. Post **one** PR issue comment (GitHub MCP `add_issue_comment` / `gh pr comment`) that audits the review point-by-point.
+2. Quote or paraphrase each blocker from the review; mark each as done (`✅`), deferred/out-of-scope (`⬜` + reason), or non-issue (with evidence).
+3. Cite supporting commit SHAs (and test names when useful).
+4. Address `@reviewer` and date the original review so the trail is obvious.
+5. Only then treat that review body’s findings as closed for this correction pass. Re-request review when the workflow expects it (`gh` / MCP) after the audit comment exists.
+
+Suggested shape (language may match the review — pt-BR is fine when the review was in pt-BR):
+
+```markdown
+## Endereçado ao review de @login (YYYY-MM-DD)
+
+1. ✅ <ponto> — <como> (`abc1234`)
+2. ✅ <ponto> — <como> (`def5678`)
+3. ⬜ <não bloqueante> — adiado / fora de escopo (<motivo>)
+```
+
+Card/forum text findings without a GitHub thread or review body are unchanged — there is nothing to Resolve or audit-comment on GitHub.
+
+In the completion report, list: threads Resolved (repo + PR + short subject); any threads left open with why; and every **audit comment** posted for a review body (PR URL + comment URL or date).
 
 ## 9. Completion Criteria
 
 The correction work is complete only when:
 
 - Every reviewer finding has been addressed or explicitly resolved with supporting evidence.
-- Every associated GitHub PR review thread whose points were fully fixed (or verified non-issue / agreed out-of-scope) has been marked **Resolved** (§8b). Threads still open only when a point remains unfinished — and those are listed in the report.
+- Every associated GitHub PR review **thread** whose points were fully fixed (or verified non-issue / agreed out-of-scope) has been marked **Resolved** (§8b A). Threads still open only when a point remains unfinished — and those are listed in the report.
+- Every associated GitHub PR **review body** with actionable points that this pass closed has a public **audit comment** on that PR (§8b B). Missing audit comments after a completed correction are a miss.
 - When the card has a report, that problem was reproduced on the hosted preview.
 - All applicable checklist items have been completed and verified.
 - Regression tests cover the corrected behavior.
@@ -259,7 +294,7 @@ At completion, provide a concise report containing:
 - How many **new** findings (not in the reviewer's return) were discovered; if that count was greater than 3 and work stopped, say so explicitly.
 - The files and repositories changed.
 - The tests created or updated and their results.
-- Which GitHub PR review threads were marked Resolved, and any left open with reason.
+- Which GitHub PR review threads were marked Resolved, any left open with reason, and which review-body audit comments were posted (PR + link/date).
 - Any unresolved issues or verification limitations.
 - Any remaining manual actions.
 
@@ -268,3 +303,5 @@ Do not commit, push, or open a pull request unless explicitly requested and perm
 When a correction changes API inputs/outputs, update Scribe **source** annotations and run `php artisan scribe:generate --force -n` in the API container before considering the docs done. Keep generated paths ready for a dedicated Scribe commit at pre-QA (same separation as Pint) — **Scribe** in `~/git/televisao/prompts/workflow-policy.md`. Do not invent OpenAPI/Blade by hand.
 
 When correction work on this paste is done, the next paste is `~/git/televisao/prompts/recommendation.md` (related improvements only; do not implement them in that paste). After that paste, run `~/git/televisao/prompts/implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.
+
+**Evidence table:** upsert `### Evidência — {N}º Correção` into the project description per **Evidence table on project content** in `~/git/televisao/prompts/workflow-policy.md` (rows for what this paste verified; `n/a` / `não rodado` where pre-QA has not run yet). The following **`pre-qa.md`** upserts the **same** heading with Pint/phpstan/% filled in.

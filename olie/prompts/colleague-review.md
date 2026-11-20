@@ -62,7 +62,9 @@ Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **
 - Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean **and** coverage was skipped or clean.
 - Do **not** invent another path beyond Corrigir / reviewer-fix / Pass.
 
-Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or clean-gate process wrap-ups on the card). Never post gap/mutation/coverage process wrap-ups on a Pass or reviewer-fix card.
+Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or prose process wrap-ups on the card). Never post gap/mutation/coverage **findings lists** on a Pass or reviewer-fix card.
+
+**Evidence table (required on Pass or Corrigir):** upsert `### Evidência — {N}º QA/CR pelo {Nome}` into the project description per **Evidence table on project content** in `workflow-policy.md`. Do **not** write that table while still in **reviewer-fix** with open gap/mutation/coverage.
 
 ## 5. Scoreboard (required final report)
 

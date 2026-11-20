@@ -2,11 +2,23 @@
 
 Problema resolvido entra aqui.
 
+## Evidence table no conteúdo do card (triggers)
+
+- **problema:** scoreboard de implementation / QA/CR / correção / revisão produção ficava só no chat do Cursor; no card não dava para ver o que rodou (deploy, e2e, tsc, pint, mutation %, etc.) nem a rodada.
+- **por que é um problema:** revisor e agente seguinte perdiam o rastro; silêncio no card (policy antiga) escondia evidência útil sem ser “dívida de autor”.
+- **resolvido como:** contrato **Evidence table on project content** em `olie|locav|televisao/prompts/workflow-policy.md` (upsert por `###` estável; diff A..B sem commit de format; e2e privado Olie/TV vs Cypress Locav); hooks em pre-qa / correction / colleague-review / production-review. Exceção explícita em **Card content vs chat**.
+
 ## Host-card Olie: stack seletivo back/front
 
 - **problema:** `ensure`/`open` sempre subiam `app`+`http`+`front-management`+`olie-e2e` (~Vite+e2e) mesmo em cards só de API; N cards no jarvis estouravam RAM.
 - **por que é um problema:** bugfix/backend não precisa de browser; reopen repetia o stack completo; não havia caminho para “ligar o front depois”.
 - **resolvido como:** `meta.stack_groups` — `back`=`app`; `front`=`http`+`front-management`+`olie-e2e` (front implica back). Primeira abertura infere (branch no `olie-fronts` com o CODE → front; senão back) e persiste; reopen reusa. Override `--groups` / `WORKVM_HOST_CARD_GROUPS`; `workvm-host-card add --group front|back` une e re-ensure. Chat: `add front` / `add back` no `workflow-policy`.
+
+## PR review body sem Resolve (audit comment)
+
+- **problema:** correction/pre-QA só fechavam threads inline (botão Resolve). Reviews CHANGES_REQUESTED só no body (ex. api-main#726) não têm Resolve; o agente concluía “sem comentário” ou não deixava trilha no GitHub.
+- **por que é um problema:** bloqueantes do revisor ficavam abertos sem sinal público; retorno a QA/CR sem evidência de fechamento.
+- **resolvido como:** em **olie**, **locav** e **televisao**: `workflow-policy` **Closing PR review feedback** (thread vs body); `correction.md` §3 lê get_reviews + fechamento (olie §10b, locav/televisao §8b) com audit comment no review body; `pre-qa.md` §5.0 gate antes do move para 'QA/CR'.
 
 ## Sandbox: 1º Pest frio (~migrate:fresh) em todo create
 

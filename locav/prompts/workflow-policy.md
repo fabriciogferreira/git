@@ -201,6 +201,23 @@ node node_modules/cypress/bin/cypress run
 
 If `node_modules/cypress` is missing, `docker exec locav-frontend bun install` first, then run the host commands again. If the host command fails for another reason, stop and report (prompt-health rules).
 
+## Closing PR review feedback
+
+GitHub exposes review feedback in two shapes. Agents must close both; chat-only “done” is not enough.
+
+| Shape | How it appears | How to close |
+| --- | --- | --- |
+| **Inline thread** | Line/file conversation; has **Resolve** | After the fix (or verified non-issue / agreed out-of-scope): mark the thread **Resolved** (`resolveReviewThread` / MCP). |
+| **Review body** | Summary on `CHANGES_REQUESTED` / substantive `COMMENTED` with **no** inline threads | GitHub has **no** Resolve on the body. After every actionable point is addressed: post **one** public PR audit comment listing each point (`✅` / `⬜` + reason) with commit SHAs. Do **not** dismiss the review to fake closure. |
+
+Loading feedback for correction / return to 'QA/CR':
+
+1. Resolve associated PR URLs (**Code review form** / card PR fields / project content).
+2. Read **threads** (`get_review_comments` / `reviewThreads`) **and** **reviews** (`get_reviews`). Empty threads alone ≠ “no PR feedback”.
+3. Triage every actionable thread comment and every actionable body bullet like any other finding.
+
+`correction.md` §8b owns the close steps during a correction pass. `pre-qa.md` §5.0 gates the move back to 'QA/CR' until threads are Resolved and review bodies have an audit comment when applicable.
+
 ## Code review form
 
 The card's code-review form holds **Revisor(es)**, **Pull Request (front)**, and **Pull Request (back)**. Read and write it with MCP `olie-flow-ai`. Do not call `dynamic-forms/get-form-answers` or `system/bulk-update/answer_pool`. Never hard-code form ids, funnel ids, or field ids. Never paste a Bearer token.
@@ -243,12 +260,49 @@ Files under `~/git/locav/prompts/` are private WorkVM prompts. Other people on t
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
-- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo.
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Evidence table on project content** below (allowed exception).
 - Do **not** name prompt files or paths (`colleague-review.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
-- On colleague review, do **not** put gap / mutation / coverage results on the card during **reviewer-fix** (those stay in chat). Include them on the card only when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**.
+- If a gate is clean and there is nothing for the author to change, **do not** post a prose process wrap-up to the card. The **Evidence table** still applies when the trigger says to write it.
+- On colleague review, do **not** dump gap / mutation / coverage **findings lists** onto the card during **reviewer-fix** (those stay in chat). Include author-facing findings when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**. The **Evidence table** on Pass or Corrigir bounce is separate and **required** (see below).
 
 Recommend the next prompt **only in the Cursor chat** report.
+
+## Evidence table on project content
+
+Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): upsert a Brazilian Portuguese evidence table into the card description at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. Keep other description text; replace a block only when the `###` heading matches exactly.
+
+Locav specifics:
+
+- **Front e2e:** Cypress lives in `locav-front` — you **may** cite Cypress (specs created/run/passed) on the card. Prefer short rows: `Cypress: criados, rodados e ok` / `falhou` / `n/a`.
+- **Back formatting commit to exclude from diff `A..B`:** PHP CS Fixer (not Pint).
+- **Back repo:** `LocavApi`. Omit Front/Back sections when that surface was not touched.
+- No private meta-repo Playwright ban for Locav e2e (EnterScience exception — **Running Cypress**).
+- Still ban prompt paths, sandbox/VM/ledger jargon on the card.
+
+### Template (Locav)
+
+```markdown
+### Evidência — Implementation
+
+**Front**
+| check | resultado |
+| --- | --- |
+| deploy | ok / falhou / n/a |
+| e2e | Cypress: criados, rodados e ok / falhou / n/a |
+| tsc | ok / falhou / n/a |
+| lint | ok / falhou / n/a |
+
+**Back**
+diff: abc1234..def5678 (sem commit PHP CS Fixer)
+| check | resultado |
+| --- | --- |
+| php-cs-fixer | ok / n/a |
+| phpstan | ok / falhou / n/a |
+| mutation | X% no diff; +Y pp; meta 1 pp: sim/não/n/a |
+| coverage | X% no diff; +Y pp; meta 1 pp: sim/não/n/a |
+| all test | X% (ou N passed / M total) |
+```
 
 ## Language
 
