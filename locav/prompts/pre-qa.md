@@ -165,9 +165,10 @@ If a **Revisor(es)** name does not match exactly one collaborator, do not add th
 
 ### 5.0. Prior review feedback closed (return to 'QA/CR')
 
-When this card is returning to 'QA/CR' after a review bounce (correction / `CHANGES_REQUESTED`), close the GitHub feedback loop **before** the board move. Shared rules: **Closing PR review feedback** in `~/git/locav/prompts/workflow-policy.md` (and `correction.md` §8b).
+When this card is returning to 'QA/CR' after a review bounce (correction / `CHANGES_REQUESTED`), close the GitHub feedback loop **here** — **after** `implementation-validation` (and gap → coverage → mutation → Pest parallel when `LocavApi` changed), and **before** the board move. Do **not** Resolve or audit during `correction.md`; that paste only drafts the checklist. Shared rules: **Closing PR review feedback** in `~/git/locav/prompts/workflow-policy.md` (and `correction.md` §8b).
 
-- [ ] For each associated open PR: load inline **threads** and **reviews** (`get_review_comments` + `get_reviews`). Do not treat empty threads as “no feedback” if a review body still lists blockers.
+- [ ] Tip that will be audited is committed and pushed (SHAs in the audit must exist on the remote PR head).
+- [ ] For each associated open PR: load inline **threads** and **reviews** (`get_review_comments` + `get_reviews`). Do not treat empty threads as “no feedback” if a review body still lists blockers. Prefer the draft checklist from the correction report when present.
 - [ ] Every fully addressed inline thread is marked **Resolved** on GitHub.
 - [ ] Every fully addressed **review body** (no Resolve button) has a public **audit comment** on that PR that lists each point as done / deferred / non-issue with commit evidence. Do **not** dismiss the review to fake closure.
 - [ ] If a blocker from the latest `CHANGES_REQUESTED` is still open, **stop** — do not move to 'QA/CR'.

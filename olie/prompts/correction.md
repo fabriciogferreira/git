@@ -243,34 +243,25 @@ For each issue, describe the evidence, impact, status, and resolution or next ac
 
 Do not silently dismiss review findings or mark unresolved problems as completed.
 
-## 10b. Close GitHub PR review feedback
+## 10b. GitHub PR review feedback — prepare only (do not close yet)
 
-Close every associated PR finding on GitHub in a way the reviewer (and the next agent) can see. There are **two shapes** of feedback — do not treat them the same.
+There are **two shapes** of feedback (see **Closing PR review feedback** in `~/git/olie/prompts/workflow-policy.md`). During **this** correction paste you only **prepare** the close — you do **not** publish it.
 
-### A) Inline conversation threads (Resolve exists)
+**Hard ban until after validations:** do **not** mark review threads **Resolved**, do **not** post the review-body **audit comment**, and do **not** treat **commit / push / “mark resolved”** as the end of this paste. Those steps claim the finding is closed on GitHub; that must wait until `implementation-validation.md` (and, when `api-main` changed, gap → coverage → mutation → `pest-parallel`) has passed. Public close + push of the validated tip belongs to `pre-qa.md` §5.0.
 
-When a finding lives as a **pull request review comment / conversation thread**, mark that thread **Resolved** on GitHub after the correction for that comment is done — not before.
+### During this correction paste
 
-Rules:
+1. Fix every actionable thread and review-body point (or document verified non-issue / out-of-scope).
+2. Keep a **draft audit checklist** in the chat completion report (same shape as below) so pre-qa can post it without rediscovering the review.
+3. Leave threads **unresolved** on GitHub. Leave the review body without an audit comment.
+4. Do **not** commit or push unless the user explicitly asks for an intermediate save — and even then do **not** post Resolve/audit as if the return were closed.
 
-- Resolve a thread only when **every** actionable point in that comment (and its replies in the same thread) is fixed with supporting evidence, or documented as a verified non-issue / out-of-scope with the user’s agreement where required.
-- Do **not** resolve a thread that still has an open point, a failing regression for that finding, or a pending product decision.
-- Do **not** leave threads open after the fix is verified just because the paste is ending: unresolved open threads after a completed correction are a miss.
-- Prefer GitHub MCP when a resolve-thread tool exists; otherwise use `gh api graphql` with `resolveReviewThread` (thread id from the PR’s `reviewThreads`). Follow **Tool preference** in `~/git/olie/prompts/workflow-policy.md`.
+### After validations (`pre-qa.md` §5.0)
 
-### B) Review bodies without threads (no Resolve button)
+- **A) Inline threads** — Resolve each fully addressed thread (`resolveReviewThread` / MCP). Prefer GitHub MCP; else `gh api graphql`. **Tool preference** in `workflow-policy.md`.
+- **B) Review bodies** — post **one** PR issue comment that audits the review point-by-point; cite commit SHAs on the **pushed** tip; `@reviewer` + review date. Do **not** dismiss the review to fake closure.
 
-A `CHANGES_REQUESTED` (or substantive `COMMENTED`) **review summary** often lists blockers only in the review body. GitHub does **not** offer Resolve on that body. Do **not** dismiss the review to fake closure. Do **not** claim “resolved” in chat only.
-
-When every actionable point from that review body is fixed (or verified non-issue / agreed out-of-scope):
-
-1. Post **one** PR issue comment (GitHub MCP `add_issue_comment` / `gh pr comment`) that audits the review point-by-point.
-2. Quote or paraphrase each blocker from the review; mark each as done (`✅`), deferred/out-of-scope (`⬜` + reason), or non-issue (with evidence).
-3. Cite supporting commit SHAs (and test names when useful).
-4. Address `@reviewer` and date the original review so the trail is obvious.
-5. Only then treat that review body’s findings as closed for this correction pass. Re-request review when the workflow expects it (`gh` / MCP) after the audit comment exists.
-
-Suggested shape (language may match the review — pt-BR is fine when the review was in pt-BR):
+Suggested audit shape (language may match the review — pt-BR is fine when the review was in pt-BR):
 
 ```markdown
 ## Endereçado ao review de @login (YYYY-MM-DD)

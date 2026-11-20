@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Correction: não fechar review no GitHub antes das validações
+
+- **problema:** o `correction.md` pedia Resolve de threads + audit comment no body (e o agente tratava commit/push/audit como fim do paste) **antes** de `implementation-validation` (e da cadeia gap → coverage → mutation → Pest → pre-qa).
+- **por que é um problema:** marcar “resolvido” no PR sem as validações dá falsa segurança ao revisor; o tip pode ainda falhar em validation/CI; commit/push prematuro publica código não validado.
+- **resolvido como:** §10b (olie) / §8b (locav/televisão) e **Closing PR review feedback** no `workflow-policy` — no paste de correction só corrigir + testes locais + rascunho do audit; **não** Resolve, **não** audit comment, **não** commit/push “de fechamento”. Fechamento GitHub (Resolve + audit + push do tip) fica no `pre-qa.md` §5.0 **depois** das validações. Próximo paste após correction continua sendo `implementation-validation.md`.
+
 ## Olie: UX na evidence table (sem axe)
 
 - **problema:** evidência de Front só tinha deploy/e2e/tsc/lint; contraste, feedback de request e comportamento de overlay/z-index ficavam só no feeling do colleague.
@@ -30,7 +36,7 @@ Problema resolvido entra aqui.
 
 - **problema:** correction/pre-QA só fechavam threads inline (botão Resolve). Reviews CHANGES_REQUESTED só no body (ex. api-main#726) não têm Resolve; o agente concluía “sem comentário” ou não deixava trilha no GitHub.
 - **por que é um problema:** bloqueantes do revisor ficavam abertos sem sinal público; retorno a QA/CR sem evidência de fechamento.
-- **resolvido como:** em **olie**, **locav** e **televisao**: `workflow-policy` **Closing PR review feedback** (thread vs body); `correction.md` §3 lê get_reviews + fechamento (olie §10b, locav/televisao §8b) com audit comment no review body; `pre-qa.md` §5.0 gate antes do move para 'QA/CR'.
+- **resolvido como:** em **olie**, **locav** e **televisao**: `workflow-policy` **Closing PR review feedback** (thread vs body); `correction.md` lê get_reviews e só **rascunha** o fechamento (olie §10b, locav/televisao §8b); o audit comment no review body + Resolve das threads saem no `pre-qa.md` §5.0 **depois** das validações (ver entrada acima).
 
 ## Sandbox: 1º Pest frio (~migrate:fresh) em todo create
 

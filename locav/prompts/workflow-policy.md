@@ -207,8 +207,16 @@ GitHub exposes review feedback in two shapes. Agents must close both; chat-only 
 
 | Shape | How it appears | How to close |
 | --- | --- | --- |
-| **Inline thread** | Line/file conversation; has **Resolve** | After the fix (or verified non-issue / agreed out-of-scope): mark the thread **Resolved** (`resolveReviewThread` / MCP). |
-| **Review body** | Summary on `CHANGES_REQUESTED` / substantive `COMMENTED` with **no** inline threads | GitHub has **no** Resolve on the body. After every actionable point is addressed: post **one** public PR audit comment listing each point (`✅` / `⬜` + reason) with commit SHAs. Do **not** dismiss the review to fake closure. |
+| **Inline thread** | Line/file conversation; has **Resolve** | After the fix **and** the validation stack for this return (at least `implementation-validation`; when backend changed also gap → coverage → mutation → Pest parallel as applicable): mark the thread **Resolved** (`resolveReviewThread` / MCP). |
+| **Review body** | Summary on `CHANGES_REQUESTED` / substantive `COMMENTED` with **no** inline threads | GitHub has **no** Resolve on the body. After every actionable point is addressed **and** that same validation stack has passed: post **one** public PR audit comment listing each point (`✅` / `⬜` + reason) with commit SHAs on the **pushed** tip. Do **not** dismiss the review to fake closure. |
+
+**Timing (do not invert):**
+
+1. **`correction.md`** — implement fixes + local regression tests; draft the audit checklist in the chat report. Do **not** Resolve threads, do **not** post the audit comment, and do **not** treat commit/push as “closing the review” in that paste.
+2. **`implementation-validation.md`** (then gap → coverage → mutation → `pest-parallel` when backend changed).
+3. **`pre-qa.md` §5.0** — commit/push if needed, then Resolve + audit comment, then move to 'QA/CR'.
+
+Marking a finding “resolved” on GitHub before those validations is a miss: the reviewer would see green closure on an unvalidated tip.
 
 Loading feedback for correction / return to 'QA/CR':
 
@@ -216,7 +224,7 @@ Loading feedback for correction / return to 'QA/CR':
 2. Read **threads** (`get_review_comments` / `reviewThreads`) **and** **reviews** (`get_reviews`). Empty threads alone ≠ “no PR feedback”.
 3. Triage every actionable thread comment and every actionable body bullet like any other finding.
 
-`correction.md` §8b owns the close steps during a correction pass. `pre-qa.md` §5.0 gates the move back to 'QA/CR' until threads are Resolved and review bodies have an audit comment when applicable.
+`correction.md` §8b prepares the close (draft only). `pre-qa.md` §5.0 **owns** the public close (Resolve + audit) before the move back to 'QA/CR'.
 
 ## Code review form
 
