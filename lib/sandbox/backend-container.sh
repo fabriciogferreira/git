@@ -56,6 +56,10 @@ workvm_sandbox_container_create() {
     workvm_sandbox_meta_set "$id" worktrees "$wt"
     workvm_sandbox_meta_set "$id" compose_dir "$compose_dir"
     workvm_sandbox_meta_set "$id" profile "$profile"
+
+    if declare -F workvm_sandbox_project_after_up >/dev/null; then
+        workvm_sandbox_project_after_up "$id" "$wt" || true
+    fi
 }
 
 workvm_sandbox_container_compose() {

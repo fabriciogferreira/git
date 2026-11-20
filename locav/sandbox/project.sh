@@ -60,6 +60,35 @@ workvm_sandbox_locav_load_shared_data() {
     source "${meta_repo}/locav/sandbox/host-card-shared-data.sh"
 }
 
+workvm_locav_load_testing_db_cache() {
+    local meta_repo
+    meta_repo="$(workvm_sandbox_meta_repo)"
+    if declare -F workvm_locav_testing_db_cache_ensure_for_sandbox >/dev/null; then
+        return 0
+    fi
+    # shellcheck source=/dev/null
+    source "${meta_repo}/locav/sandbox/testing-db-cache.sh"
+}
+
+# Após compose up: pg_dump cache → testing/api DBs + patch TestCase no worktree.
+workvm_sandbox_project_after_up() {
+    local id="$1"
+    local wt="$2"
+    local testing_db api_db
+
+    workvm_sandbox_locav_shared_data_enabled || return 0
+    workvm_locav_load_testing_db_cache || return 0
+    testing_db="$(workvm_sandbox_meta_get "$id" testing_database 2>/dev/null || true)"
+    api_db="$(workvm_sandbox_meta_get "$id" db_database 2>/dev/null || true)"
+    if [ -z "$testing_db" ]; then
+        testing_db="db_$(workvm_sandbox_locav_db_slug "$id")_test"
+    fi
+    if [ -z "$api_db" ]; then
+        api_db="db_$(workvm_sandbox_locav_db_slug "$id")"
+    fi
+    workvm_locav_testing_db_cache_ensure_for_sandbox "$id" "$wt" "$testing_db" "$api_db" || true
+}
+
 workvm_sandbox_locav_write_env() {
     local src_env="$1"
     local dest_env="$2"

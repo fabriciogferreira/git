@@ -2,6 +2,12 @@
 
 Problema resolvido entra aqui.
 
+## Sandbox: 1º Pest frio (~migrate:fresh) em todo create
+
+- **problema:** cada sandbox Olie/Televisão/Locav pagava ~70–95s no 1º `artisan test` (migrate:fresh + seed de teste no DB shared vazio), mesmo com warm pool e tip igual.
+- **por que é um problema:** mutation/coverage em N arquivos ou N cards repetiam o mesmo schema; wall-clock dominado por bootstrap de DB, não pelo Pest.
+- **resolvido como:** cache estilo vendor — `mysqldump` (Olie) / `pg_dump` (TV/Locav) em `~/.local/share/workvm/cache/{olie,televisao,locav}-testing-db/`, chave = migrations + seeders; no create importa testing+api e (Olie) carimba FastRefresh ou (TV/Locav) patcha TestCase no worktree para pular migrate se `migrations` existe. Opt-out: `WORKVM_*_TESTING_DB_CACHE=0`.
+
 ## Host-card: CaptainHook / commit-msg quebra no api-main
 
 - **problema:** no pre-QA do DOP-1278, `git commit` no worktree `api-main` falhava: hooks em `.git/hooks` fazem `docker exec olie-api-main` (container inexistente no host-card) e passam o path host de `COMMIT_EDITMSG` sob `.git/worktrees/…`, que o `hc-*-app-1` não monta → `Commit message file not found`.

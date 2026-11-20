@@ -67,6 +67,35 @@ workvm_sandbox_olie_load_shared_data() {
     source "${meta_repo}/olie/sandbox/host-card-shared-data.sh"
 }
 
+workvm_sandbox_olie_load_testing_db_cache() {
+    local meta_repo
+    meta_repo="$(workvm_sandbox_meta_repo)"
+    if declare -F workvm_olie_testing_db_cache_ensure_for_sandbox >/dev/null; then
+        return 0
+    fi
+    # shellcheck source=/dev/null
+    source "${meta_repo}/olie/sandbox/testing-db-cache.sh"
+}
+
+# Após compose up: importa dump do testing DB (ou build no miss) + stamp FastRefresh.
+workvm_sandbox_project_after_up() {
+    local id="$1"
+    local wt="$2"
+    local testing_db api_db
+
+    workvm_sandbox_olie_shared_data_enabled || return 0
+    workvm_sandbox_olie_load_testing_db_cache || return 0
+    testing_db="$(workvm_sandbox_meta_get "$id" testing_database 2>/dev/null || true)"
+    api_db="$(workvm_sandbox_meta_get "$id" db_database 2>/dev/null || true)"
+    if [ -z "$testing_db" ]; then
+        testing_db="testing_$(workvm_sandbox_olie_db_slug "$id")"
+    fi
+    if [ -z "$api_db" ]; then
+        api_db="api_$(workvm_sandbox_olie_db_slug "$id")"
+    fi
+    workvm_olie_testing_db_cache_ensure_for_sandbox "$id" "$wt" "$testing_db" "$api_db" || true
+}
+
 workvm_sandbox_olie_ensure_sandbox_image() {
     local meta_repo
     meta_repo="$(workvm_sandbox_meta_repo)"
@@ -101,15 +130,18 @@ workvm_sandbox_olie_link_vendor() {
 
 # Patch phpunit.xml do worktree: Pest usa DB_DATABASE=testing por default;
 # no shared MySQL cada sandbox precisa de testing_sb_<id> (+ _test_N).
+# force="true": o compose injeta DB_DATABASE=api_sb_* no ambiente do
+# container; sem force o PHPUnit não sobrescreve e o 1º Pest migra api_sb
+# (~90s) em vez de usar testing_sb (e o dump cache).
 workvm_sandbox_olie_patch_phpunit_db() {
     local phpunit="$1"
     local testing_db="$2"
     [ -f "$phpunit" ] || return 0
     if grep -q 'name="DB_DATABASE"' "$phpunit"; then
-        sed -i -E "s|(name=\"DB_DATABASE\"[[:space:]]+value=\")[^\"]*\"|\\1${testing_db}\"|" "$phpunit"
+        sed -i -E "s|<env name=\"DB_DATABASE\"[^/]*/>|<env name=\"DB_DATABASE\" value=\"${testing_db}\" force=\"true\"/>|" "$phpunit"
     fi
     if grep -q 'name="CACHE_PREFIX"' "$phpunit"; then
-        sed -i -E "s|(name=\"CACHE_PREFIX\"[[:space:]]+value=\")[^\"]*\"|\\1${testing_db}_env\"|" "$phpunit"
+        sed -i -E "s|<env name=\"CACHE_PREFIX\"[^/]*/>|<env name=\"CACHE_PREFIX\" value=\"${testing_db}_env\" force=\"true\"/>|" "$phpunit"
     fi
 }
 

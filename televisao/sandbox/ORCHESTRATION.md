@@ -16,6 +16,13 @@ CLI / estado: `~/git/bin/workvm-sandbox`, `~/git/televisao/sandbox/README.md`.
 (`db_sb_<id>` / `db_<dns_slug>`). Exclusive continua (DBs distintos).
 Opt-out sandbox: `WORKVM_SANDBOX_SHARED_DATA=0`.
 
+**Testing DB cache:** no create, `testing-db-cache.sh` importa `pg_dump`
+(schema+`TestingSeeder`) em `db_*_test` e `db_*`, e troca o `RefreshDatabase`
+do TestCase no worktree por um trait que pula `migrate:fresh` se `migrations`
+já existe. Chave = hash dos trees `database/migrations` + `database/seeders`.
+Cache: `~/.local/share/workvm/cache/televisao-testing-db/`. Opt-out:
+`WORKVM_TELEVISAO_TESTING_DB_CACHE=0`.
+
 Prompts: `colleague-review.md` (disparador) → paralelo
 `colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
 `coverage-testing.md` (quando há backend). Scoreboard + **Colleague review

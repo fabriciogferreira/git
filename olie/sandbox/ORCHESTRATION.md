@@ -62,6 +62,16 @@ próprios — reusam `hc-olie-data` (`olie-hc-*`) com DB/prefixo por id
 (`api_sb_<id>` / `testing_sb_<id>`). Exclusive continua válido (DBs
 distintos); o ganho é RAM no warm pool. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0`.
 
+**Testing DB cache (estilo vendor):** no create (após `compose up`),
+`testing-db-cache.sh` importa um `mysqldump` gzip do schema+`TestingDatabaseSeeder`
+em `testing_sb_*` **e** `api_sb_*`, e carimba `storage/app/migration-checksum_*.txt`
+para o FastRefresh pular `migrate:fresh` no 1º Pest. Chave = hash do tree
+`database/migrations` + blobs do `TestingDatabaseSeeder` e seeders que ele
+chama (User/Frame/FrameData/Permissions/System/Product). Nova migration ou
+mudança nesses seeders → miss. Cache em
+`~/.local/share/workvm/cache/olie-testing-db/`. Opt-out:
+`WORKVM_OLIE_TESTING_DB_CACHE=0`.
+
 ---
 
 ## Dispatcher + fan-out
