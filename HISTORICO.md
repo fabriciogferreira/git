@@ -117,6 +117,12 @@ Problema resolvido entra aqui.
 - **por que é um problema:** o diff não aparece no card; estado duplicado (`~/git` vs worktree); próximo `open`/sync pode sobrescrever ou perder a mudança; viola o contrato host-card.
 - **resolvido como:** criar de fato `.cursor/rules/host-card-meta-repo-path.mdc` (`alwaysApply`) — meta versionado só no `git/` do workspace; **proibido** escrever em bare `~/git` salvo pedido explícito do usuário; clones/binários em `GIT_ROOT` continuam ok. Correção pontual: mover o diff use-url-query para o worktree e restaurar `~/git`.
 
+## Host-card: commit/push do meta no worktree (não copiar para `~/git`)
+
+- **problema:** o pre-qa §4.3 mandava copiar dirt do card `worktree/git` → `~/git`, commitar/push no live e só então sync; a rule nova proibia editar `~/git`, mas o ship ainda sujava os dois e o SCM do card ficava “Changes” após o push.
+- **por que é um problema:** contradição edit vs ship; agente e usuário não sabiam qual era a fonte da verdade; a restrição “branch em um só worktree” era confundida com “não dá para push no detached”.
+- **resolvido como:** commit + `git push origin HEAD:<live-branch>` **no worktree do card**; depois só `git -C ~/git pull --ff-only` (runtime). Atualizados `host-card-meta-repo-path.mdc`, `olie/prompts/pre-qa.md` §4.3 e `workflow-policy`. Sem copy de arquivos para commitar.
+
 ## `get-project-media-tool`: sempre `filter: "default"`
 
 - **problema:** o default da tool é `filter: "content"`, que lista só mensagens/arquivos de usuário e omite logs de sistema (movimentação no funil: de onde saiu / para onde foi).

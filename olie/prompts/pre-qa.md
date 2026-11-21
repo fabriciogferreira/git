@@ -176,7 +176,7 @@ Do not rewrite or discard existing commits without evaluating their impact. If c
 
 Do not mark Phase 3 complete if local commitlint/CaptainHook failed or the PR’s commit-lint check is red/pending with a known message violation. Stop, fix, re-verify.
 
-### 4.3. Meta-repo (`~/git`) — commit and push on the live branch
+### 4.3. Meta-repo — commit and push from the card worktree
 
 Product clones get card branches and PRs. The **meta-repo** does not: ship its card-related changes on the **live meta branch** (no product-style PR).
 
@@ -187,23 +187,29 @@ This pre-QA pass **must** commit and push meta-repo updates that belong to the c
 - Private Playwright specs/helpers for the card (resolved `olie-e2e` root — workspace folder on host-card, else `olie/olie-e2e/`; commit them there; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
 - `HISTORICO.md` / `bin/` / `lib/` / other meta-repo docs or tooling touched for the same work
 
-Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.
+Do **not** open a pull request for the meta-repo. Do **not** invent a card branch on the meta-repo.
 
-**Live branch:** use whatever `git -C ~/git branch --show-current` reports when that is the intentional delivery line (today often `experiment/host-cards-no-vm` on jarvis). Prefer `main` only when that is the checked-out live branch. Do **not** stop solely because the branch is not named `main` while an experiment branch is the active line.
+**Live branch name:** read `git -C ~/git branch --show-current` (today often `experiment/host-cards-no-vm` on jarvis). Prefer `main` only when that is the checked-out live branch. Do **not** stop solely because the branch is not named `main` while an experiment branch is the active line.
 
-**Host-card meta worktree** is detached (`…/worktree/git`). Edits in the card window land there; commits happen on the **live** checkout (`~/git`):
+**Host-card:** the workspace folder **`git/`** is a **detached** meta worktree (so many cards can open without each checking out the live branch — Git allows one branch checkout per repo). Edit, commit, and push **there**. Rule: `host-card-meta-repo-path.mdc`.
 
-1. Copy/rsync only the card-related dirty paths from the card `worktree/git` into `~/git` (same relative paths).
-2. Commit and push from `~/git` on the live branch.
-3. Optionally re-sync the card meta worktree (`workvm_host_card_sync_meta_worktree` / ensure open) so the window matches.
+1. Note the live branch name from `~/git` (do **not** `checkout` that branch in the card worktree while `~/git` holds it).
+2. In the card `git/` worktree: `git fetch origin`. Rebase/ff the detached tip onto `origin/<live-branch>` if behind; on divergence or non-ff, stop and report (prompt-health).
+3. Stage only paths that belong to this work. Exclude secrets, `.env`, WorkVM stubs (`mcp.workvm-user`, skip-worktree noise), and unrelated dirty files. If unrelated dirt blocks a clean commit, stop and report rather than mixing it in.
+4. Commit in the **worktree** (English message, no Cursor/AI co-author; card code when applicable).
+5. `git push origin HEAD:<live-branch>` (refspec — no branch checkout required).
+6. Fast-forward the live checkout for runtime: `git -C ~/git pull --ff-only`. That is sync only — do **not** copy dirty files into `~/git` to commit.
+
+**Classic WorkVM** (workspace root is bare `~/git`, no card worktree): commit and `git push origin HEAD` on that checkout as before.
 
 Checklist:
 
-- [ ] `cd ~/git` and note the live branch (`git branch --show-current`). Stop only if the checkout is detached or clearly the wrong line for delivery.
-- [ ] `git pull --ff-only` (or fetch + ff-only merge) so local live branch matches its `origin/` remote before committing. On divergence or non-ff, stop and report (prompt-health).
-- [ ] Stage only paths that belong to this work. Exclude secrets, `.env`, WorkVM stubs (`mcp.workvm-user`, skip-worktree noise), and unrelated dirty files. If unrelated dirt blocks a clean commit, stop and report rather than mixing it in.
-- [ ] Create one or more English commits (no Cursor/AI co-author). Message says why (card code when applicable).
-- [ ] `git push origin HEAD` to update the remote live branch. Verify with `git status` that the branch is not ahead/behind after the push.
+- [ ] Resolve writable meta root (host-card → workspace `git/`; else `~/git`).
+- [ ] Note live branch via `git -C ~/git branch --show-current` (host-card) or `git branch --show-current` (classic).
+- [ ] Fetch; ff onto `origin/<live-branch>` before committing when behind. Stop on divergence.
+- [ ] Stage only paths that belong to this work.
+- [ ] Commit in that root; on host-card push with `git push origin HEAD:<live-branch>`.
+- [ ] `git -C ~/git pull --ff-only` after a host-card push so live HEAD matches remote.
 - [ ] If there is nothing to commit for the meta-repo, say so explicitly in the final report.
 
 If commit or push fails, stop before Phase 4 product PRs when the meta-repo change is required for the card (e.g. e2e or media analysis). Prompt-only / ledger updates should still be pushed when possible; if push fails, report and do not claim meta-repo is synced.

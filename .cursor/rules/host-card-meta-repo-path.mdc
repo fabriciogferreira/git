@@ -32,7 +32,29 @@ checkout at `~/git`.
 - Change files under bare `~/git` **only** when the user **explicitly** asks to
   edit `~/git` (or the live checkout) in that message.
 
-## Still OK without that exception
+## Commit and push (meta) — from this worktree
+
+The card `git/` worktree is **detached** so several cards can open without each
+checking out the live branch (Git allows a branch in only one worktree). That
+does **not** block commit/push here.
+
+When the user asks to commit/push meta changes (or pre-QA §4.3 applies):
+
+1. Work only in the workspace `git/` worktree (stage + commit there).
+2. Resolve the live branch name from `git -C ~/git branch --show-current`
+   (often `experiment/host-cards-no-vm`). Do **not** `git checkout` that branch
+   in the card worktree while `~/git` already has it.
+3. `git fetch origin` in the worktree; ensure the commit parent is up to date
+   enough to push (ff-only onto the remote tip if needed — stop on divergence).
+4. `git push origin HEAD:<live-branch>` (refspec — no branch checkout required).
+5. Fast-forward the live checkout so scripts/GIT_ROOT stay current:
+   `git -C ~/git pull --ff-only` (or fetch + ff-only merge). That pull is
+   **runtime sync**, not an invitation to edit files under `~/git`.
+
+Do **not** copy dirty paths into `~/git` and commit there. That old habit caused
+duplicate dirt and “still dirty in the card SCM” after push.
+
+## Still OK without the edit exception
 
 - **Run** scripts/binaries from `~/git/bin/…` / `workvm-host-card` / compose that
   already expect `GIT_ROOT=~/git`.
@@ -40,3 +62,4 @@ checkout at `~/git`.
   `project-setup` say so (clones are gitignored runtime trees). The
   *definition* that lists those clones (`project.conf`, workspace) still lives
   in the card `git/` worktree.
+- **`git -C ~/git pull --ff-only`** after a worktree push (keep live HEAD aligned).
