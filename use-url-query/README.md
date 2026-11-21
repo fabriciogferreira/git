@@ -5,9 +5,11 @@
 | Definição do projeto | `project.conf`, `workspace.code-workspace` | **Sim** |
 | Prompts | `prompts/` (`{{ feature }}`, sem card/PR) | **Sim** |
 | Sandbox / host-card | `sandbox/` (`workvm-sandbox --project use-url-query`) | **Sim** |
-| Clone | `use-url-query/` | **Não** |
+| Clone (lib) | `use-url-query/` | **Não** |
+| Clone (demo web) | `use-url-query-demo-web/` | **Não** |
+| Clone (demo API) | `use-url-query-demo-api/` | **Não** |
 
-Biblioteca TypeScript + bun. Compose no clone (`docker-compose.yml`, sem porta HTTP). Branch: `main`. Setup: `./project-setup.sh use-url-query`.
+Biblioteca TypeScript + bun; demos públicos Next + Laravel (Spatie) para o recrutador testar. Compose da lib no clone (`docker-compose.yml`, sem porta HTTP). Branch: `main`. Setup: `./project-setup.sh use-url-query`.
 
 Host-card: `workvm-host-card open --project use-url-query --code use-url-query`.
 

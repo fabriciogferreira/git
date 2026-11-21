@@ -7,6 +7,14 @@
     {
       "name": "use-url-query",
       "path": "use-url-query"
+    },
+    {
+      "name": "use-url-query-demo-web",
+      "path": "use-url-query-demo-web"
+    },
+    {
+      "name": "use-url-query-demo-api",
+      "path": "use-url-query-demo-api"
     }
   ],
   "settings": {}

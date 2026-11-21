@@ -36,7 +36,7 @@ alwaysApply: true
 | `boilerplate-laravel/prompts/` | Prompts (implementation/correction/pre-deploy/production-review + mutation/coverage); sem cards/PRs (`{{ feature }}`). |
 | `boilerplate-next/` (projeto) | Definição (`project.conf`, workspace). Clone em `boilerplate-next/boilerplate-next/` fora do git. Compose: `compose.yaml` no clone (dev no `up -d`; produção no profile `prod`). |
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
-| `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clone em `use-url-query/use-url-query/` fora do git. Compose: `docker-compose.yml` no clone. |
+| `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clones: lib `use-url-query/`, demos `use-url-query-demo-web/` + `use-url-query-demo-api/` (fora do git). Compose da lib: `docker-compose.yml`. |
 | `use-url-query/sandbox/` | Isolamento exclusive (bun test/coverage): `project.sh` + slim bun; host-card; `ORCHESTRATION.md`. Sem DB. |
 | `use-url-query/prompts/` | Prompts (implementation/correction/pre-deploy/production-review + coverage; mutation N/A); sem cards/PRs (`{{ feature }}`). |
 | `fabriciogferreira/` (projeto) | Portfólio Next (`project.conf`, post-clone, workspace). Clone em `fabriciogferreira/fabriciogferreira/` fora do git. Compose: `docker-compose.yaml`. |

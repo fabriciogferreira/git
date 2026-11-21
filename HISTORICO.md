@@ -21,12 +21,6 @@
 
 Problema resolvido entra aqui.
 
-## Host-card: sem root `prompts` no workspace
-
-- **problema:** `write_workspace` / `bind_workspace_worktree` adicionavam `prompts` como pasta de topo no `.code-workspace` dos projetos sem card.
-- **por que é um problema:** com o meta worktree `git`, os prompts já estão em `git/<project>/prompts` — root extra duplicava no Explorer (ex. fabriciogferreira).
-- **resolvido como:** só clones + `git`; prompts acessados via meta worktree.
-
 ## Projeto fabriciogferreira (portfólio Next)
 
 - **problema:** o meta não listava o portfólio pessoal; sem `project.conf`/prompts/sandbox o setup e o host-card não existiam.
@@ -116,6 +110,12 @@ Problema resolvido entra aqui.
 - **problema:** no host-card o agente editava `~/git/olie/prompts/…` (e equivalentes Locav/Televisão); esse path não é root do `.code-workspace` (o meta está em `…/worktree/git`) → Cursor pedia approve “fora do workspace”.
 - **por que é um problema:** atrito em todo ajuste de prompt/HISTORICO/overlay; o usuário tem que aprovar edições que deveriam ser locais ao card.
 - **resolvido como:** rule `host-card-meta-repo-path.mdc` (`alwaysApply`) — escrever só em `git/olie|locav|televisao/…` do workspace; nota em `olie`/`locav`/`televisao` `workflow-policy` (Host card / Prompt templates). Mesmo padrão do `host-card-e2e-path` para e2e.
+
+## Host-card: agente editava definição em `~/git` em vez do worktree
+
+- **problema:** a rule `host-card-meta-repo-path.mdc` estava citada no HISTORICO / workflow-policy mas **ausente** no tree; o agente alterou `~/git/use-url-query/{project.conf,workspace,…}` e `layout.mdc` no checkout live em vez do `worktree/git` do workspace aberto.
+- **por que é um problema:** o diff não aparece no card; estado duplicado (`~/git` vs worktree); próximo `open`/sync pode sobrescrever ou perder a mudança; viola o contrato host-card.
+- **resolvido como:** criar de fato `.cursor/rules/host-card-meta-repo-path.mdc` (`alwaysApply`) — meta versionado só no `git/` do workspace; **proibido** escrever em bare `~/git` salvo pedido explícito do usuário; clones/binários em `GIT_ROOT` continuam ok. Correção pontual: mover o diff use-url-query para o worktree e restaurar `~/git`.
 
 ## `get-project-media-tool`: sempre `filter: "default"`
 

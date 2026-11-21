@@ -9,7 +9,7 @@ If Docker or npm fails unexpectedly: stop, report, wait for `resolva` / `documen
 ## 1. Context
 
 1. Treat `{{ feature }}` as the source of truth.
-2. Inspect `~/git/fabriciogferreira/fabriciogferreira` (`app/`, `components/`, `messages/` for i18n).
+2. Inspect `~/git/fabriciogferreira/fabriciogferreira` (`src/app/`, `src/components/`, `src/i18n/` for locale messages).
 3. Prefer the smallest change. Do not expand scope.
 
 ## 2. Git
@@ -21,7 +21,7 @@ If Docker or npm fails unexpectedly: stop, report, wait for `resolva` / `documen
 ## 3. Plan then implement
 
 1. Short plan: files, behavior, how to verify in the browser.
-2. Implement. Keep next-intl / Tailwind patterns already in the repo.
+2. Implement. Keep LocaleProvider / Tailwind 4 / shadcn Vega patterns already in the repo.
 3. Dev server: Docker `frontend` (`npm run dev`) or host-card front URL.
 4. Smoke the changed route(s) locally.
 
