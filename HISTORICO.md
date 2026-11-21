@@ -21,6 +21,12 @@
 
 Problema resolvido entra aqui.
 
+## Host-card: sem root `prompts` no workspace
+
+- **problema:** `write_workspace` / `bind_workspace_worktree` adicionavam `prompts` como pasta de topo no `.code-workspace` dos projetos sem card.
+- **por que é um problema:** com o meta worktree `git`, os prompts já estão em `git/<project>/prompts` — root extra duplicava no Explorer (ex. fabriciogferreira).
+- **resolvido como:** só clones + `git`; prompts acessados via meta worktree.
+
 ## Projeto fabriciogferreira (portfólio Next)
 
 - **problema:** o meta não listava o portfólio pessoal; sem `project.conf`/prompts/sandbox o setup e o host-card não existiam.

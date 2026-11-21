@@ -566,9 +566,8 @@ for ent in raw.get("folders", []):
     if not target.exists():
         continue
     clones.append({"name": name, "path": rel})
-prompts = project_dir / "prompts"
-if prompts.is_dir():
-    clones.append({"name": "prompts", "path": "prompts"})
+# prompts ficam sob o meta worktree `git/<project>/prompts` no bind —
+# não viram root separado (Explorer duplicava a pasta).
 raw["folders"] = clones
 raw.setdefault("settings", {})
 text = json.dumps(raw, indent=2) + "\n"
@@ -688,7 +687,8 @@ if project == "olie":
             folders.append({"name": p.name, "path": str(p)})
             seen.add(p.name)
 else:
-    # Clones shared sob a pasta do projeto; prompts vêm do meta worktree.
+    # Clones shared sob a pasta do projeto; meta = worktree/git.
+    # prompts já estão em git/<project>/prompts — sem root extra.
     raw0 = {}
     if ws.is_file():
         try:
@@ -707,10 +707,6 @@ else:
             continue
         folders.append({"name": name or target.name, "path": str(target)})
         seen.add(name or target.name)
-    prompts = meta / project / "prompts"
-    if prompts.is_dir():
-        folders.append({"name": "prompts", "path": str(prompts)})
-        seen.add("prompts")
 
 if meta.is_dir() and ((meta / ".git").exists()):
     folders.append({"name": "git", "path": str(meta)})
