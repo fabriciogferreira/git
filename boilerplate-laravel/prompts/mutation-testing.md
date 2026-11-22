@@ -11,7 +11,7 @@ Use when the change-set for `{{ feature }}` modified `~/git/boilerplate-laravel/
 
 Do **not** `docker exec` the Card/host backend for mutate. See `~/git/boilerplate-laravel/sandbox/ORCHESTRATION.md` and `~/git/boilerplate-laravel/prompts/workflow-policy.md`.
 
-Sandbox image (`boilerplate-laravel-workspace:sandbox`) includes **PCOV** on purpose: Pest accepts Xdebug or PCOV, but sandboxes prefer PCOV for speed (~2.8× faster line coverage in [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html); mutation multiplies driver cost). Do not add PCOV to the clone Card Dockerfile.
+**Driver:** always **PCOV** for `--mutate` / coverage (~2.8× vs Xdebug — [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html); mutation multiplies driver cost). Card `workspace` and sandbox `:sandbox` both ship PCOV; run with `XDEBUG_MODE=off` when Xdebug is also loaded. Exclusive drain still uses `workvm-sandbox`.
 
 ## Entry
 

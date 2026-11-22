@@ -18,18 +18,19 @@ Service default do job: `backend`. Prefira `--service backend` nos prompts.
 Antes do primeiro sandbox: `composer install` no clone e imagem base
 `boilerplate-laravel-workspace:latest` (compose.dev). O create garante
 `boilerplate-laravel-workspace:sandbox` **com PCOV** via
-`Dockerfile.workspace` (o Dockerfile do clone / Card não muda — Xdebug no
-Card basta para o dia a dia; mutation/coverage usam o sandbox).
+`Dockerfile.workspace` (a base do Card já traz PCOV + Xdebug no Dockerfile
+do clone; o ensure do sandbox só garante PCOV na tag `:sandbox`).
 
-### Por que PCOV no sandbox (não só Xdebug)
+### Por que PCOV (não Xdebug) em coverage/mutation
 
-Pest aceita **Xdebug 3+ ou PCOV** para `--mutate` / `--coverage`. Nos
-sandboxes preferimos **PCOV** por velocidade de **line coverage**: no
-benchmark de [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html)
+Pest aceita **Xdebug 3+ ou PCOV** para `--mutate` / `--coverage`. Sempre
+preferimos **PCOV** por velocidade de **line coverage**: no benchmark de
+[PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html)
 (Sebastian Bergmann), coletar line coverage ficou ~**2,8×** mais lento com
 Xdebug (~53s) do que com PCOV (~19s) na mesma suite. Mutation reusa o
-driver muitas vezes — o gap se multiplica. Card continua com Xdebug para
-debug/smoke; exclusive mutate/coverage → imagem `:sandbox` com PCOV.
+driver muitas vezes — o gap se multiplica. No Card e no sandbox: rode com
+`XDEBUG_MODE=off` para o Pest usar PCOV. Exclusive mutate/coverage paralelo
+continua no sandbox para não brigar com o Card.
 
 ## O que isola
 

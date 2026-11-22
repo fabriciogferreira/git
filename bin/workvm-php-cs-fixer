@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# junstyle.php-cs-fixer calls getConfiguration() without a resource URI, so
+# folder .vscode/settings.json is ignored in multi-root workspaces and the
+# default "php-cs-fixer" binary is spawned (ENOENT on the host). Point the
+# extension at this absolute path; route to the per-repo Docker wrapper using
+# --config= so each Laravel tree still uses its own workspace container.
+
+set -euo pipefail
+
+GIT_ROOT="${GIT_ROOT:-$HOME/git}"
+
+config=""
+for arg in "$@"; do
+  if [[ "$arg" == --config=* ]]; then
+    config="${arg#--config=}"
+    break
+  fi
+done
+
+pick_wrapper() {
+  local path="$1"
+  case "$path" in
+    */boilerplate-laravel/boilerplate-laravel/*|*/boilerplate-laravel/boilerplate-laravel/.php-cs-fixer*)
+      echo "$GIT_ROOT/boilerplate-laravel/boilerplate-laravel/.vscode/php-cs-fixer"
+      return
+      ;;
+    */use-url-query/use-url-query-demo-api/*|*/use-url-query/use-url-query-demo-api/.php-cs-fixer*)
+      echo "$GIT_ROOT/use-url-query/use-url-query-demo-api/.vscode/php-cs-fixer"
+      return
+      ;;
+  esac
+  return 1
+}
+
+wrapper=""
+if [[ -n "$config" ]] && wrapper="$(pick_wrapper "$config")"; then
+  :
+elif wrapper="$(pick_wrapper "${PWD}/")"; then
+  :
+else
+  echo "workvm-php-cs-fixer: no Docker wrapper for config=${config:-} cwd=$PWD" >&2
+  exit 127
+fi
+
+if [[ ! -x "$wrapper" ]]; then
+  echo "workvm-php-cs-fixer: wrapper not executable: $wrapper" >&2
+  exit 127
+fi
+
+exec "$wrapper" "$@"

@@ -7,6 +7,12 @@
 - **por que é um problema:** card multi-clone inutilizável no SCM; open quebrado para qualquer projeto.
 - **resolvido como:** `ensure_scm_repos_visible` preenche `visibleRepositories` pelos folders do `.code-workspace` e força unhide (merge do `views.state`); `reapply_scm_repos_visible` após o open faz watchdog (~20s, vários checks OK seguidos — Olie reverte depois do 1º unhide); settings `scm.alwaysShowRepositories` + `scm.repositories.visible`.
 
+## junstyle.php-cs-fixer: ENOENT no host (multi-root)
+
+- **problema:** a extensão chama `getConfiguration()` sem URI → ignora `.vscode/settings.json` da pasta; o default `php-cs-fixer` não existe no host (sem PHP).
+- **por que é um problema:** Format Document / formatOnSave falha com `spawn php-cs-fixer ENOENT` em todo card multi-root.
+- **resolvido como:** `bin/workvm-php-cs-fixer` (path absoluto/`~/git/...` no perfil Cursor e nos `workspace.code-workspace`) roteia pelo `--config=` para o wrapper Docker `.vscode/php-cs-fixer` de cada clone. Perfil **One for All** precisa da setting (User/settings.json default não vale).
+
 ## Meta-repo: só o que o clone não pode carregar (delta mínimo)
 
 - **problema:** soluções de infra/dev (compose host-card, DB duplicado, patches) iam parar no `~/git` por comodidade, inclusive em repos próprios onde o clone poderia ser a fonte da verdade; cópias no meta envelhecem quando o filho muda.
@@ -30,6 +36,12 @@
 - **problema:** host-card/`compose.host.yml` buildava `boilerplate-laravel-workspace:sandbox` com `XDEBUG_ENABLED=false` e sem PCOV; Pest `--mutate` / `--coverage` exigem Xdebug 3+ ou PCOV. O Card (compose.dev) já tinha Xdebug — mexer no Dockerfile do clone era escopo errado.
 - **por que é um problema:** o caminho oficial (exclusive) é `workvm-sandbox`; sem driver na tag `:sandbox` mutation/coverage quebram. Xdebug no Card basta para smoke, mas line coverage com Xdebug é bem mais lento que PCOV (Bergmann: ~53s vs ~19s na mesma suite — ~2,8×; mutation multiplica o custo do driver).
 - **resolvido como:** `sandbox/Dockerfile.workspace` + `workvm_sandbox_bl_ensure_sandbox_image` no create (PCOV só na tag `:sandbox`). Card/Dockerfile do clone intactos. Preferência PCOV nos sandboxes documentada com [PCOV or Xdebug?](https://phpunit.expert/articles/pcov-or-xdebug.html) (números de line coverage; Pest aceita os dois).
+
+## boilerplate-laravel: PCOV também no workspace do Card
+
+- **problema:** coverage no `compose.dev` `workspace` usava só Xdebug (mais lento); a política antiga proibia PCOV no Dockerfile do clone.
+- **por que é um problema:** smoke/coverage no Card sem sandbox ficava lento; demo-api host-card sem driver quebrava o gate.
+- **resolvido como:** `docker/development/workspace/Dockerfile` instala Xdebug (opcional) **e** PCOV. Coverage/mutation sempre com `XDEBUG_MODE=off` para o Pest usar PCOV. Doc em `.ai/guidelines/environment.md`, README, prompts e `sandbox/README.md`. Sandbox exclusive continua para jobs paralelos.
 
 ## Opbed: prompts sem card / PR (pre-deploy)
 

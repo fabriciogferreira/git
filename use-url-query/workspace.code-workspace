@@ -25,5 +25,8 @@
       "path": "../boilerplate-next/boilerplate-next"
     }
   ],
-  "settings": {}
+  "settings": {
+    "php-cs-fixer.executablePath": "~/git/bin/workvm-php-cs-fixer",
+    "php-cs-fixer.config": ".php-cs-fixer.dist.php"
+  }
 }
