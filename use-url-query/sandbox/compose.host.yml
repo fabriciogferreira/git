@@ -1,20 +1,138 @@
-# Stack host-card use-url-query (sem WorkVM).
-# Problema: ensure só abria Cursor; o docker-compose do clone usa
-# container_name fixo `use-url-query`. Aqui: projeto namespaced, path
-# absoluto no clone, sem porta HTTP (biblioteca).
+# Stack host-card use-url-query: lib bun + demo API (Laravel) + demo web (Next).
+# Problema: ensure só subia o bun da lib; demo-web/demo-api ficavam sem compose
+# namespaced (container_name/portas fixas dos clones). Aqui: SB_PORT_* e paths
+# absolutos, sem container_name.
 
 services:
-  use-url-query:
+  lib:
     image: oven/bun:1.3.5-slim
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     working_dir: /srv
     entrypoint: ["sh", "-c"]
     command: ["bun install && tail -f /dev/null"]
     volumes:
-      - ${SB_APP}:/srv
+      - ${SB_LIB}:/srv
     networks: [hc_net]
+
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-uuq_demo_local}
+      POSTGRES_USER: ${DB_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - hc_pgsql:/var/lib/postgresql
+    networks: [hc_net]
+    shm_size: 256mb
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-root} -d ${DB_DATABASE:-uuq_demo_local}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:alpine
+    networks: [hc_net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  php-fpm:
+    build:
+      context: ${SB_API}
+      dockerfile: ./docker/common/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+        XDEBUG_ENABLED: "false"
+    image: ${HC_PHPFPM_IMAGE:-uuq-demo-php-fpm:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    env_file:
+      - ${SB_API}/.env
+    volumes:
+      - ${SB_API}:/var/www
+    networks: [hc_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: nginx:latest
+    volumes:
+      - ${SB_API}:/var/www
+      - ${SB_API}/docker/development/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "127.0.0.1:${SB_PORT_API}:80"
+    networks: [hc_net]
+    depends_on:
+      - php-fpm
+
+  workspace:
+    build:
+      context: ${SB_API}
+      dockerfile: ./docker/development/workspace/Dockerfile
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+        XDEBUG_ENABLED: "false"
+    image: ${HC_WORKSPACE_IMAGE:-uuq-demo-workspace:host-card}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    tty: true
+    stdin_open: true
+    env_file:
+      - ${SB_API}/.env
+    volumes:
+      - ${SB_API}:/var/www
+    ports:
+      - "127.0.0.1:${SB_PORT_VITE}:5173"
+    networks: [hc_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  front:
+    build:
+      context: ${SB_FRONT}
+      dockerfile: Dockerfile.dev
+    image: ${HC_FRONT_IMAGE:-uuq-demo-web:host-card}
+    user: "0:0"
+    working_dir: /app
+    environment:
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+      - HOSTNAME=0.0.0.0
+    ports:
+      - "127.0.0.1:${SB_PORT_FRONT}:3000"
+    volumes:
+      - ${SB_FRONT}:/app
+      - front_node_modules:/app/node_modules
+      - front_next:/app/.next
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /app/node_modules /app/.next && chown node:node /app/node_modules /app/.next && su node -s /bin/sh -c 'if [ ! -d node_modules/next ]; then npm ci --no-audit --no-fund; fi; npm run dev -- -H 0.0.0.0 -p 3000'",
+      ]
+    networks: [hc_net]
+    depends_on:
+      - web
 
 networks:
   hc_net:
     driver: bridge
     name: ${COMPOSE_PROJECT_NAME}_hc_net
+
+volumes:
+  hc_pgsql:
+    name: ${COMPOSE_PROJECT_NAME}_pgsql
+  front_node_modules:
+    name: ${COMPOSE_PROJECT_NAME}_front_nm
+  front_next:
+    name: ${COMPOSE_PROJECT_NAME}_front_next

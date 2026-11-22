@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card use-url-query: lib + demo-web + demo-api
+
+- **problema:** `open use-url-query` só subia o container bun da lib; `demo-web` / `demo-api` eram clonados mas sem compose namespaced.
+- **por que é um problema:** o recrutador/demo precisa dos três stacks; só a lib no ar não serve para testar o hook contra Spatie.
+- **resolvido como:** `compose.host.yml` + ensure sobem lib + Laravel (web/php-fpm/workspace/postgres/redis) + Next, com `SB_PORT_API` / `SB_PORT_FRONT` / `SB_PORT_VITE`.
+
 ## Pest TIA: owned repos vs empresa
 
 - **problema:** TIA ajuda em suites grandes; `Pest.php` + `/.pest/` precisa de commit — ok em repos próprios, impossível em Olie/Locav/Televisão.

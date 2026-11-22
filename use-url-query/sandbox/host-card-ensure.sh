@@ -1,12 +1,13 @@
-# Hook use-url-query: sobe bun namespaced no host.
-# Problema: ensure do projeto só clonava e abria Cursor — sem compose o
-# container de testes não existia. Sourced by lib/host-card.sh.
+# Hook use-url-query: sobe lib bun + demo API Laravel + demo web Next.
+# Problema: ensure só subia o bun da lib; demos (web/api) não tinham stack
+# namespaced. Sourced by lib/host-card.sh.
 
 workvm_host_card_ensure_hook() {
     local id="$1"
     local dir="$2"
-    local meta_repo git_root compose_dir port_base app
-    local code dns_slug pname
+    local meta_repo git_root compose_dir port_base
+    local lib api front
+    local code dns_slug pname app_url front_url
     local host_uid host_gid
 
     meta_repo="$(workvm_host_card_meta_repo)"
@@ -15,16 +16,37 @@ workvm_host_card_ensure_hook() {
     source "${meta_repo}/lib/host-card-proxy.sh"
 
     compose_dir="${dir}/compose"
-    app="${git_root}/use-url-query/use-url-query"
+    lib="${git_root}/use-url-query/use-url-query"
+    api="${git_root}/use-url-query/use-url-query-demo-api"
+    front="${git_root}/use-url-query/use-url-query-demo-web"
     port_base="$(python3 -c "import json;print(json.load(open('${dir}/meta.json'))['port_base'])")"
     code="$(python3 -c "import json;print(json.load(open('${dir}/meta.json'))['code'])")"
     dns_slug="$(workvm_host_card_dns_slug "$code")"
     host_uid="$(id -u)"
     host_gid="$(id -g)"
+    app_url="http://api.${dns_slug}.olie.localhost"
+    front_url="http://devframe.${dns_slug}.olie.localhost"
 
-    if [ ! -d "$app" ]; then
-        workvm_host_card_log "clone ausente: ${app}"
-        return 1
+    for path in "$lib" "$api" "$front"; do
+        if [ ! -d "$path" ]; then
+            workvm_host_card_log "clone ausente: ${path}"
+            return 1
+        fi
+    done
+
+    if [ ! -f "${api}/.env" ] && [ -f "${api}/.env.example" ]; then
+        workvm_host_card_log "demo-api/.env ausente — copiando de .env.example"
+        cp -n "${api}/.env.example" "${api}/.env" || true
+    fi
+    if [ -f "${api}/.env" ]; then
+        _hc_uuq_set_env "${api}/.env" APP_URL "$app_url"
+        _hc_uuq_set_env "${api}/.env" DB_HOST postgres
+        _hc_uuq_set_env "${api}/.env" DB_DATABASE uuq_demo_local
+        _hc_uuq_set_env "${api}/.env" DB_USERNAME root
+        _hc_uuq_set_env "${api}/.env" DB_PASSWORD secret
+        _hc_uuq_set_env "${api}/.env" REDIS_HOST redis
+        _hc_uuq_set_env "${api}/.env" UID "$host_uid"
+        _hc_uuq_set_env "${api}/.env" GID "$host_gid"
     fi
 
     mkdir -p "$compose_dir"
@@ -33,10 +55,22 @@ workvm_host_card_ensure_hook() {
     pname="hc-${id}"
     {
         printf 'COMPOSE_PROJECT_NAME=%s\n' "$pname"
-        printf 'SB_APP=%s\n' "$app"
+        printf 'SB_LIB=%s\n' "$lib"
+        printf 'SB_API=%s\n' "$api"
+        printf 'SB_FRONT=%s\n' "$front"
         printf 'SB_DNS_SLUG=%s\n' "$dns_slug"
+        printf 'SB_PORT_API=%s\n' "$port_base"
+        printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
+        printf 'SB_PORT_VITE=%s\n' "$((port_base + 2))"
         printf 'HOST_UID=%s\n' "$host_uid"
         printf 'HOST_GID=%s\n' "$host_gid"
+        printf 'DB_DATABASE=uuq_demo_local\n'
+        printf 'DB_USERNAME=root\n'
+        printf 'DB_PASSWORD=secret\n'
+        printf 'APP_URL=%s\n' "$app_url"
+        printf 'HC_PHPFPM_IMAGE=uuq-demo-php-fpm:host-card\n'
+        printf 'HC_WORKSPACE_IMAGE=uuq-demo-workspace:host-card\n'
+        printf 'HC_FRONT_IMAGE=uuq-demo-web:host-card\n'
         workvm_host_card_write_resource_env 2>/dev/null || true
         printf 'COMPOSE_FILE=compose.yaml\n'
     } >"$compose_dir/.env"
@@ -55,14 +89,16 @@ meta["compose_project"] = pname
 meta["compose_dir"] = compose_dir
 meta["stack"] = "use-url-query-host"
 meta["dns_slug"] = slug
-meta["api_url"] = ""
-meta["front_url"] = ""
+meta["api_dns"] = f"http://api.{slug}.olie.localhost"
+meta["front_dns"] = f"http://devframe.{slug}.olie.localhost"
+meta["api_url"] = f"http://127.0.0.1:{port_base}"
+meta["front_url"] = f"http://127.0.0.1:{port_base + 1}"
 with open(path, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
     f.write("\n")
 PY
 
-    workvm_host_card_log "compose up ($pname) — bun install"
+    workvm_host_card_log "compose up ($pname) — lib + demo-api + demo-web"
     (
         cd "$compose_dir"
         set -a
@@ -70,19 +106,52 @@ PY
         source .env
         set +a
         export COMPOSE_PROJECT_NAME="$pname"
-        docker compose up -d --remove-orphans
+        docker compose up -d --build --remove-orphans
     ) || return 1
 
-    workvm_host_card_log "aguardando bun install…"
-    local i
-    for i in $(seq 1 60); do
-        if docker compose -p "$pname" --project-directory "$compose_dir" exec -T use-url-query \
-            test -d /srv/node_modules >/dev/null 2>&1; then
-            workvm_host_card_log "node_modules ok"
-            break
-        fi
-        sleep 2
-    done
+    if [ -f "${api}/.env" ] && ! grep -qE '^APP_KEY=base64:.+' "${api}/.env" 2>/dev/null; then
+        workvm_host_card_log "gerando APP_KEY (demo-api)"
+        docker compose -p "$pname" --project-directory "$compose_dir" exec -T workspace \
+            php artisan key:generate --force 2>/dev/null || true
+    fi
+    docker compose -p "$pname" --project-directory "$compose_dir" exec -T workspace \
+        php artisan migrate --force --no-interaction 2>/dev/null || true
 
-    workvm_host_card_log "Card use-url-query pronto (bun; sem HTTP). code=${code}"
+    workvm_host_card_uuq_wait_http "$compose_dir" "$pname" SB_PORT_API "demo-api" || return 1
+    workvm_host_card_uuq_wait_http "$compose_dir" "$pname" SB_PORT_FRONT "demo-web" || return 1
+    workvm_host_card_proxy_ensure || workvm_host_card_log "proxy DNS falhou — use portas diretas"
+
+    workvm_host_card_log "Lib  bun (service lib)"
+    workvm_host_card_log "API  ${app_url}  (→ :${port_base})"
+    workvm_host_card_log "Front ${front_url}  (→ :$((port_base + 1)))"
+}
+
+_hc_uuq_set_env() {
+    local file="$1" key="$2" value="$3"
+    if grep -q "^${key}=" "$file" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    else
+        printf '%s=%s\n' "$key" "$value" >>"$file"
+    fi
+}
+
+workvm_host_card_uuq_wait_http() {
+    local compose_dir="$1"
+    local pname="$2"
+    local env_key="$3"
+    local label="$4"
+    local i port
+
+    port="$(python3 -c "import re;print(re.search(r'^${env_key}=(\d+)', open('${compose_dir}/.env').read(), re.M).group(1))")"
+    workvm_host_card_log "aguardando ${label} em :${port}…"
+    for i in $(seq 1 120); do
+        if curl -fsS --connect-timeout 2 -o /dev/null "http://127.0.0.1:${port}/" >/dev/null 2>&1 \
+            || curl -fsS --connect-timeout 2 "http://127.0.0.1:${port}/up" >/dev/null 2>&1; then
+            workvm_host_card_log "${label} pronto"
+            return 0
+        fi
+        sleep 3
+    done
+    workvm_host_card_log "${label} não respondeu a tempo — veja: docker compose -p ${pname} logs"
+    return 1
 }

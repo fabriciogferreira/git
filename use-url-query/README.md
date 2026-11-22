@@ -9,8 +9,11 @@
 | Clone (demo web) | `use-url-query-demo-web/` | **Não** |
 | Clone (demo API) | `use-url-query-demo-api/` | **Não** |
 
-Biblioteca TypeScript + bun; demos públicos Next + Laravel (Spatie) para o recrutador testar. Compose da lib no clone (`docker-compose.yml`, sem porta HTTP). Branch: `main`. Setup: `./project-setup.sh use-url-query`.
+Biblioteca TypeScript + bun; demos públicos Next + Laravel (Spatie) para o recrutador testar. Branch: `main`. Setup: `./project-setup.sh use-url-query`.
 
-Host-card: `workvm-host-card open --project use-url-query --code use-url-query`.
+Host-card (`workvm-host-card open --project use-url-query --code use-url-query`) sobe **os três**:
+- lib bun
+- demo-api (nginx → `:port_base`)
+- demo-web (Next → `:port_base+1`)
 
 Coverage: ver `sandbox/ORCHESTRATION.md` e `prompts/`. Mutation N/A (sem Pest mutate).
