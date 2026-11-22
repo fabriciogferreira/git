@@ -535,7 +535,9 @@ if not dest.is_file():
         "folders": [],
         "settings": {
             "git.detectWorktrees": False,
-            "git.autoRepositoryDetection": False,
+            "git.autoRepositoryDetection": True,
+            "scm.alwaysShowRepositories": True,
+            "scm.repositories.visible": 20,
         },
     }
     dest.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
@@ -719,8 +721,11 @@ if ws.is_file():
         raw = {}
 raw["folders"] = folders
 settings = raw.setdefault("settings", {})
+# Multi-root: mostrar a lista de repos no SCM (não só o "ativo").
 settings["git.detectWorktrees"] = False
-settings["git.autoRepositoryDetection"] = False
+settings["git.autoRepositoryDetection"] = True
+settings["scm.alwaysShowRepositories"] = True
+settings["scm.repositories.visible"] = 20
 settings["git.ignoredRepositories"] = []
 settings.pop("git.repositoryScanIgnoredFolders", None)
 text = json.dumps(raw, indent=2) + "\n"
@@ -733,11 +738,11 @@ else:
 PY
 }
 
-# Garante que o worktree api-main aparece no Source Control.
-# Problema: ao trocar a pasta do clone compartilhado pelo worktree, o Cursor
-# mantinha scm:view:visibleRepositories sem o índice 0 (worktree) — Explorer
-# listava a pasta, SCM não. Chamar com a janela do card fechada (senão o WAL
-# do state.vscdb pode ignorar o write).
+# Source Control: todos os roots git do .code-workspace ficam visíveis.
+# Problema: Cursor grava scm:view:visibleRepositories só com um subset
+# (ex. só meta `git`, ou sem o worktree api-main). Em use-url-query o SCM
+# omitia lib/demo-web/demo-api. Chamar com a janela do card fechada (senão
+# o WAL do state.vscdb pode ignorar o write).
 workvm_host_card_ensure_scm_repos_visible() {
     local workspace="${1:-}"
     local wt_api="${2:-}"
@@ -757,8 +762,7 @@ root = Path(sys.argv[1])
 ws = Path(os.environ["WORKVM_HC_WS"]).resolve()
 wt = (os.environ.get("WORKVM_HC_WT_API") or "").strip()
 ws_uri = "file://" + str(ws)
-wt_uri = ("file://" + wt) if wt else ""
-want_key = f"git:Git:{wt_uri}" if wt_uri else ""
+want_key = f"git:Git:file://{wt}" if wt else ""
 
 def find_storage():
     for d in root.iterdir():
@@ -777,12 +781,50 @@ def find_storage():
                 return d
     return None
 
+def git_key(path: Path):
+    p = path.resolve()
+    if not ((p / ".git").exists() or (p / ".git").is_file()):
+        return None
+    return f"git:Git:file://{p}"
+
 d = find_storage()
 if d is None:
     sys.exit(0)
 db = d / "state.vscdb"
 if not db.is_file():
     sys.exit(0)
+
+# Fonte da verdade: folders do .code-workspace (multi-root).
+all_repos = []
+seen = set()
+try:
+    raw_ws = json.loads(ws.read_text(encoding="utf-8"))
+except Exception:
+    raw_ws = {}
+for ent in raw_ws.get("folders") or []:
+    rel = ent.get("path") or ""
+    if not rel:
+        continue
+    target = Path(rel)
+    if not target.is_absolute():
+        target = (ws.parent / rel).resolve()
+    key = git_key(target)
+    if key and key not in seen:
+        all_repos.append(key)
+        seen.add(key)
+# Olie: garantir worktree api-main no topo se passado.
+if want_key and want_key not in seen:
+    all_repos.insert(0, want_key)
+    seen.add(want_key)
+# Tirar clone compartilhado ~/git/olie/api-main se o worktree já está.
+shared_suffix = "/olie/api-main"
+if want_key:
+    all_repos = [
+        r
+        for r in all_repos
+        if r == want_key
+        or not (r.endswith(shared_suffix) or r.endswith(shared_suffix + "/"))
+    ]
 
 con = sqlite3.connect(str(db), timeout=5)
 cur = con.cursor()
@@ -791,68 +833,59 @@ try:
     cur.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 except Exception:
     pass
-changed = False
-row = cur.execute(
-    "SELECT value FROM ItemTable WHERE key = ?",
-    ("scm:view:visibleRepositories",),
-).fetchone()
-if row:
-    try:
-        data = json.loads(row[0])
-    except Exception:
-        data = None
-    if isinstance(data, dict):
-        all_repos = list(data.get("all") or [])
-        # Tirar o clone compartilhado ~/git/olie/api-main (segundo "api-main").
-        shared_suffix = "/olie/api-main"
-        all_repos = [
-            r
-            for r in all_repos
-            if not (
-                r.endswith(shared_suffix)
-                or r.endswith(shared_suffix + "/")
-            )
-            or (want_key and r == want_key)
-        ]
-        if want_key and want_key not in all_repos:
-            all_repos.insert(0, want_key)
-        # Mostrar todos os restantes — o bug era o worktree fora de visible.
-        visible = list(range(len(all_repos)))
-        new = {
-            "all": all_repos,
-            "sortKey": data.get("sortKey") or "discoveryTime",
-            "visible": visible,
-        }
-        if new != data:
-            cur.execute(
-                "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
-                ("scm:view:visibleRepositories", json.dumps(new, separators=(",", ":"))),
-            )
-            changed = True
-else:
-    if want_key:
-        new = {
-            "all": [want_key],
-            "sortKey": "discoveryTime",
-            "visible": [0],
-        }
-        cur.execute(
-            "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
-            ("scm:view:visibleRepositories", json.dumps(new, separators=(",", ":"))),
-        )
-        changed = True
 
-# Painel SCM vazio: após close/reopen o Cursor grava workbench.scm* com
-# isHidden=true. Apagar o state faz o default (views visíveis); só setar
-# isHidden=false era revertido no startup.
+changed = False
+if all_repos:
+    new = {
+        "all": all_repos,
+        "sortKey": "discoveryTime",
+        "visible": list(range(len(all_repos))),
+    }
+    cur.execute(
+        "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+        ("scm:view:visibleRepositories", json.dumps(new, separators=(",", ":"))),
+    )
+    changed = True
+
+# Painel: Cursor no startup regrava workbench.scm.repositories.isHidden=true
+# (lista some; fica só o repo ativo — ex. meta `git`). Merge + forçar unhide.
+views_state = {}
+row_vs = cur.execute(
+    "SELECT value FROM ItemTable WHERE key = ?",
+    ("workbench.scm.views.state",),
+).fetchone()
+if row_vs:
+    try:
+        views_state = json.loads(row_vs[0])
+    except Exception:
+        views_state = {}
+if not isinstance(views_state, dict):
+    views_state = {}
+for view_id in (
+    "workbench.scm.repositories",
+    "workbench.scm",
+    "workbench.scm.history",
+):
+    ent = views_state.get(view_id)
+    if not isinstance(ent, dict):
+        ent = {}
+    ent["collapsed"] = False
+    ent["isHidden"] = False
+    views_state[view_id] = ent
+for i in range(max(len(all_repos), 1)):
+    ent = views_state.get(f"scm{i}")
+    if not isinstance(ent, dict):
+        ent = {}
+    ent["collapsed"] = False
+    ent["isHidden"] = False
+    views_state[f"scm{i}"] = ent
 cur.execute(
-    "DELETE FROM ItemTable WHERE key IN (?, ?, ?, ?)",
-    (
-        "workbench.scm.views.state",
-        "workbench.view.scm.numberOfVisibleViews",
-        "scm.viewState2",
-        "workbench.panel.hidden",
-    ),
+    "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+    ("workbench.scm.views.state", json.dumps(views_state, separators=(",", ":"))),
+)
+cur.execute(
+    "DELETE FROM ItemTable WHERE key IN (?, ?)",
+    ("scm.viewState2", "workbench.panel.hidden"),
 )
 cur.execute(
     "INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
@@ -871,12 +904,86 @@ if changed:
     except Exception:
         pass
     print(
-        f"workvm-host-card: SCM visible + views unhide → worktree api-main ({d.name})",
+        f"workvm-host-card: SCM visible + views unhide → {len(all_repos)} repos ({d.name})",
         file=sys.stderr,
         flush=True,
     )
 con.close()
 PY
+}
+
+# Lê se workbench.scm.repositories está isHidden no state.vscdb do workspace.
+workvm_host_card_scm_repos_hidden() {
+    local workspace="${1:-}"
+    WORKVM_HC_WS="$workspace" python3 - <<'PY'
+import json, os, sqlite3, sys
+from pathlib import Path
+ws = Path(os.environ["WORKVM_HC_WS"]).resolve()
+ws_uri = "file://" + str(ws)
+root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "Cursor/User/workspaceStorage"
+for d in root.iterdir():
+    if not d.is_dir():
+        continue
+    for name in ("meta.json", "workspace.json"):
+        p = d / name
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        conf = data.get("configuration") or data.get("workspace") or ""
+        if conf.rstrip("/") != ws_uri.rstrip("/"):
+            continue
+        db = d / "state.vscdb"
+        if not db.is_file():
+            print("missing")
+            raise SystemExit(0)
+        con = sqlite3.connect(str(db), timeout=5)
+        row = con.execute(
+            "SELECT value FROM ItemTable WHERE key = ?",
+            ("workbench.scm.views.state",),
+        ).fetchone()
+        con.close()
+        if not row:
+            print("missing")
+            raise SystemExit(0)
+        try:
+            st = json.loads(row[0])
+        except Exception:
+            print("bad")
+            raise SystemExit(0)
+        repos = st.get("workbench.scm.repositories") or {}
+        print("hidden" if repos.get("isHidden", True) else "ok")
+        raise SystemExit(0)
+print("missing")
+PY
+}
+
+# Cursor regrava isHidden=true depois do open (Olie demora mais); watchdog ~20s.
+workvm_host_card_reapply_scm_repos_visible() {
+    local workspace="${1:-}"
+    local wt_api="${2:-}"
+    local _i hidden ok_streak=0
+
+    [ -n "$workspace" ] || return 0
+    for _i in $(seq 1 40); do
+        sleep 0.5
+        workvm_host_card_ensure_scm_repos_visible "$workspace" "$wt_api" || true
+        hidden="$(workvm_host_card_scm_repos_hidden "$workspace")"
+        if [ "$hidden" = "ok" ]; then
+            ok_streak=$((ok_streak + 1))
+            # Exige vários checks OK seguidos — Olie reverte após o 1º unhide.
+            if [ "$ok_streak" -ge 6 ]; then
+                workvm_host_card_log "SCM repositories view unhidden (após open)"
+                return 0
+            fi
+        else
+            ok_streak=0
+        fi
+    done
+    workvm_host_card_log "aviso: SCM repositories ainda isHidden após retries — troque de aba SCM ou reabra"
+    return 0
 }
 
 workvm_host_card_meta_write() {
@@ -1117,6 +1224,8 @@ workvm_host_card_open() {
             workvm_host_card_set_e2e_container "$id" 2>/dev/null || true
         fi
         workvm_open_cursor "$workspace" --new-window || true
+        # Startup do Cursor esconde workbench.scm.repositories; reaplicar ao vivo.
+        workvm_host_card_reapply_scm_repos_visible "$workspace" "${wt_api:+$wt_api/api-main}"
         printf 'workspace=%s\n' "$workspace"
         printf 'api_worktree=%s\n' "${wt_api}"
     fi
@@ -1237,6 +1346,7 @@ workvm_host_card_ensure() {
             # --new-window: two cards share front clones; without -n Cursor reuses one window.
             workvm_open_cursor "$workspace" --new-window \
                 || workvm_host_card_log "Cursor não abriu (sem sessão gráfica?); workspace=$workspace"
+            workvm_host_card_reapply_scm_repos_visible "$workspace" "${dir}/worktree/api-main"
         fi
     fi
 

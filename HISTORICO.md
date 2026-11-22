@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card SCM: todos os repos do multi-root (use-url-query)
+
+- **problema:** no Source Control do workspace use-url-query só aparecia um subset dos roots; tentativa de patch em `ensure_scm_repos_visible` truncou o heredoc Python e aninhou `workvm_host_card_meta_write` — `open` morria com `command not found`. Mesmo com `visibleRepositories` completo, a lista piscava e sumia: o Cursor no startup regrava `workbench.scm.repositories.isHidden=true` e fica só o repo ativo (meta `git`).
+- **por que é um problema:** card multi-clone inutilizável no SCM; open quebrado para qualquer projeto.
+- **resolvido como:** `ensure_scm_repos_visible` preenche `visibleRepositories` pelos folders do `.code-workspace` e força unhide (merge do `views.state`); `reapply_scm_repos_visible` após o open faz watchdog (~20s, vários checks OK seguidos — Olie reverte depois do 1º unhide); settings `scm.alwaysShowRepositories` + `scm.repositories.visible`.
+
 ## Meta-repo: só o que o clone não pode carregar (delta mínimo)
 
 - **problema:** soluções de infra/dev (compose host-card, DB duplicado, patches) iam parar no `~/git` por comodidade, inclusive em repos próprios onde o clone poderia ser a fonte da verdade; cópias no meta envelhecem quando o filho muda.
