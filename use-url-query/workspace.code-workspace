@@ -15,6 +15,14 @@
     {
       "name": "use-url-query-demo-api",
       "path": "use-url-query-demo-api"
+    },
+    {
+      "name": "boilerplate-laravel",
+      "path": "../boilerplate-laravel/boilerplate-laravel"
+    },
+    {
+      "name": "boilerplate-next",
+      "path": "../boilerplate-next/boilerplate-next"
     }
   ],
   "settings": {}

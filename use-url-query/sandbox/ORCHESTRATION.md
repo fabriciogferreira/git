@@ -19,10 +19,13 @@ do Card. Usa `workvm-sandbox create --project use-url-query --profile tests`.
 Day-to-day `bun test` / `bun run build`: `docker compose exec use-url-query …`
 (ou o container do host-card ativo).
 
-## Sem DB / Redis / Pest mutate
+## Escopo do slim
 
-Biblioteca TypeScript + bun. Não há Postgres, testing-db-cache nem
-`pest --mutate`. Mutation prompt → skip (ver `mutation-testing.md`).
+O slim/exclusive atual isola a **lib** (bun). Demo-api/demo-web no host-card
+usam o compose host (`compose.host.yml`). Coverage/mutation da lib: sandbox
+slim. Demo-api Pest coverage/mutate: workspace do host-card (ou sandbox
+exclusive da API se existir). Mutation: **sem auto-skip** — ver
+`mutation-testing.md` (lib Blocked sem runner; API com Pest `--mutate`).
 
 ## Warm pool + subagentes
 

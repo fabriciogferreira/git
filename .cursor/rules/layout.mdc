@@ -38,7 +38,7 @@ alwaysApply: true
 | `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
 | `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clones: lib `use-url-query/`, demos `use-url-query-demo-web/` + `use-url-query-demo-api/` (fora do git). Compose da lib: `docker-compose.yml`. |
 | `use-url-query/sandbox/` | Isolamento exclusive (bun test/coverage): `project.sh` + slim bun; host-card; `ORCHESTRATION.md`. Sem DB. |
-| `use-url-query/prompts/` | Prompts (implement/correct/pre-deploy/production-review + TDD, coverage; mutation obrigatória, skip só explícito); sem cards/PRs (`{{ feature }}`). |
+| `use-url-query/prompts/` | Prompts **do projeto** (lib + demo-web + demo-api); implement/correct/pre-deploy/production-review + TDD, coverage; mutation obrigatória (skip só explícito); agente escolhe os clones (`{{ feature }}`). |
 | `fabriciogferreira/` (projeto) | Portfólio Next (`project.conf`, post-clone, workspace). Clone em `fabriciogferreira/fabriciogferreira/` fora do git. Compose: `docker-compose.yaml`. |
 | `fabriciogferreira/sandbox/` | Isolamento exclusive (lint/build): `project.sh` + slim Node; host-card Next; `ORCHESTRATION.md`. Sem DB. |
 | `fabriciogferreira/prompts/` | Prompts (implementation/correction/pre-deploy/production-review; coverage/mutation N/A); sem cards/PRs (`{{ feature }}`). |

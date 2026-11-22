@@ -1,6 +1,6 @@
-# Coverage ledger (use-url-query)
+# Coverage ledger (use-url-query project)
 
-Personal stack for `~/git/use-url-query/prompts/coverage-testing.md`. One row per production file under `use-url-query/src` after in-scope coverage on this VM.
+Personal stack for `~/git/use-url-query/prompts/coverage-testing.md`. One row per production file (prefix clone: `lib:` / `api:` / `web:` if needed) after in-scope coverage on this VM.
 
-| File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
+| Clone | File | Status | Note | sha |
+| --- | --- | --- | --- | --- |
