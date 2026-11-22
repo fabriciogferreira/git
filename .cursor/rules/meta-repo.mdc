@@ -94,6 +94,7 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 ## Convenções
 
+- Escopo do meta vs clone (delta mínimo; repo próprio → editar o clone): `purpose.mdc`
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
 - Não commitar secrets
 - Scripts de bootstrap: `vm-setup.sh` / `project-setup.sh`

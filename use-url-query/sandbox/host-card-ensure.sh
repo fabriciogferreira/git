@@ -72,7 +72,9 @@ workvm_host_card_ensure_hook() {
         printf 'HC_WORKSPACE_IMAGE=uuq-demo-workspace:host-card\n'
         printf 'HC_FRONT_IMAGE=uuq-demo-web:host-card\n'
         workvm_host_card_write_resource_env 2>/dev/null || true
-        printf 'COMPOSE_FILE=compose.yaml\n'
+        # Não gravar COMPOSE_FILE aqui: o env herdado do WorkVM/agent
+        # (ex. compose.dev.yaml) vaza no `docker compose exec` e aponta
+        # para o YAML errado. _hc_uuq_dc passa -f compose.yaml.
     } >"$compose_dir/.env"
 
     if declare -F workvm_host_card_apply_compose_limits >/dev/null; then
@@ -99,24 +101,31 @@ with open(path, "w", encoding="utf-8") as f:
 PY
 
     workvm_host_card_log "compose up ($pname) — lib + demo-api + demo-web"
-    (
-        cd "$compose_dir"
-        set -a
-        # shellcheck disable=SC1091
-        source .env
-        set +a
-        export COMPOSE_PROJECT_NAME="$pname"
-        docker compose up -d --build --remove-orphans
-    ) || return 1
+    _hc_uuq_dc "$compose_dir" "$pname" up -d --build --remove-orphans || return 1
 
+    # vendor / APP_KEY: php-fpm lê env_file na criação — key vazia fica no
+    # ambiente do container até recreate, mesmo com .env já preenchido.
+    if [ ! -f "${api}/vendor/autoload.php" ]; then
+        workvm_host_card_log "composer install (demo-api)"
+        _hc_uuq_dc "$compose_dir" "$pname" exec -T workspace \
+            composer install --no-interaction --prefer-dist \
+            || workvm_host_card_log "composer install falhou — API pode responder 500"
+    fi
     if [ -f "${api}/.env" ] && ! grep -qE '^APP_KEY=base64:.+' "${api}/.env" 2>/dev/null; then
         workvm_host_card_log "gerando APP_KEY (demo-api)"
-        docker compose -p "$pname" --project-directory "$compose_dir" exec -T workspace \
+        _hc_uuq_dc "$compose_dir" "$pname" exec -T workspace \
             php artisan key:generate --force 2>/dev/null || true
+        workvm_host_card_log "recreate php-fpm/workspace (env_file APP_KEY)"
+        _hc_uuq_dc "$compose_dir" "$pname" up -d --force-recreate php-fpm workspace web \
+            || workvm_host_card_log "recreate php-fpm falhou"
     fi
-    docker compose -p "$pname" --project-directory "$compose_dir" exec -T workspace \
+    _hc_uuq_dc "$compose_dir" "$pname" exec -T workspace \
         php artisan migrate --force --no-interaction 2>/dev/null || true
 
+    # Confirma os três serviços do produto (não só HTTP das demos).
+    _hc_uuq_dc "$compose_dir" "$pname" ps --status running --services 2>/dev/null \
+        | grep -qx lib \
+        || workvm_host_card_log "aviso: serviço lib não está running"
     workvm_host_card_uuq_wait_http "$compose_dir" "$pname" SB_PORT_API "demo-api" || return 1
     workvm_host_card_uuq_wait_http "$compose_dir" "$pname" SB_PORT_FRONT "demo-web" || return 1
     workvm_host_card_proxy_ensure || workvm_host_card_log "proxy DNS falhou — use portas diretas"
@@ -124,6 +133,20 @@ PY
     workvm_host_card_log "Lib  bun (service lib)"
     workvm_host_card_log "API  ${app_url}  (→ :${port_base})"
     workvm_host_card_log "Front ${front_url}  (→ :$((port_base + 1)))"
+}
+
+# docker compose do card: -f absoluto + COMPOSE_FILE herdado limpo.
+# Problema: agent/WorkVM exporta COMPOSE_FILE (outro YAML) e o exec
+# ignora --project-directory / .env do card.
+_hc_uuq_dc() {
+    local compose_dir="$1"
+    local pname="$2"
+    shift 2
+    env -u COMPOSE_FILE docker compose \
+        -p "$pname" \
+        --project-directory "$compose_dir" \
+        -f "${compose_dir}/compose.yaml" \
+        "$@"
 }
 
 _hc_uuq_set_env() {
@@ -140,14 +163,17 @@ workvm_host_card_uuq_wait_http() {
     local pname="$2"
     local env_key="$3"
     local label="$4"
-    local i port
+    local i port code
 
     port="$(python3 -c "import re;print(re.search(r'^${env_key}=(\d+)', open('${compose_dir}/.env').read(), re.M).group(1))")"
     workvm_host_card_log "aguardando ${label} em :${port}…"
     for i in $(seq 1 120); do
-        if curl -fsS --connect-timeout 2 -o /dev/null "http://127.0.0.1:${port}/" >/dev/null 2>&1 \
-            || curl -fsS --connect-timeout 2 "http://127.0.0.1:${port}/up" >/dev/null 2>&1; then
-            workvm_host_card_log "${label} pronto"
+        # Qualquer HTTP (incl. 500) conta — porta aberta + processo respondendo.
+        # Preferir 2xx/3xx quando já existir; 5xx ainda passa o wait (open não
+        # deve abortar só porque APP_KEY/vendor ainda não estabilizou).
+        code="$(curl -sS --connect-timeout 2 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || true)"
+        if [ -n "$code" ] && [ "$code" != "000" ]; then
+            workvm_host_card_log "${label} pronto (HTTP ${code})"
             return 0
         fi
         sleep 3

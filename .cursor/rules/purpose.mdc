@@ -1,5 +1,5 @@
 ---
-description: O que é o meta-repo ~/git e quais rules valem aqui
+description: O que é o ~/git, quando a solução vive aqui vs no clone, e quais rules valem
 alwaysApply: true
 ---
 
@@ -10,6 +10,34 @@ Este workspace não é um app. Ele existe para provisionar VMs de desenvolviment
 Como a VM opera (projeto ativo, patch de clones, MCP, env): `meta-repo.mdc`.
 
 O mapa do problema que cada pasta resolve: `layout.mdc`. Ao criar ou mudar texto/código, siga `why-it-exists.mdc`.
+
+## Por que a solução vive aqui (e quando não)
+
+O `~/git` cobre o que o repositório do produto **não resolve** (solução externa, repo alheio, ou outro bloqueio). **Delta mínimo:** quanto menos este meta adicionar/remover/reescrever, melhor — cópia aqui (DB, imagem, healthcheck) **envelhece** quando o clone muda.
+
+Três exemplos:
+
+### 1. Solução externa — por isso este repositório existe
+
+Problema do **host / da sessão / de N cards no mesmo jarvis**, não do app em si.
+
+Exemplos: WorkVM (`vm-setup`, `project-start`, Hyprland), host-card (porta, DNS, workspace), proxy MCP Olie, patch multi-root do Cursor, `bin/workvm-*`.
+
+Isso **não** vai no `api-main` nem no front: o produto não deveria saber de card id, libvirt ou merge de `mcp.json`.
+
+### 2. Solução quase externa — mutation e coverage
+
+A **suite** (Pest, bun test, asserts) mora no clone. O que é externo é o **ambiente isolado**: `*/sandbox/`, worktree, compose slim, DB/Redis namespaced, PCOV na imagem `:sandbox`, `workvm-sandbox` — para mutation/coverage não brigarem com o card nem entre si.
+
+Quase externo = o teste é do produto; o *jeito de rodar sem colidir* é do meta. Em repo da empresa isso é obrigatório no `~/git`; em repo seu o sandbox continua aqui, mas o compose do clone pode ser preparado para o meta só incluir/sobrescrever pouco.
+
+### 3. Solução no repositório — quando posso mexer à vontade
+
+Projetos **seus** (`use-url-query`, `boilerplate-*`, `opbed`, `fabriciogferreira`, demos, …): **prefira editar o clone** — parametrizar porta (`${SB_PORT_…}`), tirar `container_name`, healthcheck/DB no compose do produto, TIA no `Pest.php` do repo próprio.
+
+O meta fica agregador/ensure fino (`include` ou overlay mínimo), não uma segunda fonte da verdade do stack. Só traga para cá o que for de fato externo ou compartilhado entre projetos.
+
+Repos da empresa (Olie, Locav, Televisão, …): overlay, sandbox e e2e privado no meta são o caminho legítimo; não “consertar” o produto no clone fora do fluxo normal de PR.
 
 ## Quais rules usar
 

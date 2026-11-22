@@ -1,11 +1,17 @@
 # Histórico
 
 
+## Meta-repo: só o que o clone não pode carregar (delta mínimo)
+
+- **problema:** soluções de infra/dev (compose host-card, DB duplicado, patches) iam parar no `~/git` por comodidade, inclusive em repos próprios onde o clone poderia ser a fonte da verdade; cópias no meta envelhecem quando o filho muda.
+- **por que é um problema:** drift entre compose do produto e do card; o meta deixa de ser “só o externo” e vira segundo lugar para manter stack.
+- **resolvido como:** política em `.cursor/rules/purpose.mdc` com três exemplos — (1) solução externa (WorkVM/host-card/MCP), (2) quase externa (sandbox mutation/coverage; suite no clone), (3) solução no repositório quando o clone é seu (parametrizar compose lá; meta só agrega).
+
 ## Host-card use-url-query: lib + demo-web + demo-api
 
-- **problema:** `open use-url-query` só subia o container bun da lib; `demo-web` / `demo-api` eram clonados mas sem compose namespaced.
-- **por que é um problema:** o recrutador/demo precisa dos três stacks; só a lib no ar não serve para testar o hook contra Spatie.
-- **resolvido como:** `compose.host.yml` + ensure sobem lib + Laravel (web/php-fpm/workspace/postgres/redis) + Next, com `SB_PORT_API` / `SB_PORT_FRONT` / `SB_PORT_VITE`.
+- **problema:** `open use-url-query` só subia o container bun da lib; `demo-web` / `demo-api` eram clonados mas sem compose namespaced. Depois: `composer`/`key:generate` falhavam porque `COMPOSE_FILE` herdado do agent/WorkVM apontava outro YAML; e mesmo com `APP_KEY` no `.env` a API ficava 500 — `env_file` do php-fpm congela a key vazia até recreate.
+- **por que é um problema:** o recrutador/demo precisa dos três stacks; open abortava ou API 500 com MissingAppKeyException.
+- **resolvido como:** `compose.host.yml` + ensure sobem lib + Laravel + Next (`SB_PORT_*`). `_hc_uuq_dc` faz `env -u COMPOSE_FILE` + `-f compose.yaml`; após `key:generate`, `up --force-recreate php-fpm workspace web`; wait HTTP aceita qualquer código ≠ 000.
 
 ## Pest TIA: owned repos vs empresa
 
