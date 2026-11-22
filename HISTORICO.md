@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Commit/push: não editar arquivos antes
+
+- **problema:** em “comite e suba” o agente replicava/ajustava arquivos (ex. boilerplate → demo) e formatava no mesmo turno; o push levava diff que o usuário não tinha revisado no SCM.
+- **por que é um problema:** revisão vira teatro; sobe mudança surpresa no remoto.
+- **resolvido como:** rule `.cursor/rules/commit-push-no-edit.mdc` (`alwaysApply`) — commit/push só do working tree atual; edição/replicação só se a mesma mensagem pedir explicitamente, e push só com revisão implícita aceita.
+
 ## Host-card SCM: todos os repos do multi-root (use-url-query)
 
 - **problema:** no Source Control do workspace use-url-query só aparecia um subset dos roots; tentativa de patch em `ensure_scm_repos_visible` truncou o heredoc Python e aninhou `workvm_host_card_meta_write` — `open` morria com `command not found`. Mesmo com `visibleRepositories` completo, a lista piscava e sumia: o Cursor no startup regrava `workbench.scm.repositories.isHidden=true` e fica só o repo ativo (meta `git`).

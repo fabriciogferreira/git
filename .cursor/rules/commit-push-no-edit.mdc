@@ -1,0 +1,29 @@
+---
+description: >-
+  Em "comitar e subir" o agente editava/replicava arquivos antes do commit e
+  subia diff que o usuário não revisou.
+alwaysApply: true
+---
+
+# Commit / push — não editar antes
+
+Quando o usuário pedir **só** commit e/ou push (ex.: `comite`, `suba`, `comite e suba`, `push`), o working tree que ele vê é a fonte da verdade.
+
+## Nunca (nessa mensagem)
+
+- Editar, criar, apagar ou “só alinhar” arquivos antes do `git add` / `commit` / `push`
+- Replicar mudanças entre clones (boilerplate → demo, etc.) como pré-passo do commit
+- Rodar formatters / Pint / fixers que reescrevem o diff
+- “Aproveitar” o commit para incluir refactors, docs ou fixes extras
+
+## Sempre
+
+1. `git status` / `git diff` / `git log` do(s) repo(s) pedidos
+2. Stage **apenas** o que já estiver modificado ou untracked (salvo o usuário excluir algo)
+3. Commit com mensagem adequada ao diff **existente**
+4. Push só se pedido (ou “suba” / “comite e suba”)
+5. Se faltar replicar / corrigir / documentar: **diga** e espere — não faça no mesmo turno do commit
+
+## Exceção
+
+Só mexa em arquivo se a **mesma** mensagem pedir explicitamente outra ação além do commit/push (ex.: `replique no demo, comite e suba`). Aí a edição pedida vem **antes**, o usuário deve poder revisar; se ele disser que não revisou, pare e não faça push até confirmar.
