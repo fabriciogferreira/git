@@ -12,11 +12,12 @@ Publish to npm **only** when the user explicitly asks (not implied by this promp
 
 1. List dirty files in `~/git/use-url-query/use-url-query`.
 2. Confirm the diff matches `{{ feature }}` — no unrelated drive-by changes.
-3. If `src/` changed and coverage ledger still has remaining rows for this change-set, **stop** and drain `coverage-testing.md` first. Mutation is N/A (skip).
+3. If `src/` changed and coverage ledger still has remaining rows for this change-set, **stop** and drain `coverage-testing.md` first.
+4. If `src/` changed and mutation is not done for this change-set and the user has **not** said `skip mutation`, **stop** and run `mutation-testing.md` first (Blocked until tool or explicit skip is fine — do not push).
 
 ## 2. Gates (`use-url-query`)
 
-Run inside the Docker `use-url-query` service (from `COMPOSE_DIR` / host-card):
+Ship gate (re-validate after coverage/mutation). Run inside the Docker `use-url-query` service (from `COMPOSE_DIR` / host-card):
 
 ```bash
 docker compose exec use-url-query bun test

@@ -23,12 +23,12 @@ If tooling or browser automation fails unexpectedly: stop, report, wait for `res
 Report the verdict first.
 
 - **Pass:** Each acceptance point with production evidence. Recommend stopping or the next feature.
-- **Fail:** Failed point, reproducible steps, expected vs actual. Do **not** fix in this prompt. Recommend `~/git/opbed/prompts/correction.md` with the same `{{ feature }}`.
+- **Fail:** Failed point, reproducible steps, expected vs actual. Do **not** fix in this prompt. Recommend `~/git/opbed/prompts/correct.md` with the same `{{ feature }}`.
 - **Blocked:** Missing access, deploy still rolling, or data prerequisite. Do not claim Pass.
 
 ### Chat commands
 
 | Command | Do this |
 | --- | --- |
-| `to correct` | After **Fail**, run `correction.md` for `{{ feature }}`. |
+| `to correct` | After **Fail**, run `correct.md` for `{{ feature }}`. |
 | `try again` | Re-check after a new deploy or cleared block. |

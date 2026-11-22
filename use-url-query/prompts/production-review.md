@@ -23,12 +23,12 @@ If tooling fails unexpectedly: stop, report, wait for `resolva` / `documente` / 
 Report the verdict first.
 
 - **Pass:** Each acceptance point with evidence. Recommend stopping or the next feature.
-- **Fail:** Failed point, reproducible steps, expected vs actual. Do **not** fix in this prompt. Recommend `~/git/use-url-query/prompts/correction.md` with the same `{{ feature }}`.
+- **Fail:** Failed point, reproducible steps, expected vs actual. Do **not** fix in this prompt. Recommend `~/git/use-url-query/prompts/correct.md` with the same `{{ feature }}`.
 - **Blocked:** Missing publish access, package not yet visible, or unclear consumer path. Do not claim Pass.
 
 ### Chat commands
 
 | Command | Do this |
 | --- | --- |
-| `to correct` | After **Fail**, run `correction.md` for `{{ feature }}`. |
+| `to correct` | After **Fail**, run `correct.md` for `{{ feature }}`. |
 | `try again` | Re-check after a new publish or cleared block. |

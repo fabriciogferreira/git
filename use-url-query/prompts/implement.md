@@ -1,6 +1,6 @@
-# Implementation (use-url-query)
+# Implement (use-url-query)
 
-Implement `{{ feature }}`.
+Implement `{{ feature }}` with **TDD**.
 
 No cards, no board moves, no PRs. Work on `main` in the affected clone(s). Shared rules: `~/git/use-url-query/prompts/workflow-policy.md`.
 
@@ -20,23 +20,29 @@ If Docker, bun, or other assumed tooling fails: stop, report, wait for `resolva`
 
 Do **not** create a feature branch or a pull request.
 
-## 3. Plan then implement
+## 3. TDD
 
-1. Short plan: files to touch, behavior, tests to add/update.
-2. Implement. Follow naming helpers documented in the clone README (`add…` / `clear…` / `get…` / …).
-3. Run tests inside the Docker `use-url-query` service:
+1. Short plan: expected behavior, test files, production files.
+2. **Red:** write or update a behavioral test that fails for the right reason. Run it inside Docker:
 
 ```bash
 docker compose exec use-url-query bun test
 ```
 
-4. Add or update tests for the changed behavior and important failure modes.
+3. **Green:** smallest production change that makes the test pass. Follow naming helpers in the clone README (`add…` / `clear…` / `get…` / …).
+4. **Refactor** if needed; keep tests green.
+5. **Static analysis:** `docker compose exec use-url-query bun run build` (`tsc`).
+   - New contract/edge from typing → new **Red** test (or `expectTypeOf`) before more production code.
+   - Pure type error → fix types/code, re-run `tsc` + tests.
+6. Re-run the narrow suite, then the full suite before hand-off.
+
+Do **not** implement production behavior without a prior red test (except an explicit user-requested throwaway spike).
 
 ## 4. Hand off
 
-When the feature works locally and targeted tests pass:
+When TDD is green and `tsc` + suite pass:
 
-- If `src/` changed → recommend `~/git/use-url-query/prompts/coverage-testing.md`, then `mutation-testing.md` (skip).
+- If `src/` changed → recommend `~/git/use-url-query/prompts/coverage-testing.md`, then `mutation-testing.md` (required; no auto-skip).
 - Otherwise → recommend `~/git/use-url-query/prompts/pre-deploy.md`.
 
 Do **not** commit or push unless the user asks, or unless they explicitly run `pre-deploy` / ask to ship.
@@ -46,4 +52,4 @@ Do **not** commit or push unless the user asks, or unless they explicitly run `p
 | Command | Do this |
 | --- | --- |
 | `next prompt` | Run the next recommended prompt. |
-| `try again` | Resume this implementation from the blocked step. |
+| `try again` | Resume this prompt from the blocked step. |

@@ -15,7 +15,7 @@ Do **not** `docker exec` the Card/host bun container for coverage drain. See `~/
 
 - **Default:** `correct coverages` — drain remaining production files (warm pool + Task).
 - **`next coverage`:** one file when the user asks.
-- When complete → recommend `mutation-testing.md` (skip) then `pre-deploy.md`.
+- When complete → recommend `mutation-testing.md` (required; no auto-skip).
 
 ## Ledger
 

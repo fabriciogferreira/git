@@ -10,14 +10,16 @@ Commit and push **only** when this checklist’s applicable checks are green (or
 
 1. List dirty files in `opbed-backend` and/or `opbed-frontend`.
 2. Confirm the diff matches `{{ feature }}` — no unrelated drive-by changes.
-3. If backend `app/` changed and coverage/mutation ledgers still have remaining rows for this change-set, **stop** and drain `coverage-testing.md` / `mutation-testing.md` first.
+3. If backend `app/` changed and coverage ledger still has remaining rows for this change-set, **stop** and drain `coverage-testing.md` first.
+4. If backend changed and mutation ledger is not done for this change-set and the user has **not** said `skip mutation`, **stop** and drain `mutation-testing.md` first.
 
 ## 2. Backend gates (`opbed-backend`)
 
-Run inside the Docker `backend` service (project Environment rule):
+Ship gate (re-validate after coverage/mutation). Run inside the Docker `backend` service (project Environment rule):
 
 ```bash
 docker compose exec backend php artisan test --compact --ci
+docker compose exec backend ./vendor/bin/pest --type-coverage --min=100
 docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G
 docker compose exec backend vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
 ```
@@ -25,6 +27,7 @@ docker compose exec backend vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.d
 (or `docker container exec …` on the running backend container name for this VM)
 
 - [ ] Tests green (full suite, or the user-agreed affected set if they explicitly narrowed it).
+- [ ] Type Coverage at 100% (`--min=100`).
 - [ ] PHPStan clean.
 - [ ] PHP CS Fixer applied; if it rewrote files, include those in the commit (do not leave a dirty formatter diff).
 

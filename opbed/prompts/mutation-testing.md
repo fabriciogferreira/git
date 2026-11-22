@@ -1,6 +1,8 @@
 # Mutation testing (Opbed)
 
-Use when the change-set for `{{ feature }}` modified `~/git/opbed/opbed-backend`. Skip when there is no backend.
+Use when the change-set for `{{ feature }}` modified `~/git/opbed/opbed-backend`.
+
+Mutation is **mandatory** after coverage. Skip **only** when the user explicitly says `skip mutation` — never auto-skip.
 
 **Must** shard exclusive work via:
 
@@ -53,3 +55,13 @@ Baseline flake (DB lock / one-off crash): retry once on the same slot. Stable re
 Score **in-scope** only. Kill killables by tightening tests (not production). Remaining behavior-preserving → `equivalent` + mutation id. Prefer ≤1 re-mutate per `--class` after real assert changes.
 
 When the change-set mutation stack is done → recommend `~/git/opbed/prompts/pre-deploy.md`.
+
+On explicit `skip mutation` → record skip in `mutation-ledger.md`, then recommend `pre-deploy.md`.
+
+### Chat commands
+
+| Command | Do this |
+| --- | --- |
+| `correct mutations` / `next mutation` | Continue the drain. |
+| `skip mutation` | Record skip in the ledger, then run `pre-deploy.md`. |
+| `try again` | Retry the blocked mutate / prepare step. |
