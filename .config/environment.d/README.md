@@ -53,3 +53,28 @@ OPBED_API_TOKEN="cole_o_bearer_aqui"
 EOF
 chmod 600 ~/.config/environment.d/opbed.conf
 ```
+
+## Token do npm (publish)
+
+Granular access token do [npmjs.com](https://www.npmjs.com/) para `npm publish` (ex.: `@fabriciogferreira/use-url-query`). Não versionar o valor; só o layout.
+
+```bash
+cat > ~/.config/environment.d/npm.conf <<'EOF'
+# Granular token (publish). Prefer Bypass 2FA off for interactive use.
+NPM_TOKEN=npm_cole_o_token_aqui
+EOF
+chmod 600 ~/.config/environment.d/npm.conf
+```
+
+Uso no shell (sem imprimir o token):
+
+```bash
+set -a && source ~/.config/environment.d/npm.conf && set +a
+# auth one-shot for this shell / CI-style:
+npm config set "//registry.npmjs.org/:_authToken" "${NPM_TOKEN}" --location=project
+# or: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+npm whoami
+npm publish --access public
+```
+
+Não commitar `.npmrc` com o token embutido. Se o Cursor/agente precisar publicar, recarregue o env (`source` dos `*.conf`) na sessão do shell — o login gráfico já carrega `environment.d` no Hyprland/`workvm_open_cursor`.

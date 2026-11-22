@@ -1,5 +1,5 @@
 # Plugin use-url-query para o Sandbox Manager.
-# Problema: bun test/coverage no Card brigavam pelo container_name fixo.
+# Problema: bun run test (Vitest)/coverage no Card brigavam pelo container_name fixo.
 # Isola worktree por sandbox; sem Postgres/Redis (biblioteca TypeScript + bun).
 
 workvm_sandbox_project_max() {

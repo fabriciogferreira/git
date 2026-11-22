@@ -36,8 +36,11 @@ import json, sys
 m = json.load(open(sys.argv[1], encoding="utf-8"))
 slug = m.get("dns_slug") or ""
 api = m.get("port_base")
-front = (api + 1) if api is not None else None
-if not slug or api is None:
+# Prefer explicit front_port (ex. use-url-query → 3000); else port_base+1.
+front = m.get("front_port")
+if front is None and api is not None:
+    front = api + 1
+if not slug or api is None or front is None:
     raise SystemExit(0)
 print(f"http://api.{slug}.olie.localhost {{")
 print(f"\treverse_proxy 127.0.0.1:{api}")

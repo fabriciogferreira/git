@@ -22,7 +22,7 @@ Measures **in-scope (diff) lines**, not suite Total %. Shared rules: `~/git/use-
 ```bash
 ~/git/bin/workvm-sandbox create --name <id> --project use-url-query --profile tests --from-commit <tip>
 ~/git/bin/workvm-sandbox job run <id> --service backend -- \
-  bun test --coverage
+  bun run test:coverage
 ```
 
 Do **not** `docker exec` the Card lib container for lib coverage drain. See `~/git/use-url-query/sandbox/ORCHESTRATION.md`.

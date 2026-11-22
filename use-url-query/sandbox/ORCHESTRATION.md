@@ -1,6 +1,6 @@
 # Orquestração de Sandboxes — use-url-query
 
-Problema: `bun test` / coverage no mesmo Card brigavam pelo
+Problema: `bun run test` (Vitest) / coverage no mesmo Card brigavam pelo
 `container_name` fixo do `docker-compose.yml` e pelo workdir do clone.
 
 CLI: `~/git/bin/workvm-sandbox --project use-url-query`. Compose slim:
@@ -10,13 +10,13 @@ CLI: `~/git/bin/workvm-sandbox --project use-url-query`. Compose slim:
 
 **Compatible** (Card / mesmo stack): leitura, prompts sem suite paralela.
 
-**Exclusive** (sandbox distinto): `bun test`, `bun test --coverage`,
+**Exclusive** (sandbox distinto): `bun run test`, `bun run test:coverage`,
 `bun run build` quando outro job também escreve/node_modules no clone.
 
 **Obrigatório:** coverage drain **não** usa `docker exec` no container
 do Card. Usa `workvm-sandbox create --project use-url-query --profile tests`.
 
-Day-to-day `bun test` / `bun run build`: `docker compose exec use-url-query …`
+Day-to-day `bun run test` / `bun run build`: `docker compose exec use-url-query …`
 (ou o container do host-card ativo).
 
 ## Escopo do slim

@@ -14,7 +14,7 @@ Prompts are **project-scoped**. From `{{ feature }}`, decide which of the three 
 
 | Clone | Role | Day-to-day tooling |
 | --- | --- | --- |
-| `~/git/use-url-query/use-url-query` | Hook library (TypeScript / bun) | host-card `lib` / `docker compose exec use-url-query …` — `bun test`, `bun run build` |
+| `~/git/use-url-query/use-url-query` | Hook library (TypeScript / bun) | host-card `lib` / `docker compose exec use-url-query …` — `bun run test` (Vitest), `bun run build` |
 | `~/git/use-url-query/use-url-query-demo-api` | Laravel demo API (Spatie Query Builder) | host-card `workspace` — Artisan, Pest, PHPStan, Type Coverage, CS Fixer |
 | `~/git/use-url-query/use-url-query-demo-web` | Next.js demo front (consumes the hook) | host-card front service — lint / typecheck / tests per that clone |
 
@@ -34,10 +34,10 @@ Shell with `required_permissions: ["all"]` for Docker / `workvm-sandbox`. Prefer
 
 | Layer | Lib | Demo API | Demo web |
 | --- | --- | --- | --- |
-| Behavioral suite | `bun test` | `php artisan test` / Pest | clone’s test script |
+| Behavioral suite | `bun run test` (Vitest) | `php artisan test` / Pest | clone’s test script |
 | Type Coverage | N/A | `pest --type-coverage` | N/A (use typecheck) |
 | Static analysis | `bun run build` (`tsc`) | PHPStan | typecheck / lint |
-| Code coverage | sandbox `bun test --coverage` | Pest `--coverage` (sandbox when exclusive) | only if the clone has a coverage gate |
+| Code coverage | sandbox `bun run test:coverage` | Pest `--coverage` (sandbox when exclusive) | only if the clone has a coverage gate |
 | Mutation | mandatory after lib coverage; Blocked if no runner | Pest `--mutate` after API coverage | N/A unless a runner exists |
 
 Early checks in the trigger = TDD feedback. The same applicable checks in `pre-deploy.md` = **ship gate** after coverage/mutation.

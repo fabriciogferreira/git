@@ -41,7 +41,7 @@ workvm_host_card_ensure_hook() {
     if [ -f "${api}/.env" ]; then
         _hc_uuq_set_env "${api}/.env" APP_URL "$app_url"
         _hc_uuq_set_env "${api}/.env" DB_HOST postgres
-        _hc_uuq_set_env "${api}/.env" DB_DATABASE uuq_demo_local
+        _hc_uuq_set_env "${api}/.env" DB_DATABASE use_url_query_demo_api_local
         _hc_uuq_set_env "${api}/.env" DB_USERNAME root
         _hc_uuq_set_env "${api}/.env" DB_PASSWORD secret
         _hc_uuq_set_env "${api}/.env" REDIS_HOST redis
@@ -60,11 +60,12 @@ workvm_host_card_ensure_hook() {
         printf 'SB_FRONT=%s\n' "$front"
         printf 'SB_DNS_SLUG=%s\n' "$dns_slug"
         printf 'SB_PORT_API=%s\n' "$port_base"
-        printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
+        # Demo Next na :3000 do host (produto sem N cards paralelos como Olie).
+        printf 'SB_PORT_FRONT=3000\n'
         printf 'SB_PORT_VITE=%s\n' "$((port_base + 2))"
         printf 'HOST_UID=%s\n' "$host_uid"
         printf 'HOST_GID=%s\n' "$host_gid"
-        printf 'DB_DATABASE=uuq_demo_local\n'
+        printf 'DB_DATABASE=use_url_query_demo_api_local\n'
         printf 'DB_USERNAME=root\n'
         printf 'DB_PASSWORD=secret\n'
         printf 'APP_URL=%s\n' "$app_url"
@@ -94,7 +95,8 @@ meta["dns_slug"] = slug
 meta["api_dns"] = f"http://api.{slug}.olie.localhost"
 meta["front_dns"] = f"http://devframe.{slug}.olie.localhost"
 meta["api_url"] = f"http://127.0.0.1:{port_base}"
-meta["front_url"] = f"http://127.0.0.1:{port_base + 1}"
+meta["front_port"] = 3000
+meta["front_url"] = "http://127.0.0.1:3000"
 with open(path, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
     f.write("\n")
@@ -132,7 +134,7 @@ PY
 
     workvm_host_card_log "Lib  bun (service lib)"
     workvm_host_card_log "API  ${app_url}  (→ :${port_base})"
-    workvm_host_card_log "Front ${front_url}  (→ :$((port_base + 1)))"
+    workvm_host_card_log "Front ${front_url}  (→ :3000)"
 }
 
 # docker compose do card: -f absoluto + COMPOSE_FILE herdado limpo.

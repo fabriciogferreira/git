@@ -22,7 +22,7 @@ Publish the library to npm **only** when the user explicitly asks (not implied b
 Host-card `lib` / compose `use-url-query` service:
 
 ```bash
-docker compose exec use-url-query bun test
+docker compose exec use-url-query bun run test
 docker compose exec use-url-query bun run build
 ```
 

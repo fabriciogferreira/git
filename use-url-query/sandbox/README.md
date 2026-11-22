@@ -1,13 +1,13 @@
 # Sandboxes — use-url-query
 
-Ambientes isolados para `bun test` / coverage sem brigar pelo container do Card.
+Ambientes isolados para `bun run test` (Vitest) / coverage sem brigar pelo container do Card.
 CLI: `~/git/bin/workvm-sandbox`.
 
 ## Uso
 
 ```bash
 ~/git/bin/workvm-sandbox create --name cov-a --project use-url-query --profile tests --from-commit <tip>
-~/git/bin/workvm-sandbox job run cov-a --service backend -- bun test
+~/git/bin/workvm-sandbox job run cov-a --service backend -- bun run test
 ~/git/bin/workvm-sandbox destroy cov-a
 ```
 
