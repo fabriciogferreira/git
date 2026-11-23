@@ -1,0 +1,22 @@
+---
+description: open PROJECT sem CODE — perguntar; não adivinhar o card
+alwaysApply: true
+---
+
+# Host-card open: CODE obrigatório
+
+Quando o usuário pede para abrir um host-card (`open olie`, `open locav`, `reopen televisao`, `open PROJECT`, …) **sem** o código do card:
+
+## Sempre
+
+- Pare e diga que falta o código (ex.: `DOP-1258`).
+- Opcional: listar cards existentes (`workvm-host-card list`) só como referência.
+- Espere o usuário escolher. Só então rode `workvm-host-card open --project … --code …`.
+
+## Nunca
+
+- Não adivinhar o card (último usado, único da lista, “o mais recente”).
+- Não assumir `CODE` = nome do projeto (`use-url-query`, `opbed`, …) quando o usuário não passou o código.
+- Não abrir “qualquer” card do projeto para desbloquear o chat.
+
+Forma correta: `open olie DOP-1258` / `open PROJECT CODE`.

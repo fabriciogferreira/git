@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card open: CODE obrigatório (não adivinhar)
+
+- **problema:** `open olie` sem código fazia o agente escolher um card (ex. o último da lista).
+- **por que é um problema:** abre o worktree/stack errado; o usuário não pediu aquele CODE.
+- **resolvido como:** rule `.cursor/rules/host-card-open-code-required.mdc` + Chat commands em `olie`/`locav`/`televisao` `workflow-policy.md` — sem CODE, perguntar (list opcional); nunca adivinhar.
+
 ## Commit/push: não editar arquivos antes
 
 - **problema:** em “comite e suba” o agente replicava/ajustava arquivos (ex. boilerplate → demo) e formatava no mesmo turno; o push levava diff que o usuário não tinha revisado no SCM.

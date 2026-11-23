@@ -94,6 +94,7 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 ## Convenções
 
+- `open PROJECT` sem CODE do card: perguntar — `host-card-open-code-required.mdc`
 - Escopo do meta vs clone (delta mínimo; repo próprio → editar o clone): `purpose.mdc`
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
 - Não commitar secrets
