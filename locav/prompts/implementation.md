@@ -207,6 +207,8 @@ When all checklist items are complete, provide a concise final report covering t
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable restrictions above.
 
+**Do not recommend commit / push / PR** at the end of this paste — not even as a “when you are ready” hint. Product commits belong to **`pre-qa.md`** after the rest of the develop handoff has run (`implementation-validation.md`, then when backend changed: gap → coverage → mutation → `pest-parallel.md`, then `pre-qa.md`). In the completion report, recommend only the **next prompt** (`implementation-validation.md` via `next prompt`).
+
 When implementation work on this paste is done, the next recommended prompt is `~/git/locav/prompts/implementation-validation.md` (code-only). The user may send `next prompt` to run it without pasting. Do not run `~/git/locav/prompts/pre-qa.md` or board `~/git/locav/prompts/validation.md` yet.
 
 The durable **Evidence table** on the card content (`save-media-tool`, `### Evidência — Implementation`) is written at the end of **`pre-qa.md`**, not on this paste — never description, Caderno, or PR; see **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md`.

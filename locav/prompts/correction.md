@@ -276,6 +276,8 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
+**Do not recommend commit / push / PR** at the end of this paste — not even as a “when you are ready” hint. Product commits belong to **`pre-qa.md`** after the rest of the develop handoff has run. In the completion report, recommend only the **next prompt**.
+
 When the full correction on this paste is done, the next paste is `~/git/locav/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `pre-qa.md` or board `validation.md` yet — those come after validation (then gap → coverage → mutation → Pest parallel when `LocavApi` applies).
 
 **Evidence table:** post `### Evidência — {N}º Correção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (rows for what this paste verified; `n/a` / `não rodado` where pre-QA has not run yet; never description, Caderno, or PR). The following **`pre-qa.md`** posts again with the **same** heading and PHP CS Fixer/phpstan/% filled in.

@@ -13,6 +13,12 @@
 - **por que é um problema:** mutation da lib (obrigatória após coverage) ficava Blocked em todo card; só `skip mutation` liberava `pre-deploy`.
 - **resolvido como:** `procps` no `use-url-query/sandbox/Dockerfile.backend` (tag `use-url-query-sandbox-backend:tests`); `command -v ps` no build; rebuild da imagem no próximo `workvm-sandbox create` / ensure.
 
+## Olie pest-parallel: `--ci` no artisan + TIA no host-card
+
+- **problema:** `workvm-host-card-pest` passava `--ci` a `php artisan test`. Laravel/Collision rejeitam a flag (`The "--ci" option does not exist`) e a suite nem começa. O compose slim/host-card ainda define `PEST_TIA_LOCALLY=1` (TIA sem tocar `Pest.php` da empresa); sem desligar TIA a regressão encolheria se o gate chegasse a rodar.
+- **por que é um problema:** todo card Olie no gate `pest-parallel` (pós-mutation) parava antes de qualquer teste; o mesmo atrito já tinha sido resolvido em Televisão, mas o wrapper Olie ainda assumia `--ci` no artisan.
+- **resolvido como:** `bin/workvm-host-card-pest` deixa de passar `--ci`/`--no-tia` ao artisan, força `PEST_TIA_LOCALLY=0` no `docker compose exec`, e stripa essas flags se o chamador as passar. `olie/prompts/pest-parallel.md` + `workflow-policy.md` + comentário em `olie/sandbox/compose.slim.yml` alinhados. TIA continua no sandbox/path-scoped via env.
+
 ## Televisão pest-parallel: `--ci` no artisan + nome `televisao-backend`
 
 - **problema:** `televisao/prompts/pest-parallel.md` mandava `docker exec -w /srv televisao-backend php artisan test --compact --parallel --ci`. No host-card o container é `hc-televisao-…-backend-1`, e o `artisan test` do Laravel **não** aceita `--ci` (`The "--ci" option does not exist`). O wrapper `workvm-host-card-pest` (com `--ci`) é só Olie.

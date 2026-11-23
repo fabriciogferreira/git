@@ -312,6 +312,8 @@ At completion, provide a concise report containing:
 
 Do not commit, push, or open a pull request unless explicitly requested and permitted by the applicable security restrictions.
 
+**Do not recommend commit / push / PR** at the end of this paste — not even as a “when you are ready” hint. Product commits belong to **`pre-qa.md`** after the rest of the develop handoff has run. In the completion report, recommend only the **next prompt**.
+
 When the full correction on this paste is done (not the conflict-only first stop in §4), the next paste is `~/git/olie/prompts/implementation-validation.md` (code-only). Say that clearly in the completion report so `next prompt` can run it. Do not run `~/git/olie/prompts/pre-qa.md` or board `~/git/olie/prompts/validation.md` yet — those come after implementation-validation (and when `api-main` changed: gap → coverage → mutation → Pest parallel → `pre-qa.md`).
 
 **Evidence table:** post `### Evidência — {N}º Correção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/olie/prompts/workflow-policy.md` (rows for what this paste verified; `n/a` / `não rodado` where pre-QA has not run yet; never description, Caderno, or PR). The following **`pre-qa.md`** posts again with the **same** heading and Pint/phpstan/% filled in. When front JS/TS/Vue was touched, include the **JS → TypeScript** and **Options API → Composition API** tables when they have rows.

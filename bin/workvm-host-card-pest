@@ -5,6 +5,9 @@
 # invalid_token para token fake. Sem este wrapper, ~3 testes falham.
 # Problema (2026-11-16): no jarvis nproc=24; --processes≥23 mata workers
 # com SIGSEGV (exit 139). Default teto 22; override WORKVM_HOST_CARD_PEST_PROCESSES.
+# Problema (2026-11-23): artisan test rejeita --ci ("option does not exist");
+# compose do card/sandbox pode ter PEST_TIA_LOCALLY=1, que encolhe a suite
+# sem --ci. Regressão: não passar --ci; forçar PEST_TIA_LOCALLY=0 no exec.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,14 +20,15 @@ workvm-host-card-pest — Pest no stack do host-card (Olie)
 
   workvm-host-card-pest --project olie --code <CODE> [--] [args do artisan test…]
 
-Defaults: --compact --parallel --ci --recreate-databases --processes=min(nproc,22)
+Defaults: --compact --parallel --recreate-databases --processes=min(nproc,22)
   (teto 22: ≥23 segfaulta no jarvis; override WORKVM_HOST_CARD_PEST_PROCESSES)
-  (--ci desliga Pest TIA; suite de regressão deve ser completa)
+  (não passa --ci: artisan rejeita; TIA off via PEST_TIA_LOCALLY=0 no exec)
 Env forçado no container (não muda o compose do browser):
   DB_DATABASE=<testing_* do card> (shared MySQL; default testing_<slug>)
   APP_ENV=testing
   MANAGEMENT_URL=http://{subdomain}.olie.localhost
   RECAPTCHA_SECRET=host-card-pest-rejects-invalid-tokens
+  PEST_TIA_LOCALLY=0  (suite completa; TIA fica no sandbox / path-scoped)
 
 Ex.:
   workvm-host-card-pest --project olie --code DOP-1183
@@ -89,23 +93,21 @@ if [ "$nproc_count" -gt 22 ]; then
     default_procs=22
 fi
 procs="${WORKVM_HOST_CARD_PEST_PROCESSES:-$default_procs}"
-extra=("$@")
+
+# Strip Pest-only TIA flags: Laravel artisan test rejects --ci / --no-tia.
+raw_extra=("$@")
+extra=()
+for a in "${raw_extra[@]+"${raw_extra[@]}"}"; do
+    case "$a" in
+        --ci|--no-tia) ;;
+        *) extra+=("$a") ;;
+    esac
+done
 if [ ${#extra[@]} -eq 0 ]; then
-    # --ci: Pest TIA locally() must not shrink the regression suite.
-    extra=(--compact --parallel --ci --recreate-databases --processes="$procs")
-else
-    has_tia_off=0
-    for a in "${extra[@]}"; do
-        case "$a" in
-            --ci|--no-tia) has_tia_off=1 ;;
-        esac
-    done
-    if [ "$has_tia_off" -eq 0 ]; then
-        extra+=(--ci)
-    fi
+    extra=(--compact --parallel --recreate-databases --processes="$procs")
 fi
 
-workvm_host_card_log "pest $id ($pname) → ${extra[*]}"
+workvm_host_card_log "pest $id ($pname) → ${extra[*]} (PEST_TIA_LOCALLY=0)"
 
 (
     cd "$compose_dir"
@@ -119,14 +121,16 @@ workvm_host_card_log "pest $id ($pname) → ${extra[*]}"
     # esvazia o MySQL mas o checksum igual faz pular migrate:fresh → 0 tables.
     docker compose --profile slim exec -T app \
         sh -c 'rm -f storage/app/migration-checksum_*.txt'
-    # -e no exec: workers do --parallel herdam o env do PHP pai
-    # PEST_TIA_LOCALLY may be set on some stacks; --ci (defaults above) turns TIA off.
+    # -e no exec: workers do --parallel herdam o env do PHP pai.
+    # PEST_TIA_LOCALLY=0: artisan não aceita --ci; env desliga TIA even if
+    # compose still sets PEST_TIA_LOCALLY=1 (sandbox / slim host-card).
     docker compose --profile slim exec -T \
         -e TMPDIR=/tmp/pest-hc \
         -e DB_DATABASE="$testing_db" \
         -e APP_ENV=testing \
         -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
         -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+        -e PEST_TIA_LOCALLY=0 \
         app \
         php -d memory_limit=2G artisan test "${extra[@]}"
 )

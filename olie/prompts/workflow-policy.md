@@ -27,7 +27,7 @@ Do **not** repeat an expensive step when nothing material changed since the last
 | Expensive step | Re-run only when |
 | --- | --- |
 | `pest --mutate` / `pest --coverage` | Test or production blobs under test changed (`sha:` mismatch / missing stamp), or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). Matching `sha:` in the ledger → skip sandbox across chats. |
-| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. Always `--ci` (TIA `locally()` must not shrink the regression suite). |
+| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. Full suite via `workvm-host-card-pest` (no `--ci` on artisan — unsupported; wrapper sets `PEST_TIA_LOCALLY=0` so TIA does not shrink). |
 | Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
 | Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |
 | Pre-QA checklist / production smoke | Code, PR, or production deploy changed; or a prior check failed and was fixed. |
@@ -37,7 +37,7 @@ Do **not** repeat an expensive step when nothing material changed since the last
 
 ## Pest TIA (local, meta only)
 
-Do **not** edit `api-main` `tests/Pest.php` / `.gitignore` (company repo). Enable with `PEST_TIA_LOCALLY=1` on the **sandbox** slim compose + `git` in `olie/sandbox/Dockerfile.app`. **Regression** (`pest-parallel` / `workvm-host-card-pest`) always passes `--ci`. Path-scoped / `--mutate` skip TIA. Opt out once: `--no-tia`.
+Do **not** edit `api-main` `tests/Pest.php` / `.gitignore` (company repo). Enable with `PEST_TIA_LOCALLY=1` on the **sandbox** slim compose + `git` in `olie/sandbox/Dockerfile.app`. **Regression** (`pest-parallel` / `workvm-host-card-pest`) must **not** pass `--ci` to `artisan test` (Laravel rejects it); the wrapper forces `PEST_TIA_LOCALLY=0` on exec for a full suite. Path-scoped / `--mutate` use `--no-tia` on `vendor/bin/pest` when needed.
 
 ## Backend change-set (when `develop...HEAD` is empty)
 
@@ -461,6 +461,8 @@ When writing to card content through OlieFlowAi (`save-media-tool`, description,
 - On colleague review, do **not** dump gap / mutation / coverage **findings lists** onto the card during **reviewer-fix** (those stay in chat). Include author-facing findings when bouncing to 'Corrigir' for a failure outside those three gates — see **Project content (gap / mutation / coverage)** under **Colleague review outcome**. The **Evidence table** on Pass or Corrigir bounce is separate and **required** (see below).
 
 Recommend the next prompt **only in the Cursor chat** report.
+
+**No premature commit hints:** after `implementation.md` / `correction.md` (and any gate before `pre-qa.md`), do **not** suggest committing, pushing, or opening a PR for the product repos. Say only the next workflow prompt (`next prompt` / coverage / mutation as applicable). Product commit/push/PR is owned by **`pre-qa.md`** once the handoff stack for that round has finished.
 
 ## Evidence table on project content
 
