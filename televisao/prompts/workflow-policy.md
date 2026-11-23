@@ -269,13 +269,38 @@ When committing or pushing the meta-repo `~/git` (e2e or any other path):
 - If a prompt is dirty that way, restore it (`git checkout -- path`) before the commit.
 - Intentional prompt wording changes are fine; leave `{{ code }}` (and the other placeholders) intact.
 
+## Deferred decisions on the card
+
+Card text sometimes **defers** a product or design choice to whoever implements (the human in this develop chat). That is an open decision — **not** permission for the agent to pick alone.
+
+Signals in the card description, tasks, acceptance criteria, media notes, or Caderno:
+
+- Explicit handoffs: “decidir”, “a critério do implementador”, “deixar em aberto”, “confirmar com…”, “TBD”, “TODO decisão”
+- Alternatives joined by **ou** / **or** that read as a choice the implementer must make (e.g. “usar X ou Y”, “endpoint A ou B”, “manter no front ou mover para a API”)
+- Soft forks that still need a pick: “preferencialmente”, “idealmente”, “se fizer sentido”, “pode ser…” when two paths remain viable
+
+When you find any of these **before the plan is finished** (and again if one appears mid-implementation or mid-correction):
+
+1. **Stop** the prompt — do not invent a choice, do not pick the “safer” option, do not continue the checklist past that fork.
+2. List each open decision with the literal card phrasing and the concrete options you see.
+3. Ask the user (the implementer in this chat) what must be done / which option to take.
+4. Resume only after they answer. Record the chosen option (and a short **motivo** when the choice is not already obvious) in the plan — you will post them on the card at pre-QA.
+
+Do **not** treat an ordinary “or” / “ou” inside a single fixed requirement as a deferral (e.g. “email or phone required” as an already-decided validation rule). When unsure whether a sentence is a deferral, **ask**.
+
+Applies to every card-driven paste that would commit to one of the alternatives — especially `implementation.md` and `correction.md`. Same rule for Olie and Locav.
+
+### Decisions table on project content (pre-QA)
+
+Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Deferred decisions on the card** / **Decisions table on project content**): at the end of **`pre-qa.md`**, when at least one deferred decision was answered in this chat, post `### Decisões — Implementation` or `### Decisões — {N}º Correção` via `save-media-tool` **before** the evidence table (two calls). Columns: `decisão (trecho do card)` | `opções` | `escolha` | `motivo` (motivo required unless the escolha is already obvious). Omit the whole decisions post when none apply. Never description, Caderno, or PR.
+
 ## Card content vs chat (private prompts)
 
 Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
-- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Evidence table on project content** below (allowed exception).
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Decisions table on project content** and the **Evidence table on project content** below (allowed exceptions).
 - Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 - Do **not** cite private meta-repo Playwright (`televisao-front-e2e` / `televisao-meet-front-e2e`) — see **Running Playwright**.
@@ -286,7 +311,7 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 ## Evidence table on project content
 
-Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): post a Brazilian Portuguese evidence table into the **card content** with MCP **`save-media-tool`** at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. **Never** the project description, Caderno/notebook, or PR body. Refresh the same round by posting again with the same exact `###` heading (latest media wins).
+Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): post a Brazilian Portuguese evidence table into the **card content** with MCP **`save-media-tool`** at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. On **pre-qa**, if a **Decisions** table applies, post it **first**, then this evidence table. **Never** the project description, Caderno/notebook, or PR body. Refresh the same round by posting again with the same exact `###` heading (latest media wins).
 
 Televisão specifics:
 

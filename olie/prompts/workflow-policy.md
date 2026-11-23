@@ -388,13 +388,66 @@ Olie cards often have fewer form fields for PR URLs than repositories that can c
 1. Write each PR URL into a matching dynamic-form field when one exists (`get-model-dynamic-forms-tool` → `get-form-answers-tool` → `set-form-answers-tool`). Match by field label to the repository; do not invent fields. Value shape follows the form (commonly an array of one URL).
 2. **PRs without a form field.** When this card has more verified PRs than matching form fields, append the unmatched URLs to the **project content** (card description) with MCP `edit-project-tool`: read the current description from `get-project-details-tool`, keep all existing text, and append a short Brazilian Portuguese block listing each unmatched repo name and its PR URL. Also list those URLs in the final report. Never wipe the prior description.
 
+## Deferred decisions on the card
+
+Card text sometimes **defers** a product or design choice to whoever implements (the human in this develop chat). That is an open decision — **not** permission for the agent to pick alone.
+
+Signals in the card description, tasks, acceptance criteria, media notes, or Caderno:
+
+- Explicit handoffs: “decidir”, “a critério do implementador”, “deixar em aberto”, “confirmar com…”, “TBD”, “TODO decisão”
+- Alternatives joined by **ou** / **or** that read as a choice the implementer must make (e.g. “usar X ou Y”, “endpoint A ou B”, “manter no front ou mover para a API”)
+- Soft forks that still need a pick: “preferencialmente”, “idealmente”, “se fizer sentido”, “pode ser…” when two paths remain viable
+
+When you find any of these **before the plan is finished** (and again if one appears mid-implementation or mid-correction):
+
+1. **Stop** the prompt — do not invent a choice, do not pick the “safer” option, do not continue the checklist past that fork.
+2. List each open decision with the literal card phrasing and the concrete options you see.
+3. Ask the user (the implementer in this chat) what must be done / which option to take.
+4. Resume only after they answer. Record the chosen option (and a short **motivo** when the choice is not already obvious from the wording) in the plan — you will post them on the card at pre-QA.
+
+Do **not** treat an ordinary “or” / “ou” inside a single fixed requirement as a deferral (e.g. “email or phone required” as an already-decided validation rule). When unsure whether a sentence is a deferral, **ask**.
+
+Applies to every card-driven paste that would commit to one of the alternatives — especially `implementation.md` and `correction.md`. Same rule for Locav and Televisão (`~/git/locav/prompts/workflow-policy.md`, `~/git/televisao/prompts/workflow-policy.md`).
+
+### Decisions table on project content (pre-QA)
+
+When **at least one** deferred decision was answered in this develop chat, post a short Brazilian Portuguese **decisions table** into the **card content** with MCP **`save-media-tool`** at the end of **`pre-qa.md`**, in the **same moment** as the evidence table and **always before** it (two `save-media-tool` calls: Decisões first, then Evidência). Same destination rules as evidence: **only** card content — never description, Caderno, or PR.
+
+**Omit** the whole decisions post when no deferred decision was asked/answered for this round.
+
+| Trigger | Heading (exact `###` line) |
+| --- | --- |
+| Implementation handoff (`pre-qa.md` → 'QA/CR') | `### Decisões — Implementation` |
+| Correction return (`pre-qa.md` after Corrigir) | `### Decisões — {N}º Correção` |
+
+`{N}` matches the **same** Correção round as the evidence heading for that pre-QA. Refresh the same round by posting again with the **same exact** `###` line (latest media wins).
+
+Columns:
+
+| Column | Content |
+| --- | --- |
+| `decisão (trecho do card)` | Short literal / paraphrase of the open fork from the card |
+| `opções` | The alternatives that were on the table |
+| `escolha` | What the implementer chose |
+| `motivo` | Why — **required** unless the escolha already makes the reason obvious (then use `—` or a one-word echo, not a fake essay) |
+
+No prompt paths, no VM/sandbox/ledger jargon. Chat keeps the full Q&A; the card table is the compact public record for QA/CR.
+
+```markdown
+### Decisões — Implementation
+
+| decisão (trecho do card) | opções | escolha | motivo |
+| --- | --- | --- | --- |
+| "usar X ou Y no endpoint" | X / Y | X | alinha ao contrato já usado em Z |
+```
+
 ## Card content vs chat (private prompts)
 
 Files under `~/git/olie/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
-- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Evidence table on project content** below (allowed exception).
+- Write only findings, acceptance gaps, and fix instructions the author can act on without this meta-repo — **plus** the **Decisions table on project content** and the **Evidence table on project content** below (allowed exceptions).
 - Do **not** name prompt files or paths (`colleague-review.md`, `colleague-review-core.md`, `test-gap-analysis.md`, `mutation-testing.md`, `coverage-testing.md`, `correction.md`, `~/git/.../prompts/...`, “next paste”, `next prompt`).
 - Do **not** tell the author which local prompt to run next.
 - Do **not** cite private meta-repo E2E (see **Private E2E suites** below).
@@ -406,7 +459,7 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 ## Evidence table on project content
 
-At the **end** of each trigger below, post a short Brazilian Portuguese **evidence table** into the **card content** (project timeline / chat) with MCP **`save-media-tool`** (`project_identifier` = CODE or UUID, `text` = the markdown block). This is human evidence for the board — not a prompt path, not sandbox jargon.
+At the **end** of each trigger below, post a short Brazilian Portuguese **evidence table** into the **card content** (project timeline / chat) with MCP **`save-media-tool`** (`project_identifier` = CODE or UUID, `text` = the markdown block). This is human evidence for the board — not a prompt path, not sandbox jargon. On **`pre-qa.md`**, if a **Decisions** table applies for this round, post it **first** (**Decisions table on project content** above), then this evidence table.
 
 **Destination (only):** card content via `save-media-tool`.
 

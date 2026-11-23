@@ -30,6 +30,8 @@ Implement the card identified by `{{ code }}`. Its requirements, business rules,
 
 Also read every project thread and the latest version of each one, using **Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
+While reading the card (and again before locking the plan): apply **Deferred decisions on the card** in `~/git/olie/prompts/workflow-policy.md`. If the card defers a choice to the implementer — including alternatives joined by **ou** / **or** — **stop**, list the options, and ask the user what to choose. Do not pick for them.
+
 ### Card media review (required before the plan)
 
 Before the planning phase, **review the card's media**. Spec screenshots, screencasts, and attachments are part of the source of truth — do not plan from text alone when media shows the intended UI or flow.

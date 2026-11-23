@@ -227,6 +227,11 @@ After completing the applicable workflow, provide a concise report containing:
 
 Clearly distinguish completed actions from pending work. Do not claim that the card is fully ready for QA/CR if any mandatory check remains unresolved or the stage move did not succeed.
 
-### Evidence table (required)
+### Decisions table then Evidence table (required order)
 
-After the final report above, post the **Implementation** (or **{N}º Correção** when this pre-QA returns a card from Corrigir) evidence table into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/televisao/prompts/workflow-policy.md` (never description, Caderno, or PR). Use Front/Back rows only for surfaces touched; mutation/coverage/all-test % on diff `A..B` excluding Pint and dedicated Scribe commits. E2E row: `verificado localmente` only — never name private Playwright suites.
+After the final report above, post into the **card content** via `save-media-tool` (never description, Caderno, or PR), in this order:
+
+1. **Decisions** (only when at least one deferred decision was answered in this develop chat) — `### Decisões — Implementation` or `### Decisões — {N}º Correção` per **Deferred decisions on the card** / **Decisions table on project content** in `~/git/televisao/prompts/workflow-policy.md` (columns: decisão, opções, escolha, motivo — motivo required unless the escolha is already obvious).
+2. **Evidence** (always) — **Implementation** (or **{N}º Correção** when this pre-QA returns a card from Corrigir) per **Evidence table on project content** in the same policy file. Use Front/Back rows only for surfaces touched; mutation/coverage/all-test % on diff `A..B` excluding Pint and dedicated Scribe commits. E2E row: `verificado localmente` only — never name private Playwright suites.
+
+Always post **Decisões before Evidência** when both apply. Two separate `save-media-tool` calls.
