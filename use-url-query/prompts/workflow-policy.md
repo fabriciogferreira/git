@@ -14,9 +14,9 @@ Prompts are **project-scoped**. From `{{ feature }}`, decide which of the three 
 
 | Clone | Role | Day-to-day tooling |
 | --- | --- | --- |
-| `~/git/use-url-query/use-url-query` | Hook library (TypeScript / bun) | host-card `lib` / `docker compose exec use-url-query …` — `bun run test` (Vitest), `bun run build` |
-| `~/git/use-url-query/use-url-query-demo-api` | Laravel demo API (Spatie Query Builder) | host-card `workspace` — Artisan, Pest, PHPStan, Type Coverage, CS Fixer |
-| `~/git/use-url-query/use-url-query-demo-web` | Next.js demo front (consumes the hook) | host-card front service — lint / typecheck / tests per that clone |
+| `~/git/use-url-query/use-url-query` | Hook library (TypeScript / bun) | host-card `lib` (Bun+Node image) — `bun run test` / `build`; if Shell hides `docker.sock` → `workvm-host-card agent-docker … --container lib -- …` |
+| `~/git/use-url-query/use-url-query-demo-api` | Laravel demo API (Spatie Query Builder) | host-card `workspace` — Artisan, Pest, PHPStan, Type Coverage, CS Fixer (same `agent-docker` fallback) |
+| `~/git/use-url-query/use-url-query-demo-web` | Next.js demo front (consumes the hook) | host-card `front` — lint / typecheck / tests (`agent-docker --container front`) |
 
 Demo-api / demo-web are forks of **boilerplate-laravel** / **boilerplate-next**. The project workspace also opens those clones (`~/git/boilerplate-laravel/boilerplate-laravel`, `~/git/boilerplate-next/boilerplate-next`) so fixes found while building demos can be upstreamed when they belong in the boilerplate — not every demo-only tweak.
 
@@ -38,7 +38,7 @@ Shell with `required_permissions: ["all"]` for Docker / `workvm-sandbox`. Prefer
 | Type Coverage | N/A | `pest --type-coverage` | N/A (use typecheck) |
 | Static analysis | `bun run build` (`tsc`) | PHPStan | typecheck / lint |
 | Code coverage | sandbox `bun run test:coverage` | Pest `--coverage` (sandbox when exclusive) | only if the clone has a coverage gate |
-| Mutation | mandatory after lib coverage; Blocked if no runner | Pest `--mutate` after API coverage | N/A unless a runner exists |
+| Mutation | Stryker (`bun run test:mutate` / scoped `--mutate`) after lib coverage | Pest `--mutate` after API coverage | N/A unless a runner exists |
 
 Early checks in the trigger = TDD feedback. The same applicable checks in `pre-deploy.md` = **ship gate** after coverage/mutation.
 
@@ -60,7 +60,7 @@ Demo-api exclusive Pest coverage/mutate: prefer sandbox when an exclusive profil
 
 Mutation is **mandatory** after coverage when production code that entered a coverage drain changed. Skip **only** when the user says `skip mutation`. Never auto-skip.
 
-- Lib: no mutate runner today → `mutation-testing.md` **Blocked** until tool or explicit skip.
+- Lib: StrykerJS + Vitest runner (`stryker.config.json`, `bun run test:mutate`); exclusive sandbox `:tests` (real Node).
 - Demo-api: Pest `--mutate` when `app/` (or equivalent production PHP) was in the coverage change-set.
 
 ## Chat commands
@@ -74,6 +74,16 @@ Mutation is **mandatory** after coverage when production code that entered a cov
 | `correct mutations` / `next mutation` | Mutation drain (see `mutation-testing.md`). |
 | `skip mutation` | Explicit only: mark mutation skipped for this change-set, then `pre-deploy.md`. |
 | `resolva` / `documente` / `resolva permanentemente` | Stop-on-broken-tooling (meta-repo rule). |
+
+## Silent sandbox / docker.sock
+
+If the Shell footer still says SANDBOXING after `required_permissions: ["all"]` (sock missing while `dockerd` is alive):
+
+1. `request_smart_mode_approval` on the exact command.
+2. `~/git/bin/workvm-host-card agent-ensure --project use-url-query --code use-url-query`
+3. Day-to-day exec: `~/git/bin/workvm-host-card agent-docker --project use-url-query --code use-url-query --container lib|workspace|front -- <cmd>`
+
+Do **not** ask chmod / DNS / `gh auth`. Detail: olie `workflow-policy` **Silent sandbox after `all`**.
 
 ## Stop on broken tooling
 

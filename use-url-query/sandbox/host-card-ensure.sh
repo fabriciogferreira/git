@@ -52,6 +52,10 @@ workvm_host_card_ensure_hook() {
     mkdir -p "$compose_dir"
     cp -f "${meta_repo}/use-url-query/sandbox/compose.host.yml" "$compose_dir/compose.yaml"
 
+    # Vitest no Card precisa de Node real (mesma tag do sandbox slim).
+    _hc_uuq_ensure_lib_image "${meta_repo}" \
+        || workvm_host_card_log "aviso: build use-url-query-sandbox-backend:tests falhou"
+
     pname="hc-${id}"
     {
         printf 'COMPOSE_PROJECT_NAME=%s\n' "$pname"
@@ -69,6 +73,7 @@ workvm_host_card_ensure_hook() {
         printf 'DB_USERNAME=root\n'
         printf 'DB_PASSWORD=secret\n'
         printf 'APP_URL=%s\n' "$app_url"
+        printf 'HC_BUN_IMAGE=%s\n' "${HC_BUN_IMAGE:-use-url-query-sandbox-backend:tests}"
         printf 'HC_PHPFPM_IMAGE=uuq-demo-php-fpm:host-card\n'
         printf 'HC_WORKSPACE_IMAGE=uuq-demo-workspace:host-card\n'
         printf 'HC_FRONT_IMAGE=uuq-demo-web:host-card\n'
@@ -135,6 +140,31 @@ PY
     workvm_host_card_log "Lib  bun (service lib)"
     workvm_host_card_log "API  ${app_url}  (→ :${port_base})"
     workvm_host_card_log "Front ${front_url}  (→ :3000)"
+}
+
+# Garante a imagem Bun+Node do serviço lib (Vitest no Card).
+# Problema: oven/bun faz `node` → bun; pre-deploy `bun run test` quebra.
+_hc_uuq_ensure_lib_image() {
+    local meta_repo="$1"
+    local tag=use-url-query-sandbox-backend:tests
+    local df="${meta_repo}/use-url-query/sandbox/Dockerfile.backend"
+
+    if [ ! -f "$df" ]; then
+        workvm_host_card_log "Dockerfile.backend ausente: $df"
+        return 1
+    fi
+    if docker image inspect "$tag" >/dev/null 2>&1; then
+        if docker run --rm --entrypoint node "$tag" -e \
+            'if (process.versions.bun) process.exit(1)' >/dev/null 2>&1; then
+            return 0
+        fi
+        workvm_host_card_log "${tag} sem Node real — rebuild"
+    else
+        workvm_host_card_log "build ${tag} (Bun + Node)"
+    fi
+    docker build -t "$tag" \
+        -f "$df" \
+        "${meta_repo}/use-url-query/sandbox"
 }
 
 # docker compose do card: -f absoluto + COMPOSE_FILE herdado limpo.

@@ -1,24 +1,53 @@
 #!/usr/bin/env bash
-# Poll host-card worktrees for agent ensure requests and run ensure outside the
-# Cursor agent sandbox (which hides docker.sock and blocks ~/.cursor writes).
-# Problema: Auto-review podia auto-aprovar o Shell do ensure sem conceder
-# required_permissions all → ensure falhava no cluster de sandbox e o card
-# ficava sem compose. Este serviço roda no user systemd (host real).
+# Poll host-card worktrees for agent requests and run them outside the Cursor
+# agent sandbox (which hides docker.sock and blocks ~/.cursor writes).
+# Problema: Auto-review podia auto-aprovar o Shell sem conceder
+# required_permissions all → ensure/docker exec falhavam no cluster de sandbox.
+# Este serviço roda no user systemd (host real).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST_CARD_ROOT="${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
-REQUEST_NAME='.workvm-agent-ensure-request.json'
-RESULT_NAME='.workvm-agent-ensure-result.json'
+ENSURE_REQUEST_NAME='.workvm-agent-ensure-request.json'
+ENSURE_RESULT_NAME='.workvm-agent-ensure-result.json'
+DOCKER_REQUEST_NAME='.workvm-agent-docker-request.json'
+DOCKER_RESULT_NAME='.workvm-agent-docker-result.json'
 POLL_SEC="${WORKVM_HOST_CARD_AGENT_BRIDGE_POLL_SEC:-2}"
 
 log() { printf 'workvm-host-card-agent-bridge: %s\n' "$*" >&2; }
 
-process_request() {
+write_json_result() {
+    local out="$1" rc="$2" log_path="$3"
+    local extra_json="${4:-{}}"
+    python3 - "$out" "$rc" "$log_path" "$extra_json" <<'PY'
+import json, sys, pathlib, datetime
+out, rc, log_path, extra_raw = sys.argv[1], int(sys.argv[2]), pathlib.Path(sys.argv[3]), sys.argv[4]
+tail = ""
+if log_path.is_file():
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    # Pest/artisan can be large; keep a usable tail for the agent.
+    tail = text[-50000:]
+try:
+    extra = json.loads(extra_raw) if extra_raw else {}
+except json.JSONDecodeError:
+    extra = {}
+payload = {
+    "ok": rc == 0,
+    "exit_code": rc,
+    "finished_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "log_tail": tail,
+    "output": tail,
+}
+payload.update(extra)
+pathlib.Path(out).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+PY
+}
+
+process_ensure_request() {
     local req="$1"
     local dir project code open_cursor result tmp rc=0
     dir="$(dirname "$req")"
-    result="${dir}/${RESULT_NAME}"
+    result="${dir}/${ENSURE_RESULT_NAME}"
     tmp="$(mktemp)"
 
     if ! python3 - "$req" >"$tmp" <<'PY'
@@ -36,7 +65,7 @@ print(code)
 print(0 if open_cursor in (0, "0", False, None) else 1)
 PY
     then
-        log "pedido inválido: $req"
+        log "pedido ensure inválido: $req"
         rm -f "$tmp"
         rm -f "$req"
         return 0
@@ -63,29 +92,183 @@ PY
     fi
     set -e
 
-    python3 - "$result" "$rc" "${result}.log" <<'PY'
-import json, sys, pathlib, datetime
-out, rc, log_path = sys.argv[1], int(sys.argv[2]), pathlib.Path(sys.argv[3])
-tail = ""
-if log_path.is_file():
-    text = log_path.read_text(encoding="utf-8", errors="replace")
-    tail = text[-8000:]
-payload = {
-    "ok": rc == 0,
-    "exit_code": rc,
-    "finished_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "log_tail": tail,
-}
-pathlib.Path(out).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-PY
+    write_json_result "$result" "$rc" "${result}.log"
     rm -f "$req"
-    log "resultado rc=$rc → $result"
+    log "ensure resultado rc=$rc → $result"
 }
 
-log "watching ${HOST_CARD_ROOT} for ${REQUEST_NAME} (poll ${POLL_SEC}s)"
+# Resolve a card-scoped container name. Reject anything outside the card compose project.
+resolve_card_container() {
+    local project="$1" code="$2" container_arg="$3"
+    local slug id state_dir meta compose_project resolved
+    slug="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')"
+    id="${project}-${slug}"
+    state_dir="${HOST_CARD_ROOT}/${project}/${id}"
+    meta="${state_dir}/meta.json"
+    compose_project=""
+    if [ -f "$meta" ]; then
+        compose_project="$(python3 - "$meta" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1], encoding="utf-8")).get("compose_project") or "")
+PY
+)"
+    fi
+    if [ -z "$compose_project" ]; then
+        compose_project="hc-${id}"
+    fi
+
+    case "$container_arg" in
+        "${compose_project}-"*)
+            resolved="$container_arg"
+            ;;
+        *-1|*-2|*-3)
+            # Full docker name that does not match this card → reject below.
+            resolved="$container_arg"
+            ;;
+        *)
+            # Service alias (backend, frontend, app, …) → compose default replica.
+            resolved="${compose_project}-${container_arg}-1"
+            ;;
+    esac
+
+    case "$resolved" in
+        "${compose_project}-"*)
+            printf '%s\n' "$resolved"
+            return 0
+            ;;
+        *)
+            log "recusado: container '$resolved' fora do compose_project '$compose_project'"
+            return 1
+            ;;
+    esac
+}
+
+process_docker_request() {
+    local req="$1"
+    local dir result tmp project code container workdir timeout_sec argv_json resolved rc=0
+    dir="$(dirname "$req")"
+    result="${dir}/${DOCKER_RESULT_NAME}"
+    tmp="$(mktemp)"
+
+    if ! python3 - "$req" "$HOST_CARD_ROOT" >"$tmp" <<'PY'
+import json, sys, pathlib
+p = sys.argv[1]
+host_card_root = pathlib.Path(sys.argv[2])
+with open(p, encoding="utf-8") as f:
+    data = json.load(f)
+project = data.get("project") or ""
+code = data.get("code") or ""
+container = data.get("container") or ""
+workdir = data.get("workdir") or ""
+timeout_sec = int(data.get("timeout_sec") or 600)
+argv = data.get("argv") or []
+env = data.get("env") or {}
+if not project or not code or not container or not isinstance(argv, list) or not argv:
+    raise SystemExit("missing project/code/container/argv")
+if any(not isinstance(a, str) for a in argv):
+    raise SystemExit("argv must be list[str]")
+if not isinstance(env, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in env.items()):
+    raise SystemExit("env must be dict[str,str]")
+
+# Host-card compose injects DB_DATABASE=db_<card>; PHPUnit force=true does not
+# always win over that process env. Auto-inject testing_database for Pest/artisan test.
+joined = " ".join(argv)
+looks_like_test = (
+    "artisan test" in joined
+    or joined.endswith(" pest")
+    or "/pest" in joined
+    or joined.startswith("pest ")
+    or "vendor/bin/pest" in joined
+)
+if looks_like_test and "DB_DATABASE" not in env:
+    slug = code.lower()
+    card_id = f"{project}-{slug}"
+    meta_path = host_card_root / project / card_id / "meta.json"
+    testing_db = None
+    if meta_path.is_file():
+        try:
+            testing_db = json.loads(meta_path.read_text(encoding="utf-8")).get("testing_database")
+        except json.JSONDecodeError:
+            testing_db = None
+    if testing_db:
+        env = {**env, "DB_DATABASE": str(testing_db)}
+
+print(project)
+print(code)
+print(container)
+print(workdir)
+print(timeout_sec)
+print(json.dumps(argv))
+print(json.dumps(env))
+PY
+    then
+        log "pedido docker inválido: $req"
+        rm -f "$tmp"
+        write_json_result "$result" 2 /dev/null '{"error":"invalid request"}' 2>/dev/null || true
+        rm -f "$req"
+        return 0
+    fi
+
+    {
+        read -r project
+        read -r code
+        read -r container
+        read -r workdir
+        read -r timeout_sec
+        read -r argv_json
+        read -r env_json
+    } <"$tmp"
+    rm -f "$tmp"
+
+    if ! resolved="$(resolve_card_container "$project" "$code" "$container")"; then
+        write_json_result "$result" 2 /dev/null "{\"error\":\"container not in card\",\"container\":\"$container\"}" || true
+        rm -f "$req"
+        return 0
+    fi
+
+    log "docker exec $resolved ← $req"
+    # Build argv safely via python → null-delimited → bash array.
+    mapfile -d '' -t cmd_argv < <(python3 -c 'import json,sys; [print(a, end="\0") for a in json.loads(sys.argv[1])]' "$argv_json")
+    # docker exec -e KEY=VAL … (null-delimited KEY=VAL pairs)
+    mapfile -d '' -t env_args < <(python3 -c '
+import json,sys
+env=json.loads(sys.argv[1])
+for k,v in env.items():
+    print(k+"="+v, end="\0")
+' "$env_json")
+    docker_e=()
+    for pair in "${env_args[@]+"${env_args[@]}"}"; do
+        docker_e+=(-e "$pair")
+    done
+
+    set +e
+    if [ -n "$workdir" ]; then
+        timeout --signal=TERM --kill-after=10 "${timeout_sec}" \
+            docker exec "${docker_e[@]}" -w "$workdir" "$resolved" "${cmd_argv[@]}" \
+            >"${result}.log" 2>&1
+        rc=$?
+    else
+        timeout --signal=TERM --kill-after=10 "${timeout_sec}" \
+            docker exec "${docker_e[@]}" "$resolved" "${cmd_argv[@]}" \
+            >"${result}.log" 2>&1
+        rc=$?
+    fi
+    set -e
+
+    write_json_result "$result" "$rc" "${result}.log" "$(python3 -c 'import json,sys; print(json.dumps({"container": sys.argv[1]}))' "$resolved")"
+    rm -f "$req"
+    log "docker resultado rc=$rc container=$resolved → $result"
+}
+
+log "watching ${HOST_CARD_ROOT} for ensure/docker requests (poll ${POLL_SEC}s)"
 while true; do
     while IFS= read -r -d '' req; do
-        process_request "$req" || log "falha ao processar $req"
-    done < <(find "$HOST_CARD_ROOT" -type f -name "$REQUEST_NAME" -print0 2>/dev/null || true)
+        process_ensure_request "$req" || log "falha ao processar ensure $req"
+    done < <(find "$HOST_CARD_ROOT" -type f -name "$ENSURE_REQUEST_NAME" -print0 2>/dev/null || true)
+
+    while IFS= read -r -d '' req; do
+        process_docker_request "$req" || log "falha ao processar docker $req"
+    done < <(find "$HOST_CARD_ROOT" -type f -name "$DOCKER_REQUEST_NAME" -print0 2>/dev/null || true)
+
     sleep "$POLL_SEC"
 done

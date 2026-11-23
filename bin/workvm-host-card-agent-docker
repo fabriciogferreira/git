@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Drop a docker-exec request for workvm-host-card-agent-bridge and wait.
+# Problema: após silent sandbox (footer SANDBOXING com all), agent-ensure sobe
+# o compose mas o Shell do agente ainda não vê docker.sock — Pest/artisan no
+# container do card ficava impossível sem bridge de exec.
+set -euo pipefail
+
+project="" code="" container="" timeout_sec=600 workdir=""
+env_pairs=()
+argv=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --project) project="$2"; shift 2 ;;
+        --code) code="$2"; shift 2 ;;
+        --container) container="$2"; shift 2 ;;
+        --workdir) workdir="$2"; shift 2 ;;
+        --timeout) timeout_sec="$2"; shift 2 ;;
+        --env|-e)
+            env_pairs+=("$2")
+            shift 2
+            ;;
+        --)
+            shift
+            argv=("$@")
+            break
+            ;;
+        -h|--help)
+            echo "uso: workvm-host-card-agent-docker --project <…> --code <CODE> --container <service|name> [--env K=V]… [--workdir DIR] [--timeout N] -- <cmd> [args…]" >&2
+            exit 0
+            ;;
+        *)
+            echo "uso: workvm-host-card-agent-docker --project <…> --code <CODE> --container <service|name> -- <cmd> [args…]" >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ -z "$project" ] || [ -z "$code" ] || [ -z "$container" ] || [ "${#argv[@]}" -eq 0 ]; then
+    echo "uso: workvm-host-card-agent-docker --project <…> --code <CODE> --container <service|name> -- <cmd> [args…]" >&2
+    exit 2
+fi
+
+slug="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')"
+id="${project}-${slug}"
+root="${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
+dir="${root}/${project}/${id}/worktree/git"
+if [ ! -d "$dir" ]; then
+    dir="${root}/${project}/${id}"
+    mkdir -p "$dir"
+fi
+
+req="${dir}/.workvm-agent-docker-request.json"
+result="${dir}/.workvm-agent-docker-result.json"
+rm -f "$result"
+
+# env_pairs may be empty — pass as JSON list after fixed args.
+env_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${env_pairs[@]+"${env_pairs[@]}"}")"
+python3 - "$req" "$project" "$code" "$container" "$workdir" "$timeout_sec" "$env_json" "${argv[@]}" <<'PY'
+import json, sys, datetime
+path, project, code, container, workdir, timeout_sec, env_json = sys.argv[1:8]
+argv = sys.argv[8:]
+env = {}
+for pair in json.loads(env_json):
+    if not isinstance(pair, str) or "=" not in pair:
+        raise SystemExit(f"invalid --env {pair!r} (want KEY=VALUE)")
+    k, _, v = pair.partition("=")
+    if not k:
+        raise SystemExit(f"invalid --env {pair!r}")
+    env[k] = v
+payload = {
+    "project": project,
+    "code": code,
+    "container": container,
+    "workdir": workdir or None,
+    "timeout_sec": int(timeout_sec),
+    "env": env,
+    "argv": argv,
+    "requested_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+    f.write("\n")
+print(path)
+PY
+
+echo "workvm-host-card-agent-docker: pedido → $req (aguardando bridge ≤${timeout_sec}s)" >&2
+deadline=$((SECONDS + timeout_sec + 30))
+while [ "$SECONDS" -lt "$deadline" ]; do
+    if [ -f "$result" ]; then
+        python3 - "$result" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+# Stream captured output so the agent can read Pest failures.
+out = data.get("output") or data.get("log_tail") or ""
+if out:
+    sys.stdout.write(out)
+    if not out.endswith("\n"):
+        sys.stdout.write("\n")
+meta = {k: data.get(k) for k in ("ok", "exit_code", "finished_at", "container") if k in data}
+print(json.dumps(meta, indent=2), file=sys.stderr)
+raise SystemExit(0 if data.get("ok") else int(data.get("exit_code") or 1))
+PY
+        exit $?
+    fi
+    sleep 1
+done
+echo "error: timeout aguardando bridge ($result). systemctl --user status workvm-host-card-agent-bridge" >&2
+exit 75

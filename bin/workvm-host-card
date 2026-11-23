@@ -19,6 +19,7 @@ workvm-host-card — unidade card/projeto no host (sem WorkVM)
   destroy --project <…> --code <CODE>
   list
   agent-ensure --project <…> --code <CODE>   # pedido ao bridge (sandbox-safe)
+  agent-docker --project <…> --code <CODE> --container <service|name> -- <cmd>…
   install-agent-bridge                       # copia unit + enable --now
 
 ensure é idempotente: cria ou retoma (multi-dia). open = ensure + foca/abre
@@ -30,6 +31,8 @@ add une um grupo ao meta e re-ensure (ex.: add front depois de back-only).
 destroy limpa estado, workspace gerado e containers com label compose do card.
 agent-ensure escreve .workvm-agent-ensure-request.json no meta worktree do card
 para o serviço workvm-host-card-agent-bridge (fora do sandbox do Cursor).
+agent-docker idem para docker exec no container do card (Pest/artisan) quando
+o Shell ainda esconde docker.sock após all (silent sandbox).
 
 Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/host-cards/
 EOF
@@ -48,12 +51,15 @@ workvm_host_card_install_agent_bridge() {
     if [ ! -x "$ROOT/bin/workvm-host-card-agent-ensure" ]; then
         chmod +x "$ROOT/bin/workvm-host-card-agent-ensure" || true
     fi
+    if [ ! -x "$ROOT/bin/workvm-host-card-agent-docker" ]; then
+        chmod +x "$ROOT/bin/workvm-host-card-agent-docker" || true
+    fi
     mkdir -p "$(dirname "$unit_dst")"
     ln -sfn "$unit_src" "$unit_dst"
     systemctl --user daemon-reload
     systemctl --user enable --now workvm-host-card-agent-bridge.service
     systemctl --user --no-pager --full status workvm-host-card-agent-bridge.service | head -20 || true
-    workvm_host_card_log "agent-bridge ativo (poll ensure requests)"
+    workvm_host_card_log "agent-bridge ativo (poll ensure + docker requests)"
 }
 
 cmd="${1:-}"
@@ -71,6 +77,7 @@ case "$cmd" in
     destroy) workvm_host_card_destroy "$@" ;;
     list) workvm_host_card_list "$@" ;;
     agent-ensure) exec "$ROOT/bin/workvm-host-card-agent-ensure" "$@" ;;
+    agent-docker) exec "$ROOT/bin/workvm-host-card-agent-docker" "$@" ;;
     install-agent-bridge) workvm_host_card_install_agent_bridge "$@" ;;
     *)
         workvm_host_card_log "comando desconhecido: $cmd"

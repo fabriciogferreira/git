@@ -17,13 +17,20 @@ Publish the library to npm **only** when the user explicitly asks (not implied b
 
 ## 2. Gates (only for dirty clones)
 
+When the agent Shell hides `docker.sock` (silent sandbox), use
+`~/git/bin/workvm-host-card agent-docker --project use-url-query --code use-url-query --container <svc> -- …`
+instead of `docker compose exec` / `docker exec`.
+
 ### Library (`use-url-query`)
 
-Host-card `lib` / compose `use-url-query` service:
+Host-card `lib` (Bun+Node image):
 
 ```bash
-docker compose exec use-url-query bun run test
-docker compose exec use-url-query bun run build
+# Prefer docker compose exec when sock is visible; else agent-docker:
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container lib -- bun run test
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container lib -- bun run build
 ```
 
 - [ ] Tests green.
@@ -34,10 +41,14 @@ docker compose exec use-url-query bun run build
 Host-card `workspace` (e.g. `hc-…-workspace-1`):
 
 ```bash
-php artisan test --compact --ci
-./vendor/bin/pest --type-coverage --min=100
-vendor/bin/phpstan analyse --memory-limit=1G
-vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container workspace -- php artisan test --compact --ci
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container workspace -- php -d memory_limit=2G ./vendor/bin/pest --type-coverage --min=100
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container workspace -- vendor/bin/phpstan analyse --memory-limit=1G
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container workspace -- vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
 ```
 
 - [ ] Tests green.
@@ -46,6 +57,12 @@ vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --diff --ansi
 - [ ] CS Fixer applied; include formatter diffs in the commit.
 
 ### Demo web (`use-url-query-demo-web`)
+
+```bash
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container front -- npm run lint
+# typecheck / test if the clone defines them
+```
 
 - [ ] Run the clone’s lint / typecheck / test commands from its docs or `package.json`.
 - [ ] Fix issues introduced by this change.

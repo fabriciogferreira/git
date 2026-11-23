@@ -1,6 +1,18 @@
 # Histórico
 
 
+## Host-card: agent-docker + lib Bun+Node (silent sandbox / Vitest)
+
+- **problema:** (1) Shell do agente ficava com footer SANDBOXING após `all` — `docker.sock` oculto com dockerd vivo; `agent-ensure` subia o compose mas Pest/`docker exec` / gates de pre-deploy ainda falhavam. (2) Serviço `lib` do Card usava `oven/bun` puro → Vitest `child.channel?.unref`.
+- **por que é um problema:** pre-deploy do use-url-query (e Pest em outros cards) parava no funil mesmo com stack up; coverage só no sandbox não cobria o gate do Card.
+- **resolvido como:** `bin/workvm-host-card-agent-docker` + bridge poll de `.workvm-agent-docker-request.json` (versionado no meta; runtime já tinha). `compose.host.yml` `lib` → `use-url-query-sandbox-backend:tests`; ensure do Card garante a imagem. Prompts/pre-deploy: silent sandbox → `agent-docker` depois do ensure. **Push git / `gh` / `~/.cursor/permissions.json` ainda exigem shell unrestricted de verdade** (MCP GitHub lê; o Shell sandboxed continua Forbidden no token) — até existir bridge `agent-git` ou approval card que eleve de fato.
+
+## use-url-query lib: StrykerJS para mutation
+
+- **problema:** `mutation-testing.md` marcava a lib como Blocked — Vitest cobre testes/coverage, mas não havia runner de mutation (equivalente ao Pest `--mutate`).
+- **por que é um problema:** o funil parava depois do coverage da lib; só `skip mutation` liberava `pre-deploy`.
+- **resolvido como:** no clone `use-url-query`: `@stryker-mutator/core` + `@stryker-mutator/vitest-runner`, `stryker.config.json`, script `test:mutate`. Prompts/ORCHESTRATION passam a rodar Stryker (sandbox `:tests` / Node real) em vez de Blocked.
+
 ## use-url-query sandbox: Vitest coverage precisa de Node real
 
 - **problema:** `workvm-sandbox` slim usava `oven/bun`; `node` no PATH é symlink para bun. `bun run test:coverage` / Vitest pool (forks/threads) falhava com `child.channel?.unref is not a function`.

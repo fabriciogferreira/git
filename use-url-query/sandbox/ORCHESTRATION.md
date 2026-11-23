@@ -16,20 +16,23 @@ CLI: `~/git/bin/workvm-sandbox --project use-url-query`. Compose slim:
 **Obrigatório:** coverage drain **não** usa `docker exec` no container
 do Card. Usa `workvm-sandbox create --project use-url-query --profile tests`.
 
-A imagem slim `use-url-query-sandbox-backend:tests` (Dockerfile.backend) traz
-Node real além do Bun — Vitest `--coverage` falha se `node` for o fallback do
-Bun (`child.channel?.unref`).
+A imagem `use-url-query-sandbox-backend:tests` (Dockerfile.backend) traz
+Node real além do Bun — Vitest falha se `node` for o fallback do Bun
+(`child.channel?.unref`). Slim **e** serviço `lib` do `compose.host.yml`
+usam essa tag.
 
-Day-to-day `bun run test` / `bun run build`: `docker compose exec use-url-query …`
-(ou o container do host-card ativo).
+Day-to-day `bun run test` / `bun run build`: `docker compose exec` no `lib`
+do Card, ou `workvm-host-card agent-docker … --container lib -- …` se o
+Shell esconder `docker.sock`.
 
 ## Escopo do slim
 
 O slim/exclusive atual isola a **lib** (bun). Demo-api/demo-web no host-card
 usam o compose host (`compose.host.yml`). Coverage/mutation da lib: sandbox
-slim. Demo-api Pest coverage/mutate: workspace do host-card (ou sandbox
-exclusive da API se existir). Mutation: **sem auto-skip** — ver
-`mutation-testing.md` (lib Blocked sem runner; API com Pest `--mutate`).
+slim (`bun run test:coverage` / `bun run test:mutate` / Stryker). Demo-api
+Pest coverage/mutate: workspace do host-card (ou sandbox exclusive da API se
+existir). Mutation: **sem auto-skip** — ver `mutation-testing.md`
+(lib Stryker + Vitest; API Pest `--mutate`).
 
 ## Warm pool + subagentes
 

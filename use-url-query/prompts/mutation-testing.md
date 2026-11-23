@@ -16,7 +16,18 @@ Mutation is **mandatory**. Do **not** auto-skip or jump to `pre-deploy.md`.
 
 ## Lib
 
-No Pest/`--mutate` (or equivalent) runner today. For lib rows: report **Blocked**, list in-scope modules/tests, **stop**. Do **not** invent a mutation tool. Clear lib Blocked only with a real runner or `skip mutation`.
+Use StrykerJS + Vitest runner (`@stryker-mutator/core`, `@stryker-mutator/vitest-runner`) in the lib clone. Prefer exclusive sandbox (`workvm-sandbox --project use-url-query --profile tests`) so Card `bun`/Vitest jobs do not collide. Use **real Node** (sandbox `:tests` image), not Bun’s `node` fallback.
+
+```bash
+# Full suite (stryker.config.json: src/**/*.ts minus index)
+bun run test:mutate
+
+# Scoped (one file / glob from the ledger)
+npx stryker run --mutate src/sorts.ts
+npx stryker run --mutate 'src/use-url-query.ts'
+```
+
+Done = mutation score meets `thresholds.break` (100) for **in-scope** mutate globs, or survivors are `equivalent` after review. Kill killables by tightening tests (not production).
 
 ## Demo-api
 
@@ -39,6 +50,6 @@ When all clone rows for this change-set are done (or explicitly skipped) → rec
 
 | Command | Do this |
 | --- | --- |
-| `correct mutations` / `next mutation` | Continue the drain (or re-check lib Blocked). |
+| `correct mutations` / `next mutation` | Continue the drain (Stryker lib and/or Pest API). |
 | `skip mutation` | Record skip in the ledger, then run `pre-deploy.md`. |
 | `try again` | Retry the blocked mutate / prepare step. |

@@ -1,7 +1,8 @@
-# Sandbox backend: Bun + real Node for Vitest workers / coverage.
-# Problema: oven/bun só publica `node` via fallback → bun; Vitest --coverage
-# (pool forks/threads) quebra com `child.channel?.unref is not a function`.
-# Não altera a imagem do Card (compose.host / oven/bun puro).
+# Bun + real Node for Vitest workers / coverage / Stryker.
+# Problema: oven/bun só publica `node` via fallback → bun; Vitest
+# (pool forks/threads, coverage, pre-deploy `bun run test`) quebra com
+# `child.channel?.unref is not a function`.
+# Usada no sandbox slim e no serviço `lib` do compose.host (host-card).
 
 FROM oven/bun:1.3.5-slim
 

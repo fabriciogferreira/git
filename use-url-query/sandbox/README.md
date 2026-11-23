@@ -15,7 +15,8 @@ Teto padrão: **2**. Override: `WORKVM_SANDBOX_MAX=N`.
 
 Service default do job: `backend` → tag `use-url-query-sandbox-backend:tests`
 (Bun + **Node real**; `project.sh` faz o build no `create`). Override:
-`HC_BUN_IMAGE=…`. O Card continua em `oven/bun` (`compose.host.yml`).
+`HC_BUN_IMAGE=…` (default `use-url-query-sandbox-backend:tests`). Card e
+slim compartilham essa imagem Bun+Node (`compose.host.yml` serviço `lib`).
 
 Antes do primeiro sandbox: `bun install` no clone (ou host-card `compose up`).
 

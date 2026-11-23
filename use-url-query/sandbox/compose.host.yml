@@ -1,11 +1,13 @@
-# Stack host-card use-url-query: lib bun + demo API (Laravel) + demo web (Next).
+# Stack host-card use-url-query: lib bun+Node + demo API (Laravel) + demo web (Next).
 # Problema: ensure só subia o bun da lib; demo-web/demo-api ficavam sem compose
 # namespaced (container_name/portas fixas dos clones). Aqui: SB_PORT_* e paths
 # absolutos, sem container_name.
+# Lib: mesma imagem Bun+Node do sandbox (Dockerfile.backend) — Vitest no Card
+# quebrava com oven/bun (`node` → bun; child.channel?.unref).
 
 services:
   lib:
-    image: oven/bun:1.3.5-slim
+    image: ${HC_BUN_IMAGE:-use-url-query-sandbox-backend:tests}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     working_dir: /srv
     entrypoint: ["sh", "-c"]

@@ -27,8 +27,8 @@ workvm_sandbox_project_repos() {
 }
 
 # Garante use-url-query-sandbox-backend:tests (Bun + Node real).
-# Problema: oven/bun só tem `node` → bun; Vitest --coverage quebra nos workers.
-# Card continua em oven/bun; só o slim do sandbox usa esta tag.
+# Problema: oven/bun só tem `node` → bun; Vitest --coverage / pre-deploy
+# quebra nos workers. Mesma tag no slim e no serviço lib do compose.host.
 workvm_sandbox_uq_ensure_backend_image() {
     local meta_repo tag=use-url-query-sandbox-backend:tests
     meta_repo="$(workvm_sandbox_meta_repo)"
