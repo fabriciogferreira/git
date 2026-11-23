@@ -4,14 +4,14 @@ Implement `{{ feature }}` with **TDD**.
 
 No cards, no board moves, no PRs. Shared rules: `~/git/use-url-query/prompts/workflow-policy.md`.
 
-This prompt is **project-scoped** (lib + demo-api + demo-web). From `{{ feature }}`, decide which clones to touch; name them in the plan. Work on `main` only in those clones.
+This prompt is **project-scoped** (lib + demo-api + demo-web). From `{{ feature }}`, decide which clones to touch; name them in the plan. Default multi-clone order: **demo-api → lib → demo-web** (`workflow-policy.md` **Clone order**). Work on `main` only in those clones.
 
 If Docker, bun, Pest, or other assumed tooling fails: stop, report, wait for `resolva` / `documente` / `resolva permanentemente`.
 
 ## 1. Context
 
 1. Treat `{{ feature }}` as the source of truth for intended behavior.
-2. Map the feature to one or more of: library, demo-api, demo-web. Inspect only what you need.
+2. Map the feature to one or more of: library, demo-api, demo-web. Inspect only what you need. When more than one applies, follow **Clone order** in `workflow-policy.md` (api → hook → front) unless the user narrowed the step.
 3. Prefer the smallest change that satisfies the feature. Do not expand scope across repos “just in case”.
 
 ## 2. Git

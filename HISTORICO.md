@@ -25,6 +25,12 @@
 - **por que é um problema:** pre-deploy do use-url-query (e Pest em outros cards) parava no funil mesmo com stack up; coverage só no sandbox não cobria o gate do Card.
 - **resolvido como:** `bin/workvm-host-card-agent-docker` + bridge poll de `.workvm-agent-docker-request.json` (versionado no meta; runtime já tinha). `compose.host.yml` `lib` → `use-url-query-sandbox-backend:tests`; ensure do Card garante a imagem. Prompts/pre-deploy: silent sandbox → `agent-docker` depois do ensure. **Push git / `gh` / `~/.cursor/permissions.json` ainda exigem shell unrestricted de verdade** (MCP GitHub lê; o Shell sandboxed continua Forbidden no token) — até existir bridge `agent-git` ou approval card que eleve de fato.
 
+## use-url-query: ordem demo-api → lib → demo-web
+
+- **problema:** a ordem fixa (backend Spatie → hook → front) tinha sido combinada no chat, mas `workflow-policy` / `implement` só diziam “escolhe os clones”.
+- **por que é um problema:** o agente (ou outro chat) podia começar pelo front ou pela lib sem o contrato da API, ou misturar os três no mesmo passo.
+- **resolvido como:** seção **Clone order (default)** em `use-url-query/prompts/workflow-policy.md`; ponteiro em `implement.md`. Exceção: usuário estreita o escopo (“backend only”, etc.).
+
 ## use-url-query lib: StrykerJS para mutation
 
 - **problema:** `mutation-testing.md` marcava a lib como Blocked — Vitest cobre testes/coverage, mas não havia runner de mutation (equivalente ao Pest `--mutate`).

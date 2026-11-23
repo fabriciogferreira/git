@@ -10,6 +10,16 @@ Prompts take `{{ feature }}`: a short description of what to build, fix, or veri
 
 Prompts are **project-scoped**. From `{{ feature }}`, decide which of the three clones to inspect or change. Do not assume every feature touches the library. State the chosen repos in the short plan.
 
+## Clone order (default)
+
+When a Spatie-style feature spans more than one clone, implement in this order unless the user narrows scope (e.g. “hook only” / “backend only”):
+
+1. **demo-api** — Spatie contract on Laravel first (allowedFields / allowedSorts / …, Pest against the query string).
+2. **use-url-query** (hook lib) — only if the package still lacks the matching URL API.
+3. **demo-web** — playground / UI that consumes the hook against the API.
+
+Do not start the front before the API shape exists. Do not expand into demo-web “for completeness” while still on step 1 or 2. Skip a step when that clone is already done for the feature or out of scope.
+
 ## Repos
 
 | Clone | Role | Day-to-day tooling |
