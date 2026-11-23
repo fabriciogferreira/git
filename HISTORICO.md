@@ -7,11 +7,11 @@
 - **por que é um problema:** `open olie CODE` / destroy ficavam presos; card inutilizável até limpeza manual com Docker.
 - **resolvido como:** e2e com `HOST_UID`/`HOST_GID` no ensure `.env`; `workvm_host_card_rm_rf` (rm local, senão `docker run alpine rm -rf`) em add/remove meta worktree, isolation e destroy; Chromium do MCP já usa `--no-sandbox`.
 
-## Host-card open: CODE obrigatório (não adivinhar)
+## Host-card open: CODE só em projeto com card
 
-- **problema:** `open olie` sem código fazia o agente escolher um card (ex. o último da lista).
-- **por que é um problema:** abre o worktree/stack errado; o usuário não pediu aquele CODE.
-- **resolvido como:** rule `.cursor/rules/host-card-open-code-required.mdc` + Chat commands em `olie`/`locav`/`televisao` `workflow-policy.md` — sem CODE, perguntar (list opcional); nunca adivinhar.
+- **problema:** `open olie` sem código fazia o agente escolher um card; a mesma rule também barrava `open use-url-query` / opbed / boilerplates (que não usam `{{ code }}`).
+- **por que é um problema:** worktree/stack errado no funil; ou atrito inútil em single-unit.
+- **resolvido como:** rule `.cursor/rules/host-card-open-code-required.mdc` — olie/locav/televisao pedem CODE; single-unit (`use-url-query`, `opbed`, `boilerplate-laravel`, `boilerplate-next`, `fabriciogferreira`) → `--code` = nome do projeto. Chat commands nas workflow-policy do funil.
 
 ## Commit/push: não editar arquivos antes
 
