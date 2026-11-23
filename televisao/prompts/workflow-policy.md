@@ -19,7 +19,7 @@ Do **not** repeat an expensive step when nothing material changed since the last
 | Expensive step | Re-run only when |
 | --- | --- |
 | `pest --mutate` / `pest --coverage` | Test or production blobs under test changed (`sha:` mismatch / missing stamp), or tooling was fixed; mutation also allows ≤1 re-mutate per `--class` after killable asserts (see mutation/coverage prompts). Matching `sha:` in the ledger → skip sandbox across chats. |
-| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. Always `--ci` (TIA `locally()` must not shrink the regression suite). |
+| Full Pest suite (`pest-parallel`) | A fix landed after a red suite, or the user sent `try again` after that fix. Full suite via `agent-docker` + `artisan test --compact --parallel` (≤22 processes). Do **not** pass `--ci` to artisan (unsupported); card has no Pest TIA — sandbox-only `PEST_TIA_LOCALLY`. |
 | Gap analysis / implementation-validation | Diff or requirements changed, or `try again` after `add` / `to correct`. |
 | Colleague dispatcher gates | A gate was blocked/failed and the user asks to retry **that** gate — do not re-dispatch green gates “to confirm”. |
 | Pre-QA checklist / production smoke | Code, PR, or production deploy changed; or a prior check failed and was fixed. |
@@ -29,7 +29,7 @@ Do **not** repeat an expensive step when nothing material changed since the last
 
 ## Pest TIA (local, meta only)
 
-Do **not** edit `televisao-api` `tests/Pest.php` / `.gitignore` (company repo). Enable with `PEST_TIA_LOCALLY=1` on the **sandbox** slim compose (meta). Needs `git` + coverage driver in the CLI image. **Regression** (`pest-parallel`) always passes `--ci`. Opt out once: `--no-tia`.
+Do **not** edit `televisao-api` `tests/Pest.php` / `.gitignore` (company repo). Enable with `PEST_TIA_LOCALLY=1` on the **sandbox** slim compose (meta). Needs `git` + coverage driver in the CLI image. **Regression** (`pest-parallel`) runs the full suite on the host-card backend via `agent-docker` — do **not** pass `--ci` to `php artisan test` (Laravel rejects it). Card compose does not set `PEST_TIA_LOCALLY`, so TIA does not shrink the gate. Sandbox opt-out once: `--no-tia`.
 
 ## Backend change-set (when base...HEAD is empty)
 
@@ -160,6 +160,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 
 - **Shell permissions (required):** call `ensure` / `destroy` **on the first attempt** with unrestricted agent shell — `required_permissions: ["all"]`. Never probe them in the default sandbox “to see if it works”.
   - **Sandbox symptom cluster** (sandbox only — **not** a broken jarvis host): `PermissionError` / `Permission denied` writing `~/.cursor/mcp.json`; `github.com` DNS timeout / `could not read Username for 'https://github.com'`; missing `/var/run/docker.sock`; empty stub `resolv.conf`; or `gh` “token invalid” **only in that agent shell**. The same ensure succeeds with `all` when the host is fine.
+  - **Silent sandbox after `all`:** if the Shell footer still says SANDBOXING despite `required_permissions: ["all"]`, use the bridge: `agent-ensure` for compose/MCP; `agent-docker --project televisao --code … --container backend -- php artisan test …` for Pest/`docker exec` on the card container (sock still hidden after ensure; bridge auto-sets `DB_DATABASE` from `meta.testing_database` for Pest). Install once: `install-agent-bridge`. Do **not** ask chmod/DNS/`gh auth`.
   - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure in a terminal unless `all` already ran and still failed for a real host reason.
   - Do **not** stop the prompt declaring tooling/host broken while only the sandboxed shell failed.
 - First day → creates state, `port_base`, `~/git/televisao/<id>.code-workspace`, opens Cursor, and brings up **compose slim** (`televisao/sandbox/host-card-ensure.sh`) using clones under `~/git/televisao`.

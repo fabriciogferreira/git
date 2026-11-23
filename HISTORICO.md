@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Televisão pest-parallel: `--ci` no artisan + nome `televisao-backend`
+
+- **problema:** `televisao/prompts/pest-parallel.md` mandava `docker exec -w /srv televisao-backend php artisan test --compact --parallel --ci`. No host-card o container é `hc-televisao-…-backend-1`, e o `artisan test` do Laravel **não** aceita `--ci` (`The "--ci" option does not exist`). O wrapper `workvm-host-card-pest` (com `--ci`) é só Olie.
+- **por que é um problema:** o gate de regressão após mutation parava em todo card Televisão antes de rodar a suite; o agente ou inventava workaround silencioso ou ficava Blocked.
+- **resolvido como:** prompt + `workflow-policy` passam a `workvm-host-card agent-docker … backend` com `artisan test --compact --parallel --processes≤22` (sem `--ci`); TIA da empresa continua só no sandbox (`PEST_TIA_LOCALLY`). Front: `bunx biome check .` (sem `--write`).
+
 ## Televisão sandbox: Pest usa DB testing + seed-guard no cache
 
 - **problema:** (1) `compose.sandbox-shared-data.yml` injetava `DB_DATABASE=db_sb_*` (api); PHPUnit `force=true` para `*_test` não vencia o env do Docker — TestCase recusava o banco. (2) `testing-db-cache` importava schema+TestingSeeder, mas o `setUp` do clone re-seedava e estourava `users_email_unique`. Rsync do dirty `televisao-api` ainda apagava os patches do worktree e deixava dump do tip (sem colunas morph TV-41) enquanto o código dirty já usava `supportable_*`.
