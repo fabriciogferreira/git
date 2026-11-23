@@ -18,8 +18,10 @@ do Card. Usa `workvm-sandbox create --project use-url-query --profile tests`.
 
 A imagem `use-url-query-sandbox-backend:tests` (Dockerfile.backend) traz
 Node real além do Bun — Vitest falha se `node` for o fallback do Bun
-(`child.channel?.unref`). Slim **e** serviço `lib` do `compose.host.yml`
-usam essa tag.
+(`child.channel?.unref`). Também inclui `procps` (`ps`) — Stryker mata
+workers com `ps`; sem isso o dry-run passa e o mutate cai em
+`spawn ps ENOENT`. Slim **e** serviço `lib` do `compose.host.yml` usam
+essa tag.
 
 Day-to-day `bun run test` / `bun run build`: `docker compose exec` no `lib`
 do Card, ou `workvm-host-card agent-docker … --container lib -- …` se o

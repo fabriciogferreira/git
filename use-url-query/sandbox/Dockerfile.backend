@@ -2,6 +2,8 @@
 # Problema: oven/bun só publica `node` via fallback → bun; Vitest
 # (pool forks/threads, coverage, pre-deploy `bun run test`) quebra com
 # `child.channel?.unref is not a function`.
+# Stryker também precisa de `ps` (procps) para matar workers; sem isso
+# o dry-run passa e o mutate morre com `spawn ps ENOENT`.
 # Usada no sandbox slim e no serviço `lib` do compose.host (host-card).
 
 FROM oven/bun:1.3.5-slim
@@ -11,7 +13,7 @@ USER root
 ARG NODE_VERSION=22.22.0
 
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends ca-certificates curl xz-utils \
+	&& apt-get install -y --no-install-recommends ca-certificates curl xz-utils procps \
 	&& ARCH="$(dpkg --print-architecture)" \
 	&& case "$ARCH" in \
 		amd64) NODE_ARCH=x64 ;; \
@@ -26,6 +28,7 @@ RUN apt-get update \
 	&& node -v \
 	&& npm -v \
 	&& bun -v \
+	&& command -v ps >/dev/null \
 	&& test "$(readlink -f "$(command -v node)")" != "$(readlink -f "$(command -v bun)")"
 
 # Compose sets user: HOST_UID:HOST_GID; keep root default in the image.

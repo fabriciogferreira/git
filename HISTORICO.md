@@ -1,6 +1,12 @@
 # Histórico
 
 
+## use-url-query sandbox: Stryker precisa de `ps` (procps)
+
+- **problema:** `npx stryker run` no sandbox `:tests` passava o dry-run e morria com `spawn ps ENOENT` ao matar workers.
+- **por que é um problema:** mutation da lib (obrigatória após coverage) ficava Blocked em todo card; só `skip mutation` liberava `pre-deploy`.
+- **resolvido como:** `procps` no `use-url-query/sandbox/Dockerfile.backend` (tag `use-url-query-sandbox-backend:tests`); `command -v ps` no build; rebuild da imagem no próximo `workvm-sandbox create` / ensure.
+
 ## Televisão pest-parallel: `--ci` no artisan + nome `televisao-backend`
 
 - **problema:** `televisao/prompts/pest-parallel.md` mandava `docker exec -w /srv televisao-backend php artisan test --compact --parallel --ci`. No host-card o container é `hc-televisao-…-backend-1`, e o `artisan test` do Laravel **não** aceita `--ci` (`The "--ci" option does not exist`). O wrapper `workvm-host-card-pest` (com `--ci`) é só Olie.
