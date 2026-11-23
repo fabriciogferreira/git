@@ -11,7 +11,18 @@
     {
       "name": "opbed-frontend",
       "path": "opbed-frontend"
+    },
+    {
+      "name": "boilerplate-next",
+      "path": "../boilerplate-next/boilerplate-next"
+    },
+    {
+      "name": "boilerplate-laravel",
+      "path": "../boilerplate-laravel/boilerplate-laravel"
     }
   ],
-  "settings": {}
+  "settings": {
+    "php-cs-fixer.executablePath": "~/git/bin/workvm-php-cs-fixer",
+    "php-cs-fixer.config": ".php-cs-fixer.dist.php"
+  }
 }
