@@ -406,25 +406,33 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 ## Evidence table on project content
 
-At the **end** of each trigger below, upsert a short Brazilian Portuguese **evidence table** into the card description (`get-project-details-tool` → `edit-project-tool`). Keep all other description text. Never wipe the prior description. This is human evidence for the board — not a prompt path, not sandbox jargon.
+At the **end** of each trigger below, post a short Brazilian Portuguese **evidence table** into the **card content** (project timeline / chat) with MCP **`save-media-tool`** (`project_identifier` = CODE or UUID, `text` = the markdown block). This is human evidence for the board — not a prompt path, not sandbox jargon.
+
+**Destination (only):** card content via `save-media-tool`.
+
+**Never** put the evidence table in:
+
+- the project **description** (`edit-project-tool` / `description`)
+- the **Caderno** / notebook (`edit-notebook-page-tool` / forum pages)
+- a **PR** title or body
 
 ### When to write
 
 | Trigger | When | Heading (exact `###` line) |
 | --- | --- | --- |
 | Implementation handoff | End of **`pre-qa.md`**, after a successful move to 'QA/CR' (or after the report if the move was blocked — still write what ran) | `### Evidência — Implementation` |
-| Correction | End of **`correction.md`** when that paste’s correction work is complete (not the conflict-only first stop). Upsert again at the end of the following **`pre-qa.md`** that returns the card to 'QA/CR' | `### Evidência — {N}º Correção` |
+| Correction | End of **`correction.md`** when that paste’s correction work is complete (not the conflict-only first stop). Post again at the end of the following **`pre-qa.md`** that returns the card to 'QA/CR' | `### Evidência — {N}º Correção` |
 | Colleague review | End of **`colleague-review.md`** combined outcome on **Pass** or **Corrigir** bounce — **not** while stuck in **reviewer-fix** with open gap/mutation/coverage | `### Evidência — {N}º QA/CR pelo {Nome}` |
 | Production review | End of **`production-review.md`** after Pass/Fail/Blocked is reported (before or after the yes/no move) | `### Evidência — {N}º Revisão produção` |
 
-`{N}` = count of existing headings of that kind in the description + 1 (1º, 2º, 3º…). `{Nome}` = reviewer display name (e.g. Fabrício Ferreira from 'atribuído a' / form). Do **not** invent a round number.
+`{N}` = count of existing media texts that already use that heading kind + 1 (1º, 2º, 3º…), unless you are **refreshing the same round** (correction → following pre-qa): then reuse the same `{N}` / same exact `###` line. `{Nome}` = reviewer display name (e.g. Fabrício Ferreira from 'atribuído a' / form). Do **not** invent a round number.
 
-### Upsert (do not append forever)
+### How to post (card content only)
 
-1. Read the current project description.
-2. If a block with the **same exact** `###` heading already exists, **replace that block only** (from that `###` through the line before the next `###` or end of description).
-3. Otherwise append the new block at the end (blank line before it).
-4. Do not edit other evidence blocks.
+1. List media with `get-project-media-tool` and **`filter: "default"`** (see **Project media**). Count prior evidence headings of the same kind for `{N}`.
+2. Call **`save-media-tool`** with the full markdown block (heading + tables). One media message per write.
+3. There is no edit-media tool: to refresh the same round (e.g. Correção after pre-qa fills %), **post a new** `save-media-tool` message with the **same exact** `###` heading and the updated tables. Source of truth = the **latest** media whose text starts with that heading. Do not rewrite description or Caderno to “fix” older posts.
+4. Do not fold evidence into other notes, PR links blocks, or notebook pages.
 
 ### Diff range for mutation / coverage / all-test %
 

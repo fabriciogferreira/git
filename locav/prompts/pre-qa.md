@@ -219,4 +219,4 @@ Clearly distinguish completed actions from pending work. Do not claim that the c
 
 ### Evidence table (required)
 
-After the final report above, upsert the **Implementation** (or **{N}º Correção** when this pre-QA returns a card from Corrigir) evidence table into the project description per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md`. Use Front/Back rows only for surfaces touched; mutation/coverage/all-test % on diff `A..B` excluding the PHP CS Fixer commit. Cypress may be named on the Front e2e row.
+After the final report above, post the **Implementation** (or **{N}º Correção** when this pre-QA returns a card from Corrigir) evidence table into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (never description, Caderno, or PR). Use Front/Back rows only for surfaces touched; mutation/coverage/all-test % on diff `A..B` excluding the PHP CS Fixer commit. Cypress may be named on the Front e2e row.

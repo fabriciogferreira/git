@@ -119,9 +119,9 @@ Problema resolvido entra aqui.
 
 ## Evidence table no conteúdo do card (triggers)
 
-- **problema:** scoreboard de implementation / QA/CR / correção / revisão produção ficava só no chat do Cursor; no card não dava para ver o que rodou (deploy, e2e, tsc, pint, mutation %, etc.) nem a rodada.
-- **por que é um problema:** revisor e agente seguinte perdiam o rastro; silêncio no card (policy antiga) escondia evidência útil sem ser “dívida de autor”.
-- **resolvido como:** contrato **Evidence table on project content** em `olie|locav|televisao/prompts/workflow-policy.md` (upsert por `###` estável; diff A..B sem commit de format; e2e privado Olie/TV vs Cypress Locav); hooks em pre-qa / correction / colleague-review / production-review. Exceção explícita em **Card content vs chat**.
+- **problema:** scoreboard de implementation / QA/CR / correção / revisão produção ficava só no chat do Cursor; no card não dava para ver o que rodou (deploy, e2e, tsc, pint, mutation %, etc.) nem a rodada. Depois o contrato apontou por engano para a **descrição** do projeto (`edit-project-tool`).
+- **por que é um problema:** revisor e agente seguinte perdiam o rastro; gravar na descrição/Caderno/PR mistura evidência com campos errados.
+- **resolvido como:** contrato **Evidence table on project content** em `olie|locav|televisao/prompts/workflow-policy.md` — só **`save-media-tool`** (conteúdo/timeline do card); **proibido** description, Caderno e PR; refresh da mesma rodada = nova mídia com o mesmo `###` (vale a última); diff A..B sem commit de format; hooks em pre-qa / correction / colleague-review / production-review.
 
 ## Host-card Olie: stack seletivo back/front
 

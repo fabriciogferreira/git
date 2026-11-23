@@ -58,4 +58,4 @@ When yes: resolve the live step id by display name via MCP / `~/git/locav/prompt
 
 The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.
 
-**Evidence table (required):** after the Pass/Fail/Blocked report, upsert `### Evidência — {N}º Revisão produção` into the project description per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply).
+**Evidence table (required):** after the Pass/Fail/Blocked report, post `### Evidência — {N}º Revisão produção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply; never description, Caderno, or PR).

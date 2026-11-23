@@ -64,7 +64,7 @@ Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **
 
 Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or prose process wrap-ups on the card). Never post gap/mutation/coverage **findings lists** on a Pass or reviewer-fix card.
 
-**Evidence table (required on Pass or Corrigir):** upsert `### Evidência — {N}º QA/CR pelo {Nome}` into the project description per **Evidence table on project content** in `workflow-policy.md`. Do **not** write that table while still in **reviewer-fix** with open gap/mutation/coverage.
+**Evidence table (required on Pass or Corrigir):** post `### Evidência — {N}º QA/CR pelo {Nome}` into the **card content** via `save-media-tool` per **Evidence table on project content** in `workflow-policy.md` (never description, Caderno, or PR). Do **not** write that table while still in **reviewer-fix** with open gap/mutation/coverage.
 
 ## 5. Scoreboard (required final report)
 

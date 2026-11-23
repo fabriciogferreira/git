@@ -282,7 +282,7 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 ## Evidence table on project content
 
-Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): upsert a Brazilian Portuguese evidence table into the card description at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. Keep other description text; replace a block only when the `###` heading matches exactly.
+Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): post a Brazilian Portuguese evidence table into the **card content** with MCP **`save-media-tool`** at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. **Never** the project description, Caderno/notebook, or PR body. Refresh the same round by posting again with the same exact `###` heading (latest media wins).
 
 Locav specifics:
 

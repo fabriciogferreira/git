@@ -223,4 +223,4 @@ Do not commit, push, or open a pull request unless explicitly requested and perm
 
 When implementation work on this paste is done, the next recommended prompt is `~/git/televisao/prompts/recommendation.md` (related improvements only; do not implement them in that paste). The user may send `next prompt` to run it without pasting. After recommendation, the handoff continues with `implementation-validation.md` (code-only). Do not run `~/git/televisao/prompts/pre-qa.md` or board `~/git/televisao/prompts/validation.md` yet.
 
-The durable **Evidence table** on the card (`### Evidência — Implementation`) is written at the end of **`pre-qa.md`**, not on this paste — see **Evidence table on project content** in `~/git/televisao/prompts/workflow-policy.md`.
+The durable **Evidence table** on the card content (`save-media-tool`, `### Evidência — Implementation`) is written at the end of **`pre-qa.md`**, not on this paste — never description, Caderno, or PR; see **Evidence table on project content** in `~/git/televisao/prompts/workflow-policy.md`.
