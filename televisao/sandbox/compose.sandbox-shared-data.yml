@@ -1,7 +1,12 @@
 # Sandbox Televisão → stack compartilhado hc-televisao-data.
 # Problema: slim subia mysql+redis por sandbox. Desliga data local e aponta
 # app para televisao-hc-pgsql/redis (pgsql real da TV).
-# SB_DB_DATABASE / SB_REDIS_PREFIX vêm do .env.
+# SB_TESTING_DATABASE / SB_REDIS_PREFIX vêm do .env.
+#
+# DB_DATABASE = testing (não api): o env do Docker vence PHPUnit force=true
+# (mesmo atrito do host-card agent-docker). O serviço `app` só roda Pest/
+# artisan test — precisa de *_test. Build do testing-db-cache passa -e
+# DB_DATABASE=<scratch> e sobrescreve.
 
 services:
   mysql:
@@ -19,7 +24,7 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: televisao-hc-pgsql
       DB_PORT: "5432"
-      DB_DATABASE: ${SB_DB_DATABASE:-db_televisao}
+      DB_DATABASE: ${SB_TESTING_DATABASE:-db_televisao_test}
       DB_USERNAME: root
       DB_PASSWORD: password
       REDIS_HOST: televisao-hc-redis

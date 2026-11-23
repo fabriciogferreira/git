@@ -95,6 +95,16 @@ PY
     start_epoch=$(date +%s)
     export WORKVM_SANDBOX_SERVICE="$service"
 
+    # Optional project hook (ex.: Televisão re-patch phpunit/TestCase after rsync).
+    local project
+    project="$(workvm_sandbox_meta_get "$sandbox_id" project 2>/dev/null || true)"
+    if [ -n "$project" ]; then
+        workvm_sandbox_load_project "$project" || true
+        if declare -F workvm_sandbox_project_before_job >/dev/null; then
+            workvm_sandbox_project_before_job "$sandbox_id" || true
+        fi
+    fi
+
     set +e
     workvm_sandbox_container_exec "$sandbox_id" "${cmd[@]}" \
         >"$job_dir/stdout.log" 2>"$job_dir/stderr.log"

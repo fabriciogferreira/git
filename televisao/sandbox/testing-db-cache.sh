@@ -2,9 +2,10 @@
 # Problema: o 1º Pest no sandbox gasta migrate:fresh + TestingSeeder no
 # Postgres shared. Sem FastRefresh, RefreshDatabase sempre remigra — este
 # cache faz pg_dump no host, importa no create e patcha o TestCase do
-# worktree para pular migrate:fresh quando a tabela migrations já existe.
+# worktree para pular migrate:fresh quando a tabela migrations já existe
+# e para não re-seedar users já importados (unique email).
 # Opt-out: WORKVM_TELEVISAO_TESTING_DB_CACHE=0
-# Sourced por televisao/sandbox/project.sh (after_up).
+# Sourced por televisao/sandbox/project.sh (after_up / before_job).
 
 workvm_televisao_testing_db_cache_enabled() {
     case "${WORKVM_TELEVISAO_TESTING_DB_CACHE:-1}" in
@@ -17,19 +18,32 @@ workvm_televisao_testing_db_cache_dir() {
     printf '%s/workvm/cache/televisao-testing-db\n' "${XDG_DATA_HOME:-$HOME/.local/share}"
 }
 
+# Dirty-aware: hash files on disk (rsync do card muda morph/migrations sem commit).
 workvm_televisao_testing_db_cache_key() {
     local api="$1"
-    local mig seeders key
-    mig="$(git -C "$api" rev-parse HEAD:database/migrations 2>/dev/null)" || return 1
-    seeders="$(git -C "$api" rev-parse HEAD:database/seeders 2>/dev/null)" || return 1
-    key="$(printf 'migrations:%s\nseeders:%s\n' "$mig" "$seeders" | sha256sum | awk '{print $1}')"
+    local key
+    [ -d "${api}/database/migrations" ] || return 1
+    [ -d "${api}/database/seeders" ] || return 1
+    key="$(
+        {
+            find "${api}/database/migrations" "${api}/database/seeders" \
+                -type f -name '*.php' -print0 2>/dev/null \
+                | sort -z \
+                | xargs -0 sha256sum 2>/dev/null
+        } | sha256sum | awk '{print $1}'
+    )" || return 1
     case "$key" in
         [a-f0-9][a-f0-9][a-f0-9][a-f0-9]*) printf '%s\n' "$key" ;;
         *) return 1 ;;
     esac
 }
 
-# Worktree-only: RefreshDatabase pula migrate:fresh se o dump já populou.
+workvm_televisao_testing_db_cache_stamp_path() {
+    local api="$1"
+    printf '%s/storage/app/.workvm-testing-db-cache.key\n' "$api"
+}
+
+# Worktree-only: skip migrate:fresh when dump populated; skip re-seed of TestingSeeder.
 workvm_televisao_testing_db_cache_patch_testcase() {
     local api="$1"
     local tc trait
@@ -71,12 +85,51 @@ trait WorkvmCachedRefreshDatabase
     }
 }
 PHP
-    if grep -q 'WorkvmCachedRefreshDatabase' "$tc" 2>/dev/null; then
+    if ! grep -q 'WorkvmCachedRefreshDatabase' "$tc" 2>/dev/null; then
+        if grep -qE 'use RefreshDatabase;' "$tc"; then
+            sed -i 's/use RefreshDatabase;/use WorkvmCachedRefreshDatabase;/' "$tc"
+            workvm_sandbox_log "testing-db-cache: TestCase → WorkvmCachedRefreshDatabase"
+        fi
+    fi
+
+    # Dump already ran TestingSeeder — setUp re-seed hits users_email_unique.
+    if grep -q 'workvm-testing-db-cache: seed-guard' "$tc" 2>/dev/null; then
         return 0
     fi
-    if grep -qE 'use RefreshDatabase;' "$tc"; then
-        sed -i 's/use RefreshDatabase;/use WorkvmCachedRefreshDatabase;/' "$tc"
-        workvm_sandbox_log "testing-db-cache: TestCase → WorkvmCachedRefreshDatabase"
+    if grep -qE '\$this->seed\(TestingSeeder::class\);' "$tc"; then
+        WORKVM_SB_TC="$tc" python3 - <<'PY'
+import os, re
+path = os.environ["WORKVM_SB_TC"]
+text = open(path, encoding="utf-8").read()
+pat = re.compile(
+    r"^([ \t]*)\$this->seed\(TestingSeeder::class\);[ \t]*$",
+    re.M,
+)
+repl = (
+    r"\1// workvm-testing-db-cache: seed-guard — dump already seeded\n"
+    r"\1if (! User::query()->exists()) {\n"
+    r"\1  $this->seed(TestingSeeder::class);\n"
+    r"\1}"
+)
+new, n = pat.subn(repl, text, count=1)
+if n:
+    open(path, "w", encoding="utf-8").write(new)
+PY
+        workvm_sandbox_log "testing-db-cache: TestCase seed guarded (skip if users exist)"
+    fi
+}
+
+# phpunit.xml: force testing DB (belt; compose already sets SB_TESTING_DATABASE).
+workvm_televisao_testing_db_cache_patch_phpunit() {
+    local phpunit="$1"
+    local testing_db="$2"
+    [ -f "$phpunit" ] || return 0
+    [ -n "$testing_db" ] || return 0
+    if grep -q 'name="DB_DATABASE"' "$phpunit"; then
+        sed -i -E "s|<env name=\"DB_DATABASE\"[^/]*/>|<env name=\"DB_DATABASE\" value=\"${testing_db}\" force=\"true\"/>|" "$phpunit"
+    fi
+    if grep -q 'name="DB_CONNECTION"' "$phpunit"; then
+        sed -i -E 's|<env name="DB_CONNECTION"[^/]*/>|<env name="DB_CONNECTION" value="pgsql" force="true"/>|' "$phpunit"
     fi
 }
 
@@ -180,4 +233,57 @@ workvm_televisao_testing_db_cache_ensure_for_sandbox() {
     fi
 
     workvm_televisao_testing_db_cache_patch_testcase "$api"
+    workvm_televisao_testing_db_cache_patch_phpunit "${api}/phpunit.xml" "$testing_db"
+    mkdir -p "${api}/storage/app"
+    printf '%s' "$cache_key" >"$(workvm_televisao_testing_db_cache_stamp_path "$api")"
+}
+
+# Re-apply patches after agent rsync; rebuild dump if migrations/seeders drifted.
+workvm_televisao_testing_db_cache_repatch_worktree() {
+    local wt="$1"
+    local testing_db="$2"
+    local sandbox_id="${3:-}"
+    local api_db="${4:-}"
+    local api stamp want have cache_dir dump_gz
+    api="${wt}/televisao-api"
+    [ -d "$api" ] || return 0
+    workvm_televisao_testing_db_cache_patch_testcase "$api"
+    workvm_televisao_testing_db_cache_patch_phpunit "${api}/phpunit.xml" "$testing_db"
+
+    workvm_televisao_testing_db_cache_enabled || return 0
+    want="$(workvm_televisao_testing_db_cache_key "$api" 2>/dev/null || true)"
+    [ -n "$want" ] || return 0
+    stamp="$(workvm_televisao_testing_db_cache_stamp_path "$api")"
+    have="$(cat "$stamp" 2>/dev/null || true)"
+    if [ -n "$have" ] && [ "$have" = "$want" ]; then
+        return 0
+    fi
+
+    # Dirty morph/migration vs dump do tip — invalida e reconstrói.
+    workvm_sandbox_log "testing-db-cache: schema drift (stamp≠disk); rebuild"
+    cache_dir="$(workvm_televisao_testing_db_cache_dir)"
+    mkdir -p "$cache_dir"
+    dump_gz="${cache_dir}/${want}.sql.gz"
+    rm -f "$dump_gz" "${dump_gz%.sql.gz}.key"
+    if [ -n "$sandbox_id" ] && [ -n "$testing_db" ]; then
+        # Drop testing tables so apply reimports.
+        docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${testing_db}' AND pid <> pg_backend_pid();" \
+            >/dev/null 2>&1 || true
+        docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+            "DROP DATABASE IF EXISTS \"${testing_db}\";" >/dev/null 2>&1 || true
+        docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+            "CREATE DATABASE \"${testing_db}\";" >/dev/null 2>&1 || true
+        if [ -n "$api_db" ]; then
+            docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${api_db}' AND pid <> pg_backend_pid();" \
+                >/dev/null 2>&1 || true
+            docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+                "DROP DATABASE IF EXISTS \"${api_db}\";" >/dev/null 2>&1 || true
+            docker exec televisao-hc-pgsql psql -U root -d postgres -v ON_ERROR_STOP=1 -c \
+                "CREATE DATABASE \"${api_db}\";" >/dev/null 2>&1 || true
+        fi
+        workvm_televisao_testing_db_cache_ensure_for_sandbox \
+            "$sandbox_id" "$wt" "$testing_db" "$api_db" || true
+    fi
 }

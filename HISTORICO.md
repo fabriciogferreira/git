@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Televisão sandbox: Pest usa DB testing + seed-guard no cache
+
+- **problema:** (1) `compose.sandbox-shared-data.yml` injetava `DB_DATABASE=db_sb_*` (api); PHPUnit `force=true` para `*_test` não vencia o env do Docker — TestCase recusava o banco. (2) `testing-db-cache` importava schema+TestingSeeder, mas o `setUp` do clone re-seedava e estourava `users_email_unique`. Rsync do dirty `televisao-api` ainda apagava os patches do worktree e deixava dump do tip (sem colunas morph TV-41) enquanto o código dirty já usava `supportable_*`.
+- **por que é um problema:** coverage/mutation no `workvm-sandbox` (caminho exclusive) ficavam vermelhos depois da imagem PHP 8.4+PCOV; agente caía de novo no host-card sem PCOV.
+- **resolvido como:** compose shared aponta `DB_DATABASE=${SB_TESTING_DATABASE}`; cache com seed-guard + phpunit patch; chave do dump = hash on-disk de migrations/seeders (dirty-aware); `before_job` re-patcha e, se stamp≠disk, DROP+rebuild+reimport. Mesma lição do host-card agent-docker (env Docker > force).
+
 ## Televisão sandbox: PHP 8.4 + PCOV (não php:8.3-cli)
 
 - **problema:** `televisao/sandbox/compose.slim.yml` usava `php:8.3-cli` sem `pdo_pgsql`, PCOV nem `git`; o card Televisão exige PHP ≥ 8.4.1 e coverage/mutation precisam de PCOV. Agente caía em pecl no backend compartilhado do host-card ou em imagem improvisada.

@@ -111,6 +111,25 @@ workvm_sandbox_project_after_up() {
     workvm_televisao_testing_db_cache_ensure_for_sandbox "$id" "$wt" "$testing_db" "$api_db" || true
 }
 
+# Antes de cada job: re-aplica patches se o agente rsyncou o clone por cima;
+# rebuild do dump se migrations/seeders dirty divergirem do stamp.
+workvm_sandbox_project_before_job() {
+    local id="$1"
+    local wt testing_db api_db
+
+    workvm_sandbox_televisao_shared_data_enabled || return 0
+    workvm_sandbox_televisao_load_testing_db_cache || return 0
+    wt="$(workvm_sandbox_meta_get "$id" worktrees 2>/dev/null || true)"
+    testing_db="$(workvm_sandbox_meta_get "$id" testing_database 2>/dev/null || true)"
+    api_db="$(workvm_sandbox_meta_get "$id" db_database 2>/dev/null || true)"
+    [ -n "$wt" ] || return 0
+    if [ -z "$testing_db" ]; then
+        testing_db="db_$(workvm_sandbox_televisao_db_slug "$id")_test"
+    fi
+    workvm_televisao_testing_db_cache_repatch_worktree \
+        "$wt" "$testing_db" "$id" "$api_db" || true
+}
+
 workvm_sandbox_televisao_write_env() {
     local src_env="$1"
     local dest_env="$2"
