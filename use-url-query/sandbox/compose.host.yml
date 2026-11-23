@@ -114,8 +114,8 @@ services:
       - "127.0.0.1:${SB_PORT_FRONT}:3000"
     volumes:
       - ${SB_FRONT}:/app
-      # Local hook under /app so Turbopack resolves `file:./vendor/use-url-query`.
-      - ${SB_LIB}:/app/vendor/use-url-query
+      # Local hook over the npm install so Turbopack picks up lib main without republish.
+      - ${SB_LIB}:/app/node_modules/@fabriciogferreira/use-url-query
       - front_node_modules:/app/node_modules
       - front_next:/app/.next
 
