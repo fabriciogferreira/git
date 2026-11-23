@@ -10,7 +10,7 @@ If tooling fails unexpectedly: stop, report, wait for `resolva` / `documente` / 
 
 ## Before testing
 
-1. Confirm each affected clone was pushed to `main` (and the lib published to npm if that was part of the ship).
+1. Confirm each affected clone was pushed to `main`. If that ship changed the lib `package.json` `version`, confirm that version is on npm.
 2. Identify consumer paths: npm/`@fabriciogferreira/use-url-query`, demo-web against demo-api, Spatie query-string behavior, etc.
 3. Identify the acceptance path implied by `{{ feature }}`.
 

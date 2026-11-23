@@ -6,7 +6,7 @@ There is **no PR**. Shared rules: `~/git/use-url-query/prompts/workflow-policy.m
 
 Commit and push **only** when this checklist’s applicable checks are green (or the user explicitly overrides). If a check fails: stop, fix or report, do not push.
 
-Publish the library to npm **only** when the user explicitly asks (not implied by this prompt alone).
+Publish the library to npm when this ship **changes** `package.json` `version` in the lib clone (compare to `origin/main` before the commit). Unchanged version → do not publish. Do not bump the version unless the user already did.
 
 ## 1. Scope
 
@@ -85,7 +85,13 @@ For **each** dirty clone:
 3. `git push` to `main` (`-u` only if needed).
 4. Report the commit SHA.
 
-If the user also asked to publish the library: bump version per their instruction, `bun publish` / `npm publish`, report the version.
+If the committed lib `package.json` `version` differs from the previous `origin/main` version, publish from the lib clone after the push (`prepublishOnly` already runs `bun run build`):
+
+```bash
+bun publish
+```
+
+Report the published version. If `src/` changed and `version` did not, say npm still has the previous version — do not publish and do not invent a bump.
 
 Do **not** open a pull request. Do **not** `--force` to `main`.
 

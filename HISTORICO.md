@@ -1,6 +1,12 @@
 # Histórico
 
 
+## use-url-query: publish da lib quando a versão muda
+
+- **problema:** `pre-deploy.md` só publicava `@fabriciogferreira/use-url-query` se o usuário pedisse. Um bump de `package.json` `version` ia para o `main` e o npm ficava na versão anterior.
+- **por que é um problema:** o demo e o production review olham o pacote publicado; a versão no git sem `bun publish` mente o que está no registry.
+- **resolvido como:** se o ship altera `version` em relação a `origin/main`, o pre-deploy roda `bun publish` depois do push. Versão igual → não publica e não inventa bump. Notas em `workflow-policy.md`, `pre-deploy.md` e `production-review.md`.
+
 ## use-url-query sandbox: Stryker precisa de `ps` (procps)
 
 - **problema:** `npx stryker run` no sandbox `:tests` passava o dry-run e morria com `spawn ps ENOENT` ao matar workers.

@@ -2,7 +2,7 @@
 
 Personal WorkVM rules for the **use-url-query project** (not a single git repo). English for prompt bodies; ledger notes may be short facts.
 
-The project has **no cards**, **no colleague review**, and **no pull requests**. Work on `main` in each clone you touch. Lib publishing is via `npm`/`bun` publish when the user asks.
+The project has **no cards**, **no colleague review**, and **no pull requests**. Work on `main` in each clone you touch. When the lib `package.json` `version` changes, `pre-deploy.md` publishes to npm after the push.
 
 ## Feature context
 
@@ -112,6 +112,6 @@ If Docker, sandbox, bun, Pest, PHPStan, or compose fails unexpectedly: stop, rep
 
 1. `implement.md` / `correct.md` → choose repos → TDD per repo → repo gates
 2. If lib `src/` and/or demo-api production PHP changed → `coverage-testing.md` → `mutation-testing.md`
-3. `pre-deploy.md` → ship gates on **each dirty project clone** → commit and push `main` per clone (publish lib only if asked)
+3. `pre-deploy.md` → ship gates on **each dirty project clone** → commit and push `main` per clone. If lib `package.json` `version` differs from `origin/main`, `bun publish` after that push.
 4. `production-review.md` → verify what was shipped (package and/or demos)
 5. On fail → `correct.md` → funnel again
