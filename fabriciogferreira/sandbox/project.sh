@@ -34,7 +34,8 @@ workvm_sandbox_project_after_up() {
         workvm_sandbox_meta_set "$id" default_service backend
     fi
 
-    if [ -d "${wt}/fabriciogferreira" ] && [ ! -d "${wt}/fabriciogferreira/node_modules" ]; then
+    # Dir parcial (sem next) também precisa de ci — mesmo atrito do host-card.
+    if [ -d "${wt}/fabriciogferreira" ] && [ ! -d "${wt}/fabriciogferreira/node_modules/next" ]; then
         local compose_dir pname
         compose_dir="$(workvm_sandbox_meta_get "$id" compose_dir 2>/dev/null || true)"
         pname="$(workvm_sandbox_container_project_name "$id")"

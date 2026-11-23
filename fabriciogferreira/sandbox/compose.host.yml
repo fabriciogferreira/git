@@ -1,26 +1,41 @@
 # Stack host-card fabriciogferreira (navegável no jarvis, sem WorkVM).
 # Problema: ensure só abria Cursor; o docker-compose do clone usa
 # container_name/env fixos e porta 3000. Aqui: SB_PORT_WEB namespaced.
+# Volumes nomeados + chown: nm parcial no host pulava npm ci; volume
+# Docker nasce root e `user: HOST_UID` tomava EACCES no mkdir.
 
 services:
   frontend:
     image: ${HC_NODE_IMAGE:-node:22.13.1-alpine3.21}
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     working_dir: /srv
     environment:
       - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
     volumes:
       - ${SB_APP}:/srv
+      - frontend_node_modules:/srv/node_modules
+      - frontend_next:/srv/.next
     ports:
       - "127.0.0.1:${SB_PORT_WEB}:3000"
     entrypoint: ["sh", "-c"]
     command:
       - |
-        if [ ! -d node_modules ]; then npm ci; fi
-        npm run dev -- -H 0.0.0.0 -p 3000
+        set -e
+        mkdir -p /srv/node_modules /srv/.next
+        chown -R node:node /srv/node_modules /srv/.next
+        su node -s /bin/sh -c 'set -e; if [ ! -d node_modules/next ]; then npm ci --no-audit --no-fund; fi; npm run dev -- -H 0.0.0.0 -p 3000'
     networks: [hc_net]
 
 networks:
   hc_net:
     driver: bridge
     name: ${COMPOSE_PROJECT_NAME}_hc_net
+
+volumes:
+  frontend_node_modules:
+    name: ${COMPOSE_PROJECT_NAME}_frontend_node_modules
+  frontend_next:
+    name: ${COMPOSE_PROJECT_NAME}_frontend_next

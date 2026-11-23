@@ -1,6 +1,12 @@
 # Histórico
 
 
+## fabriciogferreira host-card: Next `not found` com node_modules parcial
+
+- **problema:** `open fabriciogferreira` subia o compose e o wait em `:SB_PORT_WEB` esgotava. Log: `sh: next: not found` (exit 127). O clone tinha `node_modules/` (e `@next/…`) mas sem o pacote `next` / `.bin/next`.
+- **por que é um problema:** single-unit igual Opbed; sem Next o host-card não serve o portfólio e o Cursor abre sem stack.
+- **resolvido como:** em `fabriciogferreira/sandbox/compose.host.yml`, volumes nomeados `frontend_node_modules` + `frontend_next` (não reusa o nm quebrado do host), gate `node_modules/next` antes do `npm ci`, e `chown node` + `su node` no entrypoint (volume Docker nasce root — `user: HOST_UID` dava EACCES). Sandbox `project.sh` after_up usa o mesmo gate de `next`. Reopen/`ensure` copia o yaml de novo.
+
 ## use-url-query: publish da lib quando a versão muda
 
 - **problema:** `pre-deploy.md` só publicava `@fabriciogferreira/use-url-query` se o usuário pedisse. Um bump de `package.json` `version` ia para o `main` e o npm ficava na versão anterior.
