@@ -31,7 +31,7 @@ Do **not** create a feature branch or a pull request.
 5. **Types / analysis for that clone:**
    - Lib: `bun run build` (`tsc`).
    - Demo-api: Type Coverage (`pest --type-coverage --compact`) then PHPStan when production PHP changed.
-   - Demo-web: typecheck / lint per that clone.
+   - Demo-web: `npm run lint` and `npm run typecheck` (`tsc --noEmit`).
    - New contract/edge → new **Red** first.
 6. Narrow suite, then full suite for each changed clone before hand-off.
 

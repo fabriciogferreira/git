@@ -61,10 +61,15 @@ workvm-host-card agent-docker --project use-url-query --code use-url-query \
 ```bash
 workvm-host-card agent-docker --project use-url-query --code use-url-query \
   --container front -- npm run lint
-# typecheck / test if the clone defines them
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container front -- npm run typecheck
+workvm-host-card agent-docker --project use-url-query --code use-url-query \
+  --container front -- npm run test -- --run
 ```
 
-- [ ] Run the clone’s lint / typecheck / test commands from its docs or `package.json`.
+- [ ] Lint clean.
+- [ ] `npm run typecheck` clean (`next typegen` + `tsc --noEmit` — same TS gate as `next build`).
+- [ ] Tests green.
 - [ ] Fix issues introduced by this change.
 
 Investigate failures; do not assume they are unrelated.

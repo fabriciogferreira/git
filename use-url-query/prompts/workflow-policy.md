@@ -36,7 +36,7 @@ Shell with `required_permissions: ["all"]` for Docker / `workvm-sandbox`. Prefer
 | --- | --- | --- | --- |
 | Behavioral suite | `bun run test` (Vitest) | `php artisan test` / Pest | clone’s test script |
 | Type Coverage | N/A | `pest --type-coverage` | N/A (use typecheck) |
-| Static analysis | `bun run build` (`tsc`) | PHPStan | typecheck / lint |
+| Static analysis | `bun run build` (`tsc`) | PHPStan | `npm run lint` + `npm run typecheck` (`tsc --noEmit`) |
 | Code coverage | sandbox `bun run test:coverage` | Pest `--coverage` (sandbox when exclusive) | only if the clone has a coverage gate |
 | Mutation | Stryker (`bun run test:mutate` / scoped `--mutate`) after lib coverage | Pest `--mutate` after API coverage | N/A unless a runner exists |
 
