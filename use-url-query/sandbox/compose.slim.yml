@@ -4,11 +4,13 @@
 #
 # Profiles: tests | mutation | e2e | slim
 # Env: SB_MEM, SB_CPUS, SB_WORKTREE, SB_BUN_IMAGE
+# Default SB_BUN_IMAGE: use-url-query-sandbox-backend:tests (Bun + Node real —
+# Vitest coverage precisa de Node; ver Dockerfile.backend).
 
 services:
   # CLI bun run test (Vitest) / tsc — job default_service=backend (mesmo nome dos outros projetos).
   backend:
-    image: ${SB_BUN_IMAGE:-oven/bun:1.3.5-slim}
+    image: ${SB_BUN_IMAGE:-use-url-query-sandbox-backend:tests}
     profiles: ["tests", "mutation", "e2e", "slim"]
     working_dir: /srv
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"

@@ -16,6 +16,10 @@ CLI: `~/git/bin/workvm-sandbox --project use-url-query`. Compose slim:
 **Obrigatório:** coverage drain **não** usa `docker exec` no container
 do Card. Usa `workvm-sandbox create --project use-url-query --profile tests`.
 
+A imagem slim `use-url-query-sandbox-backend:tests` (Dockerfile.backend) traz
+Node real além do Bun — Vitest `--coverage` falha se `node` for o fallback do
+Bun (`child.channel?.unref`).
+
 Day-to-day `bun run test` / `bun run build`: `docker compose exec use-url-query …`
 (ou o container do host-card ativo).
 

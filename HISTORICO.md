@@ -1,6 +1,12 @@
 # Histórico
 
 
+## use-url-query sandbox: Vitest coverage precisa de Node real
+
+- **problema:** `workvm-sandbox` slim usava `oven/bun`; `node` no PATH é symlink para bun. `bun run test:coverage` / Vitest pool (forks/threads) falhava com `child.channel?.unref is not a function`.
+- **por que é um problema:** o drain de coverage da lib ficava Blocked em todo card; API coverage seguia, mas o hand-off para mutation da lib não fechava.
+- **resolvido como:** `use-url-query/sandbox/Dockerfile.backend` (Bun + Node 22 oficial); tag `use-url-query-sandbox-backend:tests`; `project.sh` faz ensure no `create` e o `compose.slim.yml` usa essa imagem por default. Card (`compose.host.yml`) permanece em `oven/bun`.
+
 ## Host-card: olie-e2e root/nobody bloqueia open (meta worktree)
 
 - **problema:** `compose.e2e-host.yml` rodava Playwright como `user: 0:0`; `test-results`/`playwright-report` ficavam `nobody`/`root`. No reopen, `rm -rf worktree/git` falhava (`Permission denied`) e sobrava dir órfão sem `.git` — `git worktree add` abortava (“already exists”).

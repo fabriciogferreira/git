@@ -26,6 +26,27 @@ workvm_sandbox_project_repos() {
     printf '%s\n' use-url-query
 }
 
+# Garante use-url-query-sandbox-backend:tests (Bun + Node real).
+# Problema: oven/bun só tem `node` → bun; Vitest --coverage quebra nos workers.
+# Card continua em oven/bun; só o slim do sandbox usa esta tag.
+workvm_sandbox_uq_ensure_backend_image() {
+    local meta_repo tag=use-url-query-sandbox-backend:tests
+    meta_repo="$(workvm_sandbox_meta_repo)"
+
+    if docker image inspect "$tag" >/dev/null 2>&1; then
+        if docker run --rm --entrypoint node "$tag" -e \
+            'if (process.versions.bun) process.exit(1)' >/dev/null 2>&1; then
+            return 0
+        fi
+        workvm_sandbox_log "${tag} sem Node real — rebuild"
+    fi
+
+    workvm_sandbox_log "build ${tag} (Bun + Node via Dockerfile.backend)"
+    docker build -t "$tag" \
+        -f "${meta_repo}/use-url-query/sandbox/Dockerfile.backend" \
+        "${meta_repo}/use-url-query/sandbox"
+}
+
 workvm_sandbox_project_after_up() {
     local id="$1"
     local wt="$2"
@@ -141,9 +162,12 @@ workvm_sandbox_project_render_compose() {
 
     meta_repo="$(workvm_sandbox_meta_repo)"
     tmpl="${meta_repo}/use-url-query/sandbox/compose.slim.yml"
-    bun_image="${HC_BUN_IMAGE:-oven/bun:1.3.5-slim}"
+    # Override opcional; default = imagem Bun+Node do Dockerfile.backend.
+    bun_image="${HC_BUN_IMAGE:-use-url-query-sandbox-backend:tests}"
     host_uid="$(id -u)"
     host_gid="$(id -g)"
+
+    workvm_sandbox_uq_ensure_backend_image || return 1
 
     mkdir -p "$compose_dir/artifacts"
     cp -f "$tmpl" "$compose_dir/compose.yaml"

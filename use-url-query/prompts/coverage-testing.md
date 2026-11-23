@@ -25,7 +25,10 @@ Measures **in-scope (diff) lines**, not suite Total %. Shared rules: `~/git/use-
   bun run test:coverage
 ```
 
-Do **not** `docker exec` the Card lib container for lib coverage drain. See `~/git/use-url-query/sandbox/ORCHESTRATION.md`.
+`create` builds/uses `use-url-query-sandbox-backend:tests` (Bun + real Node).
+Plain `oven/bun` breaks Vitest workers (`node` → bun fallback). Do **not**
+`docker exec` the Card lib container for lib coverage drain. See
+`~/git/use-url-query/sandbox/ORCHESTRATION.md`.
 
 ## Demo-api measure
 
