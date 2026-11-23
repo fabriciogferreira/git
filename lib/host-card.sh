@@ -198,7 +198,9 @@ workvm_host_card_add_repo_worktree() {
         return 0
     fi
 
-    rm -rf "$wt"
+    if [ -e "$wt" ]; then
+        workvm_host_card_rm_rf "$wt" || return 1
+    fi
     mkdir -p "$(dirname "$wt")"
     branch=""
     if [ -n "$code" ]; then
@@ -261,6 +263,33 @@ workvm_host_card_sync_meta_worktree() {
 # Meta-repo: sempre --detach (a branch de ~/git fica no clone “ao vivo”).
 # Todo host-card (Olie e demais): sem isto, N janelas abrem o mesmo ~/git e
 # o SCM/Explorer mostra dirty de outro card.
+# rm -rf que sobrevive a artefatos root/nobody (Playwright e2e antigo em 0:0).
+# Problema: `rm -rf` do usuário falha em test-results/report; open/destroy
+# deixavam worktree/git órfão e o próximo `worktree add` morria.
+workvm_host_card_rm_rf() {
+    local path="$1"
+    local parent base
+
+    [ -e "$path" ] || [ -L "$path" ] || return 0
+    if rm -rf "$path" 2>/dev/null; then
+        return 0
+    fi
+    parent="$(cd "$(dirname "$path")" 2>/dev/null && pwd)" || return 1
+    base="$(basename "$path")"
+    [ -n "$parent" ] && [ -n "$base" ] || return 1
+    workvm_host_card_log "rm via docker (uid alheio): ${path}"
+    docker run --rm \
+        -v "${parent}:/rmparent" \
+        alpine:3.20 \
+        rm -rf "/rmparent/${base}" 2>/dev/null || true
+    rm -rf "$path" 2>/dev/null || true
+    if [ -e "$path" ] || [ -L "$path" ]; then
+        workvm_host_card_log "falha ao remover: ${path}"
+        return 1
+    fi
+    return 0
+}
+
 workvm_host_card_add_meta_worktree() {
     local dir="$1"
     local src wt
@@ -275,7 +304,10 @@ workvm_host_card_add_meta_worktree() {
         workvm_host_card_sync_meta_worktree "$dir" || return 1
         return 0
     fi
-    rm -rf "$wt"
+    # Dir órfão (sem .git) ou lixo de e2e root — limpar antes do add.
+    if [ -e "$wt" ]; then
+        workvm_host_card_rm_rf "$wt" || return 1
+    fi
     mkdir -p "$(dirname "$wt")"
     workvm_host_card_log "worktree add --detach git (meta) @ HEAD"
     git -C "$src" -c core.hooksPath=/dev/null worktree add --detach "$wt" HEAD || return 1
@@ -293,10 +325,11 @@ workvm_host_card_remove_meta_worktree() {
     fi
     workvm_host_card_log "git worktree remove meta ${wt}"
     if [ -d "${src}/.git" ] || [ -f "${src}/.git" ]; then
-        git -C "$src" worktree remove --force "$wt" 2>/dev/null || rm -rf "$wt"
+        git -C "$src" worktree remove --force "$wt" 2>/dev/null \
+            || workvm_host_card_rm_rf "$wt" || true
         git -C "$src" worktree prune 2>/dev/null || true
     else
-        rm -rf "$wt"
+        workvm_host_card_rm_rf "$wt" || true
     fi
 }
 
@@ -452,13 +485,15 @@ workvm_host_card_remove_olie_isolation() {
         [ -d "$wt" ] || continue
         workvm_host_card_log "git worktree remove $name"
         if [ -d "$src" ]; then
-            git -C "$src" worktree remove --force "$wt" 2>/dev/null || rm -rf "$wt"
+            git -C "$src" worktree remove --force "$wt" 2>/dev/null \
+                || workvm_host_card_rm_rf "$wt" || true
         else
-            rm -rf "$wt"
+            workvm_host_card_rm_rf "$wt" || true
         fi
     done < <(workvm_host_card_olie_repo_bases)
 
-    rm -rf "${dir}/worktree" "${dir}/vendor"
+    workvm_host_card_rm_rf "${dir}/worktree" || true
+    workvm_host_card_rm_rf "${dir}/vendor" || true
 }
 
 workvm_host_card_remove_api_isolation() {
@@ -1495,7 +1530,7 @@ workvm_host_card_destroy() {
     if [ -n "$workspace" ] && [ -f "$workspace" ]; then
         rm -f "$workspace"
     fi
-    rm -rf "$dir"
+    workvm_host_card_rm_rf "$dir" || true
     # Se o worktree remove falhou no meio, sobra entrada em .git/worktrees.
     if [ "$project" = "olie" ] && [ -d "$(workvm_host_card_git_root)/olie/api-main/.git" ]; then
         git -C "$(workvm_host_card_git_root)/olie/api-main" worktree prune 2>/dev/null || true

@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card: olie-e2e root/nobody bloqueia open (meta worktree)
+
+- **problema:** `compose.e2e-host.yml` rodava Playwright como `user: 0:0`; `test-results`/`playwright-report` ficavam `nobody`/`root`. No reopen, `rm -rf worktree/git` falhava (`Permission denied`) e sobrava dir órfão sem `.git` — `git worktree add` abortava (“already exists”).
+- **por que é um problema:** `open olie CODE` / destroy ficavam presos; card inutilizável até limpeza manual com Docker.
+- **resolvido como:** e2e com `HOST_UID`/`HOST_GID` no ensure `.env`; `workvm_host_card_rm_rf` (rm local, senão `docker run alpine rm -rf`) em add/remove meta worktree, isolation e destroy; Chromium do MCP já usa `--no-sandbox`.
+
 ## Host-card open: CODE obrigatório (não adivinhar)
 
 - **problema:** `open olie` sem código fazia o agente escolher um card (ex. o último da lista).

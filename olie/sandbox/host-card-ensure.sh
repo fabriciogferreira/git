@@ -225,6 +225,16 @@ PY
     fi
     # O container grava relatório com outro uid (igual project-start e2e).
     mkdir -p "$e2e_dir/test-results" "$e2e_dir/playwright-report"
+    # Artefatos de e2e antigo (0:0 → nobody) — chmod não apaga; chown via Docker.
+    if find "$e2e_dir/test-results" "$e2e_dir/playwright-report" \
+        -not -user "$(id -u)" -print -quit 2>/dev/null | grep -q .; then
+        workvm_host_card_log "chown e2e leftovers → $(id -u):$(id -g)"
+        docker run --rm \
+            -v "${e2e_dir}:/e2e" \
+            alpine:3.20 \
+            chown -R "$(id -u):$(id -g)" /e2e/test-results /e2e/playwright-report \
+            2>/dev/null || true
+    fi
     chmod -R a+rwX "$e2e_dir/test-results" "$e2e_dir/playwright-report" 2>/dev/null || true
 
     mkdir -p "$compose_dir/artifacts"
@@ -261,6 +271,8 @@ PY
         workvm_host_card_write_resource_env
         printf 'SB_PORT_API=%s\n' "$port_base"
         printf 'SB_PORT_FRONT=%s\n' "$((port_base + 1))"
+        printf 'HOST_UID=%s\n' "$(id -u)"
+        printf 'HOST_GID=%s\n' "$(id -g)"
         printf 'APP_KEY=%s\n' "$app_key"
         printf 'COMPOSE_FILE=compose.yaml:compose.gui.yml:compose.front.yml:compose.host-card-shared-data.yml:compose.e2e-host.yml\n'
     } >"$compose_dir/.env"

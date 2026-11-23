@@ -5,6 +5,9 @@
 # Serviço separado de `e2e` do slim (profile sandbox) para não misturar paths.
 # restart: "no" — unless-stopped deixava o e2e de pé sozinho após reboot do
 # Docker com app/http Exited (card “morto” ainda comia RAM).
+# user HOST_UID — 0:0 gravava test-results/report como root/nobody e o
+# próximo open falhava em rm -rf do meta worktree (Permission denied).
+# Chromium no MCP já usa --no-sandbox (workvm-playwright-mcp.sh).
 services:
   olie-e2e:
     profiles: ["slim"]
@@ -14,7 +17,7 @@ services:
     image: olie/e2e
     network_mode: host
     ipc: host
-    user: "0:0"
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     restart: "no"
     working_dir: /app
     environment:

@@ -227,6 +227,7 @@ User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-car
 - Later day / re-paste → **resume** the same id (compose up again; do not destroy); worktree checkout runs again on resume; if Cursor already has the card window → **focus** it (do **not** close/reopen — that killed colleague-review chats mid-ensure). Use `open` when you need the SCM close+reopen dance. From inside the card window with stack already up: `WORKVM_HOST_CARD_OPEN_CURSOR=0` on ensure.
 - Report `id`, `port_base`, `front_dns` / `api_dns`, and `workspace` in chat.
 - Requires clones + `vendor` on the host. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
+- **olie-e2e ownership:** host-card e2e runs as `HOST_UID`/`HOST_GID` (not `0:0`). If `open`/`destroy` still hits `Permission denied` on `worktree/git` leftovers from an old root/nobody Playwright run, the CLI uses `workvm_host_card_rm_rf` (Docker alpine) — do not sudo; do not ask the user to `chown` by hand.
 
 **Destroy (only when the card is finished):** remove containers/networks for that compose project, generated workspace, and state dir — same spirit as dropping the Card VM domain.
 
