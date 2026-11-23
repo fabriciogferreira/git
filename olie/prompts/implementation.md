@@ -74,6 +74,8 @@ Do not implement the card on a base branch.
 
 Before implementing anything, analyze the card requirements and create a concrete implementation plan.
 
+**Plan mode first (Cursor):** Before creating or presenting the plan/checklist, switch the chat to **Plan** mode (`SwitchMode` → `plan`). Investigate read-only and build the plan **while still in Plan mode**. Do not stay in Agent mode and “just write a checklist” in chat — that invites premature coding. Leave Plan mode only when the user sends `next` (or explicitly asks to implement / waives controlled mode). If `SwitchMode` is unavailable, still present the plan and stop; do not start coding.
+
 ### 4.1. Codebase Investigation
 
 Inspect the relevant application code, architecture, business rules, dependencies, and existing tests.
@@ -102,7 +104,7 @@ Those Playwright specs are **private** (meta-repo only). Keep checklist/plan/cha
 
 ### 4.3. Plan Documentation
 
-Create the implementation plan in the agent's native planning mechanism. If that mechanism is unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
+Already in Plan mode (see **Plan mode first** above). Create the implementation plan in the agent's native planning mechanism (e.g. Cursor `CreatePlan`). If that mechanism is unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
 The document must include:
 
@@ -126,18 +128,20 @@ The checklist must contain small, independently reviewable tasks, ordered by dep
 
 Do not begin implementation until the plan is documented and presented for review.
 
+**Default after the plan:** stop. Do **not** start coding, scaffolding, or tests until the user sends **`next`**. Present the checklist clearly in chat so they can follow item by item.
+
 ## 5. Step-by-Step Implementation
 
-Implementation must be incremental. Use controlled mode only when the user requests step-by-step approval or the card spans multiple repositories or high-risk changes.
+Implementation runs in **controlled mode by default**: the user drives progress with `next` (one checklist item per `next`). Only skip controlled mode when the user explicitly asks to run the whole checklist without stopping (e.g. “implement everything”, “sem next”, “go”).
 
 After presenting the plan:
 
-1. In controlled mode, wait for the user to send 'next' and implement only the next incomplete checklist item.
-2. Otherwise, implement the checklist in dependency order, reporting after each meaningful verification boundary.
+1. **Wait** for the user to send `next`. Implement **only** the next incomplete checklist item (including its tests/verification for that item). Then stop again.
+2. If the user explicitly waived controlled mode, implement the checklist in dependency order, reporting after each meaningful verification boundary.
 3. Mark an item as complete only after its requirements have been implemented and the relevant verification has succeeded.
 4. Update the plan whenever progress, findings, or implementation details change.
 5. Report what changed, which files were affected, what verification was performed, and any remaining concerns.
-6. In controlled mode, stop and wait for the next 'next' command before proceeding to another checklist item.
+6. After each item (controlled mode), stop and wait for the next `next` before another checklist item.
 
 If a task reveals new requirements, unexpected dependencies, significant risks, or a need to change the plan, document the findings and present the proposed adjustment before proceeding with work that depends on that adjustment.
 

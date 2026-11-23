@@ -132,7 +132,9 @@ Verify the active branch before any code modification. Never apply a correction 
 
 ## 5. Create the Correction Plan
 
-Before implementing any fix, create the plan in the agent's native planning mechanism. If unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
+**Plan mode first (Cursor):** Before creating or presenting the correction plan/checklist, switch the chat to **Plan** mode (`SwitchMode` → `plan`). Investigate read-only and build the plan **while still in Plan mode**. Do not stay in Agent mode and “just write a checklist” in chat — that invites premature coding. Leave Plan mode only when the user sends `next` (or explicitly asks to implement / waives controlled mode). If `SwitchMode` is unavailable, still present the plan and stop; do not start coding.
+
+Before implementing any fix, create the plan in the agent's native planning mechanism (e.g. Cursor `CreatePlan`) while in Plan mode. If unavailable, use an ignored local card-work directory rather than adding an orchestration document to a product repository. Add repository documentation only when the card itself requires it.
 
 The plan must include:
 
@@ -195,9 +197,11 @@ For each correction, follow this sequence:
 
 ## 7. Incremental Execution
 
-After presenting the plan, use controlled mode only when the user requests step-by-step approval or the correction spans multiple repositories or high-risk changes.
+**Default after the plan:** stop. Do **not** start coding, scaffolding, or tests until the user sends **`next`**. Present the checklist clearly in chat so they can follow item by item.
 
-In controlled mode, wait for the user to send 'next' and then:
+Correction runs in **controlled mode by default**: one checklist item per `next`. Only skip controlled mode when the user explicitly asks to run the whole checklist without stopping (e.g. “implement everything”, “sem next”, “go”).
+
+In controlled mode, wait for the user to send `next` and then:
 
 1. Select the next incomplete checklist item whose dependencies have been satisfied.
 2. Implement only that item.
@@ -205,9 +209,9 @@ In controlled mode, wait for the user to send 'next' and then:
 4. Run the relevant verification.
 5. Update the plan and mark the item complete only after its completion conditions have been verified.
 6. Report the changes, affected files, test results, and any remaining concerns.
-7. Stop and wait for the next 'next' command.
+7. Stop and wait for the next `next` command.
 
-Outside controlled mode, perform the same checklist in dependency order and report after each meaningful verification boundary.
+If the user explicitly waived controlled mode, perform the same checklist in dependency order and report after each meaningful verification boundary.
 
 Do not implement multiple independent checklist items in one step. Do not skip ahead to later items without authorization.
 

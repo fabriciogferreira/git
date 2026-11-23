@@ -391,7 +391,7 @@ Project notebook (Caderno) bodies: **Reading the project notebook** (MCP `get-no
 
 ## Chat commands (develop handoff)
 
-Exact phrases from the user in this chat (match case-insensitively after trim). Not the same as controlled-mode checklist `next` inside `implementation.md` / `correction.md`.
+Exact phrases from the user in this chat (match case-insensitively after trim). Not the same as controlled-mode checklist `next` inside `implementation.md` / `correction.md` (those prompts: **Plan mode** before creating the plan, then `next` per checklist item).
 
 | Command | Meaning |
 | --- | --- |
