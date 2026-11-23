@@ -13,9 +13,21 @@ export function supportChatIsolationMarker(): string {
 
 export async function openClinicSupportChat(page: Page) {
     await page.goto('/dashboard/support-chat')
-    await expect(page.locator('#support-chat-page, #support-chat-empty, #support-chat-thread').first()).toBeVisible({
+    await expect(
+        page.locator('#support-chat-page, #support-chat-empty, #support-chat-thread').first()
+    ).toBeVisible({
         timeout: 30_000,
     })
+}
+
+export async function openDoctorSupportChat(page: Page) {
+    await page.goto('/dashboard/support-chat')
+    await expect(
+        page.locator('#support-chat-page, #support-chat-empty, #support-chat-thread').first()
+    ).toBeVisible({
+        timeout: 30_000,
+    })
+    await expect(page.locator('#support-chat-inbox')).toHaveCount(0)
 }
 
 export async function openSuperSupportInbox(page: Page) {
@@ -38,4 +50,11 @@ export async function sendSupportChatMessage(page: Page, body: string) {
         ),
         page.locator('#support-chat-composer-send').click(),
     ])
+}
+
+/** Super inbox row that contains the given message preview (clinic or doctor). */
+export function supportChatInboxItemByPreview(page: Page, preview: string | RegExp) {
+    return page
+        .locator('#support-chat-inbox-sidebar button[id^="support-chat-inbox-item-"]')
+        .filter({ hasText: preview })
 }

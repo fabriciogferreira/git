@@ -25,6 +25,12 @@ Support chat (super) in `tests/support-chat.smoke.spec.ts`:
 - Accent-insensitive clinic search (`cli` finds `Clínica…`)
 - Long unbroken message wraps inside the bubble width
 
+TV-16 / TV-41 support chat (seed resets clinic-admin + doctor1 morph chats):
+
+- `tests/support-chat.01-tv-16.spec.ts` — clinic create-on-message, super reply, isolation
+- `tests/support-chat.02-tv-41.spec.ts` — doctor create-on-message, super reply (`doctor_id`), isolation
+- `tests/support-chat.clinic-lifecycle.spec.ts` / `support-chat.doctor-lifecycle.spec.ts` — resolve/reopen
+
 TV-205 checkout:
 
 - `tests/tv-205-checkout.flow.spec.ts` — end-to-end: land on checkout → edit

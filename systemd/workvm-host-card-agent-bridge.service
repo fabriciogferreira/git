@@ -1,8 +1,9 @@
-# Cursor agent sandbox hides docker.sock / ~/.cursor; ensure from chat can
-# fail even after required_permissions all is "auto-approved" without elevation.
-# This user service polls worktree request files and runs ensure on the host.
+# Cursor agent sandbox hides docker.sock / ~/.cursor; ensure/docker exec from
+# chat can fail even after required_permissions all is "auto-approved" without
+# elevation. This user service polls worktree request files and runs them on
+# the host (ensure + card-scoped docker exec).
 [Unit]
-Description=WorkVM host-card agent ensure bridge (outside Cursor sandbox)
+Description=WorkVM host-card agent bridge (ensure + docker, outside Cursor sandbox)
 After=default.target
 
 [Service]
