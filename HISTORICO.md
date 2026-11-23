@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Televisão sandbox: PHP 8.4 + PCOV (não php:8.3-cli)
+
+- **problema:** `televisao/sandbox/compose.slim.yml` usava `php:8.3-cli` sem `pdo_pgsql`, PCOV nem `git`; o card Televisão exige PHP ≥ 8.4.1 e coverage/mutation precisam de PCOV. Agente caía em pecl no backend compartilhado do host-card ou em imagem improvisada.
+- **por que é um problema:** `workvm-sandbox` (caminho exclusive) quebrava Pest no create/job; pecl no card suja o container compartilhado e some no recreate; coverage/mutation do colleague review ficam bloqueados.
+- **resolvido como:** `televisao/sandbox/Dockerfile.app` → `televisao/api-sandbox:latest` (PHP 8.4 + pdo_pgsql + redis + PCOV + git); ensure por sha do Dockerfile em `project.sh`; compose slim + `SB_API_VENDOR`; prompts coverage/mutation apontam a imagem (sem pecl no card).
+
 ## Host-card: agent-docker + lib Bun+Node (silent sandbox / Vitest)
 
 - **problema:** (1) Shell do agente ficava com footer SANDBOXING após `all` — `docker.sock` oculto com dockerd vivo; `agent-ensure` subia o compose mas Pest/`docker exec` / gates de pre-deploy ainda falhavam. (2) Serviço `lib` do Card usava `oven/bun` puro → Vitest `child.channel?.unref`.
@@ -164,6 +170,12 @@ Problema resolvido entra aqui.
 - **problema:** no pre-QA do DOP-1278, `git commit` no worktree `api-main` falhava: hooks em `.git/hooks` fazem `docker exec olie-api-main` (container inexistente no host-card) e passam o path host de `COMMIT_EDITMSG` sob `.git/worktrees/…`, que o `hc-*-app-1` não monta → `Commit message file not found`.
 - **por que é um problema:** bloqueia commits/PRs em todo card no jarvis; workarounds manuais (`--no-verify` / editar hook) não devem virar hábito.
 - **resolvido como:** `bin/workvm-host-card-captainhook` (resolve `hc-<id>-app-1`, faz pipe do msg file); `lib/host-card-hooks/api-main/*`; `workvm_host_card_install_api_captainhook` no ensure (`core.hooksPath`). `pre-qa.md` / `workflow-policy` documentam o loop CaptainHook no host-card e o commit do meta na branch live (`experiment/host-cards-no-vm`), não só `main`.
+
+## Host-card bridge: Pest/`docker exec` após silent sandbox (TV-41)
+
+- **problema:** `agent-ensure` via bridge subia o compose, mas o Shell do agente **continuava** sem `/var/run/docker.sock` (footer SANDBOXING mesmo com `all` / smart-mode). Pest/`docker exec` no `hc-*-backend-1` falhava; o bridge só sabia processar ensure.
+- **por que é um problema:** implementação/correction travava no verify (Pest) em todo card com silent sandbox; ensure sozinho não desbloqueava o loop de testes.
+- **resolvido como:** (1) `bin/workvm-host-card-agent-docker` + bridge processa `.workvm-agent-docker-request.json` → `docker exec` **só** se o container pertence ao `compose_project` do card (`meta.json`). (2) CLI `workvm-host-card agent-docker --project … --code … --container <service|name> [--env K=V] -- <cmd>…`. (3) Em `artisan test`/`pest`, o bridge injeta `DB_DATABASE=<meta.testing_database>` (compose exporta `db_<card>`; PHPUnit `force=true` não vence esse env). (4) `workflow-policy` (olie/televisao/locav), `stop-on-broken-tooling`, `layout.mdc` — após silent sandbox: ensure **e** agent-docker.
 
 ## Host-card ensure: Auto-review aprova Shell sem elevar `all`
 

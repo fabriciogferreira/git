@@ -71,16 +71,23 @@ Opt-in one-file path (user asked for `next mutation`).
 
 ## Prepare
 
-All PHP runs as `docker exec -w /srv televisao-backend <command>`. Do not run `php` on the host.
+**Sandbox / exclusive (preferred):** `~/git/bin/workvm-sandbox job run <id> -- <command>`
+(cwd `/work/televisao-api` on `televisao/api-sandbox:latest` — PHP 8.4 + PCOV;
+`~/git/televisao/sandbox/Dockerfile.app`).
 
-- If `vendor/bin/pest` is missing inside the container, run `composer install` once. If it is still missing, stop. Do not install Pest.
+**Own-card fallback only:** `workvm-host-card agent-docker --project televisao --code … --container backend -- …`
+(or `docker exec -w /srv televisao-backend`). Do not run `php` on the host.
 
-- If `vendor/pest-plugins.json` is missing inside the container: `composer pest:dump-plugins`.
-- If `php -m` does not list `pcov`: install it in the running container only (`pecl install pcov` and `docker-php-ext-enable pcov` as root). Say that a recreated image drops PCOV. Do not change the image or compose files.
+- If `vendor/bin/pest` is missing inside the container, run `composer install` once on the clone. If it is still missing, stop. Do not install Pest.
+- If `vendor/pest-plugins.json` is missing: `composer pest:dump-plugins`.
+- Prefer the sandbox image (PCOV baked in). Do not pecl-patch the shared host-card backend for coverage/mutation.
 
 Run the chosen file with the normal suite first (prefer sandbox `job run` when draining; own-card fallback below):
 
-`docker exec -w /srv televisao-backend php artisan test --compact <test-path>`
+```bash
+~/git/bin/workvm-sandbox job run <sandbox-id> -- \
+  php artisan test --compact <test-path>
+```
 
 **Baseline / infra flake (required before Blocked):** transient MySQL deadlock / lock wait (`Deadlock found`, `Lock wait timeout`, `model_has_permissions`), connection reset, or one-off Pest crash with no product assertion failure → **retry once on the same slot/container**. Retry green → continue. Same flake again → Blocked. Do **not** count this against the mutate re-run budget. Stable red assertions → stop; do not mutate.
 

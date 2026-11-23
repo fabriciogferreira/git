@@ -2,9 +2,10 @@
 # Problema: o compose do clone usa container_name/portas fixas e e2e em
 # network_mode:host — impede N sandboxes. Este arquivo é autônomo, sem
 # container_name; rede/volumes vêm do COMPOSE_PROJECT_NAME.
+# Requer imagem televisao/api-sandbox:latest (ver Dockerfile.app — PHP 8.4 + PCOV).
 #
 # Profiles: tests | mutation | e2e | slim
-# Env: SB_MEM, SB_CPUS, SB_WORKTREE (dir montado em /work)
+# Env: SB_MEM, SB_CPUS, SB_WORKTREE (dir montado em /work), SB_API_VENDOR
 
 services:
   mysql:
@@ -43,11 +44,13 @@ services:
       retries: 20
 
   app:
-    image: php:8.3-cli
+    image: televisao/api-sandbox:latest
     profiles: ["tests", "mutation", "e2e", "slim"]
-    working_dir: /work
+    working_dir: /work/televisao-api
     volumes:
       - ${SB_WORKTREE}:/work
+      # Vendor do clone no host (worktree git não traz vendor/).
+      - ${SB_API_VENDOR}:/work/televisao-api/vendor
       - sb_artifacts:/artifacts
     environment:
       DB_HOST: mysql
@@ -71,7 +74,7 @@ services:
 
   # HTTP só para e2e/slim/gui — mutation/tests são CLI no `app`.
   http:
-    image: php:8.3-cli
+    image: televisao/api-sandbox:latest
     profiles: ["e2e", "slim"]
     working_dir: /work
     volumes:

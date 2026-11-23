@@ -43,8 +43,12 @@ Com N arquivos de mutation > teto, fila (ver ORCHESTRATION).
 - `ORCHESTRATION.md` — fan-out do colleague review / economia vs pastes sequenciais
 - `compose.host-data.yml` / `host-card-shared-data.sh` — shared pgsql+redis
 - `compose.slim.yml` + `compose.sandbox-shared-data.yml` — sandbox (mysql local fica unused com shared)
+- `Dockerfile.app` — `televisao/api-sandbox:latest` (PHP 8.4 + pdo_pgsql + PCOV + git); build no primeiro `create` (ou quando o Dockerfile muda)
 - `compose.host.yml` + `compose.host-shared-data.yml` — host-card
 - `compose.gui.yml` — publish da porta API
 - `project.sh` — hooks do Manager
+
+`job run` no profile `mutation`/`tests` usa `working_dir=/work/televisao-api` e monta
+`SB_API_VENDOR` do clone `~/git/televisao/televisao-api/vendor`.
 
 O compose do clone (`televisao-api`) continua para o desktop interativo da VM.

@@ -95,14 +95,21 @@ If the change set has **no** `app/` PHP changes, stop and say there is nothing t
 ## Prepare
 
 **Sandbox / exclusive:** run PHP inside the sandbox app container via
-`~/git/bin/workvm-sandbox job run <id> -- <command>` (working dir is already
-`/var/www/html`).
+`~/git/bin/workvm-sandbox job run <id> -- <command>` (Televisão: cwd
+`/work/televisao-api` on `televisao/api-sandbox:latest` — PHP 8.4 + PCOV;
+see `~/git/televisao/sandbox/Dockerfile.app`).
 
-**Own-card fallback only** (no sandbox create possible): `docker exec -w /srv televisao-backend <command>`. Do not use that path while colleague exclusive gates share the Card VM.
+**Own-card fallback only** (no sandbox create possible): host-card
+`workvm-host-card agent-docker --project televisao --code … --container backend -- …`
+(or `docker exec -w /srv` on the card backend). Do not use that path while
+colleague exclusive gates share the Card VM.
 
 Do not run `php` on the host.
 
-- If `php -m` does not list `pcov`: install it in the running container only (`pecl install pcov` and `docker-php-ext-enable pcov` as root). Say that a recreated image drops PCOV. Do not change the image or compose files. Xdebug 3+ with `XDEBUG_MODE=coverage` is an alternative; prefer PCOV here.
+- Prefer the sandbox image (PCOV baked in). If `php -m` still lacks `pcov` on
+  an old container, rebuild via `create` (Dockerfile sha label) or
+  `docker rmi televisao/api-sandbox:latest` then recreate — do not pecl-patch
+  the shared host-card backend. Xdebug 3+ is an alternative; prefer PCOV.
 - `phpunit.xml` already includes `<source><include>app</include></source>` — do not edit it for this stack.
 
 Pick a **Via test** runner:

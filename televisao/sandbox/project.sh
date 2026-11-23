@@ -69,6 +69,29 @@ workvm_sandbox_televisao_load_testing_db_cache() {
     source "${meta_repo}/televisao/sandbox/testing-db-cache.sh"
 }
 
+# PHP 8.4 + pdo_pgsql + PCOV + git — stock php:8.3-cli quebrava Pest do card.
+workvm_sandbox_televisao_ensure_sandbox_image() {
+    local meta_repo dockerfile want have
+    meta_repo="$(workvm_sandbox_meta_repo)"
+    dockerfile="${meta_repo}/televisao/sandbox/Dockerfile.app"
+    if [ ! -f "$dockerfile" ]; then
+        workvm_sandbox_log "Dockerfile.app ausente: $dockerfile"
+        return 1
+    fi
+    want="$(sha256sum "$dockerfile" | awk '{print $1}')"
+    have="$(docker image inspect televisao/api-sandbox:latest \
+        --format '{{index .Config.Labels "workvm.dockerfile_sha"}}' 2>/dev/null || true)"
+    if [ -n "$have" ] && [ "$have" = "$want" ]; then
+        return 0
+    fi
+    workvm_sandbox_log "build televisao/api-sandbox:latest (PHP 8.4 + PCOV; sha=${want:0:12})"
+    docker build \
+        -t televisao/api-sandbox:latest \
+        --label "workvm.dockerfile_sha=${want}" \
+        -f "$dockerfile" \
+        "${meta_repo}/televisao/sandbox"
+}
+
 # Após compose up: pg_dump cache → testing/api DBs + patch TestCase no worktree.
 workvm_sandbox_project_after_up() {
     local id="$1"
@@ -267,6 +290,8 @@ workvm_sandbox_project_render_compose() {
     testing_db="db_${db_slug}_test"
     redis_prefix="${db_slug}_"
 
+    workvm_sandbox_televisao_ensure_sandbox_image || return 1
+
     mkdir -p "$compose_dir/artifacts" "$wt/e2e"
     cp -f "$tmpl" "$compose_dir/compose.yaml"
     cp -f "${meta_repo}/televisao/sandbox/compose.gui.yml" "$compose_dir/compose.gui.yml"
@@ -282,11 +307,18 @@ workvm_sandbox_project_render_compose() {
     fi
 
     local api_port=$((port_base + 0))
-    local pname
+    local pname git_root api_vendor
     pname="$(workvm_sandbox_container_project_name "$id")"
+    git_root="$(workvm_sandbox_git_root)"
+    api_vendor="${git_root}/televisao/televisao-api/vendor"
+    if [ ! -d "$api_vendor" ]; then
+        workvm_sandbox_log "vendor ausente em $api_vendor (rode composer no clone do card)"
+        return 1
+    fi
     {
         printf 'COMPOSE_PROJECT_NAME=%s\n' "$pname"
         printf 'SB_WORKTREE=%s\n' "$wt"
+        printf 'SB_API_VENDOR=%s\n' "$api_vendor"
         printf 'SB_MEM=%s\n' "$mem"
         printf 'SB_CPUS=%s\n' "$cpus"
         printf 'SB_PORT_API=%s\n' "$api_port"
