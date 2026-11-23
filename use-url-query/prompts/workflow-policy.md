@@ -32,6 +32,15 @@ Demo-api / demo-web are forks of **boilerplate-laravel** / **boilerplate-next**.
 
 When a demo fix is really a boilerplate fix: apply (or mirror) it in the boilerplate clone and ship there separately. Do not treat the boilerplate folders as in-scope for a random `{{ feature }}` unless the feature says so.
 
+### Demo-web local lib mount
+
+Host-card `compose.host.yml` overlays the lib clone on
+`node_modules/@fabriciogferreira/use-url-query` (after the front `node_modules`
+volume) and **hides** that path’s nested `node_modules` with an empty volume
+(`front_lib_nm_hide`). Do not remount the full lib tree without that hide —
+the lib’s `@types/react` breaks `npm run typecheck` (duplicate React types).
+If typecheck fails with `TransitionStartFunction` / `vendor/use-url-query/node_modules/@types/react`, recreate the front stack from the current `compose.host.yml` (`ensure` / `compose up -d --force-recreate front`).
+
 ## Tool preference
 
 Shell with `required_permissions: ["all"]` for Docker / `workvm-sandbox`. Prefer each clone’s README / `AGENTS.md` / `.ai/rules` / `package.json`.

@@ -114,10 +114,13 @@ services:
       - "127.0.0.1:${SB_PORT_FRONT}:3000"
     volumes:
       - ${SB_FRONT}:/app
-      # Local hook over the npm install so Turbopack picks up lib main without republish.
-      - ${SB_LIB}:/app/node_modules/@fabriciogferreira/use-url-query
       - front_node_modules:/app/node_modules
       - front_next:/app/.next
+      # After the named nm volume so the local clone wins over the npm tarball.
+      # Problema: montar o clone inteiro expõe o node_modules da lib (bun install);
+      # tsc carrega um segundo @types/react e quebra typecheck (TransitionStartFunction).
+      - ${SB_LIB}:/app/node_modules/@fabriciogferreira/use-url-query
+      - front_lib_nm_hide:/app/node_modules/@fabriciogferreira/use-url-query/node_modules
 
     command:
       [
@@ -141,3 +144,6 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME}_front_nm
   front_next:
     name: ${COMPOSE_PROJECT_NAME}_front_next
+  # Empty overlay: hide lib bun/npm install from the front TypeScript program.
+  front_lib_nm_hide:
+    name: ${COMPOSE_PROJECT_NAME}_front_lib_nm_hide

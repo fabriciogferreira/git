@@ -25,6 +25,12 @@
 - **por que é um problema:** pre-deploy do use-url-query (e Pest em outros cards) parava no funil mesmo com stack up; coverage só no sandbox não cobria o gate do Card.
 - **resolvido como:** `bin/workvm-host-card-agent-docker` + bridge poll de `.workvm-agent-docker-request.json` (versionado no meta; runtime já tinha). `compose.host.yml` `lib` → `use-url-query-sandbox-backend:tests`; ensure do Card garante a imagem. Prompts/pre-deploy: silent sandbox → `agent-docker` depois do ensure. **Push git / `gh` / `~/.cursor/permissions.json` ainda exigem shell unrestricted de verdade** (MCP GitHub lê; o Shell sandboxed continua Forbidden no token) — até existir bridge `agent-git` ou approval card que eleve de fato.
 
+## use-url-query demo-web: typecheck vs node_modules da lib montada
+
+- **problema:** o host-card montava o clone da lib em cima de `@fabriciogferreira/use-url-query`; o `bun install` da lib deixava `@types/react` aninhado. `tsc` no demo-web via dois React types (`TransitionStartFunction` incompatível) e `npm run typecheck` quebrava mesmo com o app ok.
+- **por que é um problema:** gate de implement/pre-deploy do demo-web ficava vermelho em todo card; atrito recorrente (fields/sort) sem relação com o diff do front.
+- **resolvido como:** em `use-url-query/sandbox/compose.host.yml`, montar a lib **depois** do volume `front_node_modules` e sobrepor `…/use-url-query/node_modules` com volume vazio `front_lib_nm_hide`. Nota em `workflow-policy.md`. demo-web: `vendor/` no `.gitignore` + eslint ignore (montagem antiga em `/app/vendor`).
+
 ## use-url-query: ordem demo-api → lib → demo-web
 
 - **problema:** a ordem fixa (backend Spatie → hook → front) tinha sido combinada no chat, mas `workflow-policy` / `implement` só diziam “escolhe os clones”.
