@@ -281,10 +281,15 @@ Signals in the card description, tasks, acceptance criteria, media notes, or Cad
 
 When you find any of these **before the plan is finished** (and again if one appears mid-implementation or mid-correction):
 
-1. **Stop** the prompt — do not invent a choice, do not pick the “safer” option, do not continue the checklist past that fork.
+1. **Stop** the prompt — do not invent a choice, do not apply your recommendation as if it were decided, do not continue the checklist past that fork.
 2. List each open decision with the literal card phrasing and the concrete options you see.
 3. Ask the user (the implementer in this chat) what must be done / which option to take.
-4. Resume only after they answer. Record the chosen option (and a short **motivo** when the choice is not already obvious) in the plan — you will post them on the card at pre-QA.
+4. **For every decision you ask about**, end that question with an explicit **recommendation**: which option you recommend and **why**. Before writing that recommendation, load context beyond the current card:
+   - **This card:** description, media (`filter: "default"`), and Caderno (**Reading the project notebook**).
+   - **Parent card** (when `parent` / `parent_id` is set on `get-project-details-tool`): that project's details/description, media, and full Caderno the same way.
+   - **Child cards** (every entry in `children` on this project's details): each child's details/description, media, and full Caderno the same way.
+   Ground the recommendation in those texts **plus** this project's code patterns, conventions, and sibling implementations. Cite which parent/child (CODE) informed the advice when it did. The recommendation is advice only — the user still chooses; never treat it as the answer until they confirm. Missing parent/children or empty Cadernos are fine — note that and continue from what exists (not a tooling failure).
+5. Resume only after they answer. Record the chosen option (and a short **motivo** when the choice is not already obvious) in the plan — you will post them on the card at pre-QA.
 
 Do **not** treat an ordinary “or” / “ou” inside a single fixed requirement as a deferral (e.g. “email or phone required” as an already-decided validation rule). When unsure whether a sentence is a deferral, **ask**.
 

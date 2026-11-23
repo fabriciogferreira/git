@@ -30,7 +30,7 @@ Use the MCP OlieFlowAi to retrieve the card's complete context, including:
 
 Also read every project thread and the latest version of each one, using **Reading the project notebook** in `~/git/televisao/prompts/workflow-policy.md`. Treat the reviewer's findings, the card's requirements, and those thread texts as the source of truth for the correction work. Do not assume that the reviewer's list is exhaustive; inspect the relevant code to determine the actual causes of the reported issues.
 
-While reading the card / findings (and again before locking the correction plan): apply **Deferred decisions on the card** in `~/git/televisao/prompts/workflow-policy.md`. If a fix path is still deferred — including alternatives joined by **ou** / **or** — **stop**, list the options, and ask the user what to choose. Do not pick for them.
+While reading the card / findings (and again before locking the correction plan): apply **Deferred decisions on the card** in `~/git/televisao/prompts/workflow-policy.md`. If a fix path is still deferred — including alternatives joined by **ou** / **or** — **stop**, list the options, ask the user what to choose, and **end each question with your recommendation + why**. Before recommending, also read the **parent** and **children** cards (content + Caderno) when they exist. Do not apply the recommendation until they confirm.
 
 ### Card media review (required before the correction plan)
 

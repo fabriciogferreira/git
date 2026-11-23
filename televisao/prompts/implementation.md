@@ -29,7 +29,7 @@ Implement the card identified by `{{ code }}`. Its requirements, business rules,
 
 Also read every project thread and the latest version of each one, using **Reading the project notebook** in `~/git/televisao/prompts/workflow-policy.md`. The card text and those thread texts together are the source of truth for the intended behavior. Before making implementation decisions, inspect the relevant codebase, existing tests, and dependencies to understand the current behavior and identify potential side effects.
 
-While reading the card (and again before locking the plan): apply **Deferred decisions on the card** in `~/git/televisao/prompts/workflow-policy.md`. If the card defers a choice to the implementer — including alternatives joined by **ou** / **or** — **stop**, list the options, and ask the user what to choose. Do not pick for them.
+While reading the card (and again before locking the plan): apply **Deferred decisions on the card** in `~/git/televisao/prompts/workflow-policy.md`. If the card defers a choice to the implementer — including alternatives joined by **ou** / **or** — **stop**, list the options, ask the user what to choose, and **end each question with your recommendation + why**. Before recommending, also read the **parent** and **children** cards (content + Caderno) when they exist. Do not apply the recommendation until they confirm.
 
 ### Card media review (required before the plan)
 
