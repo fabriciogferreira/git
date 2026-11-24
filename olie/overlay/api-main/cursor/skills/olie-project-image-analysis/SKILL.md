@@ -36,7 +36,7 @@ Examples: `~/git/olie/DOP-1180/a1b2c3d4-….md`, `~/git/olie/OS-588/…`.
 | If the file **exists** and is non-empty | **Do not** re-analyze. `Read` it and use that Markdown |
 | If the file is **missing** | Analyze, then **write** the full Markdown to that path (`mkdir -p` the card dir) |
 | Re-analyze only | When the user explicitly asks to redo that media — then overwrite the file |
-| Meta-repo `~/git` | **Commit and push** these `.md` files on the meta-repo so any WorkVM / a later return of the card still has them |
+| Meta-repo `~/git` | **Commit/push only at the end** (`pre-qa.md` §4.3, or closing meta step of colleague-review / production-review) — never during the media pass |
 | Company remotes | **Never** commit them inside `api-main` / `olie-fronts` (wrong remotes) |
 
 ## Language
@@ -120,7 +120,7 @@ Then append the full analysis from `analysis-prompt.md` (through `# Resumo para 
 
 Tell the user which media ids were **loaded from disk** vs **newly analyzed**, and the path `~/git/olie/cards/{CARD_CODE}/`. Do not call `save-media-tool`.
 
-After writing **new** analysis files, remind (or do, if the user asked to commit) that they belong in the meta-repo: `git add olie/cards/{CARD_CODE}/ && git commit` / push on `~/git`.
+After writing **new** analysis files, do **not** commit or push. Leave the `.md` on disk for reuse in this workspace. Meta-repo commit/push is owned by `pre-qa.md` §4.3 (or the closing meta step of colleague-review / production-review).
 
 ## Rules
 

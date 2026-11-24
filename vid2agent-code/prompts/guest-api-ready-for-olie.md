@@ -27,4 +27,4 @@ curl -sS -m 30 -o /dev/null -w '%{http_code}\n' http://10.0.2.2:18080/
 # 200 esperado
 ```
 
-3. Ao pedir conversão de vídeo do conteúdo Olie, seguir a skill `olie-project-video-conversion`: API → salvar em `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` → commit/push no meta-repo → reusar se o arquivo já existir. **Não** postar no conteúdo do projeto.
+3. Ao pedir conversão de vídeo do conteúdo Olie, seguir a skill `olie-project-video-conversion`: API → salvar em `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` → reusar se o arquivo já existir. Commit/push no meta-repo só no `pre-qa.md` (ou fechamento de colleague/production review). **Não** postar no conteúdo do projeto.

@@ -313,6 +313,18 @@ Recommend the next prompt **only in the Cursor chat** report.
 
 **No premature commit hints:** after `implementation.md` / `correction.md` (and any gate before `pre-qa.md`), do **not** suggest committing, pushing, or opening a PR for the product repos. Say only the next workflow prompt (`next prompt` / coverage / mutation as applicable). Product commit/push/PR is owned by **`pre-qa.md`** once the handoff stack for that round has finished.
 
+## Card media analyses (meta-repo)
+
+Image/video/audio analyses under `locav/cards/{CARD_CODE}/` are written to disk during the media pass. **Do not** commit or push them in `implementation.md`, `correction.md`, or mid-media-pass in colleague/production review.
+
+| When | Who commits/pushes |
+| --- | --- |
+| Develop handoff | `pre-qa.md` §4.3 (required if those paths are dirty) |
+| Colleague review | Closing meta step of that prompt (with private e2e when applicable) |
+| Production review | Closing meta step of that prompt |
+
+Same rule for Olie / Televisão card folders and their media skills. Local `.md` reuse still applies before the push.
+
 ## Evidence table on project content
 
 Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Evidence table on project content**): post a Brazilian Portuguese evidence table into the **card content** with MCP **`save-media-tool`** at the end of **pre-qa** (Implementation), **correction**, **colleague-review** (Pass or Corrigir only — not mid reviewer-fix), and **production-review**. On **pre-qa**, if a **Decisions** table applies, post it **first**, then this evidence table. **Never** the project description, Caderno/notebook, or PR body. Refresh the same round by posting again with the same exact `###` heading (latest media wins).

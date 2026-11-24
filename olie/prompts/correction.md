@@ -43,7 +43,7 @@ Before creating the correction plan, **review the card's media**. Do not plan on
 3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
 4. Use those analyses when diagnosing findings (section 3) and when writing the correction plan. Cite the media id that shows the defect.
 5. **Never** post image, video, or audio analysis to project content (`save-media-tool` or any MCP write of that markdown).
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks), so a later correction reuses them.
+6. After writing **new** analysis files, leave them on disk only. Do **not** commit or push during this media pass. Reuse in the same workspace by reading the local `.md`. Meta-repo commit/push of `*/cards/{CARD_CODE}/` is owned by `pre-qa.md` §4.3 (develop) or the closing meta step of colleague-review / production-review.
 
 ## 2. Update the Card Stage
 

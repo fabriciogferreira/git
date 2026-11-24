@@ -183,7 +183,7 @@ Product clones get card branches and PRs. The **meta-repo** does not: ship its c
 This pre-QA pass **must** commit and push meta-repo updates that belong to the card (or to prompt/workflow fixes done in the same chat), when the working tree has any:
 
 - `olie/prompts/` (including `mutation-ledger.md` / `coverage-ledger.md`)
-- `olie/cards/{CARD_CODE}/` media analyses
+- `olie/cards/{CARD_CODE}/` media analyses — **this is the develop-handoff commit for those files** (implementation/correction only write them to disk; see **Card media analyses** in `workflow-policy.md`)
 - Private Playwright specs/helpers for the card (resolved `olie-e2e` root — workspace folder on host-card, else `olie/olie-e2e/`; commit them there; do **not** name this suite in product PR bodies or card/Caderno notes — **Private E2E suites**)
 - `HISTORICO.md` / `bin/` / `lib/` / other meta-repo docs or tooling touched for the same work
 

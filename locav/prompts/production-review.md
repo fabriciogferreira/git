@@ -20,7 +20,7 @@ Verify the card's acceptance criteria in production. A local or staging result i
       - If that file is **missing** → analyze now: `locav-project-image-analysis` / `locav-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/locav/cards/{CARD_CODE}/`.
    3. Re-analyze **only** when the user asks to redo a specific media id.
    4. Cite media ids in the report when they define the criterion you verified.
-   5. **Never** post analysis to project content. Commit/push new analysis files on the meta-repo when you finish this media pass (or when the user asks).
+   5. **Never** post analysis to project content. Leave new analysis files on disk only during this media pass — do **not** commit or push here. Commit/push them in this prompt’s closing meta-repo step (develop uses `pre-qa.md` §4.3).
 3. Identify the production URL, permitted account or data, and observable success and error paths. Stop and report any missing prerequisite rather than guessing or using customer credentials.
 4. Do not expose credentials, tokens, personal data, or private production records in the report.
 
@@ -59,3 +59,5 @@ When yes: resolve the live step id by display name via MCP / `~/git/locav/prompt
 The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.
 
 **Evidence table (required):** after the Pass/Fail/Blocked report, post `### Evidência — {N}º Revisão produção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply; never description, Caderno, or PR).
+
+**Meta-repo close (media analyses):** if this review wrote new files under `locav/cards/{CARD_CODE}/`, commit and push them on the meta-repo **before** `destroy` / before ending the paste (host-card worktree; same rules as `pre-qa.md` §4.3). See **Card media analyses** in `workflow-policy.md`.

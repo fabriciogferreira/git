@@ -19,7 +19,7 @@ Workday order: `~/git/olie/prompts/workflow.md`.
 
 - UI copy and user-facing project content are Brazilian Portuguese. Commit messages and pull request titles and bodies are English; see `~/git/olie/prompts/workflow-policy.md`.
 - Do not edit `en.json` translation files. English strings are filled in later on a schedule. Add or update user-facing keys in `pt-br.json` only (and wire those keys in code).
-- Do not post image, video, or audio analysis (or transcriptions) into project content. Save under `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md`, **commit/push on the meta-repo** `~/git`, and reuse on correction; see `olie-project-image-analysis` and `olie-project-video-conversion`.
+- Do not post image, video, or audio analysis (or transcriptions) into project content. Save under `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` and reuse on correction; see `olie-project-image-analysis` and `olie-project-video-conversion`. **Commit/push** those files only in `pre-qa.md` §4.3 (or the closing meta step of colleague-review / production-review) — never during the media pass.
 - PHP, Artisan, Composer, Pint, and `api-main` tests: `docker exec olie-api-main <command>`. Do not run `php` on the host.
 - Frontend: Yarn 1 in `olie-fronts`. Do not use npm or `package-lock.json`.
 - Playwright under the private suite (`olie-e2e` workspace folder on host-card, else `~/git/olie/olie-e2e`) is **owner-only**. Use the resolved in-workspace root; never cite it in card content, Caderno, company repos, or PR bodies — **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md`. (Locav may cite Cypress because it ships in `locav-front`.)

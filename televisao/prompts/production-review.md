@@ -32,7 +32,7 @@ Verify the card's acceptance criteria on the hosted preview below. A local resul
       - If that file is **missing** → analyze now: `televisao-project-image-analysis` / `televisao-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/televisao/cards/{CARD_CODE}/`.
    3. Re-analyze **only** when the user asks to redo a specific media id.
    4. Cite media ids in the report when they define the criterion you verified.
-   5. **Never** post analysis to project content. Commit/push new analysis files on the meta-repo when you finish this media pass (or when the user asks).
+   5. **Never** post analysis to project content. Leave new analysis files on disk only during this media pass — do **not** commit or push here. Commit/push them in this prompt’s closing meta-repo step (develop uses `pre-qa.md` §4.3).
 3. Test on the hosts and accounts above. Observable success and error paths come from the card. Stop and report a missing prerequisite. Do not guess another host and do not use customer credentials.
 4. Do not repeat passwords, tokens, personal data, or private records in the report. Name the account as admin or superadmin when the evidence needs it.
 
@@ -71,3 +71,5 @@ When yes: resolve the live step id by display name via MCP / `~/git/televisao/pr
 The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.
 
 **Evidence table (required):** after the Pass/Fail/Blocked report, post `### Evidência — {N}º Revisão produção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/televisao/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply; never description, Caderno, or PR).
+
+**Meta-repo close (media analyses):** if this review wrote new files under `televisao/cards/{CARD_CODE}/`, commit and push them on the meta-repo **before** `destroy` / before ending the paste (host-card worktree; same rules as `pre-qa.md` §4.3). See **Card media analyses** in `workflow-policy.md`.

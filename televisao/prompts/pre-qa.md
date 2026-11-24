@@ -121,7 +121,7 @@ Product clones get card branches and PRs. The **meta-repo** does not: ship its c
 This pre-QA pass **must** commit and push meta-repo updates that belong to the card (or to prompt/workflow fixes done in the same chat), when the working tree has any:
 
 - `televisao/prompts/` (including `mutation-ledger.md`)
-- `televisao/cards/{CARD_CODE}/` media analyses
+- `televisao/cards/{CARD_CODE}/` media analyses — **this is the develop-handoff commit for those files** (implementation/correction only write them to disk; see **Card media analyses** in `workflow-policy.md`)
 - `televisao/televisao-front-e2e/` / `televisao/televisao-meet-front-e2e/` specs or helpers added for the card
 - `HISTORICO.md` / other meta-repo docs touched for the same work
 

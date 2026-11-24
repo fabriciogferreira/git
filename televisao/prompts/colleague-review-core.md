@@ -35,7 +35,7 @@ Before deciding pass or fail, **review the card's media**. Do not judge from tex
 3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
 4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
 5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks). You may also commit e2e changes as already allowed in §3.
+6. After writing **new** analysis files, leave them on disk only. Do **not** commit or push during this media pass. Meta-repo commit/push of `*/cards/{CARD_CODE}/` belongs with the closing meta step of this prompt (e2e + media together in §3 when that applies), never mid-media-pass. On develop handoff, that push is `pre-qa.md` §4.3.
 
 ## 3. What you may change
 
@@ -48,7 +48,7 @@ You may change only the meta-repo Playwright suites. Those trees are not part of
 
 If the author changed that front, **add** end-to-end tests there for the frontend behavior the card requested. If those tests already exist and a requested point is uncovered, add the missing tests. Do not rewrite tests that already cover the card. Do **not** fail the review because the author's company branch lacks e2e — they cannot push those suites. Do **not** cite these suites on the card, Caderno, company repos, or PR bodies (**Running Playwright** / private E2E in `workflow-policy.md`); fail notes describe missing product behavior only.
 
-For `~/git/`, do not create a card branch. Commit and push the e2e changes directly to 'main'.
+For `~/git/`, do not create a card branch. At the **end** of this review (closing meta step — not during the media pass), commit and push e2e changes and any new card media analyses under `televisao/cards/` together to the live meta branch. If there is no e2e change but new media analyses exist, still commit/push those analyses in that closing step.
 
 Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy.md`.
 

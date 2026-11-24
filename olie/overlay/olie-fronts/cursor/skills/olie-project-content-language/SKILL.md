@@ -28,7 +28,7 @@ Per tech-lead policy, **do not** post via MCP:
 - Video conversion / transcription (`olie-project-video-conversion`)
 - Audio analysis or transcription derived from card media
 
-Persist as `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` on the meta-repo (commit/push; reuse on correction; never `save-media-tool`).
+Persist as `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` on disk (reuse on correction; never `save-media-tool`). Commit/push only in `pre-qa.md` §4.3 or the closing meta step of colleague-review / production-review.
 
 ## Does not apply to
 

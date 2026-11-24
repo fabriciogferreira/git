@@ -114,7 +114,7 @@ Product clones get card branches and PRs. The **meta-repo** does not: ship its c
 This pre-QA pass **must** commit and push meta-repo updates that belong to the card (or to prompt/workflow fixes done in the same chat), when the working tree has any:
 
 - `locav/prompts/` (including `mutation-ledger.md`)
-- `locav/cards/{CARD_CODE}/` media analyses
+- `locav/cards/{CARD_CODE}/` media analyses — **this is the develop-handoff commit for those files** (implementation/correction only write them to disk; see **Card media analyses** in `workflow-policy.md`)
 - Meta-repo docs touched for the same work (`HISTORICO.md`, etc.). Locav Cypress specs live in the `locav-front` clone, not here — those follow the product branch/PR path above.
 
 Do **not** open a pull request for `~/git`. Do **not** invent a card branch on the meta-repo.

@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Análises de mídia: commit/push só no final do fluxo
+
+- **problema:** `implementation.md` / `correction.md` / media pass de colleague e production pediam commit+push das análises em `*/cards/{CARD_CODE}/` assim que o passe de mídia acabava — antes do pre-qa e no meio do review.
+- **por que é um problema:** sobe meta cedo (aprovação de push, ruído no remoto, análise ainda pode mudar); misturava “escrever `.md`” com “publicar no meta”; o ban de commit prematuro de produto não cobria esse caso.
+- **resolvido como:** passe de mídia só grava o `.md` no disco. Commit/push fica em `pre-qa.md` §4.3 (develop) ou no fechamento de colleague-review / production-review. Policy em `*/prompts/workflow-policy.md` (**Card media analyses**); skills de imagem/vídeo alinhadas (olie/locav/televisão).
+
 ## MCP Playwright + PrimeVue quebrados no host-card (DOP-1136)
 
 - **problema:** (1) PrimeVue no `mcp.json` era `npx -y @primevue/mcp`; após reinstall do Cursor o mise deixava `node@latest` lazy sem `bin/` → `npx is not a valid shim` e o server ficava `error`/`mcp_auth`. (2) Playwright no host-card apontava para `hc-olie-*-olie-e2e-1` mesmo com `stack_groups: ["back"]` (sem e2e) → wrapper esperava 180s e o Cursor ficava em `loading`.

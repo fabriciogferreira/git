@@ -351,6 +351,18 @@ Files under `~/git/*/prompts/` are paste templates. The repo keeps the literal p
 
 Optional clipboard helper (no agent): `~/git/bin/workvm-paste-prompt olie colleague-review DOP-1285` → clipboard + `@.paste-prompt.md`. Do **not** create a git worktree of `~/git` just to isolate this edit.
 
+## Card media analyses (meta-repo)
+
+Image/video/audio analyses under `olie/cards/{CARD_CODE}/` are written to disk during the media pass. **Do not** commit or push them in `implementation.md`, `correction.md`, or mid-media-pass in colleague/production review.
+
+| When | Who commits/pushes |
+| --- | --- |
+| Develop handoff | `pre-qa.md` §4.3 (required if those paths are dirty) |
+| Colleague review | Closing meta step of that prompt (with private e2e when applicable — §3) |
+| Production review | Closing meta step of that prompt |
+
+Same rule for Locav / Televisão card folders and their media skills. Local `.md` reuse still applies before the push.
+
 When committing or pushing the meta-repo `~/git` (e2e, card media analyses, prompt edits, or any other path):
 
 - Do **not** stage, commit, or push a prompt whose only “edit” is a substituted card code (e.g. `DOP-1262` instead of `{{ code }}`).

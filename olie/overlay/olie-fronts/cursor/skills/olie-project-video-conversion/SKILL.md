@@ -35,7 +35,7 @@ Same convention as `olie-project-image-analysis` (one file per media id).
 | If the file **exists** and is non-empty | **Do not** reconvert. `Read` it and use that Markdown (API or prior agent-local) |
 | If the file is **missing** | Download → try API → on failure, agent-local → **write** the file |
 | Reconvert only | When the user explicitly asks to redo that media — then overwrite |
-| Meta-repo `~/git` | **Commit and push** these `.md` files on the meta-repo |
+| Meta-repo `~/git` | **Commit/push only at the end** (`pre-qa.md` §4.3, or closing meta step of colleague-review / production-review) — never during the media pass |
 | Company remotes | **Never** commit them inside product clones |
 
 ## Language
@@ -175,7 +175,7 @@ Then append:
 
 Tell the user which ids were **loaded from disk** vs **newly converted** (API vs agent-local), and the path under `~/git/olie/cards/{CARD_CODE}/`. Do not call `save-media-tool`.
 
-After writing **new** conversion files, remind (or commit if asked) on the meta-repo: `git add olie/cards/{CARD_CODE}/` in `~/git`.
+After writing **new** conversion files, do **not** commit or push. Leave the `.md` on disk for reuse in this workspace. Meta-repo commit/push is owned by `pre-qa.md` §4.3 (or the closing meta step of colleague-review / production-review).
 
 ## Conversion Markdown schema
 

@@ -43,7 +43,7 @@ Before deciding pass or fail, **review the card's media**. Do not judge from tex
 3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
 4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
 5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, commit and push them on the meta-repo `~/git` when you finish this media pass (or when the user asks).
+6. After writing **new** analysis files, leave them on disk only. Do **not** commit or push during this media pass. Meta-repo commit/push of `*/cards/{CARD_CODE}/` is owned by `pre-qa.md` §4.3 (develop handoff) or the closing meta step of colleague-review / production-review when that prompt has no pre-qa.
 
 ## 3. What you may change
 
@@ -114,3 +114,5 @@ Follow **Colleague review outcome** in `~/git/locav/prompts/workflow-policy.md`.
 4. **After gap analysis (+ mutation + coverage when LocavApi)** — When that stack finishes in a later paste, apply **Colleague review outcome**: move to 'Corrigir' only if the colleague review failed (or any failure outside test-gap / mutation / coverage). If colleague passed but gap and/or mutation and/or coverage reported work → **reviewer-fix path** (stay 'QA/CR'; reviewing user may fix in chat; do **not** write those three **findings lists** into the project/card). When bouncing to 'Corrigir' for a non-test-gate fail, **then** also paste any open gap/mutation/coverage findings onto the card. Approve / merge / 'Revisado' only if colleague passed, gaps were clean/skipped, mutation passed or was skipped (no `LocavApi`), and coverage passed or was skipped (no `LocavApi`).
 
 5. **Evidence table (required on Pass or Corrigir):** when the combined outcome is Pass or a move to 'Corrigir' — **not** while still in **reviewer-fix** — post `### Evidência — {N}º QA/CR pelo {Nome}` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/locav/prompts/workflow-policy.md` (never description, Caderno, or PR).
+
+6. **Meta-repo close (media analyses):** if this review wrote new files under `locav/cards/{CARD_CODE}/`, commit and push them on the meta-repo **now** (host-card worktree; same rules as `pre-qa.md` §4.3). Do not leave them only local after the review ends. See **Card media analyses** in `workflow-policy.md`.
