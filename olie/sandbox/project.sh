@@ -96,15 +96,29 @@ workvm_sandbox_project_after_up() {
     workvm_olie_testing_db_cache_ensure_for_sandbox "$id" "$wt" "$testing_db" "$api_db" || true
 }
 
+# Garante olie/api-main-sandbox:latest (PCOV). Se a base olie/api-main:latest
+# não existir, builda via compose web do meta (mesmo caminho do smoke-case1) —
+# host-card/ensure não pode depender da Card VM já ter subido o stack.
 workvm_sandbox_olie_ensure_sandbox_image() {
-    local meta_repo
+    local meta_repo git_root
     meta_repo="$(workvm_sandbox_meta_repo)"
+    git_root="$(workvm_sandbox_git_root)"
+
+    workvm_sandbox_docker_ok || return 1
+
     if docker image inspect olie/api-main-sandbox:latest >/dev/null 2>&1; then
         return 0
     fi
     if ! docker image inspect olie/api-main:latest >/dev/null 2>&1; then
-        workvm_sandbox_log "imagem olie/api-main:latest ausente; suba o compose da Card VM antes"
-        return 1
+        if [ ! -d "${git_root}/olie/api-main" ] || [ ! -f "${git_root}/olie/docker-compose.yml" ]; then
+            workvm_sandbox_log "olie/api-main:latest ausente e sem ${git_root}/olie para build (project-setup olie?)"
+            return 1
+        fi
+        workvm_sandbox_log "build olie/api-main:latest (compose web — base do host-card/sandbox)"
+        (cd "${git_root}/olie" && GIT_ROOT="$git_root" docker compose build web) || {
+            workvm_sandbox_log "falha ao buildar olie/api-main:latest"
+            return 1
+        }
     fi
     workvm_sandbox_log "build olie/api-main-sandbox:latest (PCOV)"
     docker build -t olie/api-main-sandbox:latest \
@@ -205,6 +219,8 @@ workvm_sandbox_project_prepare_worktrees() {
     local from_commit="${3:-}"
     local git_root project_root repo src dest
     local db_slug api_db testing_db redis_prefix
+    # wt vazio → dest "/api-main" / "/e2e/" (pé-de-cabra DOP-1136)
+    workvm_assert_safe_destructive_path "$wt" || return 1
     git_root="$(workvm_sandbox_git_root)"
     project_root="${git_root}/olie"
     db_slug="$(workvm_sandbox_olie_db_slug "$id")"
@@ -271,6 +287,8 @@ workvm_sandbox_project_prepare_worktrees() {
     local e2e_src="${project_root}/olie-e2e"
     if [ -d "$e2e_src" ] && [ ! -e "${wt}/e2e/package.json" ]; then
         # Cópia leve de specs — evita e2e paralelo no mesmo tree do meta-repo.
+        # Guard: wt vazio faria dest=/e2e/ com --delete.
+        workvm_assert_safe_destructive_path "${wt}/e2e" || return 1
         rsync -a --delete \
             --exclude node_modules --exclude test-results --exclude playwright-report \
             "${e2e_src}/" "${wt}/e2e/" 2>/dev/null \
@@ -282,6 +300,7 @@ workvm_sandbox_project_remove_worktrees() {
     local id="$1"
     local wt="$2"
     local git_root project_root repo src dest db_slug
+    workvm_assert_safe_destructive_path "$wt" || return 1
     git_root="$(workvm_sandbox_git_root)"
     project_root="${git_root}/olie"
 

@@ -162,7 +162,14 @@ workvm_sandbox_destroy() {
         *) workvm_sandbox_container_destroy "$id" || true ;;
     esac
 
-    rm -rf "$(workvm_sandbox_dir "$id")"
+    local sb_dir
+    sb_dir="$(workvm_sandbox_dir "$id")"
+    if workvm_assert_safe_destructive_path "$sb_dir"; then
+        rm -rf "$sb_dir"
+    else
+        workvm_sandbox_log "skip rm meta dir: path inseguro ($sb_dir)"
+        return 1
+    fi
     workvm_sandbox_log "sandbox destruído: $id"
 }
 
@@ -190,4 +197,127 @@ workvm_sandbox_list() {
         backend="$(workvm_sandbox_meta_get "$id" backend 2>/dev/null || echo '?')"
         printf '%-20s %-12s %-12s %-10s %-10s\n' "$id" "$state" "$project" "$profile" "$backend"
     done < <(workvm_sandbox_list_ids)
+}
+
+# Resolve sandbox worktree path for a repo (default api-main). Prints absolute path.
+# Problema: agentes inventavam `workvm-sandbox path` / fallbacks e rsync iam para dest vazio → `/`.
+workvm_sandbox_path() {
+    local id="${1:-}"
+    local repo="api-main"
+    shift || true
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --repo) repo="$2"; shift 2 ;;
+            *)
+                workvm_sandbox_log "uso: path <id> [--repo api-main|olie-fronts|…]"
+                return 2
+                ;;
+        esac
+    done
+    if [ -z "$id" ]; then
+        workvm_sandbox_log "uso: path <id> [--repo api-main]"
+        return 2
+    fi
+    if ! workvm_sandbox_meta_exists "$id"; then
+        workvm_sandbox_log "sandbox ausente: $id"
+        return 1
+    fi
+    local wt dest
+    wt="$(workvm_sandbox_meta_get "$id" worktrees 2>/dev/null || true)"
+    if [ -z "$wt" ]; then
+        workvm_sandbox_log "meta worktrees vazio para $id"
+        return 1
+    fi
+    dest="${wt}/${repo}"
+    if [ ! -d "$dest" ]; then
+        workvm_sandbox_log "repo ausente no sandbox: $dest"
+        return 1
+    fi
+    printf '%s\n' "$dest"
+}
+
+# Refuse catastrophic rsync destinations (empty, /, $HOME, fora de .sandboxes/).
+workvm_sandbox_assert_safe_sync_dest() {
+    local dest="${1:-}"
+    local wt="${2:-}"
+    local dest_real wt_real
+    workvm_assert_safe_destructive_path "$dest" || return 1
+    if [ -z "$wt" ] || [ ! -d "$wt" ]; then
+        workvm_sandbox_log "recusado: worktrees do sandbox inválido: ${wt:-∅}"
+        return 1
+    fi
+    workvm_assert_safe_destructive_path "$wt" || return 1
+    dest_real="$(realpath -m "$dest")"
+    wt_real="$(realpath -m "$wt")"
+    case "$dest_real" in
+        "$wt_real"|"$wt_real"/*) ;;
+        *)
+            workvm_sandbox_log "recusado: dest fora do worktrees do sandbox ($dest_real ⊄ $wt_real)"
+            return 1
+            ;;
+    esac
+    case "$dest_real" in
+        */.sandboxes/*) ;;
+        *)
+            workvm_sandbox_log "recusado: dest não está sob .sandboxes/: $dest_real"
+            return 1
+            ;;
+    esac
+}
+
+# Sync dirty card tree → sandbox repo worktree (safe rsync --delete).
+# Uso: sync <id> --from /path/to/card/api-main [--repo api-main]
+workvm_sandbox_sync() {
+    local id="" from="" repo="api-main"
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --from) from="$2"; shift 2 ;;
+            --repo) repo="$2"; shift 2 ;;
+            -*)
+                workvm_sandbox_log "flag desconhecida: $1"
+                return 2
+                ;;
+            *)
+                if [ -z "$id" ]; then
+                    id="$1"
+                    shift
+                else
+                    workvm_sandbox_log "uso: sync <id> --from <src-dir> [--repo api-main]"
+                    return 2
+                fi
+                ;;
+        esac
+    done
+    if [ -z "$id" ] || [ -z "$from" ]; then
+        workvm_sandbox_log "uso: sync <id> --from <src-dir> [--repo api-main]"
+        return 2
+    fi
+    if ! workvm_sandbox_meta_exists "$id"; then
+        workvm_sandbox_log "sandbox ausente: $id"
+        return 1
+    fi
+    if [ ! -d "$from" ]; then
+        workvm_sandbox_log "origem ausente: $from"
+        return 1
+    fi
+    # api-main / televisao-api markers
+    if [ ! -f "$from/artisan" ] && [ ! -f "$from/composer.json" ] && [ ! -f "$from/package.json" ]; then
+        workvm_sandbox_log "origem não parece um tree de app (sem artisan/composer.json/package.json): $from"
+        return 1
+    fi
+    local wt dest
+    wt="$(workvm_sandbox_meta_get "$id" worktrees 2>/dev/null || true)"
+    dest="${wt}/${repo}"
+    workvm_sandbox_assert_safe_sync_dest "$dest" "$wt" || return 1
+    mkdir -p "$dest"
+    workvm_sandbox_log "sync $from/ → $dest/"
+    rsync -a --delete \
+        --exclude .git \
+        --exclude vendor \
+        --exclude node_modules \
+        --exclude storage/logs \
+        --exclude storage/framework \
+        --exclude bootstrap/cache \
+        "${from}/" "${dest}/"
+    workvm_sandbox_log "sync ok: $id ($repo)"
 }

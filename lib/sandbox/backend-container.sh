@@ -33,6 +33,8 @@ workvm_sandbox_container_create() {
     project_name="$(workvm_sandbox_container_project_name "$id")"
     port_base="$(workvm_sandbox_port_base "$id")"
 
+    workvm_assert_safe_destructive_path "$wt" || return 1
+    workvm_assert_safe_destructive_path "$compose_dir" || return 1
     mkdir -p "$wt" "$compose_dir"
 
     if declare -F workvm_sandbox_project_prepare_worktrees >/dev/null; then
@@ -115,6 +117,10 @@ workvm_sandbox_container_destroy() {
     if [ -n "$wt" ] && [ -d "$wt" ]; then
         local project
         project="$(workvm_sandbox_meta_get "$id" project 2>/dev/null || true)"
+        if ! workvm_assert_safe_destructive_path "$wt"; then
+            workvm_sandbox_log "skip remove worktrees: path inseguro ($wt)"
+            return 0
+        fi
         if declare -F workvm_sandbox_load_project >/dev/null && [ -n "$project" ]; then
             workvm_sandbox_load_project "$project" 2>/dev/null || true
         fi

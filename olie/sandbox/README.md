@@ -25,8 +25,10 @@ CLI default: **sem teto** (`WORKVM_SANDBOX_MAX=0`). No dreno de mutation/coverag
 o prompt manda **warm pool** `N = min(arquivos, 4)` (ou `2` se RAM apertada) e
 reuso de slot — ver ORCHESTRATION. Cap explícito: `WORKVM_SANDBOX_MAX=N`.
 
-Primeiro `create` faz build de `olie/api-main-sandbox:latest` (PCOV) a partir de
-`olie/api-main:latest` se a tag ainda não existir.
+Primeiro `create` / `host-card ensure` faz build de `olie/api-main-sandbox:latest`
+(PCOV). Se `olie/api-main:latest` ainda não existir, builda a base via
+`docker compose build web` em `~/git/olie` (não exige Card VM já no ar). Precisa
+de acesso real a `/var/run/docker.sock` (grupo `docker` + re-login).
 
 ## Concorrência (resumo)
 

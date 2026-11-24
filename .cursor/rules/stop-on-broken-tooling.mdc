@@ -39,8 +39,10 @@ Este meta-repo existe para a VM / host-card e o fluxo de desenvolvimento já est
 - Tratar falha de infra da VM como “limitação normal do chat”
 - Aplicar `resolva permanentemente` sem o usuário ter pedido esse comando
 - Redocumentar do zero sem olhar o `HISTORICO.md` / rules existentes
+- Inventar `rsync`/`cp -a` para sandbox com dest calculado à mão — use só `~/git/bin/workvm-sandbox sync` / `path` (dest vazio → `/` apaga `$HOME`; ver HISTORICO DOP-1136)
 
 ## Exceção
 
 - Falha **esperada** do pedido atual (ex.: testar um caso de erro) — reporte e siga se ainda fizer sentido
 - Cluster de **sandbox do agent** (Permission denied em `~/.cursor` / `workvm` / `mcp.json` / `meta.json`, DNS/`gh`/`docker.sock` falsos, ou footer do Shell ainda “SANDBOXING” depois de pedir `all`): **nunca** sondar `workvm-host-card ensure|open|destroy` sem `all` na primeira chamada. Sequência: (1) retry com `required_permissions: ["all"]`; (2) se Auto-review **Ask**/bloquear o `all` (esperado para ensure — permissions.json) → `request_smart_mode_approval` no **mesmo** comando; (3) se o footer continuar sandboxed → `workvm-host-card agent-ensure` (bridge) ou `install-agent-bridge` sob shell unrestricted de verdade; (4) com stack já up e sock ainda oculto → `workvm-host-card agent-docker --project … --code … --container <svc> -- <cmd>` (Pest/artisan/bun via bridge). Ver **Host card environment** / **Silent sandbox after `all`** no `workflow-policy` e `HISTORICO.md` (ensure sem `all`). Não é “host quebrado”; não peça chmod/DNS/`gh auth`
+- **Exceção — grupo `docker` no host:** sock **existe**, `all` já rodou unrestricted, e `id -nG` **não** tem `docker` (EACCES / ensure `sem acesso a /var/run/docker.sock`) → isso **é** host. Peça `sudo usermod -aG docker $USER` + re-login (`host-setup.md`). Não confunda com sandbox cluster nem com “imagem ausente”

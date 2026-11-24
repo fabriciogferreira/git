@@ -87,6 +87,33 @@ echo "→ destroy a; b ok; destroy a de novo idempotente"
 "$SB" destroy a
 "$SB" destroy b
 
+echo "→ safe-fs: recusa dest catastrófico"
+# shellcheck source=../lib/safe-fs.sh
+source "$ROOT/lib/safe-fs.sh"
+if workvm_assert_safe_destructive_path "" 2>/dev/null; then
+  echo "error: path vazio deveria falhar" >&2
+  exit 1
+fi
+if workvm_assert_safe_destructive_path "$HOME" 2>/dev/null; then
+  echo "error: \$HOME deveria falhar" >&2
+  exit 1
+fi
+if workvm_assert_safe_destructive_path "/" 2>/dev/null; then
+  echo "error: / deveria falhar" >&2
+  exit 1
+fi
+if workvm_assert_safe_destructive_path "/api-main" 2>/dev/null; then
+  echo "error: /api-main (wt vazio) deveria falhar" >&2
+  exit 1
+fi
+if workvm_assert_safe_destructive_path "/e2e" 2>/dev/null; then
+  echo "error: /e2e (wt vazio) deveria falhar" >&2
+  exit 1
+fi
+ok_path="$WORKVM_SANDBOX_ROOT/ok-target"
+mkdir -p "$ok_path"
+workvm_assert_safe_destructive_path "$ok_path"
+
 echo "→ create olie (project.sh + slim)"
 "$SB" create --name olie-a --project olie --profile mutation >/dev/null
 test -f "$WORKVM_SANDBOX_ROOT/olie-a/meta.json"

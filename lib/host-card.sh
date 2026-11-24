@@ -3,6 +3,9 @@
 # libvirt fazia isso de graça. Este helper é o contrato mínimo do
 # host-cards-no-vm.md até o compose namespaced estar completo por projeto.
 
+# shellcheck source=safe-fs.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/safe-fs.sh"
+
 workvm_host_card_root() {
     printf '%s\n' "${WORKVM_HOST_CARD_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/host-cards}"
 }
@@ -77,6 +80,7 @@ workvm_host_card_copy_heavy() {
     if [ ! -d "$src" ]; then
         return 1
     fi
+    workvm_assert_safe_destructive_path "$dst" || return 1
     if [ -d "$dst" ] && [ -n "$(ls -A "$dst" 2>/dev/null || true)" ]; then
         workvm_host_card_log "heavy já existe: $dst"
         return 0
@@ -270,6 +274,8 @@ workvm_host_card_rm_rf() {
     local path="$1"
     local parent base
 
+    # Antes de qualquer rm (e do docker root): recusa vazio/$HOME/`/`.
+    workvm_assert_safe_destructive_path "$path" || return 1
     [ -e "$path" ] || [ -L "$path" ] || return 0
     if rm -rf "$path" 2>/dev/null; then
         return 0
@@ -277,6 +283,7 @@ workvm_host_card_rm_rf() {
     parent="$(cd "$(dirname "$path")" 2>/dev/null && pwd)" || return 1
     base="$(basename "$path")"
     [ -n "$parent" ] && [ -n "$base" ] || return 1
+    workvm_assert_safe_destructive_path "$parent/$base" || return 1
     workvm_host_card_log "rm via docker (uid alheio): ${path}"
     docker run --rm \
         -v "${parent}:/rmparent" \
@@ -1386,7 +1393,21 @@ workvm_host_card_ensure() {
     if [ -n "$groups" ]; then
         export WORKVM_HOST_CARD_GROUPS="$groups"
     fi
-    # Compose/hook needs docker.sock. Agent sandbox hides it → clear signal for bridge.
+    # Compose/hook needs docker.sock. Distingue: sandbox do agent (sock oculto),
+    # EACCES (fora do grupo docker), daemon parado — senão o hook mente "imagem ausente".
+    if [ ! -S /var/run/docker.sock ]; then
+        if pgrep -x dockerd >/dev/null 2>&1 \
+            || systemctl is-active --quiet docker.socket 2>/dev/null; then
+            workvm_host_card_log "WORKVM_AGENT_SANDBOX=1 docker.sock oculto (dockerd/socket vivo) — use required_permissions all ou workvm-host-card agent-ensure"
+            return 75
+        fi
+        workvm_host_card_log "docker.sock ausente; inicie o Docker (systemctl enable --now docker.socket)"
+        return 1
+    fi
+    if [ ! -r /var/run/docker.sock ] || [ ! -w /var/run/docker.sock ]; then
+        workvm_host_card_log "sem acesso a /var/run/docker.sock (fora do grupo docker?). sudo usermod -aG docker \"\$USER\" e re-login"
+        return 1
+    fi
     if ! workvm_host_card_run_hook "$project" ensure "$id" "$dir"; then
         if [ ! -S /var/run/docker.sock ] && pgrep -x dockerd >/dev/null 2>&1; then
             workvm_host_card_log "WORKVM_AGENT_SANDBOX=1 docker.sock oculto (dockerd vivo) — use required_permissions all ou workvm-host-card-agent-ensure"

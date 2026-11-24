@@ -1,6 +1,24 @@
 # Histórico
 
 
+## Guardas safe-fs: rm/rsync não podem mais apontar para `$HOME` / `/`
+
+- **problema:** além do rsync manual com dest vazio (entrada abaixo), os scripts ainda tinham `rm -rf "$dst"` / `rm -rf "$wt"` / `rsync --delete` sem allowlist. `wt=""` vira dest `/api-main` e `/e2e/`; `workvm_host_card_rm_rf` via Docker root poderia apagar qualquer path passado.
+- **por que é um problema:** o mesmo class de bug do wipe do `$HOME` podia voltar por variável vazia ou path fora de `.sandboxes/` / `~/.local/share/workvm`.
+- **resolvido como:** `lib/safe-fs.sh` (`workvm_assert_safe_destructive_path`) — recusa vazio, `/`, `$HOME`, ancestrais de `$HOME`, e tudo fora de `workvm/` / `*/.sandboxes/*` / `WORKVM_*_ROOT` de teste. Ligado em `host-card` (`rm_rf`, `copy_heavy`), sandbox create/destroy/sync e olie e2e rsync. Selftest cobre os casos `/`, `$HOME`, `/api-main`, `/e2e`.
+
+## Host-card open: `imagem ausente` era EACCES no docker.sock (DOP-1136)
+
+- **problema:** `open olie DOP-1136` abortava com `workvm-sandbox: imagem olie/api-main:latest ausente; suba o compose da Card VM antes`. Na verdade `/var/run/docker.sock` existia (`docker.socket` ativo) mas o usuário **não** estava no grupo `docker` (`/etc/group` sem `fabricio`; backup `/etc/group-` ainda tinha). Journal: `gpasswd -d fabricio docker` (~10:44) + reboot. `docker image inspect` falhava com permission denied e o ensure tratava como tag missing. Bridge `agent-ensure` também não ajudaria sem gid.
+- **por que é um problema:** todo host-card/sandbox no jarvis para; a mensagem empurra “suba a Card VM” / compose e o agente oferece tooling-broken no sintoma errado (parecia sandbox cluster ou imagem).
+- **resolvido como:** (1) host: `sudo usermod -aG docker $USER` + re-login (mapa em `host-setup.md`). Bridge com `SupplementaryGroups=docker` para ensure sem esperar novo login gráfico. (2) `workvm_sandbox_docker_ok` + pré-voo no `workvm_host_card ensure` — EACCES vs sock oculto vs daemon parado, com mensagem de `usermod`. (3) `workvm_sandbox_olie_ensure_sandbox_image` builda `olie/api-main:latest` via `compose build web` quando a tag realmente falta (mesmo caminho do smoke-case1), depois a tag `-sandbox` PCOV. Workflow: **Host card environment** distingue grupo docker real do cluster de sandbox.
+
+## Sandbox sync: rsync manual com dest vazio apagou `$HOME` (DOP-1136)
+
+- **problema:** no coverage do DOP-1136 o agente inventou um helper `sync_sb` com fallback de path. `workvm-sandbox path` **não existia**; o dest ficou vazio e `rsync -a --delete "$API/" "$dest/"` virou sync para `/`. Como usuário, apagou o que dava sob `$HOME` (`.config/hypr`, `.ssh`, `.bashrc`, worktree `api-main`/`git`, sandboxes).
+- **por que é um problema:** um passo de cobertura destruiu a sessão Hyprland e o working tree do card; keys SSH locais sumiram; recover só via git index/HEAD (unstaged pós-stage pode ter ido embora).
+- **resolvido como:** restore de `~/git` + card `api-main` (HEAD+index) + espelho `~/git/.config/hypr` → `~/.config/hypr`; `.bashrc` do default Omarchy; `.ssh` dir vazio (keys **não** versionadas — regenerar). CLI: `workvm-sandbox path` + `workvm-sandbox sync <id> --from <src>` com recusa de dest vazio/`/`/`$HOME`/fora de `.sandboxes/`. Prompts coverage/mutation + `ORCHESTRATION.md` mandam **só** esse sync (proibido rsync manual). Depois: `lib/safe-fs.sh` em todo rm/rsync destrutivo do meta.
+
 ## Host-card: overlay `.cursor` nos worktrees (skills/rules)
 
 - **problema:** `open olie DOP-…` aplicava `overlay/` só nos clones ao vivo (`~/git/olie/…/.cursor`). A janela do card abre `worktree/<repo>`; `.cursor` é gitignored, então o worktree ficava vazio e o Cursor não via skills/rules do overlay (MCP user-level ainda ok).

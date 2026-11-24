@@ -4,6 +4,24 @@ O host (Hyprland, fone no Fifine, monitor DP-1) ficou sem screenshot e com volum
 
 O que vale em toda VM nova está no `vm-setup.sh` e no `.config/`. O áudio do Fifine fica só nesta máquina (`~/.config/easyeffects/`).
 
+## Docker no jarvis (host-cards)
+
+**Problema.** Host-card / `workvm-sandbox` precisam de `/var/run/docker.sock` (`0660 root:docker`). Se o usuário sai do grupo `docker` (`gpasswd -d …` ou install script) e reinicia, `open`/`ensure` falham — às vezes com sintoma falso de “imagem ausente”, porque `docker image inspect` só devolve permission denied.
+
+**Como ficou.** Conferir e restaurar:
+
+```bash
+getent group docker          # deve listar fabricio
+id -nG                       # deve incluir docker (após re-login)
+sudo usermod -aG docker "$USER"
+# novo login gráfico (ou reboot); newgrp docker só cobre o shell atual
+docker info                  # Server: ok
+```
+
+Se `/etc/group` já tem o usuário mas `id -nG` ainda não: a sessão nasceu antes do `usermod`. Re-login **ou** use a bridge (`workvm-host-card install-agent-bridge` — unit com `SupplementaryGroups=docker`) para ensure/docker exec sem esperar o Cursor herdar o gid.
+
+Sock oculto **só no Shell do agent** (footer SANDBOXING) é outro caso — ver workflow-policy **Silent sandbox** / bridge. Aqui o sock existe e o `id` sem `docker` é host real.
+
 ## Rede das WorkVMs (UFW + libvirt)
 
 **Problema.** `pacman` / HTTPS na guest timeout; ping para `1.1.1.1` ok. Parecia mirror ou clone da modelo `base-dev` (antes `archlinux`) — não era. O UFW do host (`DEFAULT_FORWARD_POLICY=DROP`) só liberava forward `virbr0` → NIC de saída. A regra ficou em `enp7s0` depois que a interface real passou a ser `enp6s0`. ICMP ainda passava; TCP (mirrors, git, gh) não. Afeta **todas** as VMs na rede `default`, não o disco da modelo.

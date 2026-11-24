@@ -8,6 +8,9 @@ After=default.target
 
 [Service]
 Type=simple
+# Após usermod -aG docker, sessões já abertas (Cursor/agent) ficam sem o gid;
+# SupplementaryGroups pega o grupo do /etc/group sem esperar re-login gráfico.
+SupplementaryGroups=docker
 ExecStart=%h/git/bin/workvm-host-card-agent-bridge
 Restart=on-failure
 RestartSec=3

@@ -20,6 +20,8 @@ workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
          [--from-commit SHA] [--backend container|vm] [--mem 1g] [--cpus 1.0]
   list
   status <id>
+  path <id> [--repo api-main]
+  sync <id> --from <src-dir> [--repo api-main]
   destroy <id>
 
   job run <id> [--service app|backend] -- <comando…>
@@ -32,6 +34,8 @@ workvm-sandbox — gerencia sandboxes isolados na WorkVM do Card
 
 Estado: ${XDG_DATA_HOME:-~/.local/share}/workvm/sandboxes/
 Projetos: olie/sandbox/ | televisao/sandbox/ | locav/sandbox/ | opbed/sandbox/ | boilerplate-laravel/sandbox/ | use-url-query/sandbox/ | fabriciogferreira/sandbox/
+
+Sync dirty do card → sandbox: use sempre \`sync\` (nunca rsync manual). Dest vazio/\`/\`/\$HOME é recusado.
 EOF
 }
 
@@ -46,6 +50,8 @@ case "$cmd" in
     create) workvm_sandbox_create "$@" ;;
     list) workvm_sandbox_list "$@" ;;
     status) workvm_sandbox_status "$@" ;;
+    path) workvm_sandbox_path "$@" ;;
+    sync) workvm_sandbox_sync "$@" ;;
     destroy) workvm_sandbox_destroy "$@" ;;
     job)
         sub="${1:-}"

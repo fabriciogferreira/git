@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Smoke caso 1: dois cards Olie (DOP-1183 + DOP-1073) no host sem colisão.
 # Problema: o agente Cursor pode não ter o gid docker até relogin; rodar no
-# terminal onde `docker info` já funciona.
+# terminal onde `docker info` já funciona. Ensure agora também builda a base
+# se faltar — este smoke ainda pré-builda para falhar cedo e claro.
 set -euo pipefail
 
 export WORKVM_HOST_CARD_OPEN_CURSOR="${WORKVM_HOST_CARD_OPEN_CURSOR:-0}"

@@ -2,6 +2,9 @@
 # Problema: N ambientes no mesmo Card brigavam pelo mesmo compose/DB/Redis.
 # Este arquivo só define estado e helpers; create/destroy ficam nos backends.
 
+# shellcheck source=../safe-fs.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/safe-fs.sh"
+
 workvm_sandbox_root() {
     printf '%s\n' "${WORKVM_SANDBOX_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/workvm/sandboxes}"
 }
@@ -18,6 +21,29 @@ workvm_sandbox_meta_repo() {
 
 workvm_sandbox_log() {
     printf 'workvm-sandbox: %s\n' "$*" >&2
+}
+
+# Pré-voo Docker: distingue sock oculto (sandbox do agent), EACCES (fora do
+# grupo docker) e daemon parado — para não virar "imagem ausente" falso.
+workvm_sandbox_docker_ok() {
+    if [ ! -S /var/run/docker.sock ]; then
+        if pgrep -x dockerd >/dev/null 2>&1 \
+            || systemctl is-active --quiet docker.socket 2>/dev/null; then
+            workvm_sandbox_log "docker.sock oculto (dockerd/socket vivo) — required_permissions all ou workvm-host-card agent-ensure"
+            return 1
+        fi
+        workvm_sandbox_log "docker.sock ausente; inicie o Docker (systemctl enable --now docker.socket)"
+        return 1
+    fi
+    if [ ! -r /var/run/docker.sock ] || [ ! -w /var/run/docker.sock ]; then
+        workvm_sandbox_log "sem acesso a /var/run/docker.sock (usuário fora do grupo docker?). sudo usermod -aG docker \"\$USER\" e re-login"
+        return 1
+    fi
+    if ! docker info >/dev/null 2>&1; then
+        workvm_sandbox_log "docker info falhou (daemon?) — ver: systemctl status docker"
+        return 1
+    fi
+    return 0
 }
 
 workvm_sandbox_id_ok() {
