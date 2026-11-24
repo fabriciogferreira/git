@@ -5,6 +5,13 @@
             "args": [
                 "olie-e2e"
             ]
+        },
+        "primevue": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@primevue/mcp"
+            ]
         }
     }
 }
