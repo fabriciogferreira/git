@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card ensure: nunca sondar sem `all` (Auto-review Ask)
+
+- **problema:** no `implementation` do DOP-1136 o primeiro `workvm-host-card ensure` rodou no Shell **sem** `required_permissions: ["all"]`. Saiu Permission denied em `~/.cursor/mcp.json`, `meta.json`, overlay/`FETCH_HEAD` e proxy — sintoma de sandbox, não de host quebrado. Com `all` o Auto-review ainda **Ask** (permissions.json: ensure/open/destroy não são allow-list); sem `request_smart_mode_approval` o agente para no block.
+- **por que é um problema:** o prompt de implementação para no passo 0; o agente oferece `resolva` como se a VM estivesse quebrada; atrito em todo card se alguém “testar” ensure sandboxed primeiro.
+- **resolvido como:** ensure com `all` + approval card quando o Ask bloquear. `implementation.md` / `stop-on-broken-tooling` / `workflow-policy` (**Host card environment**) deixam explícito: **primeira** chamada já com `all`; nunca sondar no sandbox; no Ask do Auto-review → mesmo comando com `request_smart_mode_approval` (não inventar chmod/DNS). Bridge `agent-ensure` continua o fallback se `all` ficar sandboxed em silêncio.
+
 ## fabriciogferreira host-card: Next `not found` com node_modules parcial
 
 - **problema:** `open fabriciogferreira` subia o compose e o wait em `:SB_PORT_WEB` esgotava. Log: `sh: next: not found` (exit 127). O clone tinha `node_modules/` (e `@next/…`) mas sem o pacote `next` / `.bin/next`.

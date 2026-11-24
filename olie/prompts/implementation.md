@@ -22,6 +22,8 @@ Before media review, stage moves, or git work, run **Host card environment** in 
 ~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'
 ```
 
+**Shell (mandatory on the first call):** `required_permissions: ["all"]`. Do **not** probe ensure in the default sandbox “to see if it works” — that always fails with Permission denied on `~/.cursor/mcp.json` / `meta.json` / overlay (sandbox symptom, not a broken host). If Auto-review **Ask**/blocks that unrestricted call, retry the **exact same** command with `request_smart_mode_approval` (expected for ensure/open/destroy). If the footer still says SANDBOXING after `all`, use `workvm-host-card agent-ensure` (bridge). Detail: **Host card environment** / **Silent sandbox after `all`** in `workflow-policy.md`.
+
 Idempotent: first paste creates the unit; a later day resumes it. Do **not** `destroy` when this paste ends or when the user stops for the day — only on `finish card` or when the card reaches `done` (see production-review). Report `id` / `workspace` / `port_base` in chat.
 
 ## 1. Context and Objective
