@@ -1448,6 +1448,13 @@ workvm_host_card_ensure() {
         return 1
     fi
 
+    # Hook persiste stack_groups (add --group front). Reaplica MCP para
+    # registrar Playwright só depois do e2e existir no meta — o merge cedo
+    # acima ainda via meta antigo (back-only) e omitia o server.
+    if ! workvm_host_card_ensure_olie_mcp "$project" "$id"; then
+        workvm_host_card_log "aviso: MCP pós-hook falhou — Playwright pode ficar omitido"
+    fi
+
     # Re-read compose_project after hook (olie/televisao may rewrite it).
     if [ -f "$(workvm_host_card_meta_path "$project" "$id")" ]; then
         compose_project="$(python3 -c "import json;print(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('compose_project','$compose_project'))")"
