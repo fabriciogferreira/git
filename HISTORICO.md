@@ -1,6 +1,18 @@
 # Histórico
 
 
+## Host-card Olie: cache do DB do card (migrate --seed → import)
+
+- **problema:** cold open Olie gastava ~390s em `migrate --seed` (DatabaseSeeder + FrameDataSeeder). Bench DOP-1137: dump+import do mesmo tip ~80s (~5×).
+- **por que é um problema:** cada card novo no mesmo tip re-seedava do zero; N cards = N×~6,5 min só de seed.
+- **resolvido como:** `olie/sandbox/card-db-cache.sh` no `workvm_host_card_olie_migrate_seed` — chave = hash on-disk de `database/{migrations,seeders,factories}`; hit importa `~/.local/share/workvm/cache/olie-card-db/<key>.sql.gz`; miss faz seed e grava o dump. Opt-out: `WORKVM_OLIE_CARD_DB_CACHE=0`. Fluxo: só no caminho “banco vazio / ainda não seedado”; card já com `db_seeded=1` e tabelas só roda `migrate --force` (não reconsulta dump).
+
+## BusinessAreaFactory: unique Faker estoura no seed do card (antes de regenerar o cache)
+
+- **problema:** `FrameDataSeeder` criava N business areas no mesmo processo. Em `BusinessAreaFactory`, `unique()->randomElement($fakeBaNames) . ' ' . uniqid()` — o `unique()` vale só para a lista (~10 nomes); o `uniqid()` fica **fora** e não evita OverflowException (“Maximum retries of 10000…”). O seeder dá `dump` e segue, mas queima dezenas de segundos e o seed fica incompleto (~250s “falso” vs ~390s completo).
+- **por que é um problema:** dump do card-db-cache gerado **sem** o fix grava DB parcial; próximo hit importa lixo. Regenerar o cache sem corrigir a factory repete o miss lento + dados incompletos.
+- **resolvido como (no produto, ao regenerar):** em `database/factories/BusinessAreaFactory.php` — (1) lista maior de nomes humanizados (opcional); (2) **obrigatório:** tirar `unique()` do `randomElement` e manter `… . ' ' . uniqid()` (ou colocar sufixo único *dentro* do que o Faker rastreia). Depois: apagar `~/.local/share/workvm/cache/olie-card-db/*.sql.gz` da chave antiga (ou só o `.sql.gz` da chave atual) e forçar miss (`db_seeded=0` + DROP do `api_*` / open card novo) para o ensure seedar completo e regravar o dump. Fix de referência ficou no worktree DOP-1137; **não** foi mergeado no `api-main` remoto nesta sessão.
+
 ## Análises de mídia: commit/push só no final do fluxo
 
 - **problema:** `implementation.md` / `correction.md` / media pass de colleague e production pediam commit+push das análises em `*/cards/{CARD_CODE}/` assim que o passe de mídia acabava — antes do pre-qa e no meio do review.

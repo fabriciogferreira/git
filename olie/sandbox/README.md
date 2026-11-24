@@ -58,3 +58,4 @@ de acesso real a `/var/run/docker.sock` (grupo `docker` + re-login).
 - `host-card-ensure.sh` / `host-card-destroy.sh` — stack slim + front + e2e do **card no host** (`workvm-host-card`; clones em `~/git/olie`, sem worktree detach)
   - Suite: `docker exec -u pwuser hc-olie-<id>-olie-e2e-1 npx playwright test --project=chromium`
   - MCP Playwright: pointer `~/.config/workvm/host-card-e2e-container` → mesmo container
+- `card-db-cache.sh` — no ensure, banco `api_*` vazio: calcula hash on-disk de `database/{migrations,seeders,factories}`; se existir dump com essa chave, importa (~80s); senão `migrate --seed` (~390s) e grava em `~/.local/share/workvm/cache/olie-card-db/`. Card já seedado (`db_seeded` + tabelas) **não** recalcula dump — só `migrate --force`. Opt-out: `WORKVM_OLIE_CARD_DB_CACHE=0`. Antes de regenerar o dump: corrigir `BusinessAreaFactory` (não usar `unique()` numa lista curta com `uniqid()` fora — ver HISTORICO).

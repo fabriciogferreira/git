@@ -3,6 +3,7 @@
 # devframe.{slug}.olie.localhost sem colidir entre cards.
 # Sourced by lib/host-card.sh — define workvm_host_card_ensure_hook.
 # Shared data: olie/sandbox/host-card-shared-data.sh
+# Card DB cache (migrate --seed → dump/import): olie/sandbox/card-db-cache.sh
 #
 # Stack groups (RAM): back=app; front=http+front-management+olie-e2e.
 # Primeira abertura infere e grava meta.stack_groups; reopen reusa.
@@ -431,15 +432,22 @@ PY
 }
 
 # Espera MySQL e aplica migrate (+ seed na primeira vez).
+# Com card-db-cache: banco vazio tenta import (~80s); miss → migrate --seed
+# (~390s) e grava dump para o próximo card no mesmo tip de migrations/seeders/factories.
 workvm_host_card_olie_migrate_seed() {
     local compose_dir="$1"
     local pname="$2"
     local dir="$3"
+    local _card_db_cache
+
+    _card_db_cache="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/card-db-cache.sh"
+    # shellcheck source=olie/sandbox/card-db-cache.sh
+    source "$_card_db_cache"
 
     # Subshell so cd/.env do compose não vaza para o caller.
     (
         set -euo pipefail
-        local i seeded=0
+        local i seeded=0 api_main cache_key
         cd "$compose_dir"
         set -a
         # shellcheck disable=SC1091
@@ -461,6 +469,7 @@ workvm_host_card_olie_migrate_seed() {
 
         # Shared DB novo pode estar vazio mesmo com meta db_seeded=1 (migração do modelo antigo).
         db_name="${SB_DB_DATABASE:-api_main}"
+        api_main="${dir}/worktree/api-main"
         tables="$(docker exec olie-hc-mysql mysql -uroot -psandbox -N -e \
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${db_name}'" 2>/dev/null || echo 0)"
         seeded="$(python3 -c "import json;print(json.load(open('${dir}/meta.json')).get('db_seeded') or 0)" 2>/dev/null || echo 0)"
@@ -468,9 +477,19 @@ workvm_host_card_olie_migrate_seed() {
             workvm_host_card_log "migrate (banco já seedado: $db_name)"
             docker compose --profile slim exec -T app php artisan migrate --force
         else
-            workvm_host_card_log "migrate --seed (banco vazio: $db_name; memory_limit=1G)"
-            docker compose --profile slim exec -T app \
-                php -d memory_limit=1G artisan migrate --seed --force
+            if workvm_olie_card_db_cache_try_import "$api_main" "$db_name"; then
+                # Dump alinhado à chave; migrate --force só aplica delta se houver.
+                workvm_host_card_log "migrate após card-db-cache import ($db_name)"
+                docker compose --profile slim exec -T app php artisan migrate --force
+            else
+                workvm_host_card_log "migrate --seed (banco vazio: $db_name; memory_limit=1G)"
+                docker compose --profile slim exec -T app \
+                    php -d memory_limit=1G artisan migrate --seed --force
+                if cache_key="$(workvm_olie_card_db_cache_key "$api_main" 2>/dev/null)"; then
+                    workvm_olie_card_db_cache_store "$db_name" "$cache_key" \
+                        || workvm_host_card_log "card-db-cache: store falhou (seguindo)"
+                fi
+            fi
             python3 - "$dir/meta.json" <<'PY'
 import json, sys
 p = sys.argv[1]

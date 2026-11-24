@@ -72,6 +72,14 @@ mudança nesses seeders → miss. Cache em
 `~/.local/share/workvm/cache/olie-testing-db/`. Opt-out:
 `WORKVM_OLIE_TESTING_DB_CACHE=0`.
 
+**Card DB cache (host-card ensure):** em **todo** open/ensure com banco
+`api_<slug>` ainda vazio, recalcula a chave (hash on-disk de
+migrations+seeders+factories do worktree) e procura
+`~/.local/share/workvm/cache/olie-card-db/<key>.sql.gz`. Hit → import (~80s);
+miss → `migrate --seed` (~390s) + grava dump. Card já seedado só faz
+`migrate --force` (sem olhar o cache). Opt-out: `WORKVM_OLIE_CARD_DB_CACHE=0`.
+Ao regenerar dump: corrigir `BusinessAreaFactory` primeiro (HISTORICO).
+
 ---
 
 ## Dispatcher + fan-out
