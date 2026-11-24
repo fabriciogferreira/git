@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Host-card: overlay `.cursor` nos worktrees (skills/rules)
+
+- **problema:** `open olie DOP-…` aplicava `overlay/` só nos clones ao vivo (`~/git/olie/…/.cursor`). A janela do card abre `worktree/<repo>`; `.cursor` é gitignored, então o worktree ficava vazio e o Cursor não via skills/rules do overlay (MCP user-level ainda ok).
+- **por que é um problema:** rules/skills do produto pareciam sumidas em todo card Olie; o mesmo valeria para Locav/Televisão se/quando tiverem worktree por repo.
+- **resolvido como:** `workvm_host_card_apply_overlay_worktrees` no ensure (após o hook) — sync `overlay/<repo>` → `dir/worktree/<repo>/.cursor` para qualquer projeto com overlay; stub de `mcp.json` (MCP em `~/.cursor/mcp.json`); `workvm_patch_clone_cursor` aceita worktree (`.git` arquivo).
+
 ## Host-card ensure: nunca sondar sem `all` (Auto-review Ask)
 
 - **problema:** no `implementation` do DOP-1136 o primeiro `workvm-host-card ensure` rodou no Shell **sem** `required_permissions: ["all"]`. Saiu Permission denied em `~/.cursor/mcp.json`, `meta.json`, overlay/`FETCH_HEAD` e proxy — sintoma de sandbox, não de host quebrado. Com `all` o Auto-review ainda **Ask** (permissions.json: ensure/open/destroy não são allow-list); sem `request_smart_mode_approval` o agente para no block.

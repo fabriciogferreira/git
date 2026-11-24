@@ -186,7 +186,8 @@ workvm_patch_clone_cursor() {
     local clone="$1"
     local rules_dir agents dest_mdc f patched
 
-    if [ ! -d "$clone/.git" ]; then
+    # Worktree do host-card: .git é arquivo, não diretório.
+    if [ ! -d "$clone/.git" ] && [ ! -f "$clone/.git" ]; then
         return 0
     fi
 

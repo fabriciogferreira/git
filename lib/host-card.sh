@@ -1093,6 +1093,59 @@ workvm_host_card_set_e2e_container() {
     printf 'hc-%s-olie-e2e-1\n' "$id" >"$pointer"
 }
 
+# Overlay → worktree/<repo>/.cursor (rules/skills na janela do card).
+# Problema: `git worktree add` não traz `.cursor` (gitignored); o ensure só
+# aplicava overlay nos clones ao vivo e o Cursor do card abria roots vazios.
+# Vale para todo projeto com `overlay/` (olie, locav, televisao) quando existir
+# `dir/worktree/<repo>`. MCP continua em ~/.cursor/mcp.json — stub no worktree.
+workvm_host_card_apply_overlay_worktrees() {
+    local project="$1"
+    local dir="$2"
+    local meta_repo overlay wt_root child base dest synced=0
+    local marker_name
+
+    meta_repo="$(workvm_host_card_meta_repo)"
+    overlay="${meta_repo}/${project}/overlay"
+    wt_root="${dir}/worktree"
+
+    [ -n "$project" ] && [ -n "$dir" ] || return 0
+    [ -d "$overlay" ] || return 0
+    [ -d "$wt_root" ] || return 0
+
+    # shellcheck source=/dev/null
+    source "${meta_repo}/lib/common.sh"
+    marker_name="${WORKVM_MCP_USER_MARKER:-mcp.workvm-user}"
+
+    workvm_host_card_log "overlay → worktrees do card ($project)"
+    shopt -s nullglob dotglob
+    for child in "$overlay"/*; do
+        base="$(basename "$child")"
+        if [ "$base" = ".gitkeep" ] || [ "$base" = "README.md" ]; then
+            continue
+        fi
+        dest="${wt_root}/${base}"
+        if [ ! -d "$dest" ]; then
+            continue
+        fi
+        workvm_host_card_log "  sync: worktree/${base}/.cursor"
+        workvm_sync_overlay_repo "$child" "$dest" || true
+        if declare -F workvm_mcp_stub_project_file >/dev/null; then
+            workvm_mcp_stub_project_file \
+                "${dest}/.cursor/mcp.json" \
+                "${dest}/.cursor/${marker_name}" || true
+        fi
+        if declare -F workvm_patch_clone_cursor >/dev/null; then
+            workvm_patch_clone_cursor "$dest" || true
+        fi
+        synced=$((synced + 1))
+    done
+    shopt -u nullglob dotglob
+
+    if [ "$synced" -eq 0 ]; then
+        workvm_host_card_log "overlay: nenhum worktree/<repo> (janela usa clone ao vivo?)"
+    fi
+}
+
 # MCP no jarvis (igual ao login da WorkVM): olie-flow-ai + Boost + playwright.
 # Problema: host-card não roda project-start — sem overlay/`mcp.json` + proxy
 # o colleague review para e o Laravel Boost não aparece.
@@ -1351,6 +1404,8 @@ workvm_host_card_ensure() {
     if [ "$project" = "olie" ]; then
         workvm_host_card_write_olie_e2e_path_rule "$dir" || true
     fi
+    # Rules/skills do overlay nos worktrees (depois do hook que os cria).
+    workvm_host_card_apply_overlay_worktrees "$project" "$dir" || true
     # Sync de novo após o hook (Olie prepare pode ter recriado; outros só sync).
     workvm_host_card_add_meta_worktree "$dir" || true
     if ! workvm_host_card_bind_workspace_worktree "$project" "$workspace" "$dir"; then
