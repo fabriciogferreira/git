@@ -604,11 +604,17 @@ EOF
         return 0
     fi
 
+    # PrimeVue (e qualquer npx MCP): reparar mise node antes do merge.
+    if [ -x "$repo_root/bin/workvm-ensure-mise-node.sh" ]; then
+        "$repo_root/bin/workvm-ensure-mise-node.sh" || true
+    fi
+
     local used_file path
     used_file="$(mktemp)"
     local docker_mcp_wrapper="$repo_root/bin/workvm-docker-mcp.sh"
     local playwright_mcp_wrapper="$repo_root/bin/workvm-playwright-mcp.sh"
-    if ! python3 - "$dest" "$used_file" "$docker_mcp_wrapper" "$playwright_mcp_wrapper" "${sources[@]}" <<'PY'
+    local primevue_mcp_wrapper="$repo_root/bin/workvm-primevue-mcp.sh"
+    if ! python3 - "$dest" "$used_file" "$docker_mcp_wrapper" "$playwright_mcp_wrapper" "$primevue_mcp_wrapper" "${sources[@]}" <<'PY'
 import json, re, sys
 from pathlib import Path
 
@@ -695,9 +701,10 @@ dest = Path(sys.argv[1])
 used_file = Path(sys.argv[2])
 docker_wrapper = sys.argv[3]
 playwright_wrapper = sys.argv[4]
+primevue_wrapper = sys.argv[5]
 merged = {}
 used = []
-for raw in sys.argv[5:]:
+for raw in sys.argv[6:]:
     path = Path(raw)
     if not path.is_file():
         continue
@@ -719,6 +726,15 @@ if isinstance(olie, dict):
     olie["url"] = "http://127.0.0.1:47331/mcp/management"
     olie.pop("headers", None)
     merged["olie-flow-ai"] = olie
+
+# PrimeVue: bare `npx` breaks when mise node install is incomplete.
+pv = merged.get("primevue")
+if isinstance(pv, dict) and Path(primevue_wrapper).is_file():
+    cmd = pv.get("command")
+    if cmd in (None, "npx") or (
+        isinstance(cmd, str) and (cmd.endswith("/npx") or cmd.endswith("workvm-primevue-mcp.sh"))
+    ):
+        merged["primevue"] = {"command": primevue_wrapper, "args": []}
 
 for name, cfg in list(merged.items()):
     if isinstance(cfg, dict):

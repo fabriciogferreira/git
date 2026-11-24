@@ -1159,7 +1159,7 @@ workvm_host_card_apply_overlay_worktrees() {
 workvm_host_card_ensure_olie_mcp() {
     local project="$1"
     local id="${2:-}"
-    local meta_repo conf project_dir dest
+    local meta_repo conf project_dir dest stack_groups want_e2e
     meta_repo="$(workvm_host_card_meta_repo)"
     conf="${meta_repo}/${project}/project.conf"
     project_dir="${meta_repo}/${project}"
@@ -1185,6 +1185,11 @@ workvm_host_card_ensure_olie_mcp() {
     # Overlay traz api-main/.cursor/mcp.json (laravel-boost → olie-api-main).
     workvm_host_card_log "overlay → clones (MCP Boost/Playwright)"
     workvm_apply_files "$project_dir" "$project" || true
+
+    # PrimeVue MCP: npx via mise — repara install lazy quebrado antes do merge.
+    if [ -x "${meta_repo}/bin/workvm-ensure-mise-node.sh" ]; then
+        "${meta_repo}/bin/workvm-ensure-mise-node.sh" || true
+    fi
 
     workvm_host_card_log "MCP → ~/.cursor/mcp.json + proxy :47331"
     workvm_apply_cursor_permissions "$meta_repo" || true
@@ -1215,16 +1220,31 @@ PY
     fi
 
     # WorkVM: Boost→olie-api-main, Playwright→olie-e2e. Host-card: wrappers.
+    # Playwright só com front no stack (sobe olie-e2e); back-only → omitir do
+    # mcp.json (senão Cursor fica em loading 180s num container que não existe).
+    # PrimeVue → workvm-primevue-mcp.sh (npx absoluto + ensure mise).
     if [ "$project" = "olie" ] && [ -f "$dest" ]; then
+        stack_groups=""
+        want_e2e=0
+        if [ -n "$id" ]; then
+            stack_groups="$(python3 -c "import json;print(' '.join(json.load(open('$(workvm_host_card_meta_path "$project" "$id")')).get('stack_groups') or []))" 2>/dev/null || true)"
+            case " ${stack_groups} " in
+                *" front "*|*" frontend "*) want_e2e=1 ;;
+            esac
+        fi
         WORKVM_HC_MCP_DEST="$dest" \
             WORKVM_HC_BOOST_WRAPPER="${meta_repo}/bin/workvm-host-card-boost-mcp.sh" \
             WORKVM_HC_PW_WRAPPER="${meta_repo}/bin/workvm-host-card-playwright-mcp.sh" \
+            WORKVM_HC_PV_WRAPPER="${meta_repo}/bin/workvm-primevue-mcp.sh" \
+            WORKVM_HC_WANT_E2E="$want_e2e" \
             python3 <<'PY'
 import json, os
 from pathlib import Path
 dest = Path(os.environ["WORKVM_HC_MCP_DEST"])
 boost_w = os.environ["WORKVM_HC_BOOST_WRAPPER"]
 pw_w = os.environ["WORKVM_HC_PW_WRAPPER"]
+pv_w = os.environ["WORKVM_HC_PV_WRAPPER"]
+want_e2e = os.environ.get("WORKVM_HC_WANT_E2E", "0") == "1"
 data = json.loads(dest.read_text(encoding="utf-8"))
 servers = data.setdefault("mcpServers", {})
 boost = servers.get("laravel-boost")
@@ -1232,19 +1252,31 @@ if isinstance(boost, dict):
     boost["command"] = boost_w
     boost["args"] = []
     servers["laravel-boost"] = boost
-pw = servers.get("playwright")
-if isinstance(pw, dict):
-    # Container olie-e2e do card (pointer); wrapper = workvm-playwright-mcp
-    pw["command"] = pw_w
-    pw["args"] = []
-    servers["playwright"] = pw
+pv = servers.get("primevue")
+if isinstance(pv, dict) or pv is None:
+    servers["primevue"] = {"command": pv_w, "args": []}
+if want_e2e:
+    pw = servers.get("playwright")
+    if isinstance(pw, dict):
+        pw["command"] = pw_w
+        pw["args"] = []
+        servers["playwright"] = pw
+    else:
+        servers["playwright"] = {"command": pw_w, "args": []}
+else:
+    servers.pop("playwright", None)
 dest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 PY
         if [ -n "$id" ]; then
             workvm_host_card_set_boost_container "$id"
-            workvm_host_card_set_e2e_container "$id"
             workvm_host_card_log "laravel-boost → hc-${id}-app-1"
-            workvm_host_card_log "playwright → hc-${id}-olie-e2e-1"
+            if [ "$want_e2e" -eq 1 ]; then
+                workvm_host_card_set_e2e_container "$id"
+                workvm_host_card_log "playwright → hc-${id}-olie-e2e-1"
+            else
+                workvm_host_card_log "playwright omitido (stack back-only; add --group front)"
+            fi
+            workvm_host_card_log "primevue → workvm-primevue-mcp.sh"
         fi
     fi
 }

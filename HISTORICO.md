@@ -1,6 +1,12 @@
 # Histórico
 
 
+## MCP Playwright + PrimeVue quebrados no host-card (DOP-1136)
+
+- **problema:** (1) PrimeVue no `mcp.json` era `npx -y @primevue/mcp`; após reinstall do Cursor o mise deixava `node@latest` lazy sem `bin/` → `npx is not a valid shim` e o server ficava `error`/`mcp_auth`. (2) Playwright no host-card apontava para `hc-olie-*-olie-e2e-1` mesmo com `stack_groups: ["back"]` (sem e2e) → wrapper esperava 180s e o Cursor ficava em `loading`.
+- **por que é um problema:** agent/chat perde browser e docs PrimeVue em todo card back-only ou pós-reinstall; parece auth/MCP morto.
+- **resolvido como:** `bin/workvm-ensure-mise-node.sh` + `bin/workvm-primevue-mcp.sh` (npx absoluto); merge em `workvm_apply_mcp` / `workvm_host_card_ensure_olie_mcp` reescreve PrimeVue; Playwright só entra no `mcp.json` com `front` no stack (omitido em back-only + log `add --group front`); fail-fast no `workvm-host-card-playwright-mcp.sh` se o container não existir. Overlay `olie-fronts/cursor/mcp.json` aponta o wrapper.
+
 ## Guardas safe-fs: rm/rsync não podem mais apontar para `$HOME` / `/`
 
 - **problema:** além do rsync manual com dest vazio (entrada abaixo), os scripts ainda tinham `rm -rf "$dst"` / `rm -rf "$wt"` / `rsync --delete` sem allowlist. `wt=""` vira dest `/api-main` e `/e2e/`; `workvm_host_card_rm_rf` via Docker root poderia apagar qualquer path passado.

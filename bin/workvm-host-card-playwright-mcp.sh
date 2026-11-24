@@ -25,4 +25,16 @@ if [ -z "$container" ]; then
     exit 1
 fi
 
+# Fail-fast se o container nem existe (stack back-only). Sem isso o
+# workvm-docker-mcp espera 180s e o Cursor fica em "loading".
+DOCKER_BIN=/usr/bin/docker
+[ -x "$DOCKER_BIN" ] || DOCKER_BIN="$(command -v docker 2>/dev/null || true)"
+if [ -n "$DOCKER_BIN" ]; then
+    state="$("$DOCKER_BIN" inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)"
+    if [ -z "$state" ]; then
+        echo "workvm-host-card-playwright-mcp: $container ausente (stack back-only?). Rode: workvm-host-card add --project olie --code <CODE> --group front" >&2
+        exit 1
+    fi
+fi
+
 exec "$PW_MCP" "$container"

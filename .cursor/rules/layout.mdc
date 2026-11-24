@@ -66,6 +66,8 @@ alwaysApply: true
 | `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
 | `bin/workvm-docker-mcp.sh` | Cursor sobe no login antes do compose. `docker exec` do Boost/Playwright falha uma vez e o MCP fica `failed`. Espera o container (stderr silencioso) e só então encaminha o stdio. |
 | `bin/workvm-playwright-mcp.sh` | `@playwright/mcp@latest` pede chrome-for-testing e sandbox; a imagem e2e só tem Chromium em `/ms-playwright`. Espera o container e sobe o MCP headless com esse binário e `--no-sandbox`. |
+| `bin/workvm-ensure-mise-node.sh` | Omarchy node lazy / reinstall Cursor deixa `npx` sem binário; MCP PrimeVue morre na discovery. Reinstala o node ativo se `npx -v` falhar. |
+| `bin/workvm-primevue-mcp.sh` | `command: npx` no mcp.json quebra com shim mise incompleto. Garante node e chama `@primevue/mcp` com npx absoluto sob `installs/node`. |
 | `bin/workvm-olie-mcp-proxy.py` | O Cursor ignora o Bearer do `olie-flow-ai` porque `api.olie.ai` publica OAuth. O agente do prompt fica `needsAuth` com o desktop já autenticado. Em `127.0.0.1:47331` responde 404 na descoberta e encaminha o MCP com o token. |
 | `bin/workvm-olie-management-read.sh` | Fallback HTTP do Caderno quando MCP notebook está `needsAuth`/401. Preferir `get-notebook-tool` + `read-notebook-page-tool`. Card/funil: MCP. |
 | `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado (blob HEAD); `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start`. Ensure/sandbox: **block** pede `all` (não allow sandboxed). |

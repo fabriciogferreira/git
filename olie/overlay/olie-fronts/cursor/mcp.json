@@ -7,11 +7,8 @@
             ]
         },
         "primevue": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@primevue/mcp"
-            ]
+            "command": "${env:HOME}/git/bin/workvm-primevue-mcp.sh",
+            "args": []
         }
     }
 }
