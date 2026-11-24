@@ -236,6 +236,15 @@ User phrase **`open olie {{ code }}`** (see **Chat commands**): `workvm-host-car
 ~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'
 ```
 
+**After destroy succeeds — stop the project’s main compose** (`COMPOSE_DIR` in `olie/project.conf`, usually `~/git/olie`):
+
+```bash
+docker compose -f ~/git/olie/docker-compose.yml down
+# equivalent: (cd ~/git/olie && docker compose down)
+```
+
+`destroy` only tears down **this card’s** `hc-olie-…` stack. It does **not** stop the WorkVM/project compose (`olie-api-main`, fronts, …) nor shared `olie-hc-*` (`hc-olie-data`). The agent **must** run the main `docker compose down` on finalize/`finish card` / production-review `done` teardown so those containers do not keep burning RAM. Do **not** `docker compose down` on `olie/sandbox/compose.host-data.yml` / `hc-olie-data` while other Olie cards or sandboxes may still need MySQL/Redis/Mongo. Do **not** stop other cards’ `hc-olie-*` compose projects.
+
 Run destroy when:
 
 1. The card moved to logical `done` ('concluído') after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or
@@ -662,7 +671,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `to correct` | Fix the latest corrective list in this chat: **Needs code fixes** from `~/git/olie/prompts/implementation-validation.md`, or failures from `pest-parallel.md`. Implement those items only; then recommend `try again` on that same pass. For gap **Tests to add**, use `add` instead. Not board `correction.md` / 'corrigir' unless the card is already in `changes-requested`. Not `correct mutations`. |
 | `open olie CODE` / `open PROJECT CODE` | **Funnel cards (`olie` / `locav` / `televisao`): CODE required.** If the user says only `open olie` (no card code), **stop and ask** — do not guess (last card, only on `list`). Optional: `workvm-host-card list`. With CODE: `~/git/bin/workvm-host-card open --project olie --code <CODE>`. **Single-unit** (`use-url-query`, `opbed`, `boilerplate-laravel`, `boilerplate-next`, `fabriciogferreira`): no `{{ code }}` — `open use-url-query` → `--project` and `--code` both the project name. Ensure + **open/focus** the card `.code-workspace` (product worktrees, not shared clones). Syncs card meta `worktree/git` to live `~/git` HEAD. Print `workspace=` and `api_worktree=`. Olie: first open infers `stack_groups` (`back`=app; `front`=http+front-management+olie-e2e; front→back) from olie-fronts branches matching CODE (default `back`) and persists; reopen reuses. Override: `--groups` / `WORKVM_HOST_CARD_GROUPS`. |
 | `add front` / `add back` (Olie host-card) | `~/git/bin/workvm-host-card add --project olie --code <CODE> --group front` (or `back`). Merges into meta `stack_groups` and re-ensure — use when a back-only card later needs browser/e2e. **Playwright MCP** only registers when `front` is in `stack_groups` (olie-e2e). **PrimeVue MCP** uses `workvm-primevue-mcp.sh` (repairs broken mise `npx` after Cursor reinstall). |
-| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (compose/sandbox + clones compartilhados de volta à branch base do `project.conf`, ex. `develop`). **Does not** close the Cursor window (that killed the chat mid-prompt). After destroy succeeds, tell the user explicitly they can close the card window manually. Do **not** ask about or move the board to 'concluído' — that is a separate explicit request. Do not destroy other cards. |
+| `finish card` / `finalize card` | **Local only:** (1) `~/git/bin/workvm-host-card destroy --project olie --code <CODE>` (card compose + clones → branch base do `project.conf`, ex. `develop`); (2) **then** stop the **main** project compose (`docker compose -f ~/git/olie/docker-compose.yml down` — see **Destroy**). Does **not** close Cursor; does **not** tear down `hc-olie-data` / other cards. After both succeed, tell the user they can close the card window manually. Do **not** ask about or move the board to 'concluído'. Do not destroy other cards. |
 | `colleague review CODE` | Load `~/git/olie/prompts/colleague-review.md`, substitute `CODE` for `{{ code }}` **in memory only**, run the dispatcher. Do not edit or save the prompt file. |
 | `run prompt NAME CODE` | Same for `~/git/olie/prompts/<NAME>.md` (with or without `.md`). Substitute in memory; never write the template. |
 | `resolva` | After a **prompt-health** stop: fix the blocker **in this session only** (local/env/compose). Do not encode a permanent meta-repo solution. Then resume the interrupted prompt. |

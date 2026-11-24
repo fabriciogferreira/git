@@ -54,7 +54,7 @@ Move **only** if the user answers yes (or an unambiguous equivalent). If the use
 
 When yes: resolve the live step id by display name via MCP / `~/git/olie/prompts/workflow-policy.md` (**Moving a card on the board**). Never hard-code step ids. Verify the transition succeeded.
 
-**After a successful move to `done` ('concluído'):** run host-card teardown — `~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'`. Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no to the move.
+**After a successful move to `done` ('concluído'):** run host-card teardown — `~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'`, then stop the **main** project compose (`docker compose -f ~/git/olie/docker-compose.yml down` — **Destroy** in `workflow-policy.md`). Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no to the move.
 
 ## Done when
 

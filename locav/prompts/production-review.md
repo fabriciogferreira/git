@@ -52,7 +52,7 @@ Move **only** if the user answers yes (or an unambiguous equivalent). If the use
 
 When yes: resolve the live step id by display name via MCP / `~/git/locav/prompts/workflow-policy.md` (**Moving a card on the board**). Never hard-code step ids. Verify the transition succeeded.
 
-**After a successful move to `done` ('Concluído'):** `~/git/bin/workvm-host-card destroy --project locav --code '{{ code }}'`. Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no.
+**After a successful move to `done` ('Concluído'):** `~/git/bin/workvm-host-card destroy --project locav --code '{{ code }}'`, then `docker compose -f ~/git/locav/LocavApi/docker-compose.yml down` (**Destroy** in `workflow-policy.md`). Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no.
 
 ## Done when
 

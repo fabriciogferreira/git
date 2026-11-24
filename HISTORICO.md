@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Finalize card: derrubar também o compose principal (Olie/Locav/Televisão)
+
+- **problema:** `workvm-host-card destroy` só remove o stack **do card** (`hc-…`) / DBs do card. O compose do projeto (`olie/docker-compose.yml`, Sail `LocavApi`/`locavapi`, `televisao-api` + e2e) e o shared data (`*-hc-*`) ficavam no ar — ex.: após `finalize LCV-17`, `locav-backend` etc. continuavam.
+- **por que é um problema:** RAM e portas ocupadas depois do card “terminado”; o agente achava que destroy bastava.
+- **resolvido como:** instrução nos três `*/prompts/workflow-policy.md` (**Destroy** + chat `finish card` / `finalize card`): após destroy ok, `docker compose … down` no `COMPOSE_DIR` do `project.conf` (Televisão: também `E2E_COMPOSE_DIRS`). Shared `hc-*-data` e outros cards **não** derrubar.
+
 ## Host-card Olie: cache do DB do card (migrate --seed → import)
 
 - **problema:** cold open Olie gastava ~390s em `migrate --seed` (DatabaseSeeder + FrameDataSeeder). Bench DOP-1137: dump+import do mesmo tip ~80s (~5×).

@@ -172,6 +172,14 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
 ~/git/bin/workvm-host-card destroy --project locav --code '{{ code }}'
 ```
 
+**After destroy succeeds — stop the project’s main compose** (Sail / `COMPOSE_DIR` = `~/git/locav/LocavApi`):
+
+```bash
+docker compose -f ~/git/locav/LocavApi/docker-compose.yml down
+```
+
+Locav host-card ensure is **shared-data-only** (`hc-locav-data`). `destroy` drops the card DBs and card state; it does **not** stop `locav-backend` / `locav-frontend` / `locav-pgsql` / … (compose project `locavapi`). The agent **must** run that `docker compose down` on finalize/`finish card` / production-review `done` teardown. Do **not** tear down `locav-hc-*` / `hc-locav-data` while other Locav cards or sandboxes may still need them.
+
 Run destroy when the card moved to logical `done` after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or when the user sends `finish card`. Do **not** destroy at the end of an implementation/correction/colleague-review paste or when closing the chat for the day.
 
 ## Card branch name
@@ -398,7 +406,7 @@ Exact phrases from the user in this chat (match case-insensitively after trim). 
 | `try again` | Resume or re-run the **current** prompt after a stop or manual fix. Continue from the blocked step when safe; otherwise restart that prompt’s procedure. Do not jump to another prompt. |
 | `to correct` | Fix the latest corrective list in this chat: either **Needs code fixes** from `~/git/locav/prompts/implementation-validation.md`, or **Tests to add** from `~/git/locav/prompts/test-gap-analysis.md`. Implement those items only; then recommend `try again` on that same pass (re-run validation or gap analysis). Not board `correction.md` / 'Corrigir' unless the card is already in `changes-requested`. |
 | `open locav CODE` / `open PROJECT CODE` | **Funnel (`locav` / `olie` / `televisao`): CODE required** — omit → stop and ask; do not guess. **Single-unit** (`use-url-query`, `opbed`, `boilerplate-*`, `fabriciogferreira`): `open PROJECT` → `--code` = project name. With CODE: `~/git/bin/workvm-host-card open --project locav --code <CODE>`. Ensure + focus/open the card `.code-workspace`. Syncs meta `worktree/git` to live `~/git` HEAD. Print `workspace=` / `api_worktree=`. |
-| `finish card` / `finalize card` | **Local only:** `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (compose/sandbox + fecha a janela Cursor + clones → branch base do `project.conf`). Do **not** ask about or move the board to concluído — that is a separate explicit request. |
+| `finish card` / `finalize card` | **Local only:** (1) `~/git/bin/workvm-host-card destroy --project locav --code <CODE>` (card state + DBs + clones → branch base); (2) **then** `docker compose -f ~/git/locav/LocavApi/docker-compose.yml down` (Sail/`locavapi` — see **Destroy**). Does **not** close Cursor; does **not** tear down `hc-locav-data`. Tell the user they can close the card window manually. Do **not** ask about or move the board to concluído. |
 | `resolva` | After a **prompt-health** stop: fix the blocker **in this session only**. Do not encode a permanent meta-repo solution. Then resume the interrupted prompt. |
 | `documente` | After a **prompt-health** stop: write the problem into `~/git/HISTORICO.md` (and a short rule/prompt note if useful). Small local unblock if safe; if the real fix is too large for this card, **document only**. |
 | `resolva permanentemente` | After a **prompt-health** stop: unblock now **and** leave a durable fix for the next card (`HISTORICO.md` + rule / workflow-policy / `bin`/`lib` / overlay as needed). |
