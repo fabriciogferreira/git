@@ -18,7 +18,7 @@ sudo usermod -aG docker "$USER"
 docker info                  # Server: ok
 ```
 
-Se `/etc/group` já tem o usuário mas `id -nG` ainda não: a sessão nasceu antes do `usermod`. Re-login **ou** use a bridge (`workvm-host-card install-agent-bridge` — unit com `SupplementaryGroups=docker`) para ensure/docker exec sem esperar o Cursor herdar o gid.
+Se `/etc/group` já tem o usuário mas `id -nG` ainda não: a sessão nasceu antes do `usermod`. **Re-login gráfico** (ou reboot / reiniciar o Cursor sob sessão nova) — user systemd **não** consegue `SupplementaryGroups=docker` (EPERM). A bridge herda os grupos da sessão; sem re-login ela também fica sem o sock.
 
 Sock oculto **só no Shell do agent** (footer SANDBOXING) é outro caso — ver workflow-policy **Silent sandbox** / bridge. Aqui o sock existe e o `id` sem `docker` é host real.
 
