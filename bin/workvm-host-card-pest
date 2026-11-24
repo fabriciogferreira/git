@@ -8,11 +8,17 @@
 # Problema (2026-11-23): artisan test rejeita --ci ("option does not exist");
 # compose do card/sandbox pode ter PEST_TIA_LOCALLY=1, que encolhe a suite
 # sem --ci. Regressão: não passar --ci; forçar PEST_TIA_LOCALLY=0 no exec.
+# Problema (2026-11-24): --recreate-databases + rm dos migration-checksum_*.txt
+# a cada run forçava migrate:fresh × N workers (~20 min). Default: reusa DBs
+# + warm de checksum (olie/sandbox/host-card-pest-db.sh). Opt-in recreate:
+# passe --recreate-databases nos args extras.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=../lib/host-card.sh
 source "$ROOT/lib/host-card.sh"
+# shellcheck source=../olie/sandbox/host-card-pest-db.sh
+source "$ROOT/olie/sandbox/host-card-pest-db.sh"
 
 usage() {
     cat <<'EOF'
@@ -20,9 +26,11 @@ workvm-host-card-pest — Pest no stack do host-card (Olie)
 
   workvm-host-card-pest --project olie --code <CODE> [--] [args do artisan test…]
 
-Defaults: --compact --parallel --recreate-databases --processes=min(nproc,22)
+Defaults: --compact --parallel --processes=min(nproc,22)
+  (sem --recreate-databases: reusa testing_* + checksums; ~2 min no jarvis)
   (teto 22: ≥23 segfaulta no jarvis; override WORKVM_HOST_CARD_PEST_PROCESSES)
   (não passa --ci: artisan rejeita; TIA off via PEST_TIA_LOCALLY=0 no exec)
+  Opt-in frio: passe --recreate-databases (aí o wrapper apaga checksums)
 Env forçado no container (não muda o compose do browser):
   DB_DATABASE=<testing_* do card> (shared MySQL; default testing_<slug>)
   APP_ENV=testing
@@ -33,6 +41,7 @@ Env forçado no container (não muda o compose do browser):
 Ex.:
   workvm-host-card-pest --project olie --code DOP-1183
   workvm-host-card-pest --project olie --code DOP-1183 -- --filter=ShowOfferOrder
+  workvm-host-card-pest --project olie --code DOP-1183 -- --recreate-databases
 EOF
 }
 
@@ -77,6 +86,7 @@ fi
 compose_dir="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_dir') or '')")"
 pname="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_project') or '')")"
 testing_db="$(python3 -c "import json;print(json.load(open('$meta')).get('testing_database') or '')")"
+api_worktree="$(python3 -c "import json;print(json.load(open('$meta')).get('api_worktree') or '')")"
 if [ -z "$compose_dir" ] || [ ! -d "$compose_dir" ]; then
     compose_dir="$(workvm_host_card_dir "$project" "$id")/compose"
 fi
@@ -85,6 +95,15 @@ if [ -z "$pname" ]; then
 fi
 if [ -z "$testing_db" ]; then
     testing_db="testing"
+fi
+if [ -z "$api_worktree" ]; then
+    api_worktree="$(workvm_host_card_dir "$project" "$id")/worktree"
+fi
+# Host-card worktree root holds clones (api-main, …).
+if [ -d "${api_worktree}/api-main" ]; then
+    api_main="${api_worktree}/api-main"
+else
+    api_main="$api_worktree"
 fi
 
 nproc_count="$(nproc)"
@@ -104,8 +123,16 @@ for a in "${raw_extra[@]+"${raw_extra[@]}"}"; do
     esac
 done
 if [ ${#extra[@]} -eq 0 ]; then
-    extra=(--compact --parallel --recreate-databases --processes="$procs")
+    # Sem --recreate-databases: FastRefresh reusa schema+checksum (gate ~2 min).
+    extra=(--compact --parallel --processes="$procs")
 fi
+
+has_recreate=0
+for a in "${extra[@]}"; do
+    case "$a" in
+        --recreate-databases) has_recreate=1 ;;
+    esac
+done
 
 workvm_host_card_log "pest $id ($pname) → ${extra[*]} (PEST_TIA_LOCALLY=0)"
 
@@ -117,10 +144,16 @@ workvm_host_card_log "pest $id ($pname) → ${extra[*]} (PEST_TIA_LOCALLY=0)"
     set +a
     export COMPOSE_PROJECT_NAME="$pname"
     docker compose --profile slim exec -T app mkdir -p /tmp/pest-hc
-    # FastRefreshDatabase grava migration-checksum_*.txt; --recreate-databases
-    # esvazia o MySQL mas o checksum igual faz pular migrate:fresh → 0 tables.
-    docker compose --profile slim exec -T app \
-        sh -c 'rm -f storage/app/migration-checksum_*.txt'
+
+    if [ "$has_recreate" -eq 1 ]; then
+        # --recreate-databases esvazia o MySQL; checksum igual faria pular
+        # migrate:fresh → 0 tables. Só apaga checksums nesse caminho frio.
+        docker compose --profile slim exec -T app \
+            sh -c 'rm -f storage/app/migration-checksum_*.txt'
+    else
+        workvm_olie_host_card_pest_warm "$compose_dir" "$pname" "$testing_db" "$procs" "$api_main" || true
+    fi
+
     # -e no exec: workers do --parallel herdam o env do PHP pai.
     # PEST_TIA_LOCALLY=0: artisan não aceita --ci; env desliga TIA even if
     # compose still sets PEST_TIA_LOCALLY=1 (sandbox / slim host-card).

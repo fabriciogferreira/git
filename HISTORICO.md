@@ -1,6 +1,12 @@
 # Histórico
 
 
+## Olie pest-parallel ~20 min no host-card (recreate + MySQL 128M)
+
+- **problema:** `workvm-host-card-pest` defaultava `--recreate-databases` e apagava `storage/app/migration-checksum_*.txt` em **todo** run. Com FastRefresh isso vira `migrate:fresh` × N workers no MySQL compartilhado. O `olie-hc-mysql` (`compose.host-data.yml`) ainda usava buffer InnoDB default (128M) com dezenas/centenas de `testing_*` — migrate/ALTER ficava IO-bound (~20 min; CPU baixa). O normal no jarvis era ~2 min.
+- **por que é um problema:** o gate `pest-parallel` (pós-mutation) trava o card; abortar no meio deixa DBs/orphans e piora o próximo run.
+- **resolvido como:** default do wrapper **sem** `--recreate-databases`; warm via `olie/sandbox/host-card-pest-db.sh` (prune workers `> processes`; seed ok = `tester@olie.ai` + frame `devframe`; clone paralelo do `testing_<slug>` para workers ruins; stamp FastRefresh). Dump do `testing-db-cache` sozinho é insuficiente (frames sem `devframe`). Checksums só são apagados se o chamador passar `--recreate-databases`. `compose.host-data.yml`: `innodb_buffer_pool_size=${HC_OLIE_MYSQL_BUFFER:-2G}` + `innodb_flush_log_at_trx_commit=2`. `pest-parallel.md` alinhado. Bench DOP-1136: suite ~126s / re-run wall ~1–2 min (vs ~20 min recreate).
+
 ## Finalize card: derrubar também o compose principal (Olie/Locav/Televisão)
 
 - **problema:** `workvm-host-card destroy` só remove o stack **do card** (`hc-…`) / DBs do card. O compose do projeto (`olie/docker-compose.yml`, Sail `LocavApi`/`locavapi`, `televisao-api` + e2e) e o shared data (`*-hc-*`) ficavam no ar — ex.: após `finalize LCV-17`, `locav-backend` etc. continuavam.

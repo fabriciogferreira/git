@@ -41,10 +41,11 @@ If this chat is already the card’s Cursor window and the stack is up (`hc-olie
 ~/git/bin/workvm-host-card-pest --project olie --code '{{ code }}'
 ```
 
-Defaults: `--compact --parallel --recreate-databases --processes=min(nproc, 22)`.
+Defaults: `--compact --parallel --processes=min(nproc, 22)` (reusa `testing_*` + FastRefresh checksums; sem `--recreate-databases`).
 
 - Do **not** pass `--ci` to `php artisan test` — Laravel rejects it (`The "--ci" option does not exist`). The wrapper forces `PEST_TIA_LOCALLY=0` on the exec so Pest TIA (enabled via that env on sandbox/slim compose without touching company `Pest.php`) does **not** shrink this full-suite gate.
 - Parallel workers default to **at most 22** (`workvm-host-card-pest`): on the jarvis host (`nproc=24`), **23+** kills Pest workers with SIGSEGV (exit 139). Override with `WORKVM_HOST_CARD_PEST_PROCESSES` only when intentional.
+- Do **not** pass `--recreate-databases` unless the testing DBs are clearly corrupt (empty schema / checksum drift that FastRefresh cannot heal). Recreate + wiped checksums forces `migrate:fresh` × N workers and can take ~20 min on shared `olie-hc-mysql`.
 - Do **not** pass a path filter or `--filter` — the point is the whole suite.
 - Do **not** use `docker exec olie-api-main` / another card’s container.
 - If the command fails or stalls too long: stop and report (prompt-health). Do not invent a smaller subset to “pass”.

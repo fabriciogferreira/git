@@ -17,10 +17,15 @@ services:
       MYSQL_USER: sandbox
       MYSQL_PASSWORD: sandbox
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    # Buffer default do mysql:8.4 é 128M — com dezenas de testing_*_test_N
+    # o pest-parallel fica IO-bound (~20 min). Sandbox já usa 4G
+    # (compose.mysql-host.yml); shared host-data sobe para 2G + flush=2.
     command:
       - --log_bin_trust_function_creators=1
       - --skip-name-resolve
       - --max_connections=500
+      - --innodb_buffer_pool_size=${HC_OLIE_MYSQL_BUFFER:-2G}
+      - --innodb_flush_log_at_trx_commit=2
     volumes:
       - hc_olie_mysql:/var/lib/mysql
       - ${SB_HOST_DATA_INIT}:/docker-entrypoint-initdb.d:ro
