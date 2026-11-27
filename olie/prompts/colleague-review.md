@@ -1,97 +1,86 @@
-# Colleague Card Review — dispatcher
+# Colleague Card Review — coordinator
 
-Review card {{ code }} while it sits in 'QA/CR'. This paste is **only a dispatcher**: bootstrap shared context, launch the gate prompts **in parallel**, wait for every applicable gate, apply **Colleague review outcome**, then print one scoreboard.
+Review card `{{ code }}` while it sits in 'QA/CR'. **You review product code and e2e** (`colleague-review-core.md`). You do **not** measure coverage/mutation/Pest and do **not** MCP-dump the card spec.
 
-This is a review of someone else's card, not preparation of your own (pre-QA). Do not implement the card in this paste.
+Shared outcome: **Colleague review outcome** in `~/git/olie/prompts/workflow-policy/gates.md`.
 
-If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and offer **`resolva` / `documente` / `resolva permanentemente`** (see **Chat commands** / **Tooling failures** in `workflow-policy.md`) and wait. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exceptions: (1) `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** — do not call `mcp_auth` and do not ask the user to sign in again. (2) **Host-card sandbox cluster** (`Permission denied` on `~/.cursor/mcp.json`, fake DNS/`gh`/`docker.sock` failures) — follow **Shell permissions** under **Host card environment** in `~/git/olie/prompts/workflow-policy.md` (first call with `all`; approval card if Auto-review blocks). Do **not** treat that cluster as a broken host or ask for chmod/DNS/`gh auth` until unrestricted ensure has actually failed.
+If tooling this prompt needs **fails or stalls**: stop, report, offer `resolva` / `documente` / `resolva permanentemente` — treat it as a signal that **this prompt needs updating**. Exception: `olie-flow-ai` `needsAuth` with desktop already authenticated → **MCP auth** (no `mcp_auth`; `workflow-policy/tools.md`). Host-card sandbox cluster → **Shell permissions** in `workflow-policy/host.md`.
 
-Contract for parallel work: `~/git/olie/sandbox/ORCHESTRATION.md`. Shared outcome rules: **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`.
+## 0. Preconditions (user / manager — stop if missing)
 
-## 1. Bootstrap (serial, once)
+| Need | Where |
+| --- | --- |
+| Host-card open | Manager **Open** (or already this Cursor window) |
+| Spec dump | Manager **Card Spec** → `~/git/olie/cards/{{ code }}/` (`README.md`, `project.md`, `media.md`, `notebook/`) |
+| Gap (if backend) | Manager **Gap** → `…/gap/olie/<code>/latest.json` (or `olie/cards/{{ code }}/gap-seed.md`) |
+| Coverage (if backend) | Manager **Coverage** → `…/coverage/olie/<code>/latest.json` |
+| Mutation (if backend) | Manager **Mutation** → `…/mutation/olie/<code>/latest.json` |
+| Pest full (if backend, before Pass) | Manager **Pest** → `…/pest/olie/<code>/latest.json` / `pest-ledger.md` |
 
-0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy.md`; **Shell permissions** → `all` on first try). Resume if the unit already exists. If this chat is already the card’s Cursor window and the stack is up, prefer `WORKVM_HOST_CARD_OPEN_CURSOR=0` (ensure must **not** close/reopen the window mid-review — that kills the chat). Do **not** destroy when this dispatcher ends (card stays in QA/CR, Validação, or Corrigir).
-1. Load the card via MCP `olie-flow-ai` (details, owners, PRs/form links, funnel step). Confirm it is in 'QA/CR'. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). List project media with `get-project-media-tool` and **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`) so system logs (funnel moves) are visible, not only user `content`. The card's requirements, acceptance criteria, and those notebook page texts are the source of truth — pass that context to the workers. A change that works but does not match the card is not a pass.
-2. **Classify bounce vs first pass** from that timeline (**Return from production / merged bounce** in `workflow-policy.md`):
-   - Walk **system logs** chronologically: rebuild the step path (e.g. Em progresso → QA/CR → Validação → Revisão produção → Concluído → Corrigir → QA/CR).
-   - Cross-check forms/metrics (deploy date, merged PR links, “voltou para correção”).
-   - If it is a **production return**, mark `bounce=yes`, summarize the path + the post-deploy defect evidence (media ids / comments after merge or deploy), and pass that packet to every worker. Core must treat post-deploy reproduction as the primary gate — not a fresh first-pass of the original PR alone.
-   - If `bounce=no`, proceed as a normal first colleague review.
-3. Detect whether the change set touched `~/git/olie/api-main` (open PRs, form links, branch commits, notebook). That flag decides whether gap + mutation + coverage run. Resolve the file list with **Backend change-set** in `~/git/olie/prompts/workflow-policy.md` — if `develop...HEAD` is empty because the feature is already merged, still pass the merge-parent / `--grep=<CODE>` list to workers; do **not** skip backend gates on empty three-dot alone. On a bounce, empty three-dot / already-merged PRs are expected — still review the shipped tip against the bounce evidence.
-4. On each company repository the card touches: find the author's branch, check it out (create from that repository's base — `develop` or `master` as it uses — only if missing). Do not rename; do not commit on it. Leave unrelated local changes untouched — stop if checkout would overwrite them. When the feature tip is already in `develop` (typical after merge/deploy bounce), keep the host-card worktree tip and still compute the change-set via step 3.
-5. Record `started_at` (UTC) for the scoreboard.
-6. Do **not** write the colleague verdict, gap list, or mutation/coverage fixes yet — core writes product fail findings; gap/mutation/coverage stay in chat until §4. Do **not** move the funnel or approve until §4.
+1. If Card Spec dump is missing → **stop**; tell the user to run **Card Spec**.
+2. Do **not** call `get-project-details-tool`, `get-notebook-tool`, `read-notebook-page-tool`, or `get-project-media-tool` to rebuild that dump.
+3. Do **not** run `workvm-sandbox`, `pest --mutate`, `pest --coverage`, or full-suite Pest. Those are manager gates.
+4. If backend changed and Coverage/Mutation/Pest artifacts are missing, mark those gates **pending (user)** on the scoreboard — do **not** invent Clean. Pass → 'Validação' only when those are `pass`/`empty`/`skipped` (or user explicitly skips).
 
-## 2. Dispatch (parallel)
+## 1. Bootstrap (light)
 
-Open and **run** these prompts **at the same time** (Task / subagents / parallel tool batches). Pass the same card code `{{ code }}` and the shared bootstrap (project id, branches, backend yes/no). Do not wait for one gate to finish before starting another.
+1. Read `~/git/olie/cards/{{ code }}/project.md`, `media.md`, and `notebook/` (via `notebook/index.md`). That is the source of truth.
+2. Confirm the card is in 'QA/CR' from `project.md` funnel steps (or one MCP details read **only** if the dump is stale and the user asked to re-check the board).
+3. Classify **bounce vs first pass** from `media.md` system logs (**Return from production / merged bounce** in `workflow-policy/gates.md`). Record `bounce=yes/no` + path + post-deploy media ids.
+4. Detect backend touch from dump/PRs/forms/change-set (**Backend change-set** in `workflow-policy/gates.md` if needed). Empty `develop...HEAD` alone is not “no backend”.
+5. Prefer the host-card checkout already set by **Open**. Do not destroy the unit when this paste ends.
+6. Record `started_at` (UTC).
 
-| Gate | Prompt | When |
-| --- | --- | --- |
-| Colleague core | `~/git/olie/prompts/colleague-review-core.md` | Always |
-| Test gap analysis | `~/git/olie/prompts/test-gap-analysis.md` | Only if backend touched; else mark **skipped** |
-| Mutation testing | `~/git/olie/prompts/mutation-testing.md` | Only if backend touched; else mark **skipped** |
-| Coverage testing | `~/git/olie/prompts/coverage-testing.md` | Only if backend touched; else mark **skipped** |
+## 2. Product review (agent)
 
-Rules for workers:
+Run `~/git/olie/prompts/colleague-review-core.md` for `{{ code }}` (same chat or one subagent). Pass bounce packet + that the spec is on disk under `olie/cards/{{ code }}/`.
 
-- **Dispatcher mode** — each child prompt must follow its “launched by colleague-review dispatcher” section: no sequential `next prompt` / `next mutation` / `next coverage` recommendations; return a structured result to this paste; mutation drains **all** remaining changed `api-main` `*Test.php` files in this run (ledger rows), not one file per paste; coverage drains **all** remaining changed `app/**/*.php` files (ledger rows) in this run.
-- **Exclusive work (mutation / coverage / Pest) must use sandboxes** (`~/git/bin/workvm-sandbox create --project olie --profile mutation|tests --from-commit <card api-main tip>`) — see `ORCHESTRATION.md`. Bootstrap (or each worker) resolves the tip from the host-card worktree; **never** bare create. Do **not** run `docker exec olie-api-main` Pest/mutation/coverage on the shared stack while gates are parallel (shared `testing` / `api_main`). Compatible work (core + gap analysis **without** Pest runtime) may stay on the host card unit.
-- Workers must not checkout a different branch than bootstrap set, and must not apply the funnel move / approve.
+Optional: `~/git/olie/prompts/test-gap-analysis.md` when backend touched — read manager **Gap** seed only; report list in chat. Skip if no backend, seed `skip_no_backend`, or user skips gap.
 
-If a worker tooling failure stops that gate, record it on the scoreboard as **failed/blocked** with the objective error; do not silently skip a required gate.
+**Forbidden here:** dispatching `coverage-testing.md` / `mutation-testing.md` / `pest-parallel.md` as measure loops.
 
-## 3. Wait and collect
+## 3. Collect gates
 
-**Re-run budget:** after this scoreboard is complete, do **not** re-dispatch gates that already returned Clean/Pass on an unchanged tree “to confirm”. Retry only a blocked/failed gate when the user asks (or after a real unblock). Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+| Gate | Source |
+| --- | --- |
+| Colleague core | This paste / core prompt |
+| Gap | Manager seed + this paste (or **skipped**) |
+| Coverage | User manager artifact (or pending/skipped) |
+| Mutation | User manager artifact (or pending/skipped) |
+| Pest | User manager artifact (or pending/skipped) |
 
-Wait until every dispatched gate has finished (or is skipped). Collect:
-
-- Colleague core: Pass / Fail (+ findings posted or not)
-- Gap: No tests to add / Tests to add / Skipped / Blocked
-- Mutation: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
-- Coverage: Clean / Fixes reported / Skipped / Blocked (+ ledger summary)
+If core returns Fail findings → those are product fails (Corrigir path). If Coverage/Mutation `needs_work` → **reviewer-fix** (stay QA/CR); agent may implement `agent_action` only when the user asks; user re-runs the manager action.
 
 ## 4. Combined outcome
 
-Apply **Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md` **once**, after all applicable gates finished (or the user explicitly skips a remaining gate in chat).
+Apply **Colleague review outcome** once gates above are decided (or user skips pending manager gates):
 
-- Move to 'Corrigir' only if colleague core failed (or any failure **outside** test-gap / mutation / coverage).
-- **Reviewer-fix path:** colleague core Pass but gap and/or mutation and/or coverage reported work → stay in 'QA/CR'; do **not** move to 'Corrigir'; do **not** write gap/mutation/coverage into the project/card; the reviewing user may fix those gates in this chat. Apply Pass path only after they are clean (or explicitly skipped).
-- When moving to 'Corrigir' for a core (or other non-test-gate) fail, **then** also paste any open gap/mutation/coverage findings onto the card for the author.
-- Pass path (approve PRs via GitHub MCP `pull_request_review_write` event `APPROVE`; move to 'Validação') only if colleague passed **and** gap was skipped or clean **and** mutation was skipped or clean **and** coverage was skipped or clean.
-- Do **not** invent another path beyond Corrigir / reviewer-fix / Pass.
+- **Corrigir** only if colleague core failed (or failure outside gap/coverage/mutation/Pest).
+- **Reviewer-fix:** core Pass but gap/coverage/mutation/Pest open → stay 'QA/CR'; no author dump of personal gates on the card.
+- **Pass** (approve PRs via GitHub MCP; move 'Validação') only if core Pass **and** gap clean/skipped **and** coverage/mutation/Pest pass/empty/skipped.
+- Evidence table on Pass or Corrigir via `save-media-tool` — **Evidence table** in `workflow-policy/evidence.md`. Not while reviewer-fix with open personal gates.
 
-Card notes stay findings-only — **Card content vs chat** in `workflow-policy.md` (never prompt paths, VMs, sandboxes, dispatcher/ledger jargon, or prose process wrap-ups on the card). Never post gap/mutation/coverage **findings lists** on a Pass or reviewer-fix card.
+Card notes: **Card content vs chat** (findings only; no VM/sandbox/ledger jargon).
 
-**Evidence table (required on Pass or Corrigir):** post `### Evidência — {N}º QA/CR pelo {Nome}` into the **card content** via `save-media-tool` per **Evidence table on project content** in `workflow-policy.md` (never description, Caderno, or PR). Do **not** write that table while still in **reviewer-fix** with open gap/mutation/coverage.
-
-## 5. Scoreboard (required final report)
-
-Print one table (or equivalent bullets) covering **everything that ran**. Include timing when you have it.
+## 5. Scoreboard (required)
 
 | Field | Content |
 | --- | --- |
 | Card | {{ code }} |
-| Owner(s) | 'atribuído a' |
+| Owner(s) | from `project.md` |
 | Started / ended (UTC) | timestamps |
 | Duration | wall-clock |
 | Backend touched | yes / no |
-| Gates run | core + gap? + mutation? + coverage? |
+| Spec dump | path `olie/cards/{{ code }}/` |
 | Colleague core | Pass / Fail — short reason |
-| Bounce | yes / no — reconstructed step path from logs; post-deploy media ids if yes |
-| Gap analysis | No tests to add / N titles / Skipped / Blocked |
-| Mutation | Clean / fixes / Skipped / Blocked — files in ledger |
-| Coverage | Clean / fixes / Skipped / Blocked — files in ledger |
-| Contrast | light/dark vs Olie standard (from core; not axe) |
-| Feedback | loading + API error UX (from core) |
-| Comportamento | acceptance + overlay dismiss + clickable (from core) |
-| E2E | added/extended commit, or N/A / blocked |
-| Payment / CAPTCHA | ok / N/A / blocked (from core when relevant) |
-| PRs | approved / not approved / deferred reason (already merged is normal on bounce) |
-| Funnel | stayed 'QA/CR' (reviewer-fix) / moved 'Corrigir' / moved 'Validação' |
-| Incidents | tooling failures, restarts, skips |
+| Bounce | yes / no — path; media ids if yes |
+| Gap | clean / N titles / Skipped / Blocked |
+| Coverage | pass / needs_work / pending / skipped (artifact path) |
+| Mutation | pass / needs_work / pending / skipped (artifact path) |
+| Pest | pass / needs_work / pending / skipped (artifact path) |
+| Contrast / Feedback / Comportamento / E2E / CAPTCHA | from core |
+| PRs | approved / not / deferred |
+| Funnel | QA/CR (reviewer-fix) / Corrigir / Validação |
+| Incidents | tooling / skips |
 
-Also list checks that did **not** run and why.
-
-Do not call the card ready for 'Validação' while any failed gate remains open.
+Do not call the card ready for 'Validação' while core failed or a required manager gate is still `needs_work`/`pending` (unless user skipped).

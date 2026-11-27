@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Bind this Arch + Hyprland machine to a workvm project and enable startup on
+# Bind the host (jarvis) to a workvm project and enable compose/MCP on
 # graphical login.
 # Usage: ./project-setup.sh <project>
-# O id é o diretório do projeto (olie/ ou projects/<id>/). Basename único também serve.
+# O id é o diretório do projeto na raiz do meta-repo (olie/, opbed/, …).
 # Faz pull --ff-only deste meta-repo antes do overlay/MCP: sem isso o setup usa
 # o ~/git velho e wrappers MCP (Boost/Playwright) ficam atrás do remoto.
 set -euo pipefail

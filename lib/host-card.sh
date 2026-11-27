@@ -1,4 +1,4 @@
-# Host card unit (no WorkVM): state, workspace, ensure/destroy.
+# Host card unit: state, workspace, ensure/destroy (jarvis; no libvirt guest).
 # Problema: N cards no jarvis colidem sem id/porta/workspace próprios; a domain
 # libvirt fazia isso de graça. Este helper é o contrato mínimo do
 # host-cards-no-vm.md até o compose namespaced estar completo por projeto.
@@ -1153,7 +1153,7 @@ workvm_host_card_apply_overlay_worktrees() {
     fi
 }
 
-# MCP no jarvis (igual ao login da WorkVM): olie-flow-ai + Boost + playwright.
+# MCP no jarvis (igual ao project-start do login): olie-flow-ai + Boost + playwright.
 # Problema: host-card não roda project-start — sem overlay/`mcp.json` + proxy
 # o colleague review para e o Laravel Boost não aparece.
 workvm_host_card_ensure_olie_mcp() {
@@ -1219,7 +1219,7 @@ PY
         fi
     fi
 
-    # WorkVM: Boost→olie-api-main, Playwright→olie-e2e. Host-card: wrappers.
+    # Login stack: Boost→olie-api-main, Playwright→olie-e2e. Host-card: wrappers.
     # Playwright só com front no stack (sobe olie-e2e); back-only → omitir do
     # mcp.json (senão Cursor fica em loading 180s num container que não existe).
     # PrimeVue → workvm-primevue-mcp.sh (npx absoluto + ensure mise).
@@ -1281,7 +1281,55 @@ PY
     fi
 }
 
-# Clone/pull CLONE_REPOS do project.conf (mesmo conjunto da WorkVM).
+# Depois do clone/pull: se o working tree perdeu arquivos que o HEAD ainda tem
+# (ex. rm em massa com pull pulado por branch ≠ project.conf), restaura do HEAD.
+# Sem isso o Docker do Televisão (e reflink/vendor Olie) monta tree oco.
+workvm_host_card_heal_clone_trees() {
+    local project="$1"
+    local meta_repo conf git_root line rel path candidate
+    local -a markers
+    meta_repo="$(workvm_host_card_meta_repo)"
+    conf="${meta_repo}/${project}/project.conf"
+    git_root="$(workvm_host_card_git_root)"
+    [ -f "$conf" ] || return 0
+
+    # shellcheck source=/dev/null
+    source "${meta_repo}/lib/common.sh"
+    # shellcheck source=/dev/null
+    source "$conf"
+    if ! declare -p CLONE_REPOS >/dev/null 2>&1 || [ "${#CLONE_REPOS[@]}" -eq 0 ]; then
+        return 0
+    fi
+
+    for line in "${CLONE_REPOS[@]}"; do
+        # shellcheck disable=SC2086
+        set -- $line
+        rel="${2:-}"
+        [ -n "$rel" ] || continue
+        case "$rel" in
+            */docs|olie/docs) continue ;;
+        esac
+        path="${git_root}/${rel}"
+        if [ ! -d "${path}/.git" ] && [ ! -f "${path}/.git" ]; then
+            continue
+        fi
+        markers=()
+        for candidate in composer.json composer.lock package.json \
+            docker/entrypoint.sh artisan; do
+            if git -C "$path" cat-file -e "HEAD:${candidate}" 2>/dev/null; then
+                markers+=("$candidate")
+            fi
+        done
+        [ "${#markers[@]}" -gt 0 ] || continue
+        if ! workvm_ensure_repo_tracked_files "$path" "${markers[@]}"; then
+            workvm_host_card_log "heal falhou (tree oco): $rel"
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Clone/pull CLONE_REPOS do project.conf (mesmo conjunto do project-setup).
 workvm_host_card_ensure_clones() {
     local project="$1"
     local meta_repo conf
@@ -1299,8 +1347,9 @@ workvm_host_card_ensure_clones() {
         return 0
     fi
     export GIT_ROOT="$(workvm_host_card_git_root)"
-    workvm_host_card_log "CLONE_REPOS ($project) — clone/pull como na WorkVM"
+    workvm_host_card_log "CLONE_REPOS ($project) — clone/pull como no project-setup"
     workvm_clone_project_repos "${CLONE_REPOS[@]}"
+    workvm_host_card_heal_clone_trees "$project"
 }
 
 # open PROJECT CODE: ensure + foca/abre o .code-workspace do card (não o clone ~/git/olie/api-main).
@@ -1395,7 +1444,7 @@ workvm_host_card_ensure() {
         workvm_host_card_log "create $id (port_base=$port_base)"
     fi
 
-    # Same clones as WorkVM project-setup (olie-fronts, backoffice, …).
+    # Same clones as project-setup (olie-fronts, backoffice, …).
     # Clone/pull warnings are non-fatal for resume (agent sandbox often cannot FETCH_HEAD).
     if ! workvm_host_card_ensure_clones "$project"; then
         if [ "$resumed" = "1" ]; then

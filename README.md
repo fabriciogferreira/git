@@ -1,32 +1,36 @@
-# Meta-repo — work VMs
+# Meta-repo — host jarvis + host-cards
 
-Provisiona VMs de desenvolvimento e amarra cada máquina a um **projeto** (clones, Docker, Cursor, browser).
+Amarra o **host** a um projeto (clones, Docker, MCP) e sobe **cards** isolados no jarvis (`bin/workvm-host-card`) — sem WorkVM/libvirt para programar.
 
 Documentação para o agente Cursor:
 
-- [`.cursor/rules/`](.cursor/rules/) — por que cada parte existe e como a VM opera
+- [`.cursor/rules/`](.cursor/rules/) — por que cada parte existe e como o host opera
+- [`host-cards-no-vm.md`](host-cards-no-vm.md) — contrato host-card (já no host)
 
-## Uso rápido (Arch + Hyprland)
+## Uso rápido
 
 ```bash
-~/git/vm-setup.sh   # cria vm.local.conf a partir do .example se ainda não existir
-# reboot
-~/git/project-setup.sh <projeto>
+~/git/project-setup.sh <projeto>   # cria vm.local.conf se faltar; liga workvm.service
 ```
 
-Projetos: ver `projects/*/`.
+Projetos: pastas na raiz (`olie/`, `opbed/`, `televisao/`, …).
 
-## Cursor (1 janela, multi-root)
+Cards (Olie/Locav/Televisão):
 
-O login abre `projects/<projeto>/workspace.code-workspace`: este meta-repo (`~/git`) e cada clone.
+```bash
+~/git/bin/workvm-host-card ensure --project olie --code DOP-….
+~/git/bin/workvm-host-card open   --project olie --code DOP-….
+```
 
-No setup e no `project-start.sh`, `workvm_apply_files` faz patch local nos clones (`alwaysApply`→globs, `AGENTS.md` relocado) com `skip-worktree` — não commitar isso nos repos da empresa.
+## Cursor
+
+`project-setup` / `project-start` aplicam patch local nos clones (`alwaysApply`→globs, `AGENTS.md` relocado) com `skip-worktree` — não commitar isso nos repos da empresa. Host-cards abrem um `.code-workspace` por unidade (worktrees sob `~/.local/share/workvm/host-cards/…`).
 
 ## Layout
 
-O mapa do porquê de cada pasta está em [`.cursor/rules/layout.mdc`](.cursor/rules/layout.mdc). Não há uma segunda tabela aqui.
+O mapa do porquê de cada pasta está em [`.cursor/rules/layout.mdc`](.cursor/rules/layout.mdc).
 
-Projeto ativo na VM:
+Projeto ativo no host:
 
 - Agente Cursor: `.cursor/rules/workvm-project.mdc` (gerado no project-setup)
 - Runtime: `~/.config/workvm/current`

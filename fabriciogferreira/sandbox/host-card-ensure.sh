@@ -1,6 +1,30 @@
 # Hook fabriciogferreira: sobe Next namespaced no host.
 # Problema: ensure do projeto só clonava e abria Cursor — sem compose o
 # portfólio não rodava. Sourced by lib/host-card.sh.
+# Também: SB_APP aponta ao clone ao vivo; se o working tree foi apagado
+# (ex. rsync dest vazio / wipe do $HOME) o Next sobe e morre com
+# "Couldn't find any pages or app directory" e o wait em :SB_PORT_WEB
+# fica 6 min. Gate restaura de HEAD e falha cedo se o container sair.
+
+# Clone sem src/app|app no disco mas com tree no git → restore.
+workvm_host_card_fg_ensure_app_tree() {
+    local app=$1
+
+    if [ -d "${app}/src/app" ] || [ -d "${app}/app" ]; then
+        return 0
+    fi
+    if [ -d "${app}/.git" ] && git -C "$app" cat-file -e HEAD:src/app/page.tsx 2>/dev/null; then
+        workvm_host_card_log "clone sem src/app no disco — git restore . (${app})"
+        git -C "$app" restore . 2>/dev/null \
+            || git -C "$app" -c core.hooksPath=/dev/null checkout -- . \
+            || return 1
+    fi
+    if [ -d "${app}/src/app" ] || [ -d "${app}/app" ]; then
+        return 0
+    fi
+    workvm_host_card_log "clone sem app Next (src/app|app): ${app}"
+    return 1
+}
 
 workvm_host_card_ensure_hook() {
     local id="$1"
@@ -27,6 +51,8 @@ workvm_host_card_ensure_hook() {
         workvm_host_card_log "clone ausente: ${app}"
         return 1
     fi
+
+    workvm_host_card_fg_ensure_app_tree "$app" || return 1
 
     if [ ! -f "${app}/.env" ] && [ -f "${app}/.env.example" ]; then
         cp -n "${app}/.env.example" "${app}/.env" || true
@@ -90,7 +116,7 @@ PY
 workvm_host_card_fg_wait_web() {
     local compose_dir="$1"
     local pname="$2"
-    local i port
+    local i port running
 
     port="$(python3 -c "import re;print(re.search(r'^SB_PORT_WEB=(\d+)', open('${compose_dir}/.env').read(), re.M).group(1))")"
     workvm_host_card_log "aguardando Next em :${port}…"
@@ -98,6 +124,20 @@ workvm_host_card_fg_wait_web() {
         if curl -fsS --connect-timeout 2 -o /dev/null "http://127.0.0.1:${port}/" >/dev/null 2>&1; then
             workvm_host_card_log "Next pronto"
             return 0
+        fi
+        running="$(
+            cd "$compose_dir" && COMPOSE_PROJECT_NAME="$pname" \
+                docker compose ps -q --status running 2>/dev/null || true
+        )"
+        if [ -z "$running" ]; then
+            workvm_host_card_log "container Next parou — logs:"
+            (
+                cd "$compose_dir"
+                COMPOSE_PROJECT_NAME="$pname" docker compose logs --tail 50
+            ) 2>&1 | while IFS= read -r line; do
+                workvm_host_card_log "  $line"
+            done
+            return 1
         fi
         sleep 3
     done

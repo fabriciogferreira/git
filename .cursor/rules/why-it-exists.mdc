@@ -9,7 +9,7 @@ O diff mostra o que mudou. O motivo se perde. Todo arquivo novo, ou bloco cuja i
 
 Onde escrever:
 
-- Script, unit systemd, `project.conf`: comentário no topo com o problema (padrão de `vm-setup.sh` e `bin/`).
+- Script, unit systemd, `project.conf`: comentário no topo com o problema (padrão de `project-setup.sh` e `bin/`).
 - Rule `.mdc`: o `description` do frontmatter é o problema que a rule evita.
 - Overlay em `files/` ou `.config/`: um comentário ou README curto quando o arquivo sozinho não revela o motivo.
 

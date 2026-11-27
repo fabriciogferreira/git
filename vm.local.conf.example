@@ -1,5 +1,6 @@
-# Identidade desta VM. Modelo versionado; vm-setup.sh copia para
-# vm.local.conf se o arquivo ainda não existir (não versionado).
+# Identidade desta máquina (host). Modelo versionado; project-setup /
+# workvm_load_vm_local_conf copia para vm.local.conf se ainda não existir
+# (não versionado).
 #
 # As três variáveis são obrigatórias. Um valor já exportado no ambiente
 # não é sobrescrito.

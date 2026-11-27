@@ -111,7 +111,7 @@ For a colleague card in 'QA/CR' (logical `quality-review`), the board move waits
 
 Own-card sequential order: gap → coverage → mutation → `pest-parallel.md` → `pre-qa.md`.
 
-**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation + coverage **in parallel** (gap/mutation/coverage skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation/coverage after that dispatcher. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Prefer `~/git/bin/workvm-sandbox --project televisao` to shard exclusive mutation / coverage (one changed test or production file per sandbox; queue when over `WORKVM_SANDBOX_MAX`). Compatible work (core + gap) stays on the Card VM. Own-card develop handoff still runs gap → coverage → mutation → pest-parallel as **stages**, but within coverage/mutation the default is **`correct coverages` / `correct mutations`** (parallel drain); `next coverage` / `next mutation` are opt-in one-file.
+**Dispatcher:** paste `colleague-review.md` once. It bootstraps, then launches core + gap + mutation + coverage **in parallel** (gap/mutation/coverage skipped when no backend), waits, prints a scoreboard, and applies this outcome. Do not recommend sequential `next prompt` pastes for gap/mutation/coverage after that dispatcher. Contract: `~/git/televisao/sandbox/ORCHESTRATION.md`. Prefer `~/git/bin/workvm-sandbox --project televisao` to shard exclusive mutation / coverage (one changed test or production file per sandbox; queue when over `WORKVM_SANDBOX_MAX`). Compatible work (core + gap) stays on the host-card. Own-card develop handoff still runs gap → coverage → mutation → pest-parallel as **stages**, but within coverage/mutation the default is **`correct coverages` / `correct mutations`** (parallel drain); `next coverage` / `next mutation` are opt-in one-file.
 
 **Do not move to 'Corrigir' or set 'Revisado' until every applicable gate the dispatcher launched has finished** (or the user explicitly skips a remaining gate in chat). Do **not** approve or merge PRs until the combined outcome below. Workers never move the funnel themselves.
 
@@ -150,7 +150,7 @@ On MCP error (other than `notebook: null`): stop and report (prompt-health rules
 
 ## Host card environment
 
-Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
+Cards run as **host units** on jarvis . Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
 
 **Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `pest-parallel.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
 
@@ -164,6 +164,7 @@ Cards run as **host units** on jarvis (no WorkVM required for the card workspace
   - If Auto-review **blocks** the unrestricted shell: retry the **exact same** command via the approval card (`request_smart_mode_approval` / ask the user to approve **that** shell). Do **not** ask them to chmod, fix DNS, `gh auth login`, or paste ensure in a terminal unless `all` already ran and still failed for a real host reason.
   - Do **not** stop the prompt declaring tooling/host broken while only the sandboxed shell failed.
 - First day → creates state, `port_base`, `~/git/televisao/<id>.code-workspace`, opens Cursor, and brings up **compose slim** (`televisao/sandbox/host-card-ensure.sh`) using clones under `~/git/televisao`.
+- **Hollow clone:** if `televisao-api` (or front) lost tracked files while on a non-`preview` branch, pull is skipped and Docker used to fail on `COPY composer.json`. Ensure now restores tracked files from `HEAD` (`workvm_ensure_repo_tracked_files` / `workvm_host_card_heal_clone_trees`) before build — it does **not** force-checkout `preview` (preserves WIP branch).
 - Later day / re-paste → **resume** the same id (compose up again; do not destroy).
 - Report `id`, `port_base`, URLs, and `workspace` in chat. Prefer that workspace window for the card.
 - Exclusive jobs still use `~/git/bin/workvm-sandbox --project televisao`. If the hook or CLI fails after an unrestricted re-run, stop (prompt-health).
@@ -183,7 +184,7 @@ docker compose -f ~/git/televisao/televisao-front-e2e/docker-compose.yml down
 docker compose -f ~/git/televisao/televisao-meet-front-e2e/docker-compose.yml down
 ```
 
-`destroy` removes **this card’s** host-card slim stack. It does **not** stop a classic WorkVM/project compose left running under `televisao-api` (or the Playwright e2e compose dirs). The agent **must** run those `down`s on finalize/`finish card` / production-review `done` teardown. Do **not** tear down `hc-televisao-data` / other cards’ stacks while they may still be in use.
+`destroy` removes **this card’s** host-card slim stack. It does **not** stop a project compose left running under `televisao-api` (or the Playwright e2e compose dirs). The agent **must** run those `down`s on finalize/`finish card` / production-review `done` teardown. Do **not** tear down `hc-televisao-data` / other cards’ stacks while they may still be in use.
 
 Run destroy when the card moved to logical `done` after user confirmation (typical: production-review Pass + yes), **after** the move succeeds; or when the user sends `finish card`. Do **not** destroy at the end of an implementation/correction/colleague-review paste or when closing the chat for the day.
 
@@ -205,7 +206,7 @@ Tags come with the project. MCP `get-project-details-tool` includes `tags`. If t
 
 E2E lives in the meta-repo, not in the company clones. `televisao-front` uses `~/git/televisao/televisao-front-e2e` (`http://localhost:3000`). `televisao-meet-front` uses `~/git/televisao/televisao-meet-front-e2e` (`http://localhost:3001`). The API stack must already be up (`~/git/televisao/televisao-api`, `docker compose up -d`). Do not run Playwright inside a company front image. Specs stay in those directories; they do not ship on the company branch.
 
-These suites are **private** (owner-only WorkVM tooling). Agents may add/run/commit them on meta-repo `main` and mention results **only in Cursor chat**. Do **not** cite `televisao-*-e2e`, Playwright meta paths, or “e2e coverage in the meta-repo” in card content, Caderno/notebook, company repos, or PR titles/bodies. Locav may cite Cypress because it ships inside `locav-front`; Televisão may not. Verification text may say the behavior was checked locally without naming the private suite.
+These suites are **private** (owner-only host tooling). Agents may add/run/commit them on meta-repo `main` and mention results **only in Cursor chat**. Do **not** cite `televisao-*-e2e`, Playwright meta paths, or “e2e coverage in the meta-repo” in card content, Caderno/notebook, company repos, or PR titles/bodies. Locav may cite Cypress because it ships inside `locav-front`; Televisão may not. Verification text may say the behavior was checked locally without naming the private suite.
 
 ```bash
 cd ~/git/televisao/televisao-front-e2e
@@ -313,7 +314,7 @@ Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Deferred decisi
 
 ## Card content vs chat (private prompts)
 
-Files under `~/git/televisao/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
+Files under `~/git/televisao/prompts/` are private host prompts. Other people on the Olie board cannot open them.
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, notebook/Caderno, or any project note):
 
@@ -409,7 +410,7 @@ Cursor desktop can show `olie-flow-ai` as authenticated, and the MCP request sta
 
 Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the card for that status.
 
-On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
+With `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
 If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` **only** when `index-project-funnels-tool` itself is `needsAuth` / 401 (MCP auth), not when a filtered call returned `[]` or when another MCP read already succeeded. Prefer restoring MCP and calling `index-project-funnels-tool` again (unfiltered if needed). Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
@@ -438,7 +439,7 @@ When a prompt finishes and names a next paste, remember that path so `next promp
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** WorkVM/host-card friction burns time on every card — **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop. Host-card sandbox permission cluster: retry with `required_permissions: ["all"]` first.
+If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** host-card friction burns time on every card — **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop. Host-card sandbox permission cluster: retry with `required_permissions: ["all"]` first.
 
 Diagnose, then **wait** for `resolva` / `documente` / `resolva permanentemente` (table above). Do not pick the path yourself.
 

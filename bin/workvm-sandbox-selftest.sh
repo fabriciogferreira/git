@@ -120,12 +120,4 @@ test -f "$WORKVM_SANDBOX_ROOT/olie-a/meta.json"
 grep -q '"project": "olie"' "$WORKVM_SANDBOX_ROOT/olie-a/meta.json"
 "$SB" destroy olie-a
 
-# backend vm stub
-if "$SB" create --name v --project televisao --backend vm --profile tests 2>/dev/null; then
-  echo "error: backend vm deveria falhar" >&2
-  exit 1
-fi
-# failed create may leave meta — destroy cleans
-"$SB" destroy v >/dev/null 2>&1 || true
-
 echo "selftest ok"

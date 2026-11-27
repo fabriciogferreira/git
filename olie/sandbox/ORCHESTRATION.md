@@ -3,11 +3,11 @@
 Problema: o stack de revisão de colegas era **sequencial e manual** — paste
 `colleague-review` → paste `test-gap-analysis` → paste `mutation-testing` →
 vários `next mutation`. Cada passo esperava o anterior. Em paralelo na mesma
-Card VM, Pest/mutation corrompiam o MySQL `testing` e até o `api_main`.
+host-card, Pest/mutation corrompiam o MySQL `testing` e até o `api_main`.
 
 Objetivo: manter os **gates** (veredito + gap + mutation + coverage + testes),
 disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher) e
-rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM do
+rodar o que for **exclusive** em sandboxes paralelos **dentro** da host do
 Card (`olie-{code}`), sem clonar outra VM.
 
 CLI: `~/git/bin/workvm-sandbox`. Compose slim: `olie/sandbox/` (mesmo contrato
@@ -17,10 +17,11 @@ da Televisão em `televisao/sandbox/`).
 vazias na cópia (ex. `META_GRAPH_URL=`). Laravel trata env vazio como setado e
 o default de `config()` some — baselines vermelhas no dispatcher.
 
-Prompts: `colleague-review.md` (disparador) → paralelo
-`colleague-review-core.md` + `test-gap-analysis.md` + `mutation-testing.md` +
-`coverage-testing.md` (quando há backend). Scoreboard + **Colleague review
-outcome** no fim do dispatcher.
+Prompts: `colleague-review.md` (coordenador) → `colleague-review-core.md`
+(+ gap opcional). Coverage / mutation / Pest full: **manager** (`Card Spec` /
+Coverage / Mutation / Pest), não subagentes no chat. Scoreboard + **Colleague
+review outcome** no fim. Sandboxes abaixo continuam válidos para drains
+manuais / own-card exclusive fora do colleague paste.
 
 ---
 
@@ -28,14 +29,14 @@ outcome** no fim do dispatcher.
 
 ### Compatible (podem coexistir)
 
-Não brigam por worktree / DB / Redis / cobertura. Rodam na **própria Card VM**
+Não brigam por worktree / DB / Redis / cobertura. Rodam na **própria host-card**
 ou no **mesmo** sandbox.
 
 Exemplos:
 
 - Miolo `colleague-review-core.md` (card, PRs, mídia, contraste, veredito)
 - `test-gap-analysis.md` (requisitos × testes backend; **só leitura** — sem
-  `php artisan test` na Card VM quando mutation está em paralelo)
+  `php artisan test` na host-card quando mutation está em paralelo)
 - Análise de front + análise de back (só leitura)
 
 ### Exclusive (não podem compartilhar o mesmo ambiente mutável)
@@ -87,8 +88,8 @@ Ao regenerar dump: corrigir `BusinessAreaFactory` primeiro (HISTORICO).
 ```text
 paste colleague-review.md          # dispatcher
   bootstrap (card, branches, backend?)
-  ├── Task: colleague-review-core.md     # Card VM (compatible)
-  ├── Task: test-gap-analysis.md         # Card VM, sem Pest runtime
+  ├── Task: colleague-review-core.md     # host-card (compatible)
+  ├── Task: test-gap-analysis.md         # host-card, sem Pest runtime
   ├── Task: mutation-testing.md          # exclusive → sandboxes
   │     ├── sb-mut-<file1>
   │     └── sb-mut-<fileN>
@@ -103,7 +104,7 @@ restantes do change-set nesta corrida. Own-card develop handoff: default
 também é **`correct mutations`** / **`correct coverages`** (dreno paralelo
 nesta corrida — um sandbox `profile=mutation` + um subagent por arquivo;
 pai agrega o ledger); `next mutation` / `next coverage` = opt-in um
-arquivo. Preferir sandbox para não tocar o `testing` da Card VM.
+arquivo. Preferir sandbox para não tocar o `testing` da host-card.
 Mutation × coverage **em paralelo** no mesmo sandbox **não** (ambos escrevem
 Pest/DB). **Own-card sequencial** (coverage → depois mutation): **reaproveitar**
 o warm pool do coverage — `workvm-sandbox sync <id> --from <card-api-main>`
@@ -183,8 +184,8 @@ com shards de mutation (fila se passar do teto).
 
 | Camada | Papel |
 | --- | --- |
-| Host libvirt | Uma domain `olie-{code}` por Card |
-| Card VM | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
+| Host-card | Uma unidade `olie-{code}` por card |
+| host-card | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
 | Sandbox (Docker na guest) | Exclusive: mutation shard, pest, e2e, … |
 
 Sandboxes **não** são VMs novas.
@@ -194,7 +195,7 @@ Sandboxes **não** são VMs novas.
 ## Medição de economia
 
 Antes: wall-clock do stack sequencial (colleague + gap + N× mutation paste),
-ou paralelo na Card VM com DB compartilhado (incidente DOP-1165).
+ou paralelo na host-card com DB compartilhado (incidente DOP-1165).
 
 Depois: um paste dispatcher + fan-out em sandboxes; comparar wall-clock e pico
 de RAM guest (`free`, `docker stats`, RSS do QEMU no host).

@@ -1,58 +1,57 @@
 # Colleague review — core (miolo)
 
-Review card {{ code }} while it sits in 'QA/CR'. This is the **review body** only: decide pass/fail, e2e when needed, write fail findings. Do **not** apply the funnel move, approve, or recommend sequential next pastes — the dispatcher `~/git/olie/prompts/colleague-review.md` owns those.
+Review card {{ code }} while it sits in 'QA/CR'. This is the **review body** only: decide pass/fail, e2e when needed, write fail findings. Do **not** apply the funnel move, approve, or recommend sequential next pastes — the coordinator `~/git/olie/prompts/colleague-review.md` owns those. Do **not** measure coverage/mutation/Pest (manager).
 
-Launched by that dispatcher (often in parallel with `test-gap-analysis.md` / `mutation-testing.md` / `coverage-testing.md`). If the user pastes this file alone, still do the review body, then tell them to paste `colleague-review.md` for the combined outcome.
+Usually launched from that coordinator. If pasted alone: do the review body, then tell the user to finish outcome via `colleague-review.md` (and run Card Spec / Coverage / Mutation / Pest in the manager as needed).
 
-If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and offer **`resolva` / `documente` / `resolva permanentemente`** (see **Chat commands** / **Tooling failures** in `workflow-policy.md`) and wait. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
+If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and offer **`resolva` / `documente` / `resolva permanentemente`** (see **Chat commands** in `workflow-policy/gates.md` / **Tooling failures** in `workflow-policy/tools.md`) and wait. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared modules: `workflow-policy/tools.md` (MCP auth / tooling failures) · index `workflow-policy.md`.
 
 ## 1. Objective
 
 Decide whether the implementation does what the card requested. Report the result. Do not implement the card.
 
-The card's requirements, acceptance criteria, and the latest version of every project thread are the source of truth. Read the threads with **Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`. A change that works but does not match the card is not a pass.
+The card dump under `~/git/olie/cards/{{ code }}/` is the source of truth (`project.md`, `notebook/`, `media.md` from manager **Card Spec**). A change that works but does not match the card is not a pass. If that dump is missing → **stop** and tell the user to run Card Spec (do not MCP-rebuild).
 
-When the dispatcher (or your own media pass) marks **`bounce=yes`** (**Return from production / merged bounce** in `workflow-policy.md`), the primary question shifts: did the **shipped** change fail in Validação / produção (or after Corrigir), as shown by post-deploy evidence? Passing a host-card happy path while ignoring that path is not a pass.
+When the coordinator marks **`bounce=yes`** (**Return from production / merged bounce** in `workflow-policy/gates.md`), the primary question shifts: did the **shipped** change fail in Validação / produção (or after Corrigir), as shown by post-deploy evidence? Passing a host-card happy path while ignoring that path is not a pass.
 
 ## 2. Context
 
-Load the card through `mcp olie-flow-ai`. Read:
+Read from disk (required):
 
-- The description, requirements, and acceptance criteria.
-- Every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`).
-- The repositories and branches the author changed.
-- The pull requests and the commits on those branches (including **already merged** PRs / deploy notes).
-- Comments, attachments, and test notes — especially anything **after** merge or deploy.
-- **Project media** (`get-project-media-tool` with **`filter: "default"`** — see **Project media** in `workflow-policy.md`): screenshots, screencasts, user messages, **and** system logs (funnel moves). Do not use the tool’s default `content` filter.
+- `~/git/olie/cards/{{ code }}/project.md` — description, forms, assignees, parent/children, funnel step.
+- `notebook/` — every page (start at `notebook/index.md`).
+- `media.md` — timeline including system logs (`filter=default`).
+- Repositories/branches/PRs from the dump + git on the host-card worktree (including **already merged** tips).
+- Comments/attachments **after** merge/deploy in `media.md`.
 
-Do not review from the card title alone.
+Do not review from the card title alone. Do **not** call `get-project-details-tool` / notebook / `get-project-media-tool` to rebuild the dump.
 
 ### Funnel path from logs (required)
 
-Before the verdict, rebuild the card’s step history from **system logs** in the media list (`filter: "default"`):
+Before the verdict, rebuild the card’s step history from **system logs** in `media.md`:
 
 1. List moves in order (step left → step entered, with timestamps when present).
 2. Decide **`bounce=yes`** if the path already reached Validação, Revisão produção, and/or Concluído and later returned to Corrigir and/or QA/CR — or if deploy/merge + post-deploy defect media make that clear. Otherwise `bounce=no`.
-3. On `bounce=yes`, identify the **bounce package**: post-deploy videos/comments that state the defect still happens, plus any author note asking you to reproduce (e.g. “não consegui reproduzir”). That package overrides a first-pass-only reading of the original description.
+3. On `bounce=yes`, identify the **bounce package**: post-deploy videos/comments that state the defect still happens, plus any author note asking you to reproduce. That package overrides a first-pass-only reading of the original description.
 
 ### Card media review (required before the verdict)
 
-Before deciding pass or fail, **review the card's media**. Do not judge from text alone when images or videos show the expected or broken behavior. Read logs in the same pass so a bounce from Validação / produção is visible.
+Before deciding pass or fail, **review the card's media** from `media.md` + per-id analyses. Do not judge from text alone when images or videos show the expected or broken behavior.
 
-1. `git pull` the meta-repo if needed, then list media via MCP `get-project-media-tool` with **`filter: "default"`** (required; never omit / never `content` alone).
-2. For each image, video, or audio item that belongs to this card and supports the requirements or a finding — **on a bounce, prioritize media created after merge/deploy**:
+1. Use `media.md` from Card Spec (already on disk).
+2. For each image, video, or audio item that supports the requirements or a finding — **on a bounce, prioritize media created after merge/deploy**:
    - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
    - If that file is **missing** → analyze now: `olie-project-image-analysis` for images, `olie-project-video-conversion` for video (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.
-3. Re-analyze or call vid2agent again **only** when the user asks to redo a specific media id (overwrite that file).
-4. Use those analyses when checking acceptance criteria. Cite the media id in the report when evidence comes from media.
-5. **Never** post image, video, or audio analysis to project content.
-6. After writing **new** analysis files, leave them on disk only. Do **not** commit or push during this media pass. Meta-repo commit/push of `*/cards/{CARD_CODE}/` belongs with the closing meta step of this prompt (e2e + media together in §3 when that applies), never mid-media-pass. On develop handoff, that push is `pre-qa.md` §4.3.
+3. Re-analyze only when the user asks to redo a specific media id.
+4. Cite the media id in the report when evidence comes from media.
+5. **Never** post image/video/audio analysis to project content.
+6. New analysis files stay on disk until the closing meta commit (§3) — never mid-media-pass.
 
 ## 3. What you may change
 
 Do not edit product repositories. That includes `olie-fronts`, `api-main`, `backoffice`, `landing`, `docker-workspace`, and `websocket`.
 
-You may change only the private Playwright suite (resolve the root per **Private E2E suites** / path resolution in `workflow-policy.md`: workspace folder `olie-e2e` on host-card, else `~/git/olie/olie-e2e`). That tree is not part of the company remotes.
+You may change only the private Playwright suite (resolve the root per **Private E2E suites** / path resolution in `workflow-policy/gates.md`: workspace folder `olie-e2e` on host-card, else `~/git/olie/olie-e2e`). That tree is not part of the company remotes.
 
 - If the author changed `olie-fronts`, add end-to-end tests there for the frontend behavior the card requested.
 - If those tests already exist and a requested point is uncovered, add the missing tests.
@@ -60,15 +59,15 @@ You may change only the private Playwright suite (resolve the root per **Private
 
 For the meta-repo that owns that suite, do not create a card branch. At the **end** of this review (closing meta step — not during the media pass), commit and push e2e changes and any new card media analyses under `olie/cards/` together directly to the live meta branch (host-card: commit in the card’s meta `git` worktree, then push). If there is no e2e change but new media analyses exist, still commit/push those analyses in that closing step.
 
-Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other `{{ … }}` paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy.md`.
+Never stage, commit, or push a prompt file under `~/git/*/prompts/` where `{{ code }}` (or any other mustache paste placeholder) was replaced by a real card code. Those placeholders stay in the repo; only the chat paste uses the card code. If a prompt is dirty with a substituted code, restore it (`git checkout -- path`) before the commit — do not include that change in the push. See **Prompt templates** in `workflow-policy/card-context.md`.
 
 Do not commit product code, secrets, or `.env` files. Do not open a pull request on a company repository.
 
-You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat (private prompts)** and **Private E2E suites** in `~/git/olie/prompts/workflow-policy.md` — never recommend prompt paths there; never cite `olie-e2e` / meta-repo Playwright; never mention WorkVM / Card VM / sandboxes / dispatcher / ledger (describe missing product behavior only).
+You may update the card content through OlieFlowAi to record the findings of this review; that is not a product edit and does not replace the author's own product fix. Card notes must follow **Card content vs chat** in `workflow-policy/card-context.md` and **Private E2E suites** in `workflow-policy/host.md` — never recommend prompt paths there; never cite `olie-e2e` / meta-repo Playwright; never mention host-card / sandboxes / dispatcher / ledger (describe missing product behavior only).
 
 ## 4. Branches to test
 
-Prefer the branch already checked out by the dispatcher. If you must check out yourself:
+Prefer the branch already checked out by host-card **Open** / the coordinator. If you must check out yourself:
 
 1. Find the branch the author created on each company repository the card touches.
 2. Check it out so you can run the feature.
@@ -79,14 +78,14 @@ Leave unrelated local changes untouched. If a checkout would overwrite them, sto
 
 ## 5. Temporary E2E CAPTCHA
 
-Follow **Temporary E2E CAPTCHA** in `~/git/olie/prompts/implementation.md` §7. Short form: Google's public **test secret** in local `api-main` `.env` + optional **test site key** in `packages/management/.env.development.local` for browser login. Do not stub the management API. Do not comment out or delete `RecaptchaValidate` / front `getToken()` code. Never commit those env overrides.
+Follow **Temporary E2E CAPTCHA** in `workflow-policy/host.md`. Short form: Google's public **test secret** in local `api-main` `.env` + optional **test site key** in `packages/management/.env.development.local` for browser login. Do not stub the management API. Do not comment out or delete `RecaptchaValidate` / front `getToken()` code. Never commit those env overrides.
 
 ## 6. What to verify
 
 - The behavior matches the card, including the edge cases the card states.
-- When the change charges a card or depends on payment authorization, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Cover the outcomes the card requires (success, unauthorized, processing then success, processing then failure).
+- When the change charges a card or depends on payment authorization, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy/host.md` (module index). Do not use a real card. Cover the outcomes the card requires (success, unauthorized, processing then success, processing then failure).
 - The pull request contains that behavior and does not smuggle unrelated changes.
-- **UX (when UI changed)** — verify and report for the evidence table (**UX rows** in `workflow-policy.md`). Do **not** use axe/WCAG automated contrast as a pass/fail gate.
+- **UX (when UI changed)** — verify and report for the evidence table (**UX rows** in `workflow-policy/evidence.md`). Do **not** use axe/WCAG automated contrast as a pass/fail gate.
   - **Contraste:** light and dark on the screens the card changes; legible by the **Olie design system** (same screen on develop / brand tokens), not a WCAG score.
   - **Feedback:** slow or failing API still shows loading; API errors surface to the user; no false success state.
   - **Comportamento:** acceptance paths match the card; overlays (dropdown/dialog) dismiss on outside click / Escape when the design expects it; primary controls are actually clickable (not covered by another layer / z-index).
@@ -106,16 +105,16 @@ If `olie-fronts` changed, the e2e tests in section 3 cover the requested fronten
 ## 7. Out of scope
 
 - Do not fix the author's code.
-- Do **not** move the card to 'Corrigir' or 'Validação' / approve — the dispatcher applies **Colleague review outcome** after all parallel gates finish.
+- Do **not** move the card to 'Corrigir' or 'Validação' / approve — the coordinator applies **Colleague review outcome** after gates finish.
 - Do not treat a local-only success as the production check. That check is 'Revisão de Produção'.
 - Do not search for related improvements in this pass. This is a review only.
-- Do not run `test-gap-analysis.md` or `mutation-testing.md` from here when the dispatcher already launched them.
+- Do not run coverage/mutation/Pest measure loops or rebuild Card Spec via MCP from here.
 
 ## 7b. Re-run budget
 
-Do not re-walk media, PRs, or acceptance paths “to confirm” after this core gate already returned Pass/Fail in this chat on the same branches. Re-open only if the user asks to retry or the branches/media changed. Shared rule: **Expensive re-run budget** in `~/git/olie/prompts/workflow-policy.md`.
+Do not re-walk media, PRs, or acceptance paths “to confirm” after this core gate already returned Pass/Fail in this chat on the same branches. Re-open only if the user asks to retry or the branches/media changed. Shared rule: **Expensive re-run budget** in `workflow-policy/gates.md`.
 
-## 8. Return to the dispatcher
+## 8. Return to the coordinator
 
 - Card {{ code }}.
 - Assigned owner(s) from the card ('atribuído a').
@@ -127,6 +126,6 @@ Do not re-walk media, PRs, or acceptance paths “to confirm” after this core 
 - Payment / CAPTCHA checks when relevant (ok / N/A / blocked).
 - Checks that did not run, and why.
 
-If fail: write the findings into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy.md`). Do **not** approve PRs on a fail.
+If fail: write the findings into the card content through OlieFlowAi (findings only; no prompt paths — see **Card content vs chat** in `workflow-policy/card-context.md`). Do **not** approve PRs on a fail.
 
-A failed requirement is a failed colleague review. Return that verdict to the dispatcher; do not call the card ready for 'Validação' yourself.
+A failed requirement is a failed colleague review. Return that verdict to the coordinator; do not call the card ready for 'Validação' yourself.

@@ -8,6 +8,6 @@ alwaysApply: false
 
 `olie/overlay/<repo>/cursor` (ou `<projeto>/overlay/…`) é copiado para o clone como `.cursor` (`overlay/api-main/cursor` → `~/git/olie/api-main/.cursor`). Resolve ajuste local de agente sem push no remoto da empresa. A pasta no meta-repo não se chama `.cursor`: a janela abre `~/git` e não deve carregar essas rules.
 
-`.config/` é copiado para `~/.config` pelo `vm-setup.sh`. Resolve Hyprland/sessão iguais entre VMs. Ao editar o live, espelhe em `~/git/.config` (skill `sync-git-dotconfig`).
+`.config/` é o overlay de sessão do host (Hyprland). Aplicar em `~/.config` quando a sessão precisar do delta. Ao editar o live, espelhe em `~/git/.config` (skill `sync-git-dotconfig`).
 
 `environment.d/` é um diretório de `*.conf`. Tokens (`OLIE_FLOW_AI_MCP_TOKEN`, `OLIE_MANAGEMENT_TOKEN`) ficam só em `~/.config/environment.d/*.conf` (`chmod 600`). Não versionar secret. O README versionado só explica o layout.

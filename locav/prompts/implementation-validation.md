@@ -9,7 +9,7 @@ Use this **after** `~/git/locav/prompts/implementation.md` (or a correction that
 1. Backend and/or front touched → `~/git/locav/prompts/test-gap-analysis.md`; if `LocavApi` also changed, then `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`, then `pre-qa.md`. If only front changed, after gap run `pest-parallel.md` (lint) then `pre-qa`.
 2. Neither backend nor front touched → `~/git/locav/prompts/pre-qa.md`.
 
-If tooling fails or stalls too long: stop and report (prompt-health). Exception: `olie-flow-ai` `needsAuth` — **MCP auth** in `~/git/locav/prompts/workflow-policy.md`.
+If tooling fails or stalls too long: stop and report (prompt-health) — treat it as a signal that **this prompt needs updating**. Exception: `olie-flow-ai` `needsAuth` — **MCP auth** in `~/git/locav/prompts/workflow-policy.md`.
 
 ### Chat commands
 

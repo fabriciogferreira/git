@@ -2,11 +2,11 @@
 
 Use this at the start of the day, and again whenever the current card is no longer the next action. Text inside single quotes is a board label or a field name. Do not rename it.
 
-If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared modules: `workflow-policy/tools.md` (MCP auth / tooling failures) · index `workflow-policy.md`.
 
 This paste is **only the workday order**. Do not invent a full implementation or review workflow here. When a stage needs execution, open the matching file under `~/git/olie/prompts/` (or wait for the user to paste it).
 
-Resolve the live board labels and IDs through OlieFlowAi as described in `~/git/olie/prompts/workflow-policy.md`. The labels below are examples, not a substitute for the live funnel.
+Resolve the live board labels and IDs through OlieFlowAi as described in `~/git/olie/prompts/workflow-policy/board.md`. The labels below are examples, not a substitute for the live funnel.
 
 ## Order
 
@@ -22,7 +22,7 @@ Do not start development while a card is waiting in step 1 or step 2.
 | --- | --- | --- |
 | 'Não iniciado' | Tech lead places the card. You take it when it is your turn to develop. | The field 'atribuído a' says who must solve it. |
 | 'Em progresso' | You | Execute the card. |
-| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Paste `colleague-review.md` once (dispatcher): core + gap + mutation + coverage in parallel when backend changed. Move to 'Corrigir' only on colleague-core (or non-test-gate) fail; gap/mutation/coverage alone → reviewer may fix in chat. Full pass: PRs approved and the card moves to 'Validação'. |
+| 'QA/CR' | A teammate, or you when the card is a colleague's | Quality review before a tech lead sees it. Manager Card Spec (+ Gap/Coverage/Mutation/Pest when backend), then paste `colleague-review.md`: core + gap seed; measure gates from manager. Move to 'Corrigir' only on colleague-core (or non-test-gate) fail; gap/mutation/coverage alone → reviewer may fix in chat. Full pass: PRs approved and the card moves to 'Validação'. |
 | `changes-requested` (normally 'corrigir ou melhorar') | The person who owns the card | The review failed. Fix it. |
 | 'validação' | Tech lead | Approve or send it back. Use `~/git/olie/prompts/validation.md`. |
 | 'Revisão de Produção' | You, once the change is in production | Confirm production behavior. Local success is not enough. After the report, ask yes/no before moving to 'concluído' (pass) or 'corrigir' (fail). |
@@ -32,21 +32,19 @@ Do not start development while a card is waiting in step 1 or step 2.
 
 Review cards sitting in 'QA/CR' that belong to colleagues. Use `~/git/olie/prompts/colleague-review.md`. Do not open a pull request on a company repository for them.
 
-For each colleague card in 'QA/CR', paste **once** `~/git/olie/prompts/colleague-review.md`. That dispatcher:
+For each colleague card in 'QA/CR': run manager **Card Spec** (and **Gap** / **Coverage** / **Mutation** / **Pest** when backend), then paste `~/git/olie/prompts/colleague-review.md`. That coordinator:
 
-1. Bootstraps the card (MCP, branches, whether `api-main` was touched).
-2. Launches in parallel: `colleague-review-core.md` (always), plus `test-gap-analysis.md`, `mutation-testing.md`, and `coverage-testing.md` when the card changed `api-main` (skip those when there is no backend).
-3. Waits for every applicable gate, then prints one scoreboard.
-4. Applies the funnel outcome (**Colleague review outcome** in `~/git/olie/prompts/workflow-policy.md`):
-   - Move to 'Corrigir' only if colleague core failed (or any failure outside test-gap / mutation / coverage).
-   - Reviewer-fix path: core Pass but gap/mutation/coverage reported work → stay 'QA/CR'; reviewing user may fix in chat.
-   - Approve PRs and move to 'Validação' only on full pass (colleague + gap clean/skipped + mutation clean/skipped + coverage clean/skipped).
-
-Do not paste gap or mutation separately after the dispatcher unless a gate was blocked and the user asks to retry that gate.
+1. Reads the Card Spec dump (`olie/cards/<CODE>/`); does not MCP-rebuild.
+2. Runs `colleague-review-core.md` (product review + e2e). Optional gap: agent reads manager **Gap** seed.
+3. Takes Gap/Coverage/Mutation/Pest from manager artifacts (pending until you run them).
+4. Prints one scoreboard and applies **Colleague review outcome** in `workflow-policy/gates.md`:
+   - Move to 'Corrigir' only if colleague core failed (or failure outside personal gates).
+   - Reviewer-fix: core Pass but gap/coverage/mutation/Pest open → stay 'QA/CR'.
+   - Approve PRs and move to 'Validação' only on full pass (core + gap clean/skipped + manager gates pass/skipped).
 
 ## 2. Production review
 
-Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`. Production checks use the gui1 frame at https://gui1.olie.ai (see **Production verification URL** in `~/git/olie/prompts/workflow-policy.md`).
+Review cards in 'Revisão de Produção' that are already in production with `~/git/olie/prompts/production-review.md`. Production checks use the gui1 frame at https://gui1.olie.ai (see **Production verification URL** in `~/git/olie/prompts/workflow-policy/host.md`).
 
 ## 3. Choose a card
 
@@ -63,11 +61,11 @@ Execute the card with `~/git/olie/prompts/implementation.md` (that prompt moves 
 After implementation (or correction) on the card:
 
 1. **Implementation validation** — `~/git/olie/prompts/implementation-validation.md` (reviewers only; no full suite; no PRs/forms/commits required).
-2. **Test gap analysis** (only if the card changed `api-main`) — `~/git/olie/prompts/test-gap-analysis.md`. Skip when there is no backend. List missing use cases in chat only (close them before coverage / PRs).
-3. **Coverage testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/coverage-testing.md`. Continue with **`next coverage`** / **`correct coverages`**. Skip when no backend (or no `app/` PHP). Do not open mutation / Pest parallel / pre-QA while files remain.
-4. **Mutation testing** (personal, only if the card changed `api-main`) — `~/git/olie/prompts/mutation-testing.md`. Continue with **`next mutation`** / **`correct mutations`**. Skip when no backend. Do not open Pest parallel / pre-QA while files remain.
-5. **Pest parallel** (only if the card changed `api-main`) — `~/git/olie/prompts/pest-parallel.md`. Full suite regression before packaging.
-6. **Pre-QA** — `~/git/olie/prompts/pre-qa.md` after validation and, when backend changed, after gap → coverage → mutation → Pest parallel. When every applicable pre-QA check passes, that prompt **moves the card to 'QA/CR'**.
+2. **Test gap analysis** (only if the card changed `api-main`) — user runs **Gap** in `~/git/manager.sh` (needs Card Spec); agent follows `~/git/olie/prompts/test-gap-analysis.md` on the seed. Skip when no backend. Close listed gaps before coverage / PRs.
+3. **Coverage testing** (personal, only if the card changed `api-main`) — user runs **Coverage** in `~/git/manager.sh`; agent follows `~/git/olie/prompts/coverage-testing.md` on `latest.json` (implement gaps only). Skip when no backend (or no `app/` PHP). Do not open mutation / Pest parallel / pre-QA while the artifact is `needs_work`.
+4. **Mutation testing** (personal, only if the card changed `api-main`) — user runs **Mutation** in `~/git/manager.sh`; agent follows `~/git/olie/prompts/mutation-testing.md` on `latest.json`. Skip when no backend. Do not open Pest parallel / pre-QA while the artifact is `needs_work`.
+5. **Pest** (only if the card changed `api-main`) — user runs **Pest** in `~/git/manager.sh`; agent follows `~/git/olie/prompts/pest-parallel.md` on `latest.json` / `pest-ledger.md` only if red.
+6. **Pre-QA** — agent judges UX/docs (`~/git/olie/prompts/pre-qa.md` Phase A); user runs manager **Pre-QA** (PRs + checklist + move); agent finishes Phase B (evidência). After validation and, when backend changed, Gap → Coverage → Mutation → Pest (manager green).
 
 Colleague 'QA/CR' uses `~/git/olie/prompts/colleague-review.md`.
 
@@ -78,7 +76,7 @@ Board **'validação'** (tech lead, after colleague QA/CR) uses `~/git/olie/prom
 
 ## 5. Fix loop
 
-When your card is in `changes-requested`, follow `~/git/olie/prompts/correction.md`. That prompt moves it to `in-progress` and applies the review fixes.
+When your card is in `changes-requested`, run manager **Card Spec** then follow `~/git/olie/prompts/correction.md`. That prompt moves it to `in-progress` and applies the review fixes (reads the dump; no MCP rebuild).
 
 Then hand it off to 'QA/CR' again. Repeat until the card leaves 'corrigir' ou melhorar toward 'validação', and the tech lead sends it to 'Revisão de Produção'.
 

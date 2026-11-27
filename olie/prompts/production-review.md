@@ -2,7 +2,7 @@
 
 Use this for a card in the logical `production-review` stage.
 
-If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and offer **`resolva` / `documente` / `resolva permanentemente`** (see **Chat commands** / **Tooling failures** in `workflow-policy.md`) and wait. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared detail: `~/git/olie/prompts/workflow-policy.md`. A reCAPTCHA challenge during login is the handoff in **Before testing**, not this stop.
+If MCP (any configured server), requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: **stop this prompt**, report the objective error, and offer **`resolva` / `documente` / `resolva permanentemente`** (see **Chat commands** in `workflow-policy/gates.md` / **Tooling failures** in `workflow-policy/tools.md`) and wait. Do not silently work around it, swap tools to hide the break, or keep reviewing. If the failure looks like a wrong assumption in this prompt (bad command or missing step), also say that **this prompt may need updating**. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy — do not call `mcp_auth` and do not ask the user to sign in again for that case only. Shared modules: `workflow-policy/tools.md` (MCP auth / tooling failures) · index `workflow-policy.md`. A reCAPTCHA challenge during login is the handoff in **Before testing**, not this stop.
 
 ## Objective
 
@@ -10,10 +10,10 @@ Verify the card's acceptance criteria in production. A local or staging result i
 
 ## Before testing
 
-0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `~/git/olie/prompts/workflow-policy.md`). Resume across days. Local stack is for notes/media/workspace; **production evidence** remains gui1 (below), not localhost.
-1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy.md`). Acceptance criteria also come from those notebook page texts.
+0. **Host card environment** — `~/git/bin/workvm-host-card ensure --project olie --code '{{ code }}'` (**Host card environment** in `workflow-policy/host.md`). Resume across days. Local stack is for notes/media/workspace; **production evidence** remains gui1 (below), not localhost.
+1. Load card `{{ code }}` through OlieFlowAi and read its acceptance criteria, deployed pull requests or release, and any production prerequisites. Also read every project thread and the latest version of each one (**Reading the project notebook** in `~/git/olie/prompts/workflow-policy/card-context.md`). Acceptance criteria also come from those notebook page texts.
 2. **Review the card's media** before production checks so acceptance criteria and expected UI are clear. Prefer analyses already under `~/git/olie/cards/{CARD_CODE}/` from implementation or correction; analyze any that are still missing:
-   1. `git pull` the meta-repo if needed, then list media via MCP `get-project-media-tool` with **`filter: "default"`** (required — see **Project media** in `workflow-policy.md`; do not use the tool default `content`).
+   1. Prefer Card Spec `media.md` when present. If missing or clearly stale vs production, list via MCP `get-project-media-tool` with **`filter: "default"`** only (see **Project media** in `workflow-policy/card-context.md`).
    2. For each image, video, or audio that defines expected production behavior:
       - If `~/git/olie/cards/{CARD_CODE}/{MEDIA_ID}.md` exists and is non-empty → **Read** it. Do not re-analyze.
       - If that file is **missing** → analyze now: `olie-project-image-analysis` / `olie-project-video-conversion` (API first; agent-local fallback when vid2agent is unreachable). Write the `.md` under `~/git/olie/cards/{CARD_CODE}/`.
@@ -25,13 +25,13 @@ Verify the card's acceptance criteria in production. A local or staging result i
 5. If the login shows a reCAPTCHA challenge, stop at once. Do not select images, do not press verify, and do not wait on it. Unlock the browser if it is locked, leave that tab open on the challenge, and ask the user to solve it. Continue only after they confirm and the login has reached the app. Solving the challenge is not part of this review. The handoff is expected: it is not a tooling failure and it does not make the review blocked.
 6. Do not repeat the login password, tokens, personal data, or private production records in the report.
 
-**Re-run budget:** after Pass/Fail/Blocked for the current production deploy in this chat, do not re-smoke the same paths “to confirm” unless deploy/data changed or the user asks to retry a failed/blocked check. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+**Re-run budget:** after Pass/Fail/Blocked for the current production deploy in this chat, do not re-smoke the same paths “to confirm” unless deploy/data changed or the user asks to retry a failed/blocked check. Shared rule: **Expensive re-run budget** in `workflow-policy/gates.md`.
 
 ## Verify
 
 1. Test the primary acceptance path in the gui1 frame at https://gui1.olie.ai, after the login above (navigate from the page login opens to the feature the card changed).
 2. Test the relevant error or edge path when the card specifies one or production-safe data makes it possible.
-3. When the acceptance path charges a card, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy.md`. Do not use a real card. Record which number you used and the order and transaction state you observed. Cover the outcomes the card requires.
+3. When the acceptance path charges a card, pay with the numbers in **Payment test cards** in `~/git/olie/prompts/workflow-policy/host.md` (module index). Do not use a real card. Record which number you used and the order and transaction state you observed. Cover the outcomes the card requires.
 4. Record concise evidence: production URL or feature area, action, expected result, and observed result. Redact sensitive values.
 5. Compare the deployed behavior to the card, not merely to local behavior.
 
@@ -52,14 +52,14 @@ After a **Pass** or **Fail** report, ask the user a single **yes/no** question, 
 
 Move **only** if the user answers yes (or an unambiguous equivalent). If the user answers no, leave the card where it is and stop.
 
-When yes: resolve the live step id by display name via MCP / `~/git/olie/prompts/workflow-policy.md` (**Moving a card on the board**). Never hard-code step ids. Verify the transition succeeded.
+When yes: resolve the live step id by display name via MCP / `~/git/olie/prompts/workflow-policy/board.md` (**Moving a card on the board**). Never hard-code step ids. Verify the transition succeeded.
 
-**After a successful move to `done` ('concluído'):** run host-card teardown — `~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'`, then stop the **main** project compose (`docker compose -f ~/git/olie/docker-compose.yml down` — **Destroy** in `workflow-policy.md`). Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no to the move.
+**After a successful move to `done` ('concluído'):** run host-card teardown — `~/git/bin/workvm-host-card destroy --project olie --code '{{ code }}'`, then stop the **main** project compose (`docker compose -f ~/git/olie/docker-compose.yml down` — **Destroy** in `workflow-policy/host.md`). Do **not** destroy on Fail → Corrigir, on Blocked, or when the user answers no to the move.
 
 ## Done when
 
 The report identifies card `{{ code }}`, the production area tested, the result for every applicable acceptance criterion, whether a move was proposed, the user's yes/no answer, whether the stage change ran, and whether host-card `destroy` ran after `done`. It clearly distinguishes pass, fail, and blocked checks.
 
-**Evidence table (required):** after the Pass/Fail/Blocked report, post `### Evidência — {N}º Revisão produção` into the **card content** via `save-media-tool` per **Evidence table on project content** in `~/git/olie/prompts/workflow-policy.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply; never description, Caderno, or PR).
+**Evidence table (required):** after the Pass/Fail/Blocked report, post `### Evidência — {N}º Revisão produção` into the **card content** via `save-media-tool` per **Evidence table** in `~/git/olie/prompts/workflow-policy/evidence.md` (production smoke / deploy rows; `n/a` where a develop-only check does not apply; never description, Caderno, or PR).
 
-**Meta-repo close (media analyses):** if this review wrote new files under `olie/cards/{CARD_CODE}/`, commit and push them on the meta-repo **before** `destroy` / before ending the paste (host-card worktree; same rules as `pre-qa.md` §4.3). See **Card media analyses** in `workflow-policy.md`.
+**Meta-repo close (media analyses):** if this review wrote new files under `olie/cards/{CARD_CODE}/`, commit and push them on the meta-repo **before** `destroy` / before ending the paste (host-card worktree; same rules as `pre-qa.md` §4.3). See **Card media analyses** in `workflow-policy/card-context.md`.

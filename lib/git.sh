@@ -217,6 +217,45 @@ workvm_fetch_project_repos() {
     done
 }
 
+# Working tree esvaziado (rm em massa) + pull pulado (branch ≠ project.conf)
+# → host-card Docker COPY composer.json / entrypoint falha. Restaura tracked
+# do HEAD sem trocar de branch. Uso: workvm_ensure_repo_tracked_files <dir> <path>…
+workvm_ensure_repo_tracked_files() {
+    local destination="$1"
+    shift
+    local marker missing=0
+
+    if [ ! -d "$destination/.git" ] && [ ! -f "$destination/.git" ]; then
+        echo "error: não é repositório git: $destination" >&2
+        return 1
+    fi
+    [ "$#" -gt 0 ] || return 0
+
+    for marker in "$@"; do
+        if [ ! -e "${destination}/${marker}" ]; then
+            missing=1
+            break
+        fi
+    done
+    [ "$missing" -eq 0 ] && return 0
+
+    echo "→ Tree incompleto em $destination — restaurando tracked do HEAD"
+    if ! git -C "$destination" restore --source=HEAD --worktree --staged :/ 2>/dev/null; then
+        if ! git -C "$destination" checkout -f HEAD -- .; then
+            echo "error: restore falhou: $destination" >&2
+            return 1
+        fi
+    fi
+
+    for marker in "$@"; do
+        if [ ! -e "${destination}/${marker}" ]; then
+            echo "error: ainda falta ${marker} em $destination após restore" >&2
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Fast-forward only when HEAD already matches the expected branch (no checkout).
 # Never fails the caller: missing repo / wrong branch / network / diverged only warn.
 workvm_pull_repo() {

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Wayland, Docker, sshd da VM (o chat do card entra por SSH) e abertura do
-# Cursor e do Brave na instalação do projeto.
+# Wayland, Docker e abertura do Cursor e do Brave na instalação do projeto.
 # Problema: a espera da sessão estava no mesmo arquivo que clone e patch.
 # Carregado por common.sh. Não dê source neste arquivo sozinho.
 
@@ -453,7 +452,7 @@ workvm_open_chromium() {
     elif command -v brave-browser >/dev/null 2>&1; then
         browser=brave-browser
     else
-        echo "workvm: brave not found in PATH (installe via vm-setup / brave-bin)" >&2
+        echo "workvm: brave not found in PATH (installe brave-bin)" >&2
         return 1
     fi
 
@@ -500,39 +499,4 @@ workvm_docker_compose_up() {
     fi
 
     (cd "$compose_dir" && docker compose up -d)
-}
-
-# Arch installs openssh with sshd disabled. The card chat SSHs to the guest;
-# with the unit down, port 22 answers connection refused.
-workvm_enable_sshd() {
-    if [ ! -f /usr/lib/systemd/system/sshd.service ]; then
-        return 0
-    fi
-
-    sudo systemctl enable --now sshd.service || return 0
-}
-
-# The site holds the private key. Guests only need this public key.
-workvm_authorize_workvm_ssh() {
-    local pub="$1"
-    local keys line
-
-    if [ ! -f "$pub" ]; then
-        return 0
-    fi
-
-    keys="${HOME}/.ssh/authorized_keys"
-    mkdir -p "${HOME}/.ssh"
-    chmod 700 "${HOME}/.ssh"
-    touch "$keys"
-    chmod 600 "$keys"
-    line=$(tr -d '\n' < "$pub")
-
-    if [ -z "$line" ]; then
-        return 0
-    fi
-
-    if ! grep -qxF "$line" "$keys"; then
-        printf '%s\n' "$line" >> "$keys"
-    fi
 }

@@ -16,7 +16,7 @@ Three entry points:
 
 Chat commands: `~/git/televisao/prompts/workflow-policy.md` → **Chat commands** (includes `next coverage` and `correct coverages`).
 
-**Own-card / alone:** default = **`correct coverages`** (drain **all** remaining). **`next coverage`** = one file only when asked. Prefer `workvm-sandbox` so Card VM `testing` stays untouched.
+**Own-card / alone:** default = **`correct coverages`** (drain **all** remaining). **`next coverage`** = one file only when asked. Prefer `workvm-sandbox` so host-card `testing` stays untouched.
 
 If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Shared detail: `~/git/televisao/prompts/workflow-policy.md`.
 
@@ -102,7 +102,7 @@ see `~/git/televisao/sandbox/Dockerfile.app`).
 **Own-card fallback only** (no sandbox create possible): host-card
 `workvm-host-card agent-docker --project televisao --code … --container backend -- …`
 (or `docker exec -w /srv` on the card backend). Do not use that path while
-colleague exclusive gates share the Card VM.
+colleague exclusive gates share the host-card.
 
 Do not run `php` on the host.
 

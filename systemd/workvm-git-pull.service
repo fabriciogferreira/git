@@ -3,7 +3,7 @@
 # Mesmo WantedBy que workvm.service — ver comentário lá sobre graphical-session.
 [Unit]
 Description=WorkVM meta-repo git pull --ff-only (~/git, branch main)
-Documentation=file://%h/git/vm-setup.sh
+Documentation=file://%h/git/README.md
 
 [Service]
 Type=oneshot

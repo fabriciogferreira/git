@@ -8,4 +8,4 @@
 
 Compose: `compose.dev.yaml` no clone. Setup: `./project-setup.sh vid2agent-code`.
 
-Ollama/VLM no host; API de conversão para outras WorkVMs em `http://10.0.2.2:18080`.
+Ollama/VLM e a API de conversão rodam **no host** (`127.0.0.1:11434` / `:18080`). Não há domain libvirt.

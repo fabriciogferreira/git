@@ -58,7 +58,7 @@ E2E stubs `grecaptcha` in the browser. `APP_ENV=local` still calls Google, so
 use Google's public **test key pair** via env only: `RECAPTCHA_SECRET` in
 `api-main` `.env`, and when browser login must avoid Google challenges,
 `VITE_APP_RECAPTCHA_SITE_KEY` in `packages/management/.env.development.local`.
-Canonical steps: `~/git/olie/prompts/implementation.md` §7 ("Temporary E2E
+Canonical steps: `~/git/olie/prompts/workflow-policy/host.md` ("Temporary E2E
 CAPTCHA"). Do not stub the management API. Do not comment out or delete
 `RecaptchaValidate` / front `getToken()` code.
 

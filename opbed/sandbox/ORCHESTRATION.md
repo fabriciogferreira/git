@@ -8,7 +8,7 @@ CLI: `~/git/bin/workvm-sandbox --project opbed`. Compose slim:
 
 ## Exclusive vs compatible
 
-**Compatible** (Card VM / mesmo sandbox): leitura, gap analysis, prompts
+**Compatible** (host-card / mesmo sandbox): leitura, gap analysis, prompts
 sem Pest runtime.
 
 **Exclusive** (sandbox distinto ou fila): `pest --mutate`,

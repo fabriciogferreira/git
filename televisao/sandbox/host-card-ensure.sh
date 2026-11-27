@@ -39,6 +39,21 @@ workvm_host_card_ensure_hook() {
         return 1
     fi
 
+    # Tree oco (rm em massa) + pull pulado por branch ≠ preview → Docker COPY
+    # composer.json/entrypoint not found. Heal já roda no ensure_clones; aqui
+    # falha cedo com mensagem clara se o clone ainda estiver incompleto.
+    # shellcheck source=/dev/null
+    source "${meta_repo}/lib/common.sh"
+    if ! workvm_ensure_repo_tracked_files "$api" \
+        composer.json composer.lock docker/entrypoint.sh artisan; then
+        workvm_host_card_log "televisao-api incompleto após restore — abortando build"
+        return 1
+    fi
+    if ! workvm_ensure_repo_tracked_files "$front" package.json; then
+        workvm_host_card_log "televisao-front incompleto após restore — abortando"
+        return 1
+    fi
+
     # .env da API (gitignored) — senão migrate/DB_HOST falham
     if [ ! -f "${api}/.env" ] && [ -f "${api}/.env.example" ]; then
         workvm_host_card_log "televisao-api/.env ausente — copiando de .env.example"

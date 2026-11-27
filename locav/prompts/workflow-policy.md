@@ -148,7 +148,7 @@ On MCP error (other than `notebook: null`): stop and report (prompt-health rules
 
 ## Host card environment
 
-Cards run as **host units** on jarvis (no WorkVM required for the card workspace). Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
+Cards run as **host units** on jarvis . Contract: `~/git/host-cards-no-vm.md`. CLI: `~/git/bin/workvm-host-card`.
 
 **Ensure (start or resume — multi-day):** at the beginning of `implementation.md`, `correction.md`, `pest-parallel.md`, `colleague-review.md`, and `production-review.md`, **before** git checkout, board moves that need a local stack, or heavy review work:
 
@@ -307,7 +307,7 @@ Same contract as Olie (`~/git/olie/prompts/workflow-policy.md` **Deferred decisi
 
 ## Card content vs chat (private prompts)
 
-Files under `~/git/locav/prompts/` are private WorkVM prompts. Other people on the Olie board cannot open them.
+Files under `~/git/locav/prompts/` are private host prompts. Other people on the Olie board cannot open them.
 
 When writing to card content through OlieFlowAi (`save-media-tool`, description, forum, or any project note):
 
@@ -386,7 +386,7 @@ Cursor desktop can show `olie-flow-ai` as authenticated, and the MCP request sta
 
 Do not call `mcp_auth`. Do not ask the user to sign in again. Do not stop the card for that status.
 
-On a WorkVM with `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
+With `MCP=olie`, login rewrites the server URL to `http://127.0.0.1:47331/mcp/management`. That proxy returns 404 for OAuth discovery and forwards to `https://api.olie.ai/mcp/management` with `OLIE_FLOW_AI_MCP_TOKEN`. Use the MCP tools against that server.
 
 If the tools are still `needsAuth`, or the call returns 401, fall back per **Tool preference** step 3 (curl). Load `OLIE_MANAGEMENT_TOKEN` from `~/.config/environment.d/*.conf` without printing it. Search projects (`POST .../projects/search`, `name_code` contains the card code) and `GET .../projects/${CARD_PROJECT_ID}`. For the step/status catalog, `GET .../get-available-steps` **only** when `index-project-funnels-tool` itself is `needsAuth` / 401 (MCP auth), not when a filtered call returned `[]` or when another MCP read already succeeded. Prefer restoring MCP and calling `index-project-funnels-tool` again (unfiltered if needed). Match by display name. Never hard-code a step or status id. Never paste a Bearer token.
 
@@ -415,7 +415,7 @@ When a prompt finishes and names a next paste, remember that path so `next promp
 
 ## Tooling failures and stalls (prompt health)
 
-If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** WorkVM/host-card friction burns time on every card — **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop. Host-card sandbox permission cluster: retry with `required_permissions: ["all"]` first.
+If a request, MCP call, shell command, Docker/compose wait, git/gh, or other step **this prompt assumes will work** fails or takes unusually long — or the same **recurring** host-card friction burns time on every card — **stop**. Do not silently work around it or swap tools to hide the break. `olie-flow-ai` `needsAuth` is the **MCP auth** case above, not this stop. Host-card sandbox permission cluster: retry with `required_permissions: ["all"]` first.
 
 Diagnose, then **wait** for `resolva` / `documente` / `resolva permanentemente` (table above). Do not pick the path yourself.
 

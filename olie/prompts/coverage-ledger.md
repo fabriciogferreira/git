@@ -1,12 +1,14 @@
 # Coverage ledger
 
-Personal stack for `~/git/olie/prompts/coverage-testing.md`. One row per production file under `~/git/olie/api-main/app` after **in-scope (diff) coverage** plus the progressive **file ratchet** on this VM. Not part of the Olie test suite / CI.
+Personal stack for `~/git/olie/prompts/coverage-testing.md`. One row per production file under `api-main/app` after **in-scope (diff) coverage** plus the progressive **file ratchet** on this VM. Not part of the Olie test suite / CI.
+
+**Measure:** user runs **Coverage** in `~/git/manager.sh` (`bin/workvm-host-card-coverage` → artifact in `~/.local/share/project-card-manager/coverage/…`; contract `lib/coverage/ARTIFACT.md`). Pass rows (+ `sha:`) are upserted by that script. **Agent:** only implements gaps from `latest.json` — does not re-measure.
 
 Gates (see the prompt): always cover the change-set hunks; **new/small** files (≤80 executable lines) go to File raw `100%`; **large** files must raise File raw by **+1 percentage point** vs the previous row (capped at 100%) so each touch climbs toward full coverage without rewriting a fat class in one card.
 
-While any changed `app/**/*.php` from the card’s `api-main` diff is missing here or fails those gates, the coverage stack still has work: use **`next coverage`** (one file) or **`correct coverages`** (drain all remaining in parallel); do not run `pre-qa.md` via `next prompt`. On own-card develop handoff this stack runs after mutation and must finish (or be explicitly skipped) before `pre-qa.md`.
+While any changed `app/**/*.php` from the card’s `api-main` diff is missing here or fails those gates, re-run Coverage in the manager (or fix tests then re-run); do not run `pre-qa.md` via `next prompt`. On own-card develop handoff this stack runs after mutation and must finish (or be explicitly skipped) before `pre-qa.md`.
 
-Cross-chat skip: a done row with matching `sha:<fp>` in Notes (see `coverage-testing.md` / `bin/workvm-ledger-sha.sh`) is not reopened. Missing `sha:` on a done row means re-measure once and stamp.
+Cross-chat skip: a done row with matching `sha:<fp>` in Notes (see `bin/workvm-ledger-sha.sh`) is not reopened. Missing `sha:` on a done row means re-measure once and stamp.
 
 | File | Last measured | In-scope | Uncovered (in-scope) | File raw | Via test | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

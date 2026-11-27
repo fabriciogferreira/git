@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# Mede patch coverage do change-set no host-card e grava artefato para o agente.
+# Problema: coverage-testing.md media + implementava no chat (sandbox/Pest/ledger)
+# e consumia tokens em orquestração. Manager roda isto; o agente só lê latest.json
+# e implementa gaps (lib/coverage/ARTIFACT.md).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+# shellcheck source=../olie/sandbox/host-card-pest-db.sh
+source "$ROOT/olie/sandbox/host-card-pest-db.sh"
+
+SCORE_PY="$ROOT/lib/coverage/score.py"
+SHA_BIN="$ROOT/bin/workvm-ledger-sha.sh"
+LEDGER_DEFAULT="$ROOT/olie/prompts/coverage-ledger.md"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/project-card-manager"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card-coverage — medir coverage do change-set (Olie host-card)
+
+  workvm-host-card-coverage --project olie --code <CODE>
+
+Saída:
+  ~/.local/share/project-card-manager/coverage/olie/<CODE>/latest.json
+  ~/.local/share/project-card-manager/coverage/olie/<CODE>/latest.md
+
+Gates: lib/coverage/ARTIFACT.md + olie/prompts/coverage-testing.md
+EOF
+}
+
+project=""
+code=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --project)
+            project="${2:-}"
+            shift 2
+            ;;
+        --code)
+            code="${2:-}"
+            shift 2
+            ;;
+        *)
+            workvm_host_card_log "arg desconhecido: $1"
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ "$project" != "olie" ] || [ -z "$code" ]; then
+    workvm_host_card_log "uso: --project olie --code <CODE>"
+    exit 1
+fi
+
+if [ ! -f "$SCORE_PY" ]; then
+    workvm_host_card_log "score ausente: $SCORE_PY"
+    exit 1
+fi
+
+id="$(workvm_host_card_id "$project" "$code")"
+meta="$(workvm_host_card_meta_path "$project" "$id")"
+if [ ! -f "$meta" ]; then
+    workvm_host_card_log "card ausente: $id (rode Open no manager / ensure antes)"
+    exit 1
+fi
+
+compose_dir="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_dir') or '')")"
+pname="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_project') or '')")"
+testing_db="$(python3 -c "import json;print(json.load(open('$meta')).get('testing_database') or '')")"
+api_worktree="$(python3 -c "import json;print(json.load(open('$meta')).get('api_worktree') or '')")"
+if [ -z "$compose_dir" ] || [ ! -d "$compose_dir" ]; then
+    compose_dir="$(workvm_host_card_dir "$project" "$id")/compose"
+fi
+if [ -z "$pname" ]; then
+    pname="hc-${id}"
+fi
+if [ -z "$testing_db" ]; then
+    testing_db="testing"
+fi
+if [ -z "$api_worktree" ]; then
+    api_worktree="$(workvm_host_card_dir "$project" "$id")/worktree"
+fi
+if [ -d "${api_worktree}/api-main" ]; then
+    api_main="${api_worktree}/api-main"
+else
+    api_main="$api_worktree"
+fi
+
+# Prefer ledger in the card meta worktree when present (host-card edit target).
+ledger="$LEDGER_DEFAULT"
+card_git="$(workvm_host_card_dir "$project" "$id")/worktree/git"
+if [ -f "$card_git/olie/prompts/coverage-ledger.md" ]; then
+    ledger="$card_git/olie/prompts/coverage-ledger.md"
+fi
+
+safe_code="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '_')"
+cov_root="$DATA_DIR/coverage/$project/$safe_code"
+ts="$(date '+%Y%m%d-%H%M%S')"
+run_dir="$cov_root/$ts"
+pest_dir="$run_dir/pest"
+mkdir -p "$pest_dir" "$cov_root"
+
+plan_json="$run_dir/plan.json"
+workvm_host_card_log "plan $id → $api_main"
+python3 "$SCORE_PY" plan \
+    --api-main "$api_main" \
+    --code "$code" \
+    --ledger "$ledger" \
+    --sha-bin "$SHA_BIN" \
+    --out "$plan_json"
+
+batch_count="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('batches') or []))")"
+app_count="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('app_files') or []))")"
+skip_count="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('skipped_sha') or []))")"
+
+workvm_host_card_log "change-set app files=$app_count skipped_sha=$skip_count batches=$batch_count"
+
+if [ "$app_count" -eq 0 ] && [ "$skip_count" -eq 0 ]; then
+    workvm_host_card_log "nenhum app/**/*.php no change-set — artefato empty"
+    python3 "$SCORE_PY" artifact \
+        --project "$project" \
+        --code "$code" \
+        --api-main "$api_main" \
+        --ledger "$ledger" \
+        --sha-bin "$SHA_BIN" \
+        --plan "$plan_json" \
+        --pest-dir "$pest_dir" \
+        --out-dir "$cov_root" \
+        --update-ledger || true
+    cp -f "$cov_root/latest.json" "$run_dir/latest.json"
+    cp -f "$cov_root/latest.md" "$run_dir/latest.md"
+    printf 'artifact=%s\n' "$cov_root/latest.json"
+    exit 0
+fi
+
+(
+    cd "$compose_dir"
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
+    export COMPOSE_PROJECT_NAME="$pname"
+    docker compose --profile slim exec -T app mkdir -p /tmp/pest-hc
+    workvm_olie_host_card_pest_warm "$compose_dir" "$pname" "$testing_db" 1 "$api_main" || true
+
+    # Coverage driver check (PCOV preferred).
+    if ! docker compose --profile slim exec -T app php -m | grep -qi '^pcov$'; then
+        if ! docker compose --profile slim exec -T \
+            -e XDEBUG_MODE=coverage \
+            app php -m | grep -qi xdebug; then
+            workvm_host_card_log "sem PCOV/Xdebug no container app — coverage impossível"
+            exit 1
+        fi
+        workvm_host_card_log "PCOV ausente; usando XDEBUG_MODE=coverage"
+        cov_env=(-e XDEBUG_MODE=coverage)
+    else
+        cov_env=()
+    fi
+
+    python3 - "$plan_json" "$pest_dir" <<'PY'
+import json, sys
+from pathlib import Path
+plan = json.loads(Path(sys.argv[1]).read_text())
+pest_dir = Path(sys.argv[2])
+for i, batch in enumerate(plan.get("batches") or []):
+    vias = batch.get("via_tests") or []
+    (pest_dir / f"batch-{i}.vias").write_text("\n".join(vias) + ("\n" if vias else ""))
+PY
+
+    shopt -s nullglob
+    for vias_file in "$pest_dir"/batch-*.vias; do
+        base="$(basename "$vias_file" .vias)"
+        log="$pest_dir/${base}.log"
+        mapfile -t vias < "$vias_file"
+        if [ "${#vias[@]}" -eq 0 ] || [ -z "${vias[0]:-}" ]; then
+            printf 'skip empty via batch %s\n' "$base" >"$log"
+            continue
+        fi
+        workvm_host_card_log "pest --coverage ${vias[*]}"
+        set +e
+        docker compose --profile slim exec -T \
+            -e TMPDIR=/tmp/pest-hc \
+            -e DB_DATABASE="$testing_db" \
+            -e APP_ENV=testing \
+            -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
+            -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+            -e PEST_TIA_LOCALLY=0 \
+            ${cov_env[@]+"${cov_env[@]}"} \
+            app \
+            vendor/bin/pest --coverage --compact "${vias[@]}" \
+            >"$log" 2>&1
+        status=$?
+        set -e
+        printf '\n# exit=%s\n' "$status" >>"$log"
+        if [ "$status" -ne 0 ]; then
+            workvm_host_card_log "Via vermelha ou coverage falhou ($base exit $status) — segue scoring"
+        fi
+    done
+)
+
+workvm_host_card_log "scoring → $cov_root/latest.json"
+set +e
+python3 "$SCORE_PY" artifact \
+    --project "$project" \
+    --code "$code" \
+    --api-main "$api_main" \
+    --ledger "$ledger" \
+    --sha-bin "$SHA_BIN" \
+    --plan "$plan_json" \
+    --pest-dir "$pest_dir" \
+    --out-dir "$cov_root" \
+    --update-ledger
+art_status=$?
+set -e
+
+cp -f "$cov_root/latest.json" "$run_dir/latest.json"
+cp -f "$cov_root/latest.md" "$run_dir/latest.md"
+
+printf 'artifact=%s\n' "$cov_root/latest.json"
+printf 'summary=%s\n' "$cov_root/latest.md"
+exit "$art_status"

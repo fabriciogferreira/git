@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Pre-QA mecânico: commitlint, gh PR, checklist, forms, move → artefato.
+# Problema: pre-qa.md misturava UX/evidência com I/O de board/PRs.
+# Manager roda isto; o agente só julga o resto (lib/pre_qa/ARTIFACT.md).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+
+RUN_PY="$ROOT/lib/pre_qa/run.py"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/project-card-manager"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card-pre-qa — handoff mecânico para QA/CR (Olie host-card)
+
+  workvm-host-card-pre-qa --project olie --code <CODE> [options]
+
+Options:
+  --docs sim|nao     Resposta do form Postman/docs no passo QA/CR
+  --dry-run          Só planeja (não cria PR / toggle / move)
+  --skip-pr          Não cria/edita PRs
+  --skip-move        Não move o card
+  --skip-checklist   Não toggles "Pull Request criado"
+  --skip-commitlint  Pula lint de commits
+
+Saída:
+  ~/.local/share/project-card-manager/pre-qa/olie/<CODE>/latest.json
+
+Env opcional:
+  WORKVM_PR_ASSIGNEE=login
+  WORKVM_PR_REVIEWERS=login1,login2
+  WORKVM_GITHUB_LOGIN_MAP=~/.config/workvm/github-logins.json
+EOF
+}
+
+project=""
+code=""
+extra=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        --project) project="${2:-}"; shift 2 ;;
+        --code) code="${2:-}"; shift 2 ;;
+        --docs|--dry-run|--skip-pr|--skip-move|--skip-checklist|--skip-commitlint)
+            # pass through; --docs needs value
+            if [ "$1" = "--docs" ]; then
+                extra+=("$1" "${2:-}")
+                shift 2
+            else
+                extra+=("$1")
+                shift
+            fi
+            ;;
+        *)
+            workvm_host_card_log "arg desconhecido: $1"
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ "$project" != "olie" ] || [ -z "$code" ]; then
+    workvm_host_card_log "uso: --project olie --code <CODE>"
+    exit 1
+fi
+
+id="$(workvm_host_card_id "$project" "$code")"
+meta="$(workvm_host_card_meta_path "$project" "$id")"
+if [ ! -f "$meta" ]; then
+    workvm_host_card_log "card ausente: $id (rode Open no manager)"
+    exit 1
+fi
+
+api_worktree="$(python3 -c "import json;print(json.load(open('$meta')).get('api_worktree') or '')")"
+if [ -z "$api_worktree" ]; then
+    api_worktree="$(workvm_host_card_dir "$project" "$id")/worktree"
+fi
+
+safe_code="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '_')"
+out_dir="$DATA_DIR/pre-qa/$project/$safe_code"
+mkdir -p "$out_dir"
+
+# Load tokens for child python
+set -a
+for conf in "${HOME}/.config/environment.d/"*.conf; do
+    [ -f "$conf" ] || continue
+    # shellcheck disable=SC1090
+    . "$conf"
+done
+set +a
+
+workvm_host_card_log "pre-qa $id → $api_worktree"
+set +e
+PYTHONPATH="$ROOT/lib${PYTHONPATH:+:$PYTHONPATH}" python3 "$RUN_PY" \
+    --project "$project" \
+    --code "$code" \
+    --api-worktree "$api_worktree" \
+    --out-dir "$out_dir" \
+    "${extra[@]}"
+STATUS=$?
+set -e
+
+workvm_host_card_log "artefato: $out_dir/latest.json"
+if [ -f "$out_dir/latest.md" ]; then
+    echo
+    cat "$out_dir/latest.md"
+fi
+exit "$STATUS"

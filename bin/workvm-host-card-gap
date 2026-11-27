@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Coleta requisitos (Card Spec) + testes do change-set → artefato gap.
+# Problema: test-gap-analysis.md montava MCP + git + skim no chat.
+# Manager roda isto; o agente só julga gaps (lib/gap/ARTIFACT.md).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+
+SEED_PY="$ROOT/lib/gap/seed.py"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/project-card-manager"
+CARDS_ROOT_DEFAULT="$ROOT/olie/cards"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card-gap — seed de gap analysis (Olie host-card)
+
+  workvm-host-card-gap --project olie --code <CODE>
+
+Saída:
+  ~/.local/share/project-card-manager/gap/olie/<CODE>/latest.json
+  ~/.local/share/project-card-manager/gap/olie/<CODE>/latest.md
+  olie/cards/<CODE>/gap-seed.md  (quando Card Spec existe)
+
+Requer: Open + Card Spec. Agente lê o artefato (test-gap-analysis.md).
+EOF
+}
+
+project=""
+code=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        --project) project="${2:-}"; shift 2 ;;
+        --code) code="${2:-}"; shift 2 ;;
+        *)
+            workvm_host_card_log "arg desconhecido: $1"
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ "$project" != "olie" ] || [ -z "$code" ]; then
+    workvm_host_card_log "uso: --project olie --code <CODE>"
+    exit 1
+fi
+
+if [ ! -f "$SEED_PY" ]; then
+    workvm_host_card_log "seed ausente: $SEED_PY"
+    exit 1
+fi
+
+id="$(workvm_host_card_id "$project" "$code")"
+meta="$(workvm_host_card_meta_path "$project" "$id")"
+if [ ! -f "$meta" ]; then
+    workvm_host_card_log "card ausente: $id (rode Open no manager / ensure antes)"
+    exit 1
+fi
+
+api_worktree="$(python3 -c "import json;print(json.load(open('$meta')).get('api_worktree') or '')")"
+if [ -z "$api_worktree" ]; then
+    api_worktree="$(workvm_host_card_dir "$project" "$id")/worktree"
+fi
+if [ -d "${api_worktree}/api-main" ]; then
+    api_main="${api_worktree}/api-main"
+else
+    api_main="$api_worktree"
+fi
+
+# Prefer a Card Spec that actually has README/project.md (worktree first, then live).
+pick_spec() {
+    for d in "$@"; do
+        [ -n "$d" ] || continue
+        if [ -f "$d/README.md" ] || [ -f "$d/project.md" ]; then
+            printf '%s\n' "$d"
+            return 0
+        fi
+    done
+    # Fall back to the first existing dir (error path still points somewhere useful).
+    for d in "$@"; do
+        [ -n "$d" ] && [ -d "$d" ] && { printf '%s\n' "$d"; return 0; }
+    done
+    printf '%s\n' "$1"
+}
+
+card_git="$(workvm_host_card_dir "$project" "$id")/worktree/git"
+spec_dir="$(pick_spec \
+    "$card_git/olie/cards/$code" \
+    "$HOME/git/olie/cards/$code" \
+    "$CARDS_ROOT_DEFAULT/$code")"
+
+safe_code="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '_')"
+out_dir="$DATA_DIR/gap/$project/$safe_code"
+mkdir -p "$out_dir"
+
+workvm_host_card_log "gap seed $id → $api_main (spec=$spec_dir)"
+set +e
+python3 "$SEED_PY" \
+    --project "$project" \
+    --code "$code" \
+    --api-main "$api_main" \
+    --spec-dir "$spec_dir" \
+    --out-dir "$out_dir"
+STATUS=$?
+set -e
+
+workvm_host_card_log "artefato: $out_dir/latest.json"
+if [ -f "$out_dir/latest.md" ]; then
+    echo
+    cat "$out_dir/latest.md"
+fi
+exit "$STATUS"

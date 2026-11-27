@@ -27,7 +27,7 @@ chmod 600 ~/.config/environment.d/olie.conf
 
 ### GitHub (clone + PRs)
 
-Use **GitHub CLI** (`gh`), instalado pelo `vm-setup.sh` (`github-cli`):
+Use **GitHub CLI** (`gh`), instalado no host (`github-cli`):
 
 ```bash
 gh auth login          # escolha HTTPS

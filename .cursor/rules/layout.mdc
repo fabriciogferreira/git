@@ -5,86 +5,80 @@ alwaysApply: true
 
 # Mapa — problema que cada parte resolve
 
-Única tabela de caminho → problema. O como a VM opera (projeto ativo, patch de clones, MCP) está em `meta-repo.mdc`. Não copie esta tabela para lá.
+Única tabela de caminho → problema. O como o host opera (projeto ativo, patch de clones, MCP) está em `meta-repo.mdc`. Não copie esta tabela para lá.
 
 | Caminho | Problema |
 | --- | --- |
-| `vm-setup.sh` | VM nova ainda pede senha, login e pacotes. Deixa Arch + Hyprland pronto e aplica `.config` → `~/.config`. |
 | `vm.local.conf` | Usuário e e-mail do git desta máquina. Fora do git. O `.example` só mostra as chaves. |
-| `project-setup.sh` | A máquina não sabe qual projeto abrir. Amarra na pasta do projeto na raiz do meta-repo e liga `workvm.service`. |
+| `project-setup.sh` | O host não sabe qual projeto abrir. Amarra na pasta do projeto na raiz do meta-repo e liga `workvm.service`. |
 | `systemd/workvm.service` | No login nada sobe. Roda `project-start.sh` com o diretório de `~/.config/workvm/current`. `WantedBy=default.target` (não `graphical-session`: RefuseManualStart + SDDM não ativa). |
 | `systemd/workvm-git-pull.service` / `bin/pull-meta.sh` | O meta-repo fica atrás do remoto. Pull `--ff-only` no login; restaura stubs MCP antes do merge; rede/divergência não derruba a sessão. |
 | `lib/common.sh` | Quem chama precisa das funções todas. Só dá `source` em `git.sh`, `cursor.sh` e `session.sh`. |
-| `lib/git.sh` | Clone (via `gh` HTTPS quando autenticado), fetch, overlay e identidade desta VM. |
+| `lib/git.sh` | Clone (via `gh` HTTPS quando autenticado), fetch, overlay e identidade desta máquina. |
 | `lib/cursor.sh` | Rule do projeto ativo, patch de `alwaysApply` nos clones, merge de JSON do Cursor e MCP → `~/.cursor/mcp.json`. |
-| `lib/session.sh` | Wayland, Docker, sshd da VM (o chat do card entra por SSH) e abertura do Cursor e do Brave na instalação do projeto. |
-| `lib/workvm_ed25519.pub` | O site guarda a chave privada. Sem esta pública no `authorized_keys` do guest, o SSH recusa o login. |
+| `lib/session.sh` | Wayland, Docker e abertura do Cursor e do Brave na instalação do projeto. |
 | `lib/laravel-post-clone.sh` | O mesmo bootstrap Laravel (`.env`, UID do volume, `compose.dev.yaml`) estava copiado em dois `post-clone.sh`. O caminho do app é o argumento. |
 | `lib/project-start.sh` | A subida (fetch, compose, after_compose, wait URL, e2e) não se copia em cada projeto. O login chama este arquivo com o diretório de `current`, sem Cursor nem browser. A instalação passa `WORKVM_OPEN_APPS=1` e abre os dois. |
 | `*/start.hook.sh` | Passo pós-compose que não cabe em variável (`workvm_project_after_compose`). Roda antes do WAIT_URL. |
 | `mcps/<nome>.json` | Destino MCP (ex. `olie.json`). Só entra no merge se o conf ativo tem `MCP=<nome>`; `olie` só em olie/locav/televisao → `~/.cursor/mcp.json`. PRs usam `gh`, não MCP GitHub. |
 | `olie/` (projeto) | Definição Olie (`project.conf`, compose, overlay, e2e, prompts, cards). Clones da empresa no mesmo nível ficam fora do git. |
 | `olie/docs` (clone) | Só espelho de `olie-ai/docs` (docs.olie.ai). Agente **não** edita, rebaseia nem abre PR — ver `olie-docs-hands-off.mdc` / `olie/prompts/workflow-policy.md`. |
-| `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace, `config-vm.xml`). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
-| `opbed/sandbox/` | Isolamento exclusive (mutation/Pest) na Card Opbed: `project.sh` + compose slim + `hc-opbed-data`; contrato em `ORCHESTRATION.md`. |
+| `opbed/` (projeto) | Definição Opbed (`project.conf`, post-clone, workspace). Clones `opbed-backend/` / `opbed-frontend/` fora do git. |
+| `opbed/sandbox/` | Isolamento exclusive (mutation/Pest) no host-card Opbed: `project.sh` + compose slim + `hc-opbed-data`; contrato em `ORCHESTRATION.md`. |
 | `opbed/prompts/` | Prompts Opbed (implement/correct/pre-deploy/production-review + TDD, type coverage, mutation/coverage); sem cards/PRs; sync `config.prompts` via `opbed-prompts.mdc`. |
-| `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e, `config-vm.xml`, prompts, overlay, `sandbox/` + `hc-televisao-data`). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
+| `televisao/` (projeto) | Definição Televisão (`project.conf`, post-clone, workspace, e2e, prompts, overlay, `sandbox/` + `hc-televisao-data`). Clones `televisao-api/` / `front` / `meet-*` fora do git. |
 | `da-o-play/` (projeto) | Definição Press Play (`project.conf`, post-clone, workspace). Clone `da-o-play-api/` fora do git. |
 | `locav/` (projeto) | Definição Locav (`project.conf`, post-clone, start.hook, workspace, prompts, overlay, `sandbox/` + `hc-locav-data`). Clones `LocavApi/` / `locav-front/` fora do git. |
 | `boilerplate-laravel/` (projeto) | Definição (`project.conf`, post-clone, workspace). Clone em `boilerplate-laravel/boilerplate-laravel/` fora do git. |
 | `boilerplate-laravel/sandbox/` | Isolamento exclusive (mutation/Pest): `project.sh` + slim + `hc-boilerplate-laravel-data`; host-card; `ORCHESTRATION.md`. |
 | `boilerplate-laravel/prompts/` | Prompts (implementation/correction/pre-deploy/production-review + mutation/coverage); sem cards/PRs (`{{ feature }}`). |
 | `boilerplate-next/` (projeto) | Definição (`project.conf`, workspace). Clone em `boilerplate-next/boilerplate-next/` fora do git. Compose: `compose.yaml` no clone (dev no `up -d`; produção no profile `prod`). |
-| `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. |
+| `vid2agent-code/` (projeto) | Definição + prompts (`project.conf`, post-clone, workspace, `prompts/`). Clone em `vid2agent-code/vid2agent-code/` fora do git. API/Ollama no host. |
 | `use-url-query/` (projeto) | Definição (`project.conf`, workspace). Clones: lib `use-url-query/`, demos `use-url-query-demo-web/` + `use-url-query-demo-api/` (fora do git). Compose da lib: `docker-compose.yml`. |
 | `use-url-query/sandbox/` | Isolamento exclusive (bun test/coverage): `project.sh` + slim Bun+Node (`Dockerfile.backend` → `:tests`); host-card; `ORCHESTRATION.md`. Sem DB. |
 | `use-url-query/prompts/` | Prompts **do projeto** (lib + demo-web + demo-api); implement/correct/pre-deploy/production-review + TDD, coverage; mutation obrigatória (skip só explícito); agente escolhe os clones (`{{ feature }}`). |
 | `fabriciogferreira/` (projeto) | Portfólio Next (`project.conf`, post-clone, workspace). Clone em `fabriciogferreira/fabriciogferreira/` fora do git. Compose: `docker-compose.yaml`. |
 | `fabriciogferreira/sandbox/` | Isolamento exclusive (lint/build): `project.sh` + slim Node; host-card Next; `ORCHESTRATION.md`. Sem DB. |
 | `fabriciogferreira/prompts/` | Prompts (implementation/correction/pre-deploy/production-review; coverage/mutation N/A); sem cards/PRs (`{{ feature }}`). |
-| `*/config-vm.xml` | Domain libvirt do projeto (RAM/vCPU). Sem isso toda WorkVM vira clone genérico e o host de 32 GiB não distribui bem. |
-| `bin/apply-config-vm.sh` | XML mudou e a domain no host ficou velha. Com a VM `shut off`, aplica só RAM/vCPU (`setmaxmem`/`setvcpus`); não cria guest nem redefine UUID/disco. |
 | `*/overlay/` | Delta de Cursor que não pode ir no remoto da empresa. `cursor/` vira `.cursor` no clone. Skills do Boost vêm de `boost:update` no clone. |
-| `workspace.code-workspace` | No login o Cursor abre este meta-repo e os clones do projeto setado. Paths relativos ao arquivo, para valer em outro `$HOME`. |
-| `.config/` | Hyprland e sessão iguais em toda VM. Secrets em `environment.d/*.conf` ficam só no live. |
-| `code-profiles/` | Perfil do Cursor reaproveitável numa VM nova. |
+| `workspace.code-workspace` | Template multi-root do projeto. Host-cards geram workspace por unidade. |
+| `.config/` | Hyprland e sessão versionados para o host. Secrets em `environment.d/*.conf` ficam só no live. |
+| `code-profiles/` | Perfil do Cursor reaproveitável. |
 | `bin/check.sh` | Scripts mudam e ninguém roda shellcheck. Pega `set -u` em array vazio e o log de `COMPOSE_FILE`. |
 | `bin/patch-clone-cursor.sh` | `alwaysApply` de um clone vaza em todo chat multi-root. Patch local (`skip-worktree`), sem commit. |
 | `bin/maybe-project-setup.sh` | Primeiro boot sem projeto: o autostart do Hyprland não tem terminal visível. Abre o Kitty e o menu. |
-| `bin/hyprlauncher-virtio.sh` | Super+R chama o hyprlauncher e ele morre no virtio: o render node recusa CREATE_DUMB. O preload abre o nó primário, que aceita o buffer. |
-| `bin/workvm-install-guest-agent.sh` | VM já clonada não passa de novo pelo `vm-setup`. Uma vez dentro dela, instala o agente, o Avahi e liga o `sshd`. |
-| `bin/workvm-opencode.sh` | O plano do Cursor acaba e o chat perde modelo e MCP. Dentro da VM, instala o OpenCode 2, aponta para o Ollama da RTX (`10.0.2.2:11435`), copia `~/.cursor/mcp.json` e injeta o MCP GitHub remoto via `{file:github-pat}` (plugin do Cursor não vem no json; `{env:}` vira Bearer vazio). |
-| `bin/workvm-libvirt-qemu-hook.sh` | O libvirt de sessão não tinha hook. Sem ele a subida não copia o hostname e a `vid2agent-code` não publica a API nem sobe o Ollama. |
-| `bin/workvm-vid2agent-hook.sh` | Outra VM chama `10.0.2.2:18080` e `:11434` e toma connection refused. Na subida da `vid2agent-code` aplica o `hostfwd` e sobe o Ollama; na descida para o processo que este script iniciou. |
-| `bin/workvm-set-guest-hostname.sh` | Renomear a VM na libvirt não muda o hostname. O hook do host copia o nome da domain para dentro na subida e liga o `sshd`. |
-| `bin/workvm-ensure-card-vm.sh` | Cadastrar um card não cria a VM. No host, clona a modelo desligada para `projeto-codigo` e liga, ou só liga se essa domain já existe. |
-| `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo Card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
-| `televisao/sandbox/` | Overrides e profiles slim do piloto Televisão para o Sandbox Manager (sem host network no e2e do sandbox). |
-| `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial (gap + N× next mutation) gasta wall-clock; contrato do fan-out exclusive/compatible na Card VM. |
-| `olie/sandbox/` | Isolamento exclusive (mutation/Pest/e2e) na Card VM Olie: `project.sh` + compose slim + PCOV; contrato em `ORCHESTRATION.md`. |
-| `bin/workvm-rename-base-dev-disk.sh` | Domain já é `base-dev`; o qcow2 ainda se chama `archlinux.qcow2` (root). Renomeia disco + XML com a VM shut off. |
-| `bin/workvm-card-agent.py` | O site em produção não alcança `192.168.122.1`. No host, busca o pedido na API e clona ou apaga a VM. Não abre porta. |
+| `bin/workvm-opencode.sh` | O plano do Cursor acaba e o chat perde modelo e MCP. Instala o OpenCode 2, espelha rules/skills/agents do meta + overlay `~/.cursor` em `~/.config/opencode`, aponta Ollama nas 3060, traduz `mcp.json`. |
+| `bin/workvm-sandbox` / `lib/sandbox/` | No mesmo card, testes/mutation/e2e brigam pelo mesmo compose. Gerencia sandboxes (container) com worktree, rede, DB e Redis isolados; jobs com logs. |
+| `televisao/sandbox/` | Overrides e profiles slim Televisão para o Sandbox Manager. |
+| `televisao/sandbox/ORCHESTRATION.md` | Colleague review sequencial gasta wall-clock; contrato do fan-out exclusive/compatible no host-card. |
+| `olie/sandbox/` | Isolamento exclusive (mutation/Pest/e2e) no host-card Olie: `project.sh` + compose slim + PCOV; contrato em `ORCHESTRATION.md`. |
 | `bin/workvm-docker-mcp.sh` | Cursor sobe no login antes do compose. `docker exec` do Boost/Playwright falha uma vez e o MCP fica `failed`. Espera o container (stderr silencioso) e só então encaminha o stdio. |
 | `bin/workvm-playwright-mcp.sh` | `@playwright/mcp@latest` pede chrome-for-testing e sandbox; a imagem e2e só tem Chromium em `/ms-playwright`. Espera o container e sobe o MCP headless com esse binário e `--no-sandbox`. |
 | `bin/workvm-ensure-mise-node.sh` | Omarchy node lazy / reinstall Cursor deixa `npx` sem binário; MCP PrimeVue morre na discovery. Reinstala o node ativo se `npx -v` falhar. |
 | `bin/workvm-primevue-mcp.sh` | `command: npx` no mcp.json quebra com shim mise incompleto. Garante node e chama `@primevue/mcp` com npx absoluto sob `installs/node`. |
 | `bin/workvm-olie-mcp-proxy.py` | O Cursor ignora o Bearer do `olie-flow-ai` porque `api.olie.ai` publica OAuth. O agente do prompt fica `needsAuth` com o desktop já autenticado. Em `127.0.0.1:47331` responde 404 na descoberta e encaminha o MCP com o token. |
 | `bin/workvm-olie-management-read.sh` | Fallback HTTP do Caderno quando MCP notebook está `needsAuth`/401. Preferir `get-notebook-tool` + `read-notebook-page-tool`. Card/funil: MCP. |
-| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado (blob HEAD); `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `vm-setup` / `project-setup` / `project-start`. Ensure/sandbox: **block** pede `all` (não allow sandboxed). |
-| `bin/workvm-host-card-agent-bridge` + `systemd/workvm-host-card-agent-bridge.service` | Shell do agente pode “aprovar” ensure/exec sem elevar `all` (sock oculto). Bridge no user systemd processa `.workvm-agent-ensure-request.json` e `.workvm-agent-docker-request.json` no meta worktree. |
+| `.cursor/permissions.json` | Classificador Auto-review trata token+rede como risco alto. Fonte versionado (blob HEAD); `workvm_apply_cursor_permissions` copia para `~/.cursor/permissions.json` no `pull-meta` / `project-setup` / `project-start`. Ensure/sandbox: **block** pede `all` (não allow sandboxed). |
+| `manager.sh` / `actions/` | Menu TUI (Open/Stop/Destroy/Card Spec/Gap/Pest/Coverage/Mutation/Pre-QA). Orquestra medição/spec/handoff; agente cria código e revisa produto. |
+| `bin/workvm-olie-card-dump` / `lib/olie_card_dump.py` | Spec do card (project + Caderno + media) → `olie/cards/<CODE>/*.md`. Implementation/correction lê o dump; não refaz MCP get-project/notebook/media. |
+| `bin/workvm-host-card-gap` / `lib/gap/` | Seed de gap (Card Spec + testes do change-set) → `latest.json` / `gap-seed.md`. Agente só julga Tests to add (`ARTIFACT.md`). |
+| `bin/workvm-host-card-pre-qa` / `lib/pre_qa/` | Handoff mecânico: commitlint, `gh pr`, checklist, forms docs/PR, move QA/CR → `latest.json`. Agente julga UX/docs/evidência (`ARTIFACT.md`). |
+| `lib/pest/` / `olie/prompts/pest-ledger.md` | Suite full do manager **Pest** → `latest.json` + linha no ledger; `pest-parallel.md` só consome artefato se vermelho. |
+| `bin/workvm-host-card-coverage` / `lib/coverage/` | Coverage do change-set no host-card: mede, scoreia gates, grava `latest.json`/`latest.md` e upsert no ledger. Agente só implementa gaps (`ARTIFACT.md`). |
+| `bin/workvm-host-card-mutation` / `lib/mutation/` | Mutation do change-set no host-card: baseline + `pest --mutate` por `--class`, scoreia in-scope UNTESTED, grava artefato e upsert no ledger. Agente só aperta asserts (`ARTIFACT.md`). |
+| `bin/workvm-host-card` / `lib/host-card.sh` | Unidade de card/projeto no jarvis (worktree, portas, DNS, compose). Sem domain libvirt. |
+| `bin/workvm-host-card-agent-bridge` + `systemd/workvm-host-card-agent-bridge.service` | Shell do agente pode “aprovar” ensure/exec sem elevar `all` (sock oculto). Bridge no user systemd processa pedidos no meta worktree. |
 | `bin/workvm-host-card-agent-ensure` / `workvm-host-card agent-ensure` | Agente sandboxed grava o pedido e espera o resultado do bridge. |
-| `bin/workvm-host-card-agent-docker` / `workvm-host-card agent-docker` | Depois do ensure, `docker exec` no container do card via bridge (Pest/artisan/bun) quando o Shell ainda esconde `docker.sock`. |
+| `bin/workvm-host-card-agent-docker` / `workvm-host-card agent-docker` | Depois do ensure, `docker exec` no container do card via bridge quando o Shell ainda esconde `docker.sock`. |
 | `systemd/workvm-olie-mcp-proxy.service` | Sem o proxy no login o Cursor abre a URL local e o MCP não conecta. `WantedBy=default.target`, só com `MCP=olie`. |
-| `systemd/workvm-card-agent.service` | Sem sessão gráfica o agente não sobe. `WantedBy=default.target` no login do host. |
-| `bin/workvm-open-project-vm.sh` | Projeto sem card não tem clone. Liga a domain que já tem o nome do projeto e publica o SSH do chat. Não clona. |
-| `bin/workvm-drop-card-vm.sh` | Apagar o card conclui o trabalho e a VM clone continua no host. Destrói só `projeto-codigo` e o disco dela; a modelo fica. |
-| `bin/workvm-shutdown-card-vm.sh` | O chat acaba e o clone do card continua ligado. Desliga `projeto-codigo` sem apagar a domain nem o disco; a modelo fica. |
 | `lib/safe-fs.sh` | `rm`/`rsync` com dest vazio ou `$HOME` apagam o sistema. Allowlist antes de destrutivo (workvm / `.sandboxes`). |
 | `HISTORICO.md` | Problema resolvido: o que era, por que doía, como foi feito. |
-| `host-setup.md` | O host ficou sem screenshot e com volume irregular. Mapa do que foi instalado e configurado (Flameshot, portais, Fifine). |
-| `life.md` | Vida operacional (hardware, host, VMs, fluxos, atritos) num só lugar para achar onde economizar tempo. Não substitui o HISTORICO. |
+| `host-setup.md` | Mapa do que foi instalado e configurado no host (Flameshot, portais, Fifine, GPU). |
+| `life.md` | Vida operacional (hardware, host, fluxos, atritos) num só lugar. Não substitui o HISTORICO. |
+| `host-cards-no-vm.md` | Contrato host-card (aceite cumprido — programação só no jarvis). |
 | `olie/prompts/` | Prompts do projeto **Olie** (colar no agente; ao lado de `olie/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
-| `locav/prompts/` | Prompts do projeto **Locav** (colar no agente; ao lado de `locav/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
-| `televisao/prompts/` | Prompts do projeto **Televisão** (colar no agente; ao lado de `televisao/cards/`). Inglês, Markdown; aspas / `{{ }}` não se traduz. |
+| `olie/prompts/workflow-policy.md` + `workflow-policy/` | Índice fino + módulos (`tools`, `gates`, `board`, `host`, `card-context`, `evidence`). Agente abre só o módulo do prompt. |
+| `locav/prompts/` | Prompts do projeto **Locav**. |
+| `televisao/prompts/` | Prompts do projeto **Televisão**. |
 | `.cursor/rules/opbed-prompts.mdc` | O Markdown destes três prompts muda no git e o site do Opbed fica com a cópia velha. Create, update ou delete também grava `config.prompts`. |
 | `vid2agent-code/prompts/` | Prompts do projeto **vid2agent-code**. |

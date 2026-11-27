@@ -1,8 +1,8 @@
 # Setup do host
 
-O host (Hyprland, fone no Fifine, monitor DP-1) ficou sem screenshot e com volume irregular. Este arquivo é o mapa do que foi instalado e configurado para isso. Não descreve as WorkVMs.
+O host (Hyprland, fone no Fifine, monitor DP-1) ficou sem screenshot e com volume irregular. Este arquivo é o mapa do que foi instalado e configurado para isso.
 
-O que vale em toda VM nova está no `vm-setup.sh` e no `.config/`. O áudio do Fifine fica só nesta máquina (`~/.config/easyeffects/`).
+Overlay de sessão: `~/git/.config/` → `~/.config` (quando aplicado). O áudio do Fifine fica só nesta máquina (`~/.config/easyeffects/`).
 
 ## Docker no jarvis (host-cards)
 
@@ -22,24 +22,13 @@ Se `/etc/group` já tem o usuário mas `id -nG` ainda não: a sessão nasceu ant
 
 Sock oculto **só no Shell do agent** (footer SANDBOXING) é outro caso — ver workflow-policy **Silent sandbox** / bridge. Aqui o sock existe e o `id` sem `docker` é host real.
 
-## Rede das WorkVMs (UFW + libvirt)
+## GPUs NVIDIA no jarvis (3060s no host, não vfio)
 
-**Problema.** `pacman` / HTTPS na guest timeout; ping para `1.1.1.1` ok. Parecia mirror ou clone da modelo `base-dev` (antes `archlinux`) — não era. O UFW do host (`DEFAULT_FORWARD_POLICY=DROP`) só liberava forward `virbr0` → NIC de saída. A regra ficou em `enp7s0` depois que a interface real passou a ser `enp6s0`. ICMP ainda passava; TCP (mirrors, git, gh) não. Afeta **todas** as VMs na rede `default`, não o disco da modelo.
+**Problema.** As duas RTX 3060 (`01:00.0` PCIe 5.0, `08:00.0`) iam para `vfio-pci` no boot (`ids=10de:2504,10de:228e` no initramfs/UKI). Só a RTX 5060 (`09:00.0`, quando presente) ficava no `nvidia`. Comentar `/etc/modprobe.d/vfio.conf` sem `limine-mkinitcpio` **não** bastava — o UKI antigo ainda aplicava os IDs.
 
-**Como ficou.** Rotas no UFW apontam para a NIC atual:
+**Política.** 3060s **livres no host** (OpenCode / Ollama: `CUDA_VISIBLE_DEVICES=0,1` + `OLLAMA_SCHED_SPREAD`). Sem passthrough de GPU para guests de programação (não usamos mais).
 
-```bash
-# conferir a NIC de uplink
-ip -br link
-
-# trocar se a regra ainda citar o nome antigo
-sudo ufw route delete allow in on virbr0 out on enp7s0
-sudo ufw route allow in on virbr0 out on enp6s0
-sudo ufw reload
-sudo ufw status verbose
-```
-
-Vale o mesmo em IPv6 (`user6.rules`). Depois de trocar placa/PCI (nome `enp*` muda), rever essas rotas antes de culpar mirror ou a imagem `base-dev`.
+Se alguma 3060 ainda aparecer em `vfio-pci`: limpar `ids=` em `/etc/modprobe.d/vfio.conf`, `limine-mkinitcpio`, reboot; backups antigos podem existir em `/var/lib/workvm/vfio-stash/`.
 
 ## Máquina
 
@@ -62,7 +51,7 @@ Vale o mesmo em IPv6 (`user6.rules`). Depois de trocar placa/PCI (nome `enp*` mu
 | `grim` | 1.5.0-2 | Captura que o portal do Hyprland usa. O Flameshot 14 não lê chave de grim no ini |
 | `easyeffects` | 8.3.0-1 | Nivelar volume no fone |
 
-`vm-setup.sh` instala flameshot e os três portais. O `grim` e o EasyEffects foram instalados à mão nesta máquina. O `grim` saiu do `vm-setup` de propósito: o ini antigo do Flameshot (`useGrimAdapter`, `disabledGrimWarning`) o binário 14 recusa. O portal do Hyprland continua precisando do `grim` no host.
+Flameshot e os três portais + `grim` + EasyEffects estão no host. O Flameshot 14 não lê `useGrimAdapter` / `disabledGrimWarning`. O portal do Hyprland continua precisando do `grim`.
 
 ## Screenshot
 

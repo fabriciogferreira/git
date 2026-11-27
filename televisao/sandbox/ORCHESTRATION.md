@@ -6,7 +6,7 @@ vários `next mutation`. Cada passo esperava o anterior.
 
 Objetivo: manter os **gates** (veredito + gap + mutation + coverage + testes),
 mas disparar tudo a partir de **um** paste (`colleague-review.md` = dispatcher)
-e rodar o que for **exclusive** em sandboxes paralelos **dentro** da WorkVM
+e rodar o que for **exclusive** em sandboxes paralelos **dentro** da host
 do Card (`televisao-{code}`), sem clonar outra VM.
 
 CLI / estado: `~/git/bin/workvm-sandbox`, `~/git/televisao/sandbox/README.md`.
@@ -34,7 +34,7 @@ outcome** no fim do dispatcher.
 
 ### Compatible (podem coexistir)
 
-Não brigam por worktree / DB / Redis / cobertura. Rodam na **própria Card VM**
+Não brigam por worktree / DB / Redis / cobertura. Rodam na **própria host-card**
 ou no **mesmo** sandbox.
 
 Exemplos:
@@ -81,10 +81,10 @@ também é **`correct mutations`** / **`correct coverages`** (dreno paralelo);
 `next mutation` / `next coverage` = opt-in um arquivo. Mutation × coverage
 no **mesmo** sandbox **não**.
 
-### Alvo — fan-out de sandboxes no mesmo Card VM
+### Alvo — fan-out de sandboxes no mesmo host-card
 
 ```text
-televisao-{code}                         # WorkVM do Card
+televisao-{code}                         # host do Card
 │
 ├── (na VM — compatible; disparados pelo colleague-review.md)
 │   ├── colleague-review-core
@@ -145,8 +145,8 @@ com shards de mutation (desde que o teto de sandboxes comporte — senão fila).
 
 | Camada | Papel |
 | --- | --- |
-| Host libvirt | Uma domain `televisao-{code}` por Card |
-| Card VM | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
+| Host-card | Uma domain `televisao-{code}` por Card |
+| host-card | Compatible + orquestração (`colleague-review.md`) + desktop/agente |
 | Sandbox (Docker na guest) | Exclusive: mutation shard, pest, e2e, … |
 
 Sandboxes **não** são VMs novas.

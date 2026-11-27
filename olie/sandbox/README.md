@@ -14,7 +14,7 @@ mutation): **[ORCHESTRATION.md](./ORCHESTRATION.md)**.
 ~/git/bin/workvm-sandbox create --name tests-a --project olie --profile tests
 ~/git/bin/workvm-sandbox create --name e2e-c --project olie --profile e2e
 
-# Pest / mutation — NÃO usar docker exec olie-api-main (DB da Card VM)
+# Pest / mutation — NÃO usar docker exec olie-api-main (DB da host-card)
 ~/git/bin/workvm-sandbox job run mut-envelope -- \
   php artisan test --compact tests/Feature/AI/AiAgentContextResponseEnvelopeTest.php
 
@@ -27,21 +27,21 @@ reuso de slot — ver ORCHESTRATION. Cap explícito: `WORKVM_SANDBOX_MAX=N`.
 
 Primeiro `create` / `host-card ensure` faz build de `olie/api-main-sandbox:latest`
 (PCOV). Se `olie/api-main:latest` ainda não existir, builda a base via
-`docker compose build web` em `~/git/olie` (não exige Card VM já no ar). Precisa
+`docker compose build web` em `~/git/olie` (não exige host-card já no ar). Precisa
 de acesso real a `/var/run/docker.sock` (grupo `docker` + re-login).
 
 ## Concorrência (resumo)
 
 | Tipo | Onde | Exemplo |
 | --- | --- | --- |
-| **Compatible** | Card VM ou mesmo sandbox | gap analysis (só leitura) + miolo colleague-review-core |
+| **Compatible** | host-card ou mesmo sandbox | gap analysis (só leitura) + miolo colleague-review-core |
 | **Exclusive** | Sandbox dedicado (ou fila) | mutation × `php artisan test`; 1 arquivo mutate por sandbox |
 
 ## O que isola
 
 | Recurso | Como |
 | --- | --- |
-| Código | worktree sob `~/git/olie/.sandboxes/<id>/` (`api-main`, `olie-fronts`); `vendor` bind-mount da Card VM (`SB_API_VENDOR`) |
+| Código | worktree sob `~/git/olie/.sandboxes/<id>/` (`api-main`, `olie-fronts`); `vendor` bind-mount da host-card (`SB_API_VENDOR`) |
 | DB / Redis / Mongo | stack compartilhado `hc-olie-data` (mesmo dos host-cards); por sandbox: `api_sb_<id>` / `testing_sb_<id>`(+`_test_*`) + `REDIS_PREFIX`; `phpunit.xml` do worktree aponta para o testing próprio. Opt-out: `WORKVM_SANDBOX_SHARED_DATA=0` (volta instância slim por sandbox) |
 | Rede | bridge `sb-<id>_sb_net` + externa `hc-olie-data` (e2e **sem** `network_mode: host`) |
 | Portas host | só após `gui attach` (`compose.gui.yml`) |

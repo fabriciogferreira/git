@@ -43,10 +43,7 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
--- Direct hyprlauncher dies on virtio: render node rejects CREATE_DUMB.
--- Wrapper opens the primary node. Without virgl the compositor also advertises
--- FP16 dmabuf (AB4H) that GBM cannot allocate — pin SDR + KMS-scannable formats.
-local menu        = "$HOME/git/bin/hyprlauncher-virtio.sh"
+local menu        = "hyprlauncher"
 
 
 -------------------
@@ -62,7 +59,6 @@ hl.on("hyprland.start", function ()
 --   hl.exec_cmd(terminal)
 --   hl.exec_cmd("nm-applet")
 --   hl.exec_cmd("waybar & firefox")
-    -- No wallpaper (saves guest RAM/CPU; solid Hyprland clear color only).
     hl.exec_cmd("/usr/local/bin/wayland-vdagent")
     -- workvm is WantedBy=default.target (graphical-session refuses manual start and
     -- SDDM+start-hyprland never activate it). Restart once Wayland is up: RemainAfterExit
@@ -263,18 +259,6 @@ hl.config({
         disable_hyprland_logo   = true,
     },
 })
-
--- virtio_gpu without virgl: EGL lists FP16 formats hyprtoolkit picks first (AB4H)
--- and CREATE_DUMB returns EINVAL. SDR + KMS-only dmabuf keeps AR24/XR24.
-hl.config({
-    render = {
-        use_fp16 = 0,
-    },
-    quirks = {
-        skip_non_kms_dmabuf_formats = true,
-    },
-})
-
 
 ---------------
 ---- INPUT ----

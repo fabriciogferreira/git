@@ -6,7 +6,6 @@
 !README.md
 !HISTORICO.md
 !project-setup.sh
-!vm-setup.sh
 !vm.local.conf.example
 !.shellcheckrc
 # Folder ~/git: SCM só o meta-repo (não clones olie/televisao/…).
@@ -33,6 +32,11 @@ vm.local.conf
 !life.md
 !host-setup.md
 !host-cards-no-vm.md
+!manager.sh
+!config/
+!config/**
+!actions/
+!actions/**
 # Secrets locais de sessão (OLIE_FLOW_AI_MCP_TOKEN, OLIE_MANAGEMENT_TOKEN etc.) — nunca versionar
 .config/environment.d/*.conf
 # Local compose secrets / machine-specific overrides
@@ -64,7 +68,6 @@ olie/*
 !olie/prompts/**
 !olie/sandbox/
 !olie/sandbox/**
-!olie/config-vm.xml
 olie/**/.env
 olie/**/.cursor/mcp.workvm-user
 olie/.sandboxes/
@@ -90,7 +93,6 @@ opbed/*
 !opbed/sandbox/**
 !opbed/prompts/
 !opbed/prompts/**
-!opbed/config-vm.xml
 opbed/**/.env
 opbed/**/.cursor/mcp.workvm-user
 
@@ -101,7 +103,6 @@ televisao/*
 !televisao/project.conf
 !televisao/post-clone.sh
 !televisao/workspace.code-workspace
-!televisao/config-vm.xml
 !televisao/prompts/
 !televisao/prompts/**
 !televisao/cards/
@@ -135,7 +136,6 @@ locav/*
 !locav/post-clone.sh
 !locav/start.hook.sh
 !locav/workspace.code-workspace
-!locav/config-vm.xml
 !locav/prompts/
 !locav/prompts/**
 !locav/overlay/

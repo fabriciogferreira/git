@@ -1,20 +1,20 @@
 ---
-description: Como a work VM opera — projeto ativo, workspace, patch de clones, MCP
+description: Como o host opera — projeto ativo, workspace, patch de clones, MCP
 alwaysApply: true
 ---
 
 # Meta-repo `~/git`
 
-Este repositório **não** é um app de produto. É o meta-repo que provisiona e amarra **VMs de desenvolvimento** a um projeto: clona repos, sobe Docker, abre Cursor/browser no login gráfico.
+Este repositório **não** é um app de produto. É o meta-repo que amarra o **host (jarvis)** a um projeto: clona repos, sobe Docker/MCP no login, e isola **host-cards**.
 
-No login, o Cursor abre o meta-repo **`~/git`** junto com os clones do projeto setado. As rules em `.cursor/rules` valem nessa janela; prompts de produto ficam em `olie/prompts/`, `vid2agent-code/prompts/`, etc. (colar no agente). O projeto ativo está em `workvm-project.mdc`. O overlay guarda `cursor/` sem ponto, para essas rules de produto não carregarem daqui; a cópia para o clone é que vira `.cursor`.
+No login, o Cursor pode abrir o meta-repo **`~/git`** junto com os clones do projeto setado. As rules em `.cursor/rules` valem nessa janela; prompts de produto ficam em `olie/prompts/`, `vid2agent-code/prompts/`, etc. (colar no agente). O projeto ativo está em `workvm-project.mdc`. O overlay guarda `cursor/` sem ponto, para essas rules de produto não carregarem daqui; a cópia para o clone é que vira `.cursor`.
 
-## Como a VM sabe o projeto ativo
+## Como o host sabe o projeto ativo
 
 1. **Para o agente Cursor (preferido):** `.cursor/rules/workvm-project.mdc` (`alwaysApply`)
    - Gerado por `project-setup.sh`
    - Lista projeto, URLs git, caminhos absolutos e branch
-   - Arquivo local da VM (gitignored) — não editar à mão
+   - Arquivo local (gitignored) — não editar à mão
 2. **Runtime/systemd:** `~/.config/workvm/current` → pasta do projeto na raiz do meta-repo (`olie/`, `televisao/`, …)
 3. **Fonte da verdade:** `project.conf` nessa pasta (`CLONE_REPOS`)
 4. `workvm.service` roda `lib/project-start.sh` com o diretório de `current` no login
@@ -23,20 +23,22 @@ No login, o Cursor abre o meta-repo **`~/git`** junto com os clones do projeto s
 
 `<id>` é o basename da pasta do projeto (`olie`, `televisao`, `opbed`, …). Definição na raiz do meta-repo.
 
+Cards de funil usam **host-card** (`bin/workvm-host-card`), não o compose “oficial” do login sozinho. Contrato: `host-cards-no-vm.md` + `olie/prompts/workflow-policy/host.md`.
+
 O porquê de cada pasta e script está em `~/git/.cursor/rules/layout.mdc`. Não copie essa tabela para cá.
 
-## Workspace Cursor (opção recomendada)
+## Workspace Cursor
 
 `workspace.code-workspace` na pasta do projeto (ex. `olie/workspace.code-workspace`):
 
 - root **`~/git`** → este meta-repo (rules, prompts por produto, overlay, projeto setado)
 - root **cada clone** → `.cursor` daquele repositório (MCP de projeto vira stub; o merge ativo está em `~/.cursor/mcp.json`)
 
-A instalação do projeto abre esse arquivo (`WORKVM_OPEN_APPS=1`). A janela é este repositório mais o projeto que a VM tem setado. O login da VM não abre o Cursor.
+A instalação do projeto abre esse arquivo (`WORKVM_OPEN_APPS=1`). Host-cards geram um workspace próprio por unidade.
 
 ## Patch local nos clones (multi-root)
 
-`workvm_apply_files` (setup + `project-start.sh` de **todo** projeto) aplica um patch **só na VM**, sem push:
+`workvm_apply_files` (setup + `project-start.sh` de **todo** projeto) aplica um patch **só nesta máquina**, sem push:
 
 - `.cursor/rules/*.mdc` com `alwaysApply: true` → `false` + `globs: "**/*"`
 - `AGENTS.md` → stub + conteúdo em `.cursor/rules/workvm-local-agents.mdc` (globs)
@@ -51,9 +53,9 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 
 - Auto-review: fonte `~/git/.cursor/permissions.json`. `workvm_apply_cursor_permissions`
   promove para **`~/.cursor/permissions.json`** (user-level) em `bin/pull-meta.sh`,
-  `vm-setup.sh`, `project-setup.sh` e `lib/project-start.sh`. Sem essa cópia o
-  classificador fica velho depois do pull. Rules/prompts do meta-repo entram pelo
-  próprio `git pull` (workspace `~/git`); permissions precisa do user-level.
+  `project-setup.sh` e `lib/project-start.sh`. Sem essa cópia o classificador fica
+  velho depois do pull. Rules/prompts do meta-repo entram pelo próprio `git pull`
+  (workspace `~/git`); permissions precisa do user-level.
 - No login (`project-start.sh`, depois do overlay), `workvm_apply_mcp` junta
   **só** `mcps/<MCP>.json` quando o `project.conf` declara `MCP=`, mais os
   `.cursor/mcp.json` dos clones e dos e2e, em **`~/.cursor/mcp.json`**
@@ -77,9 +79,8 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 - PRs no pre-QA: **criar/editar** com **GitHub CLI** (`gh`) primeiro (exceção ao MCP
   GitHub — form deferral). **Leituras** (login, assignees, labels, PRs recentes):
   GitHub MCP — não `gh` no shell só para descobrir (Auto-review pede OK). Auth do
-  CLI: `gh auth login`. Pacote no `vm-setup.sh`. Approve/merge no colleague review:
-  GitHub MCP; `gh` se MCP falhar. Detalhe: `olie/prompts/workflow-policy.md`
-  (**GitHub reads vs writes**) e `pre-qa.md` Phase 4.
+  CLI: `gh auth login`. Approve/merge no colleague review: GitHub MCP; `gh` se MCP falhar.
+  Detalhe: `olie/prompts/workflow-policy.md` (**GitHub reads vs writes**) e `pre-qa.md` Phase 4.
 - Clone dos `CLONE_REPOS`: com `gh` autenticado, `workvm_clone_repo` usa `gh repo clone`
   (HTTPS + `gh auth setup-git`) — sem chave SSH. Sem sessão, cai no `git clone` da URL
   do `project.conf`.
@@ -98,4 +99,4 @@ Assim rules de um clone não entram em todo chat multi-root. **Não commitar** e
 - Escopo do meta vs clone (delta mínimo; repo próprio → editar o clone): `purpose.mdc`
 - Commits/PRs só quando pedido; sem `Co-Authored-By` de AI
 - Não commitar secrets
-- Scripts de bootstrap: `vm-setup.sh` / `project-setup.sh`
+- Bootstrap: `project-setup.sh` (+ `workvm.service` / `project-start.sh` no login)

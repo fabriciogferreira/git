@@ -26,7 +26,7 @@ Com N arquivos de mutation > teto, fila (ver ORCHESTRATION).
 
 | Tipo | Onde | Exemplo |
 | --- | --- | --- |
-| **Compatible** | Card VM ou mesmo sandbox | gap analysis + miolo do colleague review |
+| **Compatible** | host-card ou mesmo sandbox | gap analysis + miolo do colleague review |
 | **Exclusive** | Sandbox dedicado (ou fila) | mutation × artisan test; 1 arquivo mutate por sandbox |
 
 ## O que isola

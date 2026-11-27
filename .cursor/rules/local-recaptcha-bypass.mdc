@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Local reCAPTCHA bypass (automatic)
 
-When the user asks for something that needs getting past reCAPTCHA on this WorkVM (browser login, e2e `identify`, opening Studio after auth, etc.), **apply the documented env bypass yourself**. Do not ask them to edit `.env` by hand. Do **not** comment out or delete `RecaptchaValidate`, front `getToken()`, or related code.
+When the user asks for something that needs getting past reCAPTCHA on this host (browser login, e2e `identify`, opening Studio after auth, etc.), **apply the documented env bypass yourself**. Do not ask them to edit `.env` by hand. Do **not** comment out or delete `RecaptchaValidate`, front `getToken()`, or related code.
 
-Canonical steps: `~/git/olie/prompts/implementation.md` §7 **Temporary E2E CAPTCHA**.
+Canonical steps: `~/git/olie/prompts/workflow-policy/host.md` → **Temporary E2E CAPTCHA**.
 
 ## Server (always for API/e2e)
 

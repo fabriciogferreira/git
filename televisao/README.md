@@ -2,7 +2,7 @@
 
 | O quê | Onde | No meta-repo? |
 | --- | --- | --- |
-| Definição do projeto | `project.conf`, `post-clone.sh`, `workspace.code-workspace`, `config-vm.xml` | **Sim** |
+| Definição do projeto | `project.conf`, `post-clone.sh`, `workspace.code-workspace` | **Sim** |
 | Prompts | `prompts/` | **Sim** |
 | Overlay de mídia | `overlay/` (`cursor/` vira `.cursor` no clone) | **Sim** |
 | Análises de mídia | `cards/{CARD_CODE}/{MEDIA_ID}.md` | **Sim** |
@@ -11,4 +11,4 @@
 
 Compose fica no api (`televisao-api`). Setup: `./project-setup.sh televisao`.
 
-Sandboxes isolados (testes/mutation/e2e em paralelo no mesmo Card): `sandbox/README.md` e `~/git/bin/workvm-sandbox`.
+Host-cards + sandboxes (testes/mutation/e2e em paralelo): `sandbox/README.md` e `~/git/bin/workvm-sandbox` / `workvm-host-card`.

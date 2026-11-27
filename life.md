@@ -1,6 +1,6 @@
 # life.md — o que me faz ganhar tempo
 
-Documento vivo de **tudo que importa na minha vida operacional** (máquina, host, VMs, fluxos, atritos) e decisões que empurram os objetivos abaixo.  
+Documento vivo de **tudo que importa na minha vida operacional** (máquina, host, host-cards, fluxos, atritos) e decisões que empurram os objetivos abaixo.  
 Não substitui `HISTORICO.md` (lá: narrativa do problema resolvido, se precisar).
 
 **Como usar**
@@ -10,7 +10,7 @@ Não substitui `HISTORICO.md` (lá: narrativa do problema resolvido, se precisar
 
 ## Objetivos
 
-1. **Economizar tempo** — menos atrito no dia a dia (host, VMs, ferramentas, decisões repetidas).
+1. **Economizar tempo** — menos atrito no dia a dia (host, host-cards, ferramentas, decisões repetidas).
 2. **Aumentar a renda** — mais capacidade de gerar receita (trabalho, produtos, automação que escala).
 3. **Acumular capital** — transformar renda em patrimônio (ativos, estoque de valor).
 4. **Guardar dinheiro de forma segura** — preservar o que já existe (risco baixo, liquidez quando preciso, sem buracos óbvios).
@@ -24,9 +24,9 @@ Só o que **ainda falta**. Ao concluir: apague daqui e atualize o **estado** (Ha
 Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 
 - [ ] **Trocar o host de Omarchy para Arch Linux**
-  - **Por quê:** Arch é mais leve que Omarchy; as WorkVMs já usam Arch — manter distros diferentes exige mais conhecimento e dobra atrito (pacotes, paths, hábitos).
-  - **Objetivo:** economizar tempo (uma só “língua” host+guest) e sobrar CPU/RAM/disco para VMs e trabalho.
-  - **Cuidado:** backup de `~/git`, `life.md`, hooks Ollama (`~/bin`, `~/.config/libvirt/hooks`, sudoers), `environment.d` (tokens), imagens libvirt; reaplicar Hyprland/meta-repo com cuidado.
+  - **Por quê:** Arch é mais leve que Omarchy; uma só distro no jarvis.
+  - **Objetivo:** economizar tempo e sobrar CPU/RAM/disco para host-cards e trabalho.
+  - **Cuidado:** backup de `~/git`, `life.md`, `environment.d` (tokens), Docker volumes; reaplicar Hyprland/meta-repo com cuidado.
 
 - [ ] **Descobrir qual outra tarefa atribuir à RTX 5060**
   - **Por quê:** VLM já saiu da 5060 (está na RX 580); a 5060 está livre sem papel fixo — precisa de carga que pague o silício.
@@ -59,12 +59,6 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Muito com pouco:** gravar com o setup que já serve o canal; não investir em plataforma cara antes de ter lista/interessados.
   - **Entrega (quando desbloquear):** 1 oferta mínima (tema validado pelo canal) + página/checkout simples + 1 venda ou waitlist real.
 
-- [ ] **Otimizar eficiência das WorkVMs** *(roadmap ponto a ponto — ver §1)*
-  - **Por quê:** 32 GB no host; VM mal dimensionada ou I/O/CPU emulado desperdiça tempo e impede 2ª VM útil.
-  - **Objetivo:** economizar tempo + **muito com pouco**.
-  - **Como:** um item do roadmap por vez; ao concluir → marcar lá, atualizar estado, não acumular `[x]` eterno nesta lista.
-  - **Entrega:** roadmap §1 zerado (ou só itens “depois / se doer” restantes).
-
 - [x] **Remover `projects/` do meta-repo (migrar cada id para a pasta do produto)**
   - **Por quê:** árvore dupla — `projects/<id>/` e clones em `olie/` / etc.
   - **Ganho:** um lugar por projeto; menos hop de caminho.
@@ -72,11 +66,11 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
   - **Após migrar nesta VM:** `./project-setup.sh <id>` de novo (atualiza `~/.config/workvm/current`).
 
 - [ ] **Descobrir utilidade para os 2 SSDs sobrando**
-  - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar VMs, libvirt images, Docker, backups locais sem comprar outro drive.
+  - **Por quê:** disco parado = capital ocioso; NVMe livre pode acelerar Docker, host-cards, backups locais sem comprar outro drive.
   - **Objetivo:** **muito com pouco** + economizar tempo (I/O menos gargalo).
   - **Já definido:** MoveSpeed no **M2_1** = OS do dia a dia (máx. velocidade + mín. latência).
   - **Sobrando a mapear:** Samsung 980 PRO 1 TB; Samsung 970 EVO Plus 250 GB *(slots + papel)*.
-  - **Candidatos:** imagens libvirt / `~/.local/share/images`; scratch Docker; cache de builds; backup local.
+  - **Candidatos:** scratch Docker / host-cards; cache de builds; backup local.
   - **Entrega:** atualizar a tabela de armazenamento (slot + papel + por quê) para os dois Samsung.
 
 - [ ] **Empreendimento de ventoinhas** *(renda / produto)*
@@ -119,19 +113,19 @@ Dependências: `depends:` — não comece a filha antes da mãe estar feita.
 
 Perguntas abertas. Quando tiver resposta confiável → mover para **Dúvidas respondidas** (não deixar a resposta só na cabeça).
 
-- **Cards/projetos no host sem WorkVM?** *(RAM / operação)*
-  - Contexto: N cards × N projetos no jarvis (32 GiB), uma janela Cursor por card (Opbed = por projeto); sandboxes já isolam jobs na guest.
-  - Resposta desejada / checklist: `host-cards-no-vm.md` (branch `experiment/host-cards-no-vm`). Aceite = §9 desse arquivo; até lá WorkVM segue.
-
 - **Como trabalhar ao mesmo tempo nas duas empresas sem ficar confuso?** *(renda / operação)*
-  - Contexto: dois empregadores/clientes; risco de misturar contexto, branch, credencial, VM, horário e compromisso mental.
-  - Resposta desejada: regra simples de isolamento (1 VM ou workspace por empresa, calendário, “modo” de troca) que economize tempo e evite erro caro.
+  - Contexto: dois empregadores/clientes; risco de misturar contexto, branch, credencial, host-card, horário e compromisso mental.
+  - Resposta desejada: regra simples de isolamento (1 workspace/host-card por empresa, calendário, “modo” de troca) que economize tempo e evite erro caro.
 
 - **É possível equalizar o som para os ouvintes no empreendimento de ventoinhas?** *(renda / produto)*
   - Problema: cada pessoa ouve em fone/caixa/volume/ambiente diferente — o “som da ventoinha como se tivesse comprado” pode enganar se não houver equalização ou referência comum.
   - Resposta desejada: sim/não/parcial + método (calibração, perfil de fone, amostra A/B com referência conhecida, LUFS, aviso de limite) e se o MVP ainda vale sem equalização perfeita.
 
 ## Dúvidas respondidas
+
+### Cards/projetos no host sem WorkVM?
+
+**Resposta:** sim — programação é só host-card no jarvis (`bin/workvm-host-card`). Contrato em `host-cards-no-vm.md`. Artefatos libvirt / `vm-setup` saíram do meta-repo.
 
 ### SSDs no M2_1 (CPU) são mais rápidos que nos outros slots?
 
@@ -155,7 +149,7 @@ Inventário + **estado atual** (o que faz o quê e por quê).
 | Peça | Onde | Papel agora | Por quê |
 | --- | --- | --- | --- |
 | **iGPU Intel** | CPU | **Display** do host (Hyprland) | Não gasta VRAM das dGPUs no desktop |
-| **RX 580** (8 GB) | slot PCIe **2** (`06:00.0`, `amdgpu`) | **Ollama / VLM** para a WorkVM **vid2agent-code** (API + `10.0.2.2:11434`) | É a GPU **mais fraca**; serve LLM de vídeo e deixa a 5060 livre. Vulkan só RADV (`VK_ICD_FILENAMES=…/radeon_icd.json`, `CUDA_VISIBLE_DEVICES=`). Passthrough OSX dessa placa **off** (backup `*.osx-passthrough.bak`) |
+| **RX 580** (8 GB) | slot PCIe **2** (`06:00.0`, `amdgpu`) | **Ollama / VLM** para **vid2agent-code** no host (`127.0.0.1:11434`) | É a GPU **mais fraca**; serve LLM de vídeo e deixa a 5060 livre. Vulkan só RADV (`VK_ICD_FILENAMES=…/radeon_icd.json`, `CUDA_VISIBLE_DEVICES=`) |
 | **RTX 5060** (8 GB) | slot PCIe principal (`01:00.0`) | **Livre** para serviços/cargas mais pesadas (ainda sem papel fixo — ver tarefa) | Mais capaz que a 580; não deve correr o VLM “de rotina” |
 
 Scripts de referência no host: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-amd-rx580.conf`.
@@ -164,13 +158,13 @@ Scripts de referência no host: `~/bin/host-rx580-for-ollama.sh`, `~/bin/ollama-
 | | |
 | --- | --- |
 | Modelo | **Intel Core i7-13700K** |
-| Importante | **16 núcleos / 24 threads** (8P+8E) — headroom para Hyprland + várias WorkVMs + Docker |
+| Importante | **16 núcleos / 24 threads** (8P+8E) — headroom para Hyprland + vários host-cards + Docker |
 
 ### Cooler
 | | |
 | --- | --- |
 | Modelo | **Arctic Liquid Freezer III Pro 360** (AIO 360 mm) |
-| Importante | Refrigeração do 13700K sob carga (VMs + compile); headroom térmico sem OC agressivo |
+| Importante | Refrigeração do 13700K sob carga (host-cards + compile); headroom térmico sem OC agressivo |
 
 ### Armazenamento (NVMe) — estado atual
 
@@ -189,8 +183,8 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | Instalada | **32 GB** (4×8 GiB) Kingston **KF556C40-8**, DDR5, 1R, 4 slots |
 | Velocidade agora | **5600 MT/s** (antes ~4000 MT/s com 4 DIMMs em Auto) |
 | Tensão agora | **1,25 V** (perfil do kit 5600 CL40) |
-| Por quê 5600 | Memória mais rápida → host/VMs/compile/Cursor respondem melhor → **trabalho feito mais rápido** (objetivo economizar tempo) |
-| Capacidade | **32 GB** — limite prático de VMs simultâneas + Chrome/Cursor; upgrade sobe esse teto |
+| Por quê 5600 | Memória mais rápida → host/host-cards/compile/Cursor respondem melhor → **trabalho feito mais rápido** (objetivo economizar tempo) |
+| Capacidade | **32 GB** — limite prático de host-cards simultâneos + Chrome/Cursor; upgrade sobe esse teto |
 | Placa (máx.) | até **192 GB** (4 slots) |
 | Teto MSI sem OC de marketing | até **DDR5-5600** JEDEC 1R; acima (5800+) = OC. Não subir além de 5600. |
 
@@ -215,8 +209,8 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 | M2_4 | Z690 | PCIe 4.0 x4 **ou** SATA 6 Gb/s | 2242 / 2260 / 2280 |
 
 ### Implicações rápidas
-- **32 GB RAM:** 1–2 WorkVMs pesadas + host ok; muitas VMs = swap/dor. Por isso cada VM leva só a RAM que o projeto precisa (ver §1).
-- **24 threads:** bom para compose/build paralelo nas guests; vCPU também **por projeto**, não “máximo igual em todas”.
+- **32 GB RAM:** N host-cards + Cursor ainda estouram sem teto de cards vivos — ver `host-cards-no-vm.md`.
+- **24 threads:** bom para compose/build/Pest paralelo no jarvis.
 - **VLM na 580:** mais lento que na 5060 — trade-off consciente (**muito com pouco**).
 
 ---
@@ -225,98 +219,34 @@ Board: **4× M.2** (tabela abaixo). MoveSpeed no M2_1 é decisão consciente, n�
 
 | Onde | Papel |
 | --- | --- |
-| **Host** (`jarvis`) | Desktop Hyprland, libvirt `qemu:///session`, Ollama (VLM), Cursor às vezes, browser |
-| **WorkVM** (uma por card/projeto) | Clone(s) + Docker + Cursor multi-root (`~/git` + repos) + browser; sandboxes headless via `bin/workvm-sandbox` (piloto Televisão) |
-| **Meta-repo** `~/git` | Provisiona VM, projeto ativo, overlays, prompts, skills locais |
+| **Host** (`jarvis`) | Desktop Hyprland, Docker, Ollama (VLM), Cursor, browser, host-cards |
+| **Host-card** (uma por card/projeto) | Worktrees + compose namespaced + Cursor workspace; sandboxes via `bin/workvm-sandbox` |
+| **Meta-repo** `~/git` | Projeto ativo, overlays, prompts, skills, CLI host-card |
 
 Projetos na raiz do meta-repo: `olie/`, `opbed/`, `televisao/`, `da-o-play/`, `boilerplate-laravel/`, `boilerplate-next/`, `vid2agent-code/`, `use-url-query/`.
 
-VMs libvirt (nomes típicos): `base-dev` (modelo genérica; antes `archlinux`), `olie` / `televisao` (projetos clonados da base), `olie-dop-*` / cards, `vid2agent-code`, `opbed`, `da-o-play`, …
+### Host-cards (sem WorkVM)
 
-### WorkVMs: recursos por projeto (não clone genérico)
-
-VMs **diferentes** devem ter **configurações diferentes** (vCPU e RAM no libvirt). Motivo: cada uma é um **projeto diferente**, com carga diferente (compose, browsers, Cursor, builds).
-
-**Fonte da config da VM:** cada projeto tem um **`.xml` na própria pasta do projeto** — domain libvirt individual daquela WorkVM (vCPU, RAM, disco, rede, etc.). Não reutilizar um XML genérico para todos.
-
-| Regra | Por quê |
-| --- | --- |
-| Um **`.xml` por projeto** (na pasta do projeto) | Config individual versionável/reaplicável; bate com “projeto ≠ recursos iguais” |
-| Dimensionar **vCPU e RAM** nesse XML | Projeto leve não precisa do mesmo teto que Olie/Docker pesado; projeto pesado não pode ficar faminto |
-| Evitar “todas as VMs iguais” (ex. 8 vCPU / 16 GB) | Com **32 GB** no host, clones idênticos gastam RAM ociosa e impedem 2ª VM útil |
-| Definir / atualizar via esse XML (`virsh define` / virt-manager) | O meta-repo / pasta do projeto guarda o desejado; o libvirt no host aplica |
-
-Objetivo: **economizar tempo** (VM certa responde sem swap) + **muito com pouco** (cabem mais VMs úteis no mesmo host).
-
-**Valores documentados** (medido sob carga real):
-
-| Projeto | XML | RAM | vCPU | Nota |
-| --- | --- | --- | --- | --- |
-| `olie` | `olie/config-vm.xml` | **12 GiB** | **9** | Domain **`olie`**; teto de vCPU (não reserva); 12 GiB para folga com Postman/DBeaver |
-| `locav` | `locav/config-vm.xml` | **12 GiB** | **9** | Mesmo teto da Olie; ainda não aplicado no host |
-| `televisao` | `televisao/config-vm.xml` | **8 GiB** | **4** | Domain **`televisao`**. Compose + Cursor IDE + 1 aba: ~2,6 GiB available e ~54 MiB de swap na subida — 8 GiB basta. Load ~3,7 no primeiro minuto em 1 vCPU; o teto sobe para 4. vCPU ainda não aplicado |
-
-Aplicar no host (VM **parada**): `~/git/bin/apply-config-vm.sh [projeto]`. Só mexe em RAM/vCPU se a domain já existe e está `shut off`. Conferir com a **mesma** URI que o script usou (Olie costuma ser `qemu:///system`): `virsh -c qemu:///system dumpxml olie | grep memory`.
-
-*Nota:* o `.xml` fica na pasta do projeto no meta-repo (mesmo princípio: um arquivo por projeto, ao lado do resto da definição).
-
-### WorkVMs: eficiência — roadmap (ponto a ponto)
-
-Fazer **um item por vez**, na ordem. Ao concluir: marcar `[x]`, anotar o que mudou (e onde), seguir o próximo. Não priorizar pinning/hugepages no início.
-
-**Já feito**
-- [x] Sem wallpaper na guest — removidos `swaybg`, `wallpaper.jpg`, autostart; logo/fundo padrão Hyprland off (overlay `.config/hypr`).
-
-**Agora (maior ganho / baixo risco)**
-- [ ] **RAM e vCPU por projeto** — um `.xml` na pasta de cada projeto (config individual da VM); inventariar, ajustar (leve vs pesado), `virsh define`; documentar valores quando estabilizar.
-- [ ] **Uma VM pesada por vez** quando o host estiver apertado — hábito, não XML; parar a que não está em uso.
-- [ ] **Guest mais leve** — desligar blur/animações pesadas do Hyprland; revisar autostart (apps que sobem sem precisar); refletir no overlay `.config/`.
-- [ ] **virtio em disco e rede** — conferir/ajustar no libvirt (evitar IDE/SATA/e1000 emulado).
-- [ ] **CPU host-passthrough** (ou host-model) — guest usa instruções do 13700K; builds mais rápidos.
-
-**Em seguida (I/O e RAM)**
-- [ ] **Imagens libvirt no NVMe dedicado** — 980 PRO 1 TB em M2_2 ou M2_4; mover `~/.local/share/libvirt/images` (ou path atual); depende da tarefa dos SSDs.
-- [ ] **Opções de disco** — testar `cache`/`io` (ex. writeback + threads/native); anotar o que ficou estável.
-- [ ] **Memballoon** — ligar para o host recuperar RAM ociosa da guest.
-- [ ] **Scratch no 970 EVO 250 GB** — Docker cache / builds / downloads (se a tarefa dos SSDs confirmar esse papel).
-
-**Depois / só se doer**
-- [ ] **Virtio-GPU / gráfico** — se a guest estiver pesada no desktop.
-- [ ] **CPU pinning** (P-cores vs E-cores) — só com duas cargas pesadas brigando; senão o scheduler basta.
-- [ ] Hugepages / isolcpus — fora do caminho feliz; alto custo de manutenção.
-
-**Fora de escopo deste roadmap:** OC de CPU/RAM “para a VM ficar mais rápida”.
-
----
+Programação só no jarvis via `bin/workvm-host-card`. Contrato: `host-cards-no-vm.md`. Login ainda sobe o projeto ativo (`project-setup` / `workvm.service`).
 
 ## 2. Manhã / ligar o dia
 
 ### Host
 1. Login gráfico Omarchy (Hyprland).
 2. Monitor na **iGPU**; **RX 580** = Ollama/VLM (vid2agent); **RTX 5060** = cargas pesadas (papel ainda em aberto).
-3. VMs sobem sob demanda (`virsh` / virt-manager), não “um app só”.
-4. Ollama **não** sobe no boot do host; sobe/para com a VM `vid2agent-code` (hook).
+3. `workvm.service` → `project-start` do projeto em `current` (compose/MCP). Cards sobem com `workvm-host-card ensure/open`.
+4. Ollama sob demanda no host (`127.0.0.1:11434`); API vid2agent em `:18080` quando o stack estiver up.
 
-### WorkVM (quando abre um card)
-1. Ligar a VM do card (ex.: `olie-dop-1412`, `vid2agent-code`).
-2. Autologin SDDM → Hyprland → `workvm.service` → `project-start.sh`:
-   - fetch meta-repo / clones
-   - Docker compose do projeto
-   - merge MCP → `~/.cursor/mcp.json`
-   - patch local de `.cursor` nos clones
-   - no login, não abre Cursor nem browser; a instalação do projeto abre os dois
-3. Agente vê projeto ativo em `.cursor/rules/workvm-project.mdc`.
+### Host-card (quando abre um card)
+1. `~/git/bin/workvm-host-card open --project … --code …` (ou `ensure`).
+2. Cursor no `.code-workspace` da unidade; worktrees sob `~/.local/share/workvm/host-cards/…`.
+3. Agente lê Card Spec / prompts; compose namespaced + DNS `*.{slug}.olie.localhost`.
 
 ### Checklist rápido “estou pronto?”
 ```bash
-# host
-virsh -c qemu:///session list
-systemctl is-active ollama          # só precisa se for vid2agent / VLM
-ss -ltnp | rg '11434|18080'         # Ollama + API vid2agent
-
-# guest (na VM)
-curl -sS -m 3 -o /dev/null -w '%{http_code}\n' http://localhost
-docker compose ps                   # no COMPOSE_DIR do projeto
+docker info
+ss -ltnp | rg '11434|18080' || true   # Ollama + API vid2agent se precisar
+~/git/bin/workvm-host-card list
 ```
 
 ---
@@ -327,37 +257,29 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 | Ferramenta | Para quê |
 | --- | --- |
 | **Cursor** (Agent / Ask) | Código, prompts, skills, MCP |
-| **Kitty / terminal** | git, virsh, docker, curl, setup |
-| **Hyprland** | Janelas host e guest |
-| **Docker Compose** | App Laravel / stacks do projeto |
-| **libvirt + QEMU session** | Isolar ambiente por card/VM |
+| **Kitty / terminal** | git, docker, host-card, curl |
+| **Hyprland** | Janelas no jarvis |
+| **Docker Compose** | App / stacks do projeto e do card |
+| **workvm-host-card** | Isolar ambiente por card/projeto |
 | **Chromium** | App local, às vezes board |
 | **gh / git** | PRs e meta-repo |
 | **Ollama** (host) | VLM para vid2agent (`qwen2.5vl`) |
 | **MCP OlieFlowAi** | Conteúdo de DOP/OS (mídia, save-media) |
-| **spice / wayland-vdagent** | Clipboard host ↔ guest |
 
 ### Artefatos que o agente / eu consultamos
 | Path | Uso |
 | --- | --- |
-| `~/git/.cursor/rules/*` | Como a VM e o meta-repo funcionam |
+| `~/git/.cursor/rules/*` | Como o host e o meta-repo funcionam |
 | `~/git/olie/prompts/` | Prompts do projeto Olie |
 | `~/git/vid2agent-code/prompts/` | Prompts do vid2agent-code |
 | `<projeto>/overlay/**/cursor` | Rules/skills locais (não vão pro remoto da empresa) |
 | `<projeto>/project.conf` | Clones, compose, URLs |
-| `HISTORICO.md` | Decisões já tomadas |
-| Host: `~/.local/share/doc/ollama-workvm.md` | Ollama sob demanda (hoje **fora do git**) |
-| Host: `~/.local/share/doc/vid2agent-api.md` | API `:18080` (hoje **fora do git**) |
-| Host: `~/bin/setup-ollama-workvm.sh` | Sudoers + bind Ollama |
-| `bin/workvm-libvirt-qemu-hook.sh` | Fonte do hook. No host: `/etc/libvirt/hooks/qemu` → esse script (libvirt 12.8 não lê `~/.config/libvirt/hooks`). Sobe Ollama + hostfwd com a `vid2agent-code` |
+| `HISTORICO.md` / `host-cards-no-vm.md` | Decisões e contrato host-card |
 
 ### Fluxos de produto recorrentes
-1. **Card Olie (DOP/OS)**  
-   Abrir VM do card → Cursor no workspace olie → MCP media → skill `olie-project-image-analysis` / `olie-project-video-conversion`. Salvar em `~/git/olie/cards/{código}/{mediaId}.md`, **versionar no meta-repo** (commit/push); na correção, **reusar** (não reanalisar). Tech lead: **não** enviar análise no conteúdo do projeto.
-2. **vid2agent-code**  
-   VM sobe → Ollama no host → app Docker → `POST /api/conversions` → markdown. Outras VMs chamam `http://10.0.2.2:18080/api/conversions`.
-3. **Meta-repo**  
-   Melhorar bootstrap, overlays, prompts; commit/push para as VMs darem `git pull`.
+1. **Card Olie (DOP/OS)** — host-card open → Cursor → MCP media → skills de imagem/vídeo → salvar em `olie/cards/{código}/{mediaId}.md` (commit meta no fechamento). **Não** postar análise no conteúdo do projeto.
+2. **vid2agent-code** — stack/Ollama no host → `POST http://127.0.0.1:18080/api/conversions`.
+3. **Meta-repo** — bootstrap, overlays, prompts; commit/push; `pull-meta` / login atualiza o live.
 
 ---
 
@@ -365,32 +287,26 @@ docker compose ps                   # no COMPOSE_DIR do projeto
 
 | De | Para | URL |
 | --- | --- | --- |
-| Guest → host Ollama | VLM | `http://10.0.2.2:11434` (`…/v1` no `.env`) |
-| Guest → API vid2agent | conversão | `http://10.0.2.2:18080/api/conversions` |
-| Host → API vid2agent | smoke | `http://127.0.0.1:18080/api/conversions` |
-| Guest → app local | nginx | `http://localhost` (porta do compose) |
+| Host → Ollama | VLM | `http://127.0.0.1:11434` (`…/v1` no `.env`) |
+| Host → API vid2agent | conversão | `http://127.0.0.1:18080/api/conversions` |
+| Host-card → app | DNS Caddy | `http://api.{slug}.olie.localhost` / `devframe.{slug}.olie.localhost` |
 
-Rede típica da guest: SLIRP (`interface type=user`). Host visto como `10.0.2.2`.  
-API vid2agent: QEMU `hostfwd` `127.0.0.1:18080` → guest `:80` (reaplicado no hook).
-
-Env esperado na guest vid2agent (resumo):
+Env vid2agent (resumo):
 ```env
 VIDEO_LLM_ENABLED=true
-VIDEO_LLM_BASE_URL=http://10.0.2.2:11434/v1
+VIDEO_LLM_BASE_URL=http://127.0.0.1:11434/v1
 VIDEO_LLM_MODEL=qwen2.5vl:3b
 VIDEO_LLM_API_KEY=ollama
 VIDEO_LLM_TIMEOUT=300
 ```
-(Modelo 7b pode existir no host; 3b foi o fallback estável no pull.)
 
 ---
 
 ## 5. Fim do dia / desligar
 
-1. Parar VMs que não precisa (`virsh shutdown …`).
-2. Com `vid2agent-code` down, o hook deve **parar Ollama** e liberar VRAM.
-3. Não é necessário deixar Ollama no boot do host.
-4. Meta-repo: se mudou overlay/prompt/script → commit + push para as outras VMs puxarem amanhã.
+1. `workvm-host-card destroy` só quando o card terminou (`finish card` / done).
+2. Parar Ollama se não precisar (libera VRAM).
+3. Meta-repo: se mudou overlay/prompt/script → commit + push; live `git pull --ff-only`.
 
 ---
 
@@ -398,26 +314,23 @@ VIDEO_LLM_TIMEOUT=300
 
 Marque `[x]` quando feito; detalhe o “como” em `HISTORICO.md`.
 
-### Infra host / VM
-- [ ] **Versionar no git** setup do host Ollama + API: script, doc do hook, sudoers (template), hostfwd — hoje só em `~/bin` e `~/.local/share/doc`.
-- [ ] **Garantir `/etc/sudoers.d/ollama-workvm`** após setup/reinstall; sem NOPASSWD o hook falha sem TTY e a VM sobe sem Ollama (já doeu).
-- [ ] **Smoke no login/host**: se `vid2agent-code` está running e Ollama inactive → alertar (notify / log).
-- [ ] Revisar se hook cobre todos os caminhos reais (`started` / `restore` / `reconnect`) e se o log `~/.local/state/workvm-hooks/qemu.log` é olhado quando falha.
-- [ ] Documentar no README do meta-repo o link para este arquivo e para docs de host quando forem versionados.
+### Infra host
+- [ ] **Versionar no git** setup Ollama + API vid2agent (hoje partes em `~/bin` / docs locais).
+- [ ] Smoke: se API `:18080` up e Ollama inactive → alertar.
+- [ ] Domains host-card velhas: limpar manualmente no host quando sobrar tempo.
 
 ### Produtividade agente
-- [ ] Um único “prompt de início de card” que: puxa meta-repo, confere overlay/skills, confere API/Ollama se for vídeo.
-- [ ] Skill de vídeo na VM Olie: garantir sync do overlay após `git pull` (hoje fácil ficar desatualizado até reaplicar overlay).
-- [ ] Padronizar nomes de container (`vid2agent-code-php-fpm` vs `boilerplate-laravel-php-fpm`) nos prompts.
+- [ ] Um único “prompt de início de card” que: confere host-card, overlay/skills, API/Ollama se for vídeo.
+- [ ] Skill de vídeo: sync do overlay após `git pull`.
+- [ ] Padronizar nomes de container nos prompts.
 
 ### Produto / fluxo Olie ↔ vid2agent
 - [ ] Critério de pronto da conversão de vídeo (tempo, qualidade do markdown, retry).
-- [ ] Idempotência e markers já existem nas skills — validar no dia a dia se agentes pulam certo.
-- [ ] Se `qwen2.5vl:7b` estabilizar no pull, documentar modelo preferido vs 3b.
+- [ ] Idempotência das skills — validar no dia a dia.
+- [ ] Se `qwen2.5vl:7b` estabilizar, documentar modelo preferido vs 3b.
 
 ### Meta-repo
-- [ ] Entrada em `layout.mdc` para `docs/` (este arquivo).
-- [ ] Evitar docs úteis só no host live (regra: se outra VM precisa, está no git).
+- [ ] Manter `life.md` / `host-setup.md` alinhados ao host-card (sem dualidade guest).
 
 ---
 
@@ -437,10 +350,7 @@ Marque `[x]` quando feito; detalhe o “como” em `HISTORICO.md`.
 
 | Tema | Onde |
 | --- | --- |
-| Mapa do meta-repo | `.cursor/rules/layout.mdc` |
-| Como a VM opera | `.cursor/rules/meta-repo.mdc` |
-| Problemas resolvidos | `HISTORICO.md` |
-| Prompt guest Ollama | `vid2agent-code/prompts/host-ollama-ready.md` |
-| Prompt API para Olie | `vid2agent-code/prompts/guest-api-ready-for-olie.md` |
-| Skill imagens | `olie/overlay/**/olie-project-image-analysis` |
-| Skill vídeo | `olie/overlay/**/olie-project-video-conversion` |
+| Host-card | `host-cards-no-vm.md`, `olie/prompts/workflow-policy/host.md` |
+| Meta / layout | `.cursor/rules/layout.mdc`, `meta-repo.mdc` |
+| Host setup | `host-setup.md` |
+| Histórico | `HISTORICO.md` |

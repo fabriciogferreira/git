@@ -31,8 +31,10 @@ check_card_project_prompts() {
         fi
     done
 
-    if rg -n -P '\{\{(?! code \}\})' "$dir" >/dev/null; then
+    # Ignore policy prose that mentions mustache examples; still ban real alt placeholders in paste prompts.
+    if rg -n -P '\{\{(?! code \}\})' "$dir" --glob '!workflow-policy.md' --glob '!workflow-policy/**' >/dev/null; then
         echo "error: placeholder $label fora do formato {{ code }}" >&2
+        rg -n -P '\{\{(?! code \}\})' "$dir" --glob '!workflow-policy.md' --glob '!workflow-policy/**' >&2 || true
         exit 1
     fi
 
@@ -49,8 +51,10 @@ check_card_project_prompts() {
         fi
     done
 
-    if ! rg -F 'Tooling failures and stalls' "$dir/workflow-policy.md" >/dev/null; then
-        echo "error: $label/workflow-policy.md precisa da seção Tooling failures and stalls" >&2
+    # Olie: section lives in workflow-policy/tools.md after the split; Locav keeps monolith.
+    if ! rg -F 'Tooling failures and stalls' "$dir/workflow-policy.md" >/dev/null &&
+        ! rg -F 'Tooling failures and stalls' "$dir/workflow-policy/tools.md" >/dev/null 2>/dev/null; then
+        echo "error: $label precisa de 'Tooling failures and stalls' em workflow-policy.md ou workflow-policy/tools.md" >&2
         exit 1
     fi
 
@@ -71,17 +75,39 @@ check_card_project_prompts() {
         exit 1
     fi
     for prompt in "${paste_ready[@]}"; do
-        if ! rg -F 'this prompt needs updating' "$dir/$prompt" >/dev/null; then
-            echo "error: $label/$prompt (colar sozinho) precisa da linha 'this prompt needs updating'" >&2
+        if ! rg -F 'this prompt needs updating' "$dir/$prompt" >/dev/null &&
+            ! rg -F 'this prompt may need updating' "$dir/$prompt" >/dev/null; then
+            echo "error: $label/$prompt (colar sozinho) precisa de 'this prompt needs updating' (ou 'may need')" >&2
             exit 1
         fi
     done
-    if rg -n '`[a-z0-9-]+\.md`' "$dir" --glob '!README.md' --glob '!workflow-policy.md' |
+    # Ban relative *prompt* paths without ~/git/ or workflow-policy/.
+    # Ignore dump/artifact paths (notebook/, cards/, lib/, latest.json) — those are not prompt refs.
+    # Module tree is checked only via the index + tooling-failures contract above.
+    if rg -n '`[^`]+/[^`]+\.md`' "$dir" \
+        --glob '!README.md' \
+        --glob '!workflow-policy.md' \
+        --glob '!workflow-policy/*.md' |
         rg -v '`~/git/' |
+        rg -v '`workflow-policy/' |
+        rg -v 'notebook/' |
+        rg -v 'olie/cards/' |
+        rg -v 'lib/' |
+        rg -v 'bin/' |
+        rg -v 'app/' |
         rg -v '^\S+:[0-9]+:.*(pt-br|en)\.json' >/dev/null; then
-        echo "error: prompt $label referencia *.md sem path absoluto sob ~/git/:" >&2
-        rg -n '`[a-z0-9-]+\.md`' "$dir" --glob '!README.md' --glob '!workflow-policy.md' |
-            rg -v '`~/git/' >&2 || true
+        echo "error: prompt $label referencia path *.md sem ~/git/ (use absoluto ou workflow-policy/):" >&2
+        rg -n '`[^`]+/[^`]+\.md`' "$dir" \
+            --glob '!README.md' \
+            --glob '!workflow-policy.md' \
+            --glob '!workflow-policy/*.md' |
+            rg -v '`~/git/' |
+            rg -v '`workflow-policy/' |
+            rg -v 'notebook/' |
+            rg -v 'olie/cards/' |
+            rg -v 'lib/' |
+            rg -v 'bin/' |
+            rg -v 'app/' >&2 || true
         exit 1
     fi
     if rg -n 'Do not repeat `' "$dir" --glob '!README.md' >/dev/null; then
@@ -95,9 +121,10 @@ check_card_project_prompts "$OLIE_DIR" "olie/prompts"
 check_card_project_prompts "$LOCAV_DIR" "locav/prompts"
 
 for dir in "$OLIE_DIR" "$LOCAV_DIR" "$VID2_DIR"; do
-    if [ -d "$dir" ] && rg -n 'files/|/docs' "$dir" >/dev/null; then
-        echo "error: prompt em $dir contém caminho aposentado (files/ ou /docs)" >&2
-        rg -n 'files/|/docs' "$dir" >&2 || true
+    # Retired meta layout used `files/` overlays; do not ban prose about olie-ai/docs.
+    if [ -d "$dir" ] && rg -n 'files/' "$dir" --glob '!workflow-policy/**' >/dev/null; then
+        echo "error: prompt em $dir contém caminho aposentado (files/)" >&2
+        rg -n 'files/' "$dir" --glob '!workflow-policy/**' >&2 || true
         exit 1
     fi
     # API field name funnel_step_id is fine with a variable; hard-coded numeric ids are not.

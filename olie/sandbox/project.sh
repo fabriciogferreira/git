@@ -1,5 +1,5 @@
 # Plugin Olie para o Sandbox Manager.
-# Problema: mutation/Pest no Card VM compartilhavam MySQL `testing` e
+# Problema: mutation/Pest no host-card compartilhavam MySQL `testing` e
 # corrompiam `api_main` quando o colleague-review disparava gates em paralelo.
 # Isola worktree por sandbox; MySQL/Redis/Mongo vêm do stack compartilhado
 # hc-olie-data (mesmo dos host-cards) com DB/prefixo por id — sem N× instâncias.
@@ -98,7 +98,7 @@ workvm_sandbox_project_after_up() {
 
 # Garante olie/api-main-sandbox:latest (PCOV). Se a base olie/api-main:latest
 # não existir, builda via compose web do meta (mesmo caminho do smoke-case1) —
-# host-card/ensure não pode depender da Card VM já ter subido o stack.
+# host-card/ensure não pode depender da host-card já ter subido o stack.
 workvm_sandbox_olie_ensure_sandbox_image() {
     local meta_repo git_root
     meta_repo="$(workvm_sandbox_meta_repo)"
@@ -377,7 +377,7 @@ workvm_sandbox_project_render_compose() {
     git_root="$(workvm_sandbox_git_root)"
     api_vendor="${git_root}/olie/api-main/vendor"
     if [ ! -f "${api_vendor}/autoload.php" ]; then
-        workvm_sandbox_log "vendor ausente em ${api_vendor} (rode composer na Card VM)"
+        workvm_sandbox_log "vendor ausente em ${api_vendor} (rode composer na host-card)"
         return 1
     fi
 

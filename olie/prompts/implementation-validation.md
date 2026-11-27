@@ -9,11 +9,11 @@ Use this **after** `~/git/olie/prompts/implementation.md` (or a correction that 
 1. Backend touched → `~/git/olie/prompts/test-gap-analysis.md`, then `coverage-testing.md`, then `mutation-testing.md`, then `pest-parallel.md`, then `~/git/olie/prompts/pre-qa.md`. Finish coverage (`next coverage` / `correct coverages`) and mutation (`next mutation` / `correct mutations`) before Pest parallel; do not skip to pre-QA via `next prompt` while those stacks or Pest parallel remain.
 2. Backend not touched → `~/git/olie/prompts/pre-qa.md` (same as before).
 
-If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared detail: `~/git/olie/prompts/workflow-policy.md`.
+If MCP, requests, shell, Docker, or other tooling this prompt assumes will work **fails or stalls too long**: stop, report the objective error, and treat it as a signal that **this prompt needs updating**. Do not silently work around it. Exception: `olie-flow-ai` `needsAuth` while the Cursor desktop already shows that server authenticated is **MCP auth** in the shared workflow policy. Do not call `mcp_auth` and do not ask the user to sign in again. Shared modules: `workflow-policy/tools.md` (MCP auth / tooling failures) · index `workflow-policy.md`.
 
 ### Chat commands
 
-Same phrases as in `~/git/olie/prompts/workflow-policy.md` (**Chat commands**) and `implementation.md`:
+Same phrases as in `~/git/olie/prompts/workflow-policy/gates.md` (**Chat commands**) and `implementation.md`:
 
 | Command | Do this |
 | --- | --- |
@@ -21,7 +21,7 @@ Same phrases as in `~/git/olie/prompts/workflow-policy.md` (**Chat commands**) a
 | `try again` | Re-run **this** validation pass **after** a manual env fix or after `to correct`. Do not re-score an unchanged diff “to confirm”. |
 | `to correct` | Leave validation mode: implement every **Needs code fixes** item from this pass’s report, then stop and recommend `try again` (re-run this validation). Do not implement fixes during the scoring pass itself unless the user already sent `to correct`. |
 
-**Re-run budget:** one Ready / Needs code fixes verdict for the current local diff stands until that diff (or requirements/media) changes. Shared rule: **Expensive re-run budget** in `workflow-policy.md`.
+**Re-run budget:** one Ready / Needs code fixes verdict for the current local diff stands until that diff (or requirements/media) changes. Shared rule: **Expensive re-run budget** in `workflow-policy/gates.md`.
 
 ## 1. Objective
 

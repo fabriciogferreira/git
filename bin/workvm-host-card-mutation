@@ -1,0 +1,259 @@
+#!/usr/bin/env bash
+# Mede mutation do change-set no host-card e grava artefato para o agente.
+# Problema: mutation-testing.md media + implementava no chat (sandbox/mutate/ledger)
+# e consumia tokens. Manager roda isto; o agente só lê latest.json e aperta asserts
+# (lib/mutation/ARTIFACT.md).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/host-card.sh
+source "$ROOT/lib/host-card.sh"
+# shellcheck source=../olie/sandbox/host-card-pest-db.sh
+source "$ROOT/olie/sandbox/host-card-pest-db.sh"
+
+SCORE_PY="$ROOT/lib/mutation/score.py"
+SHA_BIN="$ROOT/bin/workvm-ledger-sha.sh"
+LEDGER_DEFAULT="$ROOT/olie/prompts/mutation-ledger.md"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/project-card-manager"
+
+usage() {
+    cat <<'EOF'
+workvm-host-card-mutation — medir mutation do change-set (Olie host-card)
+
+  workvm-host-card-mutation --project olie --code <CODE>
+
+Saída:
+  ~/.local/share/project-card-manager/mutation/olie/<CODE>/latest.json
+  ~/.local/share/project-card-manager/mutation/olie/<CODE>/latest.md
+
+Gates: lib/mutation/ARTIFACT.md + olie/prompts/mutation-testing.md
+EOF
+}
+
+project=""
+code=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        --project) project="${2:-}"; shift 2 ;;
+        --code) code="${2:-}"; shift 2 ;;
+        *)
+            workvm_host_card_log "arg desconhecido: $1"
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ "$project" != "olie" ] || [ -z "$code" ]; then
+    workvm_host_card_log "uso: --project olie --code <CODE>"
+    exit 1
+fi
+
+[ -f "$SCORE_PY" ] || { workvm_host_card_log "score ausente: $SCORE_PY"; exit 1; }
+
+id="$(workvm_host_card_id "$project" "$code")"
+meta="$(workvm_host_card_meta_path "$project" "$id")"
+if [ ! -f "$meta" ]; then
+    workvm_host_card_log "card ausente: $id (rode Open no manager / ensure antes)"
+    exit 1
+fi
+
+compose_dir="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_dir') or '')")"
+pname="$(python3 -c "import json;print(json.load(open('$meta')).get('compose_project') or '')")"
+testing_db="$(python3 -c "import json;print(json.load(open('$meta')).get('testing_database') or '')")"
+api_worktree="$(python3 -c "import json;print(json.load(open('$meta')).get('api_worktree') or '')")"
+if [ -z "$compose_dir" ] || [ ! -d "$compose_dir" ]; then
+    compose_dir="$(workvm_host_card_dir "$project" "$id")/compose"
+fi
+[ -n "$pname" ] || pname="hc-${id}"
+[ -n "$testing_db" ] || testing_db="testing"
+if [ -z "$api_worktree" ]; then
+    api_worktree="$(workvm_host_card_dir "$project" "$id")/worktree"
+fi
+if [ -d "${api_worktree}/api-main" ]; then
+    api_main="${api_worktree}/api-main"
+else
+    api_main="$api_worktree"
+fi
+
+ledger="$LEDGER_DEFAULT"
+card_git="$(workvm_host_card_dir "$project" "$id")/worktree/git"
+if [ -f "$card_git/olie/prompts/mutation-ledger.md" ]; then
+    ledger="$card_git/olie/prompts/mutation-ledger.md"
+fi
+
+safe_code="$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '_')"
+mut_root="$DATA_DIR/mutation/$project/$safe_code"
+ts="$(date '+%Y%m%d-%H%M%S')"
+run_dir="$mut_root/$ts"
+mkdir -p "$run_dir/baseline" "$run_dir/mutate" "$mut_root"
+
+plan_json="$run_dir/plan.json"
+workvm_host_card_log "plan $id → $api_main"
+python3 "$SCORE_PY" plan \
+    --api-main "$api_main" \
+    --code "$code" \
+    --ledger "$ledger" \
+    --sha-bin "$SHA_BIN" \
+    --out "$plan_json"
+
+remaining_n="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('remaining') or []))")"
+tests_n="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('tests') or []))")"
+skip_n="$(python3 -c "import json;print(len(json.load(open('$plan_json')).get('skipped_sha') or []))")"
+workvm_host_card_log "tests=$tests_n remaining=$remaining_n skipped_sha=$skip_n"
+
+if [ "$remaining_n" -eq 0 ]; then
+    python3 "$SCORE_PY" artifact \
+        --project "$project" \
+        --code "$code" \
+        --api-main "$api_main" \
+        --ledger "$ledger" \
+        --plan "$plan_json" \
+        --run-dir "$run_dir" \
+        --out-dir "$mut_root" \
+        --update-ledger || true
+    cp -f "$mut_root/latest.json" "$run_dir/latest.json" 2>/dev/null || true
+    cp -f "$mut_root/latest.md" "$run_dir/latest.md" 2>/dev/null || true
+    printf 'artifact=%s\n' "$mut_root/latest.json"
+    exit 0
+fi
+
+(
+    cd "$compose_dir"
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
+    export COMPOSE_PROJECT_NAME="$pname"
+    docker compose --profile slim exec -T app mkdir -p /tmp/pest-hc
+    workvm_olie_host_card_pest_warm "$compose_dir" "$pname" "$testing_db" 1 "$api_main" || true
+
+    if ! docker compose --profile slim exec -T app php -m | grep -qi '^pcov$'; then
+        if ! docker compose --profile slim exec -T -e XDEBUG_MODE=coverage app php -m | grep -qi xdebug; then
+            workvm_host_card_log "sem PCOV/Xdebug — mutation impossível"
+            exit 1
+        fi
+        cov_env=(-e XDEBUG_MODE=coverage)
+        workvm_host_card_log "PCOV ausente; XDEBUG_MODE=coverage"
+    else
+        cov_env=()
+    fi
+
+    # Ensure pest mutate plugins dumped
+    docker compose --profile slim exec -T app \
+        sh -c 'test -f vendor/pest-plugins.json || composer pest:dump-plugins' || true
+
+    python3 - "$plan_json" "$run_dir" <<'PY'
+import json, re, sys
+from pathlib import Path
+plan = json.loads(Path(sys.argv[1]).read_text())
+run_dir = Path(sys.argv[2])
+jobs = []
+for item in plan.get("remaining") or []:
+    test = item["file"]
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", test)
+    classes = [c["fqcn"] for c in (item.get("classes") or [])]
+    jobs.append({"test": test, "safe": safe, "classes": classes})
+(run_dir / "jobs.json").write_text(json.dumps(jobs, indent=2) + "\n")
+PY
+
+    jobs_json="$run_dir/jobs.json"
+    job_count="$(python3 -c "import json;print(len(json.load(open('$jobs_json'))))")"
+    i=0
+    while [ "$i" -lt "$job_count" ]; do
+        test_path="$(python3 -c "import json;print(json.load(open('$jobs_json'))[$i]['test'])")"
+        safe="$(python3 -c "import json;print(json.load(open('$jobs_json'))[$i]['safe'])")"
+        class_count="$(python3 -c "import json;print(len(json.load(open('$jobs_json'))[$i]['classes']))")"
+
+        blog="$run_dir/baseline/${safe}.log"
+        workvm_host_card_log "baseline $test_path"
+        set +e
+        docker compose --profile slim exec -T \
+            -e TMPDIR=/tmp/pest-hc \
+            -e DB_DATABASE="$testing_db" \
+            -e APP_ENV=testing \
+            -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
+            -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+            -e PEST_TIA_LOCALLY=0 \
+            app \
+            php artisan test --compact "$test_path" \
+            >"$blog" 2>&1
+        bstatus=$?
+        set -e
+        printf '\n# exit=%s\n' "$bstatus" >>"$blog"
+
+        if [ "$bstatus" -ne 0 ]; then
+            workvm_host_card_log "baseline vermelha ($test_path) — retry 1× (flake)"
+            set +e
+            docker compose --profile slim exec -T \
+                -e TMPDIR=/tmp/pest-hc \
+                -e DB_DATABASE="$testing_db" \
+                -e APP_ENV=testing \
+                -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
+                -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+                -e PEST_TIA_LOCALLY=0 \
+                app \
+                php artisan test --compact "$test_path" \
+                >>"$blog" 2>&1
+            bstatus=$?
+            set -e
+            printf '\n# retry_exit=%s\n' "$bstatus" >>"$blog"
+        fi
+
+        if [ "$bstatus" -ne 0 ]; then
+            workvm_host_card_log "baseline ainda vermelha — skip mutate deste arquivo"
+            i=$((i + 1))
+            continue
+        fi
+
+        mkdir -p "$run_dir/mutate/$safe"
+        j=0
+        while [ "$j" -lt "$class_count" ]; do
+            fqcn="$(python3 -c "import json;print(json.load(open('$jobs_json'))[$i]['classes'][$j])")"
+            safe_class="$(printf '%s' "$fqcn" | tr '\\' '_')"
+            mlog="$run_dir/mutate/$safe/${safe_class}.log"
+            workvm_host_card_log "mutate --class=$fqcn $test_path"
+            # Canonical quoting: single backslashes inside single-quoted --class=
+            set +e
+            docker compose --profile slim exec -T \
+                -e TMPDIR=/tmp/pest-hc \
+                -e DB_DATABASE="$testing_db" \
+                -e APP_ENV=testing \
+                -e MANAGEMENT_URL='http://{subdomain}.olie.localhost' \
+                -e RECAPTCHA_SECRET='host-card-pest-rejects-invalid-tokens' \
+                -e PEST_TIA_LOCALLY=0 \
+                ${cov_env[@]+"${cov_env[@]}"} \
+                app \
+                vendor/bin/pest --mutate --covered-only --ignore-min-score-on-zero-mutations \
+                "--class=${fqcn}" \
+                "$test_path" \
+                >"$mlog" 2>&1
+            mstatus=$?
+            set -e
+            printf '\n# exit=%s\n' "$mstatus" >>"$mlog"
+            j=$((j + 1))
+        done
+        i=$((i + 1))
+    done
+)
+
+workvm_host_card_log "scoring → $mut_root/latest.json"
+set +e
+python3 "$SCORE_PY" artifact \
+    --project "$project" \
+    --code "$code" \
+    --api-main "$api_main" \
+    --ledger "$ledger" \
+    --plan "$plan_json" \
+    --run-dir "$run_dir" \
+    --out-dir "$mut_root" \
+    --update-ledger
+art_status=$?
+set -e
+
+cp -f "$mut_root/latest.json" "$run_dir/latest.json"
+cp -f "$mut_root/latest.md" "$run_dir/latest.md"
+printf 'artifact=%s\n' "$mut_root/latest.json"
+printf 'summary=%s\n' "$mut_root/latest.md"
+exit "$art_status"

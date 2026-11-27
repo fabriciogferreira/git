@@ -1,10 +1,12 @@
 # Mutation ledger
 
-Personal stack for `~/git/olie/prompts/mutation-testing.md`. One row per test file in `~/git/olie/api-main/tests` after that file has been mutation-tested on this VM. Not part of the Olie test suite.
+Personal stack for `~/git/olie/prompts/mutation-testing.md`. One row per test file in `api-main/tests` after that file has been mutation-tested on this VM. Not part of the Olie test suite.
 
-While any changed `*Test.php` from the card’s `api-main` diff is missing here (or lacks `100%` / `equivalent`), the stack is incomplete: use **`next mutation`** (one file) or **`correct mutations`** (drain all remaining in parallel); do not run `pest-parallel.md` or `pre-qa.md` via `next prompt`. When this ledger is complete for the card, the next own-card paste is `pest-parallel.md`.
+**Measure:** user runs **Mutation** in `~/git/manager.sh` (`bin/workvm-host-card-mutation` → artifact in `~/.local/share/project-card-manager/mutation/…`; contract `lib/mutation/ARTIFACT.md`). Pass rows (+ `sha:`) are upserted by that script. **Agent:** only implements gaps / `equivalent` from `latest.json` — does not re-measure.
 
-Cross-chat skip: a done row with matching `sha:<fp>` in Notes (see `mutation-testing.md` / `bin/workvm-ledger-sha.sh`) is not reopened. Missing `sha:` on a done row means re-run once and stamp.
+While any changed `*Test.php` from the card’s `api-main` diff is missing here (or lacks `100%` / `equivalent`), re-run Mutation in the manager (or fix tests then re-run); do not run Pest / `pre-qa.md` via `next prompt`. When this ledger is complete for the card, the next own-card step is manager **Pest**.
+
+Cross-chat skip: a done row with matching `sha:<fp>` in Notes (see `bin/workvm-ledger-sha.sh`) is not reopened. Missing `sha:` on a done row means re-run once and stamp.
 
 | Test file | Result | Notes |
 | --- | --- | --- |

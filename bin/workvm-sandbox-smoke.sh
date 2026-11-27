@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Smoke do Sandbox Manager (piloto Televisão) sem clones da empresa.
-# Problema: precisa validar isolamento DB/Redis/rede sem subir a Card VM.
+# Problema: precisa validar isolamento DB/Redis/rede sem subir o host-card.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,13 +1,11 @@
 # Ciclo de vida do Sandbox (create/list/status/destroy).
 # Problema: create e destroy precisavam ser idempotentes e respeitar teto
-# de RAM na guest (Televisão 8 GiB → poucos sandboxes slim).
+# de RAM no host (poucos sandboxes slim em paralelo).
 
 # shellcheck source=common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 # shellcheck source=backend-container.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/backend-container.sh"
-# shellcheck source=backend-vm.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/backend-vm.sh"
 
 workvm_sandbox_default_max() {
     local project="$1"
@@ -40,7 +38,7 @@ workvm_sandbox_create() {
     done
 
     if [ -z "$id" ]; then
-                workvm_sandbox_log "uso: create --name <id> [--project olie|televisao|locav|opbed|boilerplate-laravel|use-url-query|fabriciogferreira] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container|vm]"
+                workvm_sandbox_log "uso: create --name <id> [--project olie|televisao|locav|opbed|boilerplate-laravel|use-url-query|fabriciogferreira] [--profile tests|mutation|e2e] [--from-commit SHA] [--backend container]"
         return 2
     fi
     if ! workvm_sandbox_id_ok "$id"; then
@@ -60,9 +58,9 @@ workvm_sandbox_create() {
             ;;
     esac
     case "$backend" in
-        container|vm) ;;
+        container) ;;
         *)
-            workvm_sandbox_log "backend inválido: $backend"
+            workvm_sandbox_log "backend inválido: $backend (só container)"
             return 2
             ;;
     esac
@@ -116,14 +114,7 @@ PY
 )"
 
     local rc=0
-    case "$backend" in
-        container)
-            workvm_sandbox_container_create "$id" "$project" "$profile" "$from_commit" "$mem_limit" "$cpus" || rc=$?
-            ;;
-        vm)
-            workvm_sandbox_vm_create "$id" "$project" "$profile" "$from_commit" || rc=$?
-            ;;
-    esac
+    workvm_sandbox_container_create "$id" "$project" "$profile" "$from_commit" "$mem_limit" "$cpus" || rc=$?
 
     if [ "$rc" -ne 0 ]; then
         workvm_sandbox_meta_set "$id" state "failed"
@@ -156,11 +147,7 @@ workvm_sandbox_destroy() {
     local backend
     backend="$(workvm_sandbox_meta_get "$id" backend 2>/dev/null || printf 'container')"
 
-    case "$backend" in
-        container) workvm_sandbox_container_destroy "$id" || true ;;
-        vm) workvm_sandbox_vm_destroy "$id" || true ;;
-        *) workvm_sandbox_container_destroy "$id" || true ;;
-    esac
+    workvm_sandbox_container_destroy "$id" || true
 
     local sb_dir
     sb_dir="$(workvm_sandbox_dir "$id")"

@@ -1,33 +1,40 @@
 ---
-description: open sem CODE — perguntar só em projetos com card (DOP/…); single-unit usa o nome do projeto
+description: chat "open PROJECT CODE" → workvm-host-card open; CODE obrigatório só em funil; single-unit usa o nome do projeto
 alwaysApply: true
 ---
 
-# Host-card open: CODE
+# Host-card open (chat command)
 
-## Projetos com card (CODE obrigatório)
+When the user says `open …` / `reopen …` with a project name (and CODE when required), **run the CLI immediately**. This is **not** MCP `olie-flow-ai`, not a board lookup, and not “explain the card”. Do **not** ask what the CODE means, which workspace to use, or which tool to wait for. CWD does not matter — use the absolute path below. Normalize CODE to uppercase (`dop-1183` → `DOP-1183`).
 
-`olie`, `locav`, `televisao` (e qualquer outro que use `{{ code }}` / DOP-… no prompt).
+## With CODE (funnel cards)
 
-Quando o usuário pede `open olie` / `open locav` / `reopen televisao` **sem** o código:
+Projects: `olie`, `locav`, `televisao` (and any other that uses `{{ code }}` / DOP-… / LCV-…).
 
-- Pare e diga que falta o código (ex.: `DOP-1258`).
-- Opcional: listar cards (`workvm-host-card list`) só como referência.
-- Espere o usuário escolher. Só então `workvm-host-card open --project … --code …`.
-- Nunca adivinhar (último, único da lista, “o mais recente”).
+User: `open olie DOP-1183` / `open olie dop-1183` / `reopen locav LCV-17` →
 
-Forma: `open olie DOP-1258`.
+```bash
+~/git/bin/workvm-host-card open --project <PROJECT> --code <CODE>
+```
 
-## Projetos single-unit (sem `{{ code }}`)
+Print `workspace=` and `api_worktree=` from the CLI output. Then stop unless the user asks for more.
+
+## Without CODE (funnel only)
+
+User: `open olie` / `open locav` / `reopen televisao` **with no card code**:
+
+- Stop and ask for the code (ex.: `DOP-1258`).
+- Optional: `~/git/bin/workvm-host-card list` as reference only.
+- Never guess (last card, only on list, “most recent”).
+
+## Single-unit (no DOP)
 
 `use-url-query`, `opbed`, `boilerplate-laravel`, `boilerplate-next`, `fabriciogferreira`.
 
-Não há card DOP — a unidade é o próprio projeto. `open use-url-query` / `open opbed` (sem segundo token) →
+User: `open use-url-query` / `open opbed` (no second token) →
 
 ```bash
 ~/git/bin/workvm-host-card open --project <PROJECT> --code <PROJECT>
 ```
 
-(CLI ainda exige `--code`; o agente preenche com o nome do projeto.)
-
-Não perguntar CODE nesses. Se o CLI ainda não listar o projeto (ex. `boilerplate-next` sem ensure), diga e pare — não invente CODE.
+Do not ask for CODE. If the CLI does not list the project yet, say so and stop — do not invent CODE.

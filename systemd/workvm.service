@@ -2,8 +2,8 @@
 # WantedBy=default.target — graphical-session.target tem RefuseManualStart e
 # SDDM+start-hyprland nunca o ativam; default.target sobe com a sessão do usuário.
 [Unit]
-Description=WorkVM project startup
-Documentation=file://%h/git/projects
+Description=Host project startup (compose/MCP for current)
+Documentation=file://%h/git
 After=workvm-git-pull.service
 Wants=workvm-git-pull.service
 

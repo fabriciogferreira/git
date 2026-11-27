@@ -13,7 +13,7 @@ description: >-
 
 When project content includes **video** messages, turn each video into **text documentation**. Persist it under the card folder so a correction pass does **not** reconvert the same media.
 
-**Prefer** the WorkVM **vid2agent-code** HTTP API (VLM on the physical host). Call that API only for conversion — do **not** install vid2agent/Ollama in the Locav VM. When the API is unreachable, run **agent-local analysis** (below) into the same store path; do not stop the card for a down conversion VM.
+**Prefer** the host **vid2agent-code** HTTP API (`127.0.0.1:18080`). Call that API only for conversion — do **not** install a second Ollama stack. When the API is unreachable, run **agent-local analysis** (below) into the same store path; do not stop the card for a down conversion service.
 
 ## Policy (tech lead)
 
@@ -65,12 +65,11 @@ Same convention as `locav-project-image-analysis` (one file per media id).
 
 ## API (stable URLs)
 
-From another WorkVM (SLIRP): `http://10.0.2.2:18080/api/conversions`  
-From the physical host: `http://127.0.0.1:18080/api/conversions`
+On the host: `http://127.0.0.1:18080/api/conversions`  
 
 ```bash
 curl -sS --fail-with-body --max-time 600 \
-  --location 'http://10.0.2.2:18080/api/conversions' \
+  --location 'http://127.0.0.1:18080/api/conversions' \
   --form 'video=@"/absolute/path/to/file.mp4"'
 # Expect HTTP 200 and JSON: { "markdown": "..." }
 ```
@@ -80,13 +79,13 @@ Multipart field name: **`video`** (prefer mp4). Optional form field `context` (m
 Smoke test before converting:
 
 ```bash
-curl -sS -m 30 -o /dev/null -w '%{http_code}\n' http://10.0.2.2:18080/
+curl -sS -m 30 -o /dev/null -w '%{http_code}\n' http://127.0.0.1:18080/
 # 200 esperado
 ```
 
 | Signal | Meaning |
 | --- | --- |
-| `000` + `curl: (7) Failed to connect … Connection refused` | vid2agent-code is down, or the hostfwd rule for port 18080 is missing on the host |
+| `000` + `curl: (7) Failed to connect … Connection refused` | vid2agent-code API is down on the host (`127.0.0.1:18080`) |
 | timeout / hang | the service answered but the conversion did not finish in time — check the host |
 | HTTP 4xx / 5xx | the API answered and rejected the request — report the response body |
 
@@ -110,7 +109,7 @@ When conversion is needed and the API does not answer (or hangs past a reasonabl
 Useful connectivity evidence (optional, before/after reporting):
 
 ```bash
-timeout 5 bash -c 'echo > /dev/tcp/10.0.2.2/18080' && echo '18080 aberta' || echo '18080 recusada'
+timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/18080' && echo '18080 aberta' || echo '18080 recusada'
 ```
 
 ## Identify videos
@@ -161,7 +160,7 @@ Saved file **must** start with:
 | `created_at` | … |
 | Autor | … (if known) |
 | Fonte | `vid2agent API` **or** `agent-local (vid2agent unreachable)` |
-| API | `http://10.0.2.2:18080/api/conversions` |
+| API | `http://127.0.0.1:18080/api/conversions` |
 | Arquivo local | `~/git/locav/cards/CARD_CODE/MEDIA_ID.md` |
 
 ```

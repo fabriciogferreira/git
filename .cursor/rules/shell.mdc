@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Scripts
 
-O cabeçalho (depois do shebang) diz o problema e o que o script não faz. `set -euo pipefail` nos entrypoints (`vm-setup.sh`, `project-setup.sh`). Helpers em `lib/common.sh` não derrubam o login: fetch e espera avisam e retornam. O corpo está em `git.sh`, `cursor.sh` e `session.sh`. `bin/check.sh` roda shellcheck nesses scripts.
+O cabeçalho (depois do shebang) diz o problema e o que o script não faz. `set -euo pipefail` nos entrypoints (`project-setup.sh`). Helpers em `lib/common.sh` não derrubam o login: fetch e espera avisam e retornam. O corpo está em `git.sh`, `cursor.sh` e `session.sh`. `bin/check.sh` roda shellcheck nesses scripts.
 
 ```bash
 #!/usr/bin/env bash
